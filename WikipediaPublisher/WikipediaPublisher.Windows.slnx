@@ -3,6 +3,14 @@
        The Windows-only solution: everything in WikipediaPublisher.slnx PLUS the
        native (non-Skia) WinUI 3 and WPF heads, which require Windows-host-only
        build tooling. Open this one on a Windows machine. -->
+  <!-- WikipediaPublisher.WinUi only declares Platforms x86/x64/ARM64 (no Any CPU),
+       so the solution platforms are restricted to match - otherwise VS offers
+       "Any CPU" and fails to map it to the WinUi project. -->
+  <Configurations>
+    <Platform Name="x86" />
+    <Platform Name="x64" />
+    <Platform Name="ARM64" />
+  </Configurations>
   <Folder Name="/Solution Items/">
     <File Path=".gitignore" />
     <File Path="LICENSE" />
@@ -19,7 +27,12 @@
     <Project Path="CodeBrixPlatform/WikipediaPublisher.MacOs/WikipediaPublisher.MacOs.csproj" />
   </Folder>
   <Project Path="WikipediaPublisher.RenderArticle/WikipediaPublisher.RenderArticle.csproj" />
-  <Project Path="WikipediaPublisher.WinUi/WikipediaPublisher.WinUi.csproj" />
+  <Project Path="WikipediaPublisher.WinUi/WikipediaPublisher.WinUi.csproj">
+    <Platform Solution="*|x86" Project="x86" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|ARM64" Project="ARM64" />
+    <Deploy Solution="Debug|x64" />
+  </Project>
   <Project Path="WikipediaPublisher.Wpf/WikipediaPublisher.Wpf.csproj" />
   <Folder Name="/Tests/">
     <Project Path="Tests/WikipediaPublisher.RenderArticle.Tests/WikipediaPublisher.RenderArticle.Tests.csproj" />
