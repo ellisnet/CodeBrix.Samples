@@ -1,0 +1,26 @@
+<Solution>
+  <!-- WikipediaPublisher.slnx
+       The cross-platform solution: everything that builds with the plain .NET SDK
+       on Linux, macOS and Windows. The native WinUI 3 and WPF heads live only in
+       WikipediaPublisher.Windows.slnx, because they require Windows-host-only
+       build tooling (WinAppSDK XAML compiler / WPF targets). -->
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/CodeBrixPlatform/">
+    <Project Path="CodeBrixPlatform/WikipediaPublisher.UI/WikipediaPublisher.UI.shproj" />
+    <Project Path="CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.Core.csproj" />
+    <Project Path="CodeBrixPlatform/WikipediaPublisher.Windows/WikipediaPublisher.Windows.csproj" />
+    <Project Path="CodeBrixPlatform/WikipediaPublisher.WpfSkia/WikipediaPublisher.WpfSkia.csproj" />
+    <Project Path="CodeBrixPlatform/WikipediaPublisher.LinuxX11/WikipediaPublisher.LinuxX11.csproj" />
+    <Project Path="CodeBrixPlatform/WikipediaPublisher.LinuxWayland/WikipediaPublisher.LinuxWayland.csproj" />
+    <Project Path="CodeBrixPlatform/WikipediaPublisher.LinuxFrameBuffer/WikipediaPublisher.LinuxFrameBuffer.csproj" />
+    <Project Path="CodeBrixPlatform/WikipediaPublisher.MacOs/WikipediaPublisher.MacOs.csproj" />
+  </Folder>
+  <Project Path="WikipediaPublisher.RenderArticle/WikipediaPublisher.RenderArticle.csproj" />
+  <Folder Name="/Tests/">
+    <Project Path="Tests/WikipediaPublisher.RenderArticle.Tests/WikipediaPublisher.RenderArticle.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "WikipediaPublisher.WinUi (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "WikipediaPublisher.WinUi (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

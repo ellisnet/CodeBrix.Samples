@@ -1,0 +1,120 @@
+<Page x:Class="WikipediaPublisher.Views.MainPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="using:WikipediaPublisher.Views"
+      xmlns:vm="using:WikipediaPublisher.ViewModels"
+      Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+      FontFamily="{StaticResource OpenSansFont}">
+
+    <Page.DataContext>
+        <vm:MainViewModel />
+    </Page.DataContext>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Search bar -->
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="Search Wikipedia:"
+                       VerticalAlignment="Center" Margin="0,0,12,0" />
+            <TextBox Grid.Column="1" Height="36"
+                     VerticalAlignment="Center" VerticalContentAlignment="Center"
+                     PlaceholderText="e.g. cuneiform writing"
+                     Text="{Binding SearchTerms, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Button Grid.Column="2" Width="110" Height="36" Margin="12,0,0,0"
+                    Content="Search"
+                    Command="{Binding SearchCommand}" />
+        </Grid>
+
+        <!-- Center: embedded browser (heads with WebView support), or the native
+             search-results fallback pane (Linux heads, for now). The code-behind
+             decides which one is shown, based on AppCapabilities.HasWebView. -->
+        <Grid Grid.Row="1">
+            <Grid x:Name="BrowserHost" />
+
+            <Grid x:Name="FallbackPane" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <ListView Grid.Row="0"
+                          BorderThickness="1"
+                          BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
+                          ItemsSource="{Binding SearchResultItems}"
+                          SelectedItem="{Binding SelectedSearchResultItem, Mode=TwoWay}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="4,6,4,6" />
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <Grid Grid.Row="1" Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Article URL:"
+                               VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <TextBox Grid.Column="1" Height="36"
+                             VerticalAlignment="Center" VerticalContentAlignment="Center"
+                             PlaceholderText="https://en.wikipedia.org/wiki/…"
+                             Text="{Binding ArticleUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- Status line -->
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ProgressBar Grid.Column="0" Height="8" VerticalAlignment="Center"
+                         Minimum="0" Maximum="100"
+                         Value="{Binding ProgressValue}" />
+            <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"
+                       Text="{Binding StatusText}" />
+        </Grid>
+
+        <!-- Bottom bar: output folder, page size, Publish -->
+        <Grid Grid.Row="3" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="Save PDF to:"
+                       VerticalAlignment="Center" Margin="0,0,12,0" />
+            <TextBox Grid.Column="1" Height="36"
+                     VerticalAlignment="Center" VerticalContentAlignment="Center"
+                     Text="{Binding OutputFolder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock Grid.Column="2" Text="Page size:"
+                       VerticalAlignment="Center" Margin="16,0,12,0" />
+            <ComboBox Grid.Column="3" Width="210" Height="36" VerticalAlignment="Center"
+                      ItemsSource="{Binding PageSizeNames}"
+                      SelectedItem="{Binding SelectedPageSizeName, Mode=TwoWay}" />
+            <Button Grid.Column="4" Width="130" Height="40" Margin="16,0,0,0"
+                    HorizontalAlignment="Right"
+                    Style="{ThemeResource AccentButtonStyle}"
+                    Content="Publish"
+                    Command="{Binding PublishCommand}" />
+        </Grid>
+    </Grid>
+</Page>
