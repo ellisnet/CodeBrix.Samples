@@ -170,6 +170,19 @@ internal sealed class BookComposer
         caption.ParagraphFormat.SpaceBefore = Unit.FromPoint(t.CaptionSize * 0.7);
         caption.ParagraphFormat.SpaceAfter = Unit.FromPoint(t.BodySize * 1.35);
 
+        //Image credit: a whisper-small line hugging the image, sitting directly beneath it and
+        //  above the figure caption. Exactly (not AtLeast) line spacing keeps the tiny line box
+        //  from reserving a full text line's worth of empty space above the credit.
+        var creditSize = t.LabelSize * 0.8;
+        var credit = document.AddStyle("Credit", "Caption");
+        credit.Font.Size = creditSize;
+        credit.Font.Italic = true;
+        credit.ParagraphFormat.LineSpacingRule = LineSpacingRule.Exactly;
+        credit.ParagraphFormat.LineSpacing = Unit.FromPoint(creditSize * 1.12);
+        credit.ParagraphFormat.SpaceBefore = Unit.FromPoint(creditSize * 0.15);
+        credit.ParagraphFormat.SpaceAfter = 0;
+        credit.ParagraphFormat.KeepWithNext = true;
+
         var tableCaption = document.AddStyle("TableCaption", "Caption");
         tableCaption.ParagraphFormat.SpaceBefore = Unit.FromPoint(t.BodySize * 1.25);
         tableCaption.ParagraphFormat.SpaceAfter = Unit.FromPoint(t.CaptionSize * 0.8);
@@ -298,6 +311,12 @@ internal sealed class BookComposer
             image.Width = Unit.FromPoint(width);
             ApplyKeyline(image, hero);
             PlacedImageCount++;
+
+            if (!string.IsNullOrWhiteSpace(hero.Attribution))
+            {
+                var heroCredit = cover.AddParagraph(hero.Attribution, "Credit");
+                heroCredit.Format.KeepWithNext = false;
+            }
         }
 
         var imprint = cover.AddParagraph(
@@ -584,6 +603,13 @@ internal sealed class BookComposer
         image.Width = Unit.FromPoint(width);
         ApplyKeyline(image, articleImage);
         PlacedImageCount++;
+
+        //A small credit line for the photographer/illustrator and licence, directly under the
+        //  image and above the caption, when Wikimedia supplied attribution for the file
+        if (!string.IsNullOrWhiteSpace(articleImage.Attribution))
+        {
+            _content.AddParagraph(articleImage.Attribution, "Credit");
+        }
 
         var caption = _content.AddParagraph();
         caption.Style = "Caption";

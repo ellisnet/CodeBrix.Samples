@@ -568,10 +568,65 @@ internal sealed class ArticleParser
             ThumbUrl = src,
             PrintUrl = DerivePrintUrl(src, fileWidth, urlPath),
             Caption = captionText,
+            MediaPageTitle = ExtractMediaPageTitle(container) ?? DeriveMediaTitleFromUrl(urlPath),
             FileName = Path.GetFileName(urlPath),
             FileWidth = fileWidth,
             FileHeight = fileHeight
         };
+    }
+
+    /// <summary>
+    /// Finds the "File:" page title the image links to (its description page on the wiki
+    /// or Commons). Modern MediaWiki wraps the thumbnail in
+    /// <c>&lt;a href="/wiki/File:Name.jpg"&gt;</c>; Parsoid output uses <c>href="./File:Name.jpg"</c>.
+    /// Returns null when no such link is present.
+    /// </summary>
+    internal static string ExtractMediaPageTitle(IElement container)
+    {
+        foreach (var anchor in container.QuerySelectorAll("a[href]"))
+        {
+            var title = MediaTitleFromHref(anchor.GetAttribute("href"));
+            if (title is not null) { return title; }
+        }
+        return null;
+    }
+
+    internal static string MediaTitleFromHref(string href)
+    {
+        if (string.IsNullOrWhiteSpace(href)) { return null; }
+
+        //Take the portion after "/wiki/" (legacy) or a leading "./" (Parsoid)
+        var wikiIndex = href.IndexOf("/wiki/", StringComparison.OrdinalIgnoreCase);
+        var candidate = wikiIndex >= 0 ? href[(wikiIndex + 6)..] : href.TrimStart('.', '/');
+        candidate = Uri.UnescapeDataString(candidate.Split('?', '#')[0]);
+
+        if (candidate.StartsWith("File:", StringComparison.OrdinalIgnoreCase)
+            || candidate.StartsWith("Image:", StringComparison.OrdinalIgnoreCase))
+        {
+            return candidate.Replace('_', ' ').Trim();
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Derives the "File:" page title from an upload URL when no description-page link is
+    /// available (e.g. the cover hero taken from the og:image meta tag). Thumbnail URLs look
+    /// like …/thumb/6/66/Name.jpg/800px-Name.jpg — the original file name is the segment
+    /// before the pixel-sized rendition; full-size URLs end with the file name directly.
+    /// </summary>
+    internal static string DeriveMediaTitleFromUrl(string urlPath)
+    {
+        if (string.IsNullOrWhiteSpace(urlPath)) { return ""; }
+
+        var segments = urlPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length == 0) { return ""; }
+
+        //For /thumb/…/Name.ext/NNNpx-Name.ext the original is the second-to-last segment
+        var isThumb = segments.Contains("thumb", StringComparer.OrdinalIgnoreCase);
+        var fileSegment = isThumb && segments.Length >= 2 ? segments[^2] : segments[^1];
+
+        var name = Uri.UnescapeDataString(fileSegment).Replace('_', ' ').Trim();
+        return name.Length == 0 ? "" : $"File:{name}";
     }
 
     /// <summary>
@@ -626,6 +681,7 @@ internal sealed class ArticleParser
         {
             ThumbUrl = url,
             PrintUrl = url,
+            MediaPageTitle = DeriveMediaTitleFromUrl(urlPath),
             FileName = Path.GetFileName(urlPath),
             FileWidth = width,
             FileHeight = height

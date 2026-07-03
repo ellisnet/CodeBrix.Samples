@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -94,6 +95,103 @@ internal sealed class WikipediaClient : IDisposable
         }
 
         return results;
+    }
+
+    //extmetadata fields worth fetching for an image credit line
+    private static readonly string[] AttributionMetadataFields =
+        ["Artist", "Attribution", "Credit", "LicenseShortName", "AttributionRequired", "Copyrighted"];
+
+    private const int MaxTitlesPerMetadataQuery = 50;
+
+    /// <summary>
+    /// Looks up Wikimedia "extmetadata" (author, credit, license, …) for the given "File:" page
+    /// titles via the MediaWiki imageinfo API, batching up to 50 titles per request. The local
+    /// wiki's API transparently resolves files hosted on Wikimedia Commons. Titles that cannot be
+    /// resolved are simply absent from the result; a failed request yields an empty dictionary
+    /// (attribution is best-effort and never fails the render).
+    /// </summary>
+    /// <returns>A case-insensitive map from the (normalized) file title to its metadata
+    /// field/value pairs.</returns>
+    public async Task<IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>>
+        GetImageMetadataAsync(
+            IReadOnlyCollection<string> fileTitles,
+            string wikiHost = DefaultWikiHost,
+            CancellationToken cancellationToken = default)
+    {
+        CheckIsDisposed();
+
+        var result = new Dictionary<string, IReadOnlyDictionary<string, string>>(
+            StringComparer.OrdinalIgnoreCase);
+        if (fileTitles is null || fileTitles.Count == 0) { return result; }
+
+        wikiHost = string.IsNullOrWhiteSpace(wikiHost) ? DefaultWikiHost : wikiHost.Trim();
+
+        var uniqueTitles = fileTitles
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        for (var offset = 0; offset < uniqueTitles.Count; offset += MaxTitlesPerMetadataQuery)
+        {
+            var batch = uniqueTitles.Skip(offset).Take(MaxTitlesPerMetadataQuery).ToList();
+            var titlesParam = Uri.EscapeDataString(string.Join("|", batch));
+
+            var apiUrl = $"https://{wikiHost}/w/api.php?action=query&prop=imageinfo"
+                         + "&iiprop=extmetadata"
+                         + $"&iiextmetadatafilter={string.Join("|", AttributionMetadataFields)}"
+                         + $"&titles={titlesParam}&format=json&formatversion=2";
+
+            try
+            {
+                var json = await _httpClient.GetStringAsync(apiUrl, cancellationToken);
+                ParseImageMetadata(json, result);
+            }
+            catch (HttpRequestException) { /* best-effort; skip this batch */ }
+            catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested) { }
+        }
+
+        return result;
+    }
+
+    private static void ParseImageMetadata(
+        string json, IDictionary<string, IReadOnlyDictionary<string, string>> into)
+    {
+        using var document = JsonDocument.Parse(json);
+        if (!document.RootElement.TryGetProperty("query", out var query)
+            || !query.TryGetProperty("pages", out var pages))
+        {
+            return;
+        }
+
+        //formatversion=2 renders pages as an array
+        foreach (var page in pages.EnumerateArray())
+        {
+            if (!page.TryGetProperty("title", out var titleProp)) { continue; }
+            var title = titleProp.GetString();
+            if (string.IsNullOrWhiteSpace(title)) { continue; }
+
+            if (!page.TryGetProperty("imageinfo", out var imageInfo)
+                || imageInfo.ValueKind != JsonValueKind.Array
+                || imageInfo.GetArrayLength() == 0)
+            {
+                continue;
+            }
+
+            var info = imageInfo[0];
+            if (!info.TryGetProperty("extmetadata", out var extMetadata)) { continue; }
+
+            var fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var field in extMetadata.EnumerateObject())
+            {
+                if (field.Value.TryGetProperty("value", out var valueProp)
+                    && valueProp.ValueKind == JsonValueKind.String)
+                {
+                    fields[field.Name] = valueProp.GetString() ?? "";
+                }
+            }
+
+            if (fields.Count > 0) { into[title] = fields; }
+        }
     }
 
     /// <summary>

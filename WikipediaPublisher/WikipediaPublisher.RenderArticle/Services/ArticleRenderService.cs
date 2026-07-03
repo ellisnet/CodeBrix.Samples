@@ -99,6 +99,11 @@ public sealed class ArticleRenderService : IArticleRenderService, IDisposable
                     progress?.Report(new RenderProgress(RenderStage.DownloadingImages, message, percent));
                 },
                 cancellationToken);
+
+            //Look up author/licence credits for the images that will be placed
+            progress?.Report(new RenderProgress(
+                RenderStage.DownloadingImages, "Fetching image credits…", 71));
+            await new AttributionResolver(_client).ResolveAsync(article, cancellationToken);
         }
         else
         {

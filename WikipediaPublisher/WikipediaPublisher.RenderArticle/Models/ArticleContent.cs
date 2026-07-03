@@ -85,6 +85,14 @@ public sealed class ArticleImage
     /// <summary>The caption text (may be empty).</summary>
     public string Caption { get; set; } = "";
 
+    /// <summary>The Wikimedia "File:" page title for this media (e.g. "File:Xerxes Cuneiform Van.JPG"),
+    /// used to look up authorship and licensing. May be empty when it could not be derived.</summary>
+    public string MediaPageTitle { get; set; } = "";
+
+    /// <summary>A short, single-line credit (author and/or license) shown under the image in print.
+    /// Populated from the media file's Wikimedia metadata; empty when none is available.</summary>
+    public string Attribution { get; set; } = "";
+
     /// <summary>The bare media file name (used for logging and de-duplication).</summary>
     public string FileName { get; set; } = "";
 

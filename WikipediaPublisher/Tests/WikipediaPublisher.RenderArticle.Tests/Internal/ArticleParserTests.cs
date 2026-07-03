@@ -164,6 +164,41 @@ public class ArticleParserTests
     }
 
     [Fact]
+    public async Task Parse_captures_media_page_titles_for_images()
+    {
+        //Arrange + Act
+        var article = await ParseFixture();
+
+        //Assert — every parsed image should know its File: page (needed to fetch attribution)
+        var images = article.Blocks
+            .Where(b => b.Type == ArticleBlockType.Image)
+            .Select(b => b.Image)
+            .ToList();
+
+        images.Should().NotBeEmpty();
+        images.Count(i => i.MediaPageTitle.StartsWith("File:")).Should().BeGreaterThan(3);
+    }
+
+    [Theory]
+    [InlineData("/wiki/File:Xerxes_Cuneiform_Van.JPG", "File:Xerxes Cuneiform Van.JPG")]
+    [InlineData("./File:Foo_Bar.png", "File:Foo Bar.png")]
+    [InlineData("/wiki/File%3AA_%26_B.svg", "File:A & B.svg")]
+    [InlineData("/wiki/Cuneiform", null)]
+    [InlineData("#cite_note-1", null)]
+    public void MediaTitleFromHref_extracts_file_titles(string href, string expected)
+    {
+        ArticleParser.MediaTitleFromHref(href).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("/wikipedia/commons/thumb/6/66/Xerxes_Van.JPG/250px-Xerxes_Van.JPG", "File:Xerxes Van.JPG")]
+    [InlineData("/wikipedia/commons/6/66/Xerxes_Van.JPG", "File:Xerxes Van.JPG")]
+    public void DeriveMediaTitleFromUrl_reconstructs_the_original_file(string urlPath, string expected)
+    {
+        ArticleParser.DeriveMediaTitleFromUrl(urlPath).Should().Be(expected);
+    }
+
+    [Fact]
     public void ExtractTextRuns_propagates_bold_and_italic()
     {
         //Arrange

@@ -1,11 +1,8 @@
 using CodeBrix.Platform.Simple;
 using Microsoft.UI.Xaml.Controls;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using WikipediaPublisher.Helpers;
 using WikipediaPublisher.ViewModels;
-using Windows.Storage.Pickers;
 
 namespace WikipediaPublisher.WinUI.Views;
 
@@ -61,24 +58,14 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private static async Task<string> PickSavePdfPathAsync(string suggestedFileName)
+    private static Task<string> PickSavePdfPathAsync(string suggestedFileName)
     {
-        var picker = new FileSavePicker
-        {
-            SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
-            SuggestedFileName = suggestedFileName,
-            DefaultFileExtension = ".pdf"
-        };
-        picker.FileTypeChoices.Add("PDF document", new List<string> { ".pdf" });
-
-        //WinUI 3 pickers must be associated with the app window's HWND
+        //Use the Win32 "Save As" dialog with its overwrite prompt turned off (see
+        //  Win32SaveFileDialog) so choosing an existing file is silent — the app's own
+        //  publish-time "replace existing file?" prompt is the single point of confirmation,
+        //  matching the WPF head. The WinRT FileSavePicker can't suppress its own prompt.
         var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.CurrentWindow);
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
-
-        var file = await picker.PickSaveFileAsync();
-        if (file == null) { return null; }
-
-        FileDialogHelper.RemoveEmptyPlaceholder(file.Path);
-        return file.Path;
+        var path = Win32SaveFileDialog.PickSavePath(hwnd, suggestedFileName, "Save PDF as");
+        return Task.FromResult(path);
     }
 }
