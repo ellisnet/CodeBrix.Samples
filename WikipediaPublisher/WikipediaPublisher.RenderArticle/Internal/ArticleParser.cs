@@ -71,11 +71,25 @@ internal sealed class ArticleParser
         article.ShortDescription = document.QuerySelector("div.shortdescription")?.TextContent?.Trim() ?? "";
         article.LeadImage = GetLeadImage(document);
 
-        var contentRoot = document.QuerySelector(".mw-parser-output");
+        //Some articles contain more than one .mw-parser-output element - e.g. a small wrapper
+        //  emitted by a transcluded template (coordinates, short description, hatnotes) plus the
+        //  real article body. QuerySelector would return whichever comes first in document order,
+        //  which can be the near-empty wrapper. Pick the container that actually holds the prose:
+        //  the one with the most paragraph descendants.
+        var contentRoots = document.QuerySelectorAll(".mw-parser-output").ToList();
+        var contentRoot = contentRoots
+            .OrderByDescending(e => e.QuerySelectorAll("p").Count())
+            .ThenByDescending(e => e.Children.Count())
+            .FirstOrDefault();
         if (contentRoot is null)
         {
             article.Warnings.Add("No .mw-parser-output content container was found in the page.");
             return article;
+        }
+        if (contentRoots.Count > 1)
+        {
+            article.Warnings.Add(
+                $"Page had {contentRoots.Count} .mw-parser-output containers; used the one with the most content.");
         }
 
         var state = new WalkState();

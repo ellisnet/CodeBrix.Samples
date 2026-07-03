@@ -6,7 +6,7 @@ using System;
 using WikipediaPublisher.Helpers;
 using WikipediaPublisher.RenderArticle;
 
-namespace WikipediaPublisher.WinUi;
+namespace WikipediaPublisher.WinUI;
 
 /// <summary>
 /// Provides application-specific behavior to supplement the default Application class.
@@ -19,9 +19,6 @@ public partial class App : Application
     /// </summary>
     public App()
     {
-        //Native WinUI 3 has full WebView2 (Microsoft Edge WebView2) support
-        AppCapabilities.HasWebView = true;
-
         SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
         {
             //Register my custom services here
@@ -34,12 +31,16 @@ public partial class App : Application
 
     protected Window MainWindow { get; private set; }
 
+    /// <summary>The app's main window, exposed so the page can seed native file pickers with its HWND.</summary>
+    public static Window CurrentWindow { get; private set; }
+
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         MainWindow = new Window
         {
             Title = "Wikipedia Publisher"
         };
+        CurrentWindow = MainWindow;
 
         // Do not repeat app initialization when the Window already has content,
         // just ensure that the window is active

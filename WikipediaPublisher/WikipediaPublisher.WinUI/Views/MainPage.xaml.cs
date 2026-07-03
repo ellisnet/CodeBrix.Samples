@@ -7,12 +7,13 @@ using WikipediaPublisher.Helpers;
 using WikipediaPublisher.ViewModels;
 using Windows.Storage.Pickers;
 
-namespace WikipediaPublisher.Views;
+namespace WikipediaPublisher.WinUI.Views;
 
+/// <summary>
+/// The main (and only) page of the WinUI head.
+/// </summary>
 public sealed partial class MainPage : Page
 {
-    private bool _browserInitialized;
-
     public MainPage()
     {
         //Doing this before InitializeComponent() - in case InitializeComponent()
@@ -21,9 +22,18 @@ public sealed partial class MainPage : Page
         {
             (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
 
-            //Give the view model a native "Save PDF as…" file dialog (CodeBrix.Platform's
-            //  FileSavePicker). Heads with no windowing system (Linux framebuffer) throw
-            //  NotSupportedException from the picker; the view model handles that.
+            if (DataContext is IWebViewBridge bridge)
+            {
+                bridge.NavigateToUrl = url =>
+                {
+                    if (!string.IsNullOrWhiteSpace(url))
+                    {
+                        Browser.Source = new Uri(url);
+                    }
+                };
+            }
+
+            //Native WinUI "Save PDF as…" dialog, consistent with the Skia heads
             if (DataContext is IFileSaveBridge fileSave)
             {
                 fileSave.PickSavePdfPathAsync = PickSavePdfPathAsync;
@@ -32,28 +42,11 @@ public sealed partial class MainPage : Page
 
         InitializeComponent();
 
-        Loaded += (_, _) => InitializeBrowser();
-    }
-
-    private void InitializeBrowser()
-    {
-        if (_browserInitialized || DataContext is not MainViewModel viewModel) { return; }
-        _browserInitialized = true;
-
         //Use CoreWebView2.Source (the authoritative current URL after redirects / user
         //  navigation); the XAML Browser.Source property does not reliably reflect those.
-        Browser.NavigationCompleted += (_, _) =>
-            viewModel.SetCurrentBrowserUrl(Browser.CoreWebView2?.Source ?? Browser.Source?.AbsoluteUri);
-
-        viewModel.NavigateToUrl = url =>
-        {
-            if (!string.IsNullOrWhiteSpace(url))
-            {
-                Browser.Source = new Uri(url);
-            }
-        };
-
-        Browser.Source = new Uri(MainViewModel.HomeUrl);
+        Browser.NavigationCompleted += (sender, args) =>
+            (DataContext as IWebViewBridge)?.SetCurrentBrowserUrl(
+                sender.CoreWebView2?.Source ?? Browser.Source?.AbsoluteUri);
     }
 
     //Pressing Enter in the search box runs Search, just like clicking the button.
@@ -77,6 +70,10 @@ public sealed partial class MainPage : Page
             DefaultFileExtension = ".pdf"
         };
         picker.FileTypeChoices.Add("PDF document", new List<string> { ".pdf" });
+
+        //WinUI 3 pickers must be associated with the app window's HWND
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.CurrentWindow);
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
 
         var file = await picker.PickSaveFileAsync();
         if (file == null) { return null; }

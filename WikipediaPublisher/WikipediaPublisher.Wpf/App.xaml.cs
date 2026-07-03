@@ -12,9 +12,6 @@ public partial class App : Application
 {
     public App()
     {
-        //Native WPF hosts the Microsoft Edge WebView2 control
-        AppCapabilities.HasWebView = true;
-
         SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
         {
             //Register my custom services here

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Page
-    x:Class="WikipediaPublisher.WinUi.Views.MainPage"
+    x:Class="WikipediaPublisher.WinUI.Views.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:WikipediaPublisher.WinUi.Views"
+    xmlns:local="using:WikipediaPublisher.WinUI.Views"
     xmlns:vm="using:WikipediaPublisher.ViewModels"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -32,6 +32,7 @@
             <TextBox Grid.Column="1" Height="36"
                      VerticalAlignment="Center" VerticalContentAlignment="Center"
                      PlaceholderText="e.g. cuneiform writing"
+                     KeyDown="SearchBox_KeyDown"
                      Text="{Binding SearchTerms, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Button Grid.Column="2" Width="110" Height="36" Margin="12,0,0,0"
                     Content="Search"
@@ -56,11 +57,12 @@
                        Text="{Binding StatusText}" />
         </Grid>
 
-        <!-- Bottom bar: output folder, page size, Publish -->
+        <!-- Bottom bar: output file path (+ Select dialog), page size, Publish -->
         <Grid Grid.Row="3" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -70,13 +72,17 @@
                        VerticalAlignment="Center" Margin="0,0,12,0" />
             <TextBox Grid.Column="1" Height="36"
                      VerticalAlignment="Center" VerticalContentAlignment="Center"
-                     Text="{Binding OutputFolder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBlock Grid.Column="2" Text="Page size:"
+                     PlaceholderText="Click Select… (or type a full .pdf path)"
+                     Text="{Binding OutputFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Button Grid.Column="2" Height="36" Margin="8,0,0,0"
+                    Content="Select…"
+                    Command="{Binding SelectOutputFileCommand}" />
+            <TextBlock Grid.Column="3" Text="Page size:"
                        VerticalAlignment="Center" Margin="16,0,12,0" />
-            <ComboBox Grid.Column="3" Width="210" Height="36" VerticalAlignment="Center"
+            <ComboBox Grid.Column="4" Width="210" Height="36" VerticalAlignment="Center"
                       ItemsSource="{Binding PageSizeNames}"
                       SelectedItem="{Binding SelectedPageSizeName, Mode=TwoWay}" />
-            <Button Grid.Column="4" Width="130" Height="40" Margin="16,0,0,0"
+            <Button Grid.Column="5" Width="130" Height="40" Margin="16,0,0,0"
                     HorizontalAlignment="Right"
                     Style="{ThemeResource AccentButtonStyle}"
                     Content="Publish"

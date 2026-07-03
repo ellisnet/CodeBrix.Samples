@@ -50,9 +50,11 @@ public sealed class ArticleRenderService : IArticleRenderService, IDisposable
         {
             throw new ArgumentException("The request must specify an article URL.", nameof(request));
         }
-        if (string.IsNullOrWhiteSpace(request.OutputDirectory))
+        if (string.IsNullOrWhiteSpace(request.OutputFilePath)
+            && string.IsNullOrWhiteSpace(request.OutputDirectory))
         {
-            throw new ArgumentException("The request must specify an output directory.", nameof(request));
+            throw new ArgumentException(
+                "The request must specify an output file path (or an output directory).", nameof(request));
         }
 
         var stopwatch = Stopwatch.StartNew();
@@ -116,11 +118,25 @@ public sealed class ArticleRenderService : IArticleRenderService, IDisposable
         var renderer = new PdfDocumentRenderer(unicode: true) { Document = document };
         renderer.RenderDocument();
 
-        Directory.CreateDirectory(request.OutputDirectory);
-        var fileName = string.IsNullOrWhiteSpace(request.OutputFileName)
-            ? SanitizeFileName(article.Title) + ".pdf"
-            : request.OutputFileName;
-        var outputPath = Path.Combine(request.OutputDirectory, fileName);
+        string outputPath;
+        if (!string.IsNullOrWhiteSpace(request.OutputFilePath))
+        {
+            //A full save path was chosen (e.g. via the app's "Save PDF to" file dialog)
+            outputPath = request.OutputFilePath.Trim();
+            var folder = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrEmpty(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+        }
+        else
+        {
+            Directory.CreateDirectory(request.OutputDirectory);
+            var fileName = string.IsNullOrWhiteSpace(request.OutputFileName)
+                ? SanitizeFileName(article.Title) + ".pdf"
+                : request.OutputFileName;
+            outputPath = Path.Combine(request.OutputDirectory, fileName);
+        }
 
         renderer.PdfDocument.Save(outputPath);
         stopwatch.Stop();

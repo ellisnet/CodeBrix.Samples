@@ -2,6 +2,7 @@ using CodeBrix.PdfDocCreate.Rendering;
 using SilverAssertions;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using WikipediaPublisher.RenderArticle.Internal;
@@ -14,6 +15,7 @@ namespace WikipediaPublisher.RenderArticle.Tests.Services;
 public class ArticleRenderServiceTests
 {
     private const string CuneiformUrl = "https://en.wikipedia.org/wiki/Cuneiform";
+    private const string UrukUrl = "https://en.wikipedia.org/wiki/Uruk";
     private const string FixtureResource = "WikipediaPublisher.RenderArticle.Tests.Fixtures.cuneiform.html";
 
     private readonly ITestOutputHelper _output;
@@ -124,6 +126,62 @@ public class ArticleRenderServiceTests
 
         _output.WriteLine($"Book: {result.OutputFilePath}");
         _output.WriteLine($"Pages: {result.PageCount}, images: {result.ImageCount}, took {result.Elapsed.TotalSeconds:F1}s");
+        foreach (var warning in result.Warnings)
+        {
+            _output.WriteLine($"  note: {warning}");
+        }
+    }
+
+    //Regression for the "No readable article content" failure: the Uruk article carries more
+    //  than one .mw-parser-output container (a near-empty template wrapper plus the real body),
+    //  which used to make the parser walk the empty one and produce zero blocks. Fetches live
+    //  HTML and parses it WITHOUT downloading images, so it is fast.
+    [Theory]
+    [InlineData(UrukUrl, "Uruk")]
+    [InlineData(CuneiformUrl, "Cuneiform")]
+    public async Task Fetch_and_parse_finds_readable_content(string url, string expectedTitle)
+    {
+        //Arrange
+        using var client = new WikipediaClient();
+
+        //Act
+        var html = await client.GetArticleHtmlAsync(url, TestContext.Current.CancellationToken);
+        var article = new ArticleParser(url).Parse(html);
+        _output.WriteLine($"{url}: title='{article.Title}', blocks={article.Blocks.Count}");
+
+        //Assert — this is exactly the condition the app checks before rendering
+        article.Title.Should().Be(expectedTitle);
+        article.Blocks.Should().NotBeEmpty();
+    }
+
+    //NOTE: Live end-to-end render of the Uruk article (fetch → parse → images → book → PDF),
+    //  mirroring the Cuneiform end-to-end test. Expect it to take a couple of minutes.
+    [Fact]
+    public async Task RenderArticleAsync_uruk_end_to_end_produces_pdf()
+    {
+        //Arrange
+        using var service = new ArticleRenderService();
+        var request = new RenderRequest
+        {
+            ArticleUrl = UrukUrl,
+            OutputDirectory = GetOutDirectory(),
+            PageSize = PageSizeOption.EightByTen,
+            OutputFileName = "uruk-live.pdf"
+        };
+
+        //Act
+        var result = await service.RenderArticleAsync(
+            request,
+            new Progress<RenderProgress>(p => _output.WriteLine($"[{p.PercentComplete,3}%] {p.Stage}: {p.Message}")),
+            TestContext.Current.CancellationToken);
+
+        //Assert
+        result.Title.Should().Be("Uruk");
+        File.Exists(result.OutputFilePath).Should().BeTrue();
+        VerifyPdfSignature(result.OutputFilePath);
+        result.PageCount.Should().BeGreaterThan(5);
+
+        _output.WriteLine($"Book: {result.OutputFilePath} — {result.PageCount} pages, {result.ImageCount} images");
         foreach (var warning in result.Warnings)
         {
             _output.WriteLine($"  note: {warning}");

@@ -31,50 +31,17 @@
             <TextBox Grid.Column="1" Height="36"
                      VerticalAlignment="Center" VerticalContentAlignment="Center"
                      PlaceholderText="e.g. cuneiform writing"
+                     KeyDown="SearchBox_KeyDown"
                      Text="{Binding SearchTerms, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Button Grid.Column="2" Width="110" Height="36" Margin="12,0,0,0"
                     Content="Search"
                     Command="{Binding SearchCommand}" />
         </Grid>
 
-        <!-- Center: embedded browser (heads with WebView support), or the native
-             search-results fallback pane (Linux heads, for now). The code-behind
-             decides which one is shown, based on AppCapabilities.HasWebView. -->
-        <Grid Grid.Row="1">
-            <Grid x:Name="BrowserHost" />
-
-            <Grid x:Name="FallbackPane" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
-                <ListView Grid.Row="0"
-                          BorderThickness="1"
-                          BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}"
-                          ItemsSource="{Binding SearchResultItems}"
-                          SelectedItem="{Binding SelectedSearchResultItem, Mode=TwoWay}">
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="4,6,4,6" />
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-
-                <Grid Grid.Row="1" Margin="0,10,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="Article URL:"
-                               VerticalAlignment="Center" Margin="0,0,12,0" />
-                    <TextBox Grid.Column="1" Height="36"
-                             VerticalAlignment="Center" VerticalContentAlignment="Center"
-                             PlaceholderText="https://en.wikipedia.org/wiki/…"
-                             Text="{Binding ArticleUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                </Grid>
-            </Grid>
-        </Grid>
+        <!-- Center: embedded browser. Every Skia head now has a WebView2 - the Windows,
+             Skia-on-WPF and macOS runtimes have it built in, and the Linux heads get it
+             from the CodeBrix.Platform.WebView.ApacheLicenseForever add-in (WPE WebKit). -->
+        <WebView2 Grid.Row="1" x:Name="Browser" />
 
         <!-- Status line -->
         <Grid Grid.Row="2" Margin="0,12,0,0">
@@ -90,11 +57,12 @@
                        Text="{Binding StatusText}" />
         </Grid>
 
-        <!-- Bottom bar: output folder, page size, Publish -->
+        <!-- Bottom bar: output file path (+ Select dialog), page size, Publish -->
         <Grid Grid.Row="3" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -104,13 +72,17 @@
                        VerticalAlignment="Center" Margin="0,0,12,0" />
             <TextBox Grid.Column="1" Height="36"
                      VerticalAlignment="Center" VerticalContentAlignment="Center"
-                     Text="{Binding OutputFolder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBlock Grid.Column="2" Text="Page size:"
+                     PlaceholderText="Click Select… (or type a full .pdf path)"
+                     Text="{Binding OutputFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Button Grid.Column="2" Height="36" Margin="8,0,0,0"
+                    Content="Select…"
+                    Command="{Binding SelectOutputFileCommand}" />
+            <TextBlock Grid.Column="3" Text="Page size:"
                        VerticalAlignment="Center" Margin="16,0,12,0" />
-            <ComboBox Grid.Column="3" Width="210" Height="36" VerticalAlignment="Center"
+            <ComboBox Grid.Column="4" Width="210" Height="36" VerticalAlignment="Center"
                       ItemsSource="{Binding PageSizeNames}"
                       SelectedItem="{Binding SelectedPageSizeName, Mode=TwoWay}" />
-            <Button Grid.Column="4" Width="130" Height="40" Margin="16,0,0,0"
+            <Button Grid.Column="5" Width="130" Height="40" Margin="16,0,0,0"
                     HorizontalAlignment="Right"
                     Style="{ThemeResource AccentButtonStyle}"
                     Content="Publish"

@@ -11,7 +11,14 @@ public sealed class RenderRequest
     /// <summary>The full URL of the Wikipedia article (e.g. https://en.wikipedia.org/wiki/Cuneiform).</summary>
     public string ArticleUrl { get; init; } = "";
 
-    /// <summary>The folder the finished PDF is saved into.</summary>
+    /// <summary>
+    /// The full path (folder + file name) the finished PDF is saved to. When set, this takes
+    /// precedence over <see cref="OutputDirectory"/> / <see cref="OutputFileName"/>; the
+    /// containing folder is created if it does not exist.
+    /// </summary>
+    public string OutputFilePath { get; init; } = "";
+
+    /// <summary>The folder the finished PDF is saved into (ignored when <see cref="OutputFilePath"/> is set).</summary>
     public string OutputDirectory { get; init; } = "";
 
     /// <summary>The page (trim) size for the book.</summary>
@@ -20,7 +27,7 @@ public sealed class RenderRequest
     /// <summary>When false, images are skipped entirely (text-only rendering).</summary>
     public bool IncludeImages { get; init; } = true;
 
-    /// <summary>Optional file name (without folder) for the PDF; derived from the article title when blank.</summary>
+    /// <summary>Optional file name (without folder) for the PDF; derived from the article title when blank (ignored when <see cref="OutputFilePath"/> is set).</summary>
     public string OutputFileName { get; init; } = "";
 }
 

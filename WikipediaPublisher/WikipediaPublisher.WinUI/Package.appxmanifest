@@ -15,7 +15,7 @@
   <mp:PhoneIdentity PhoneProductId="3f6f22c8-58c1-4a0e-9a5e-7d40cc98f612" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>WikipediaPublisher.WinUi</DisplayName>
+    <DisplayName>WikipediaPublisher.WinUI</DisplayName>
     <PublisherDisplayName>jerem</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -34,7 +34,7 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="WikipediaPublisher.WinUi"
+        DisplayName="WikipediaPublisher.WinUI"
         Description="Publish Wikipedia articles as book-designed PDFs"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"

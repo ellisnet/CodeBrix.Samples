@@ -1,6 +1,5 @@
 using CodeBrix.Platform.UI.Hosting;
 using System;
-using WikipediaPublisher.Helpers;
 
 // ReSharper disable CheckNamespace
 
@@ -13,9 +12,8 @@ internal class Program
     {
         App.InitializeLogging();
 
-        //No WebView on the framebuffer head - the app shows the native search-results pane instead
-        AppCapabilities.HasWebView = false;
-
+        //Note: this kiosk/embedded head has no windowing system for native file dialogs, so the
+        //  user types the PDF save path directly into the box (the WebView still works via WPE).
         var host = CodeBrixPlatformHostBuilder.Create()
             .App(() => new App())
             .UseLinuxFrameBuffer()

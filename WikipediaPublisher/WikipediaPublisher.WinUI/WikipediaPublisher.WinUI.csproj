@@ -3,7 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
-    <RootNamespace>WikipediaPublisher.WinUi</RootNamespace>
+    <RootNamespace>WikipediaPublisher.WinUI</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x86;x64;ARM64</Platforms>
     <RuntimeIdentifiers Condition="$([MSBuild]::GetTargetFrameworkVersion('$(TargetFramework)')) &gt;= 8">win-x86;win-x64;win-arm64</RuntimeIdentifiers>
@@ -16,7 +16,7 @@
     <None Remove="Views\MainPage.xaml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Shared\Helpers\AppCapabilities.cs" Link="Helpers\AppCapabilities.cs" />
+    <Compile Include="..\Shared\Helpers\FileDialogHelper.cs" Link="Helpers\FileDialogHelper.cs" />
     <Compile Include="..\Shared\Helpers\HostHelper.cs" Link="Helpers\HostHelper.cs" />
     <Compile Include="..\Shared\ViewModels\MainViewModel.cs" Link="ViewModels\MainViewModel.cs" />
   </ItemGroup>

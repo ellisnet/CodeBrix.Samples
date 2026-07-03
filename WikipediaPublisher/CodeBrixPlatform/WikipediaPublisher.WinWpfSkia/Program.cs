@@ -1,7 +1,6 @@
 using CodeBrix.Platform.UI.Hosting;
 using CodeBrix.Platform.UI.Runtime.Skia.Wpf;
 using System;
-using WikipediaPublisher.Helpers;
 
 // ReSharper disable CheckNamespace
 
@@ -13,9 +12,6 @@ internal class Program
     public static void Main(string[] args)
     {
         App.InitializeLogging();
-
-        //The Skia-on-WPF runtime has built-in WebView2 (Microsoft Edge WebView2) support
-        AppCapabilities.HasWebView = true;
 
         var host = CodeBrixPlatformHostBuilder.Create()
             .App(() => new App())

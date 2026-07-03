@@ -8,7 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Shared\Helpers\AppCapabilities.cs" Link="Helpers\AppCapabilities.cs" />
     <Compile Include="..\Shared\Helpers\HostHelper.cs" Link="Helpers\HostHelper.cs" />
     <Compile Include="..\Shared\ViewModels\MainViewModel.cs" Link="ViewModels\MainViewModel.cs" />
   </ItemGroup>
@@ -24,7 +23,7 @@
   <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.WPF.ApacheLicenseForever" Version="1.0.183.475" />
     <!-- The native Microsoft Edge WebView2 control for WPF -->
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3967.66" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4022.49" />
   </ItemGroup>
 
 </Project>

@@ -24,17 +24,19 @@ The heavy lifting is done by three CodeBrix libraries:
 
 ## What the application does
 
-1. **Search** — type search terms and click *Search*.
-   * On heads with an embedded **WebView** (Win32, Skia-on-WPF, macOS, WinUI, WPF),
-     the real Wikipedia search page loads in the browser pane; browse to the article
-     you want.
-   * On the Linux heads (no WebView yet), the results of a MediaWiki API search are
-     shown in a native list; select an article (or paste any article URL directly).
-2. **Choose** the output folder and a page (trim) size next to the *Publish* button —
+1. **Search** — type search terms and click *Search*. Every head now has an embedded
+   **WebView**, so the real Wikipedia search page loads in the browser pane; browse to
+   the article you want. (The Win32, Skia-on-WPF, macOS, WinUI and WPF heads use the
+   platform's built-in WebView2; the Linux Skia heads get one from the
+   `CodeBrix.Platform.WebView.ApacheLicenseForever` add-in — WPE WebKit.)
+2. **Choose where to save** — click *Select…* next to the *Save PDF to* box to pick the
+   destination file with a native save dialog (or type a full `.pdf` path). *Publish*
+   stays disabled until a save path is set. Pick a page (trim) size too —
    8″ × 10″ coffee table (default), 6″ × 9″ trade book, US Letter, or A4.
 3. **Publish** — the article is fetched, parsed, its images downloaded at print
    resolution (politely rate-limited), and laid out as a book. Progress is reported
-   live; the finished PDF lands in the chosen folder.
+   live; the finished PDF lands at the chosen path. If a file already exists there, you
+   are asked (via a `SimpleDialog`) whether to replace it.
 
 ### The book design
 
@@ -75,7 +77,7 @@ book composition → PDF render. Design details worth knowing about:
 | `WikipediaPublisher.slnx` | Linux, macOS, Windows | RenderArticle + tests + all six CodeBrixPlatform (Skia) heads |
 | `WikipediaPublisher.Windows.slnx` | Windows | Everything above **plus** the native WinUI 3 and WPF heads |
 
-Build with the .NET 10 SDK. The Windows-targeting Skia heads (`WpfSkia`) compile on
+Build with the .NET 10 SDK. The Windows-targeting Skia heads (`WinWpfSkia`) compile on
 Linux/macOS via `EnableWindowsTargeting` (they only *run* on Windows).
 
 ```
@@ -97,26 +99,32 @@ runs on every platform via the `CodeBrix.Platform.*` framework:
 
 | Project | Platform / windowing | WebView |
 | --- | --- | --- |
-| `WikipediaPublisher.Windows` | Windows, native Win32 window | ✔ (Edge WebView2, built into the runtime) |
-| `WikipediaPublisher.WpfSkia` | Windows, Skia hosted in WPF | ✔ (Edge WebView2, built into the runtime) |
-| `WikipediaPublisher.LinuxX11` | Linux desktop, X11 | ✖ (native search list fallback) |
-| `WikipediaPublisher.LinuxWayland` | Linux desktop, native Wayland | ✖ (native search list fallback) |
-| `WikipediaPublisher.LinuxFrameBuffer` | Linux framebuffer (kiosk/embedded) | ✖ (native search list fallback) |
-| `WikipediaPublisher.MacOs` | macOS | ✔ (WKWebView, built into the runtime) |
+| `WikipediaPublisher.Win32Skia` | Windows, native Win32 window | ✔ (Edge WebView2, built into the runtime) |
+| `WikipediaPublisher.WinWpfSkia` | Windows, Skia hosted in WPF | ✔ (Edge WebView2, built into the runtime) |
+| `WikipediaPublisher.LinuxX11` | Linux desktop, X11 | ✔ (WPE WebKit, via the WebView add-in) |
+| `WikipediaPublisher.LinuxWayland` | Linux desktop, native Wayland | ✔ (WPE WebKit, via the WebView add-in) |
+| `WikipediaPublisher.LinuxFrameBuffer` | Linux framebuffer (kiosk/embedded) | ✔ (WPE WebKit, via the WebView add-in) |
+| `WikipediaPublisher.MacOS` | macOS | ✔ (WKWebView, built into the runtime) |
+
+> The Linux Skia heads get their WebView from the
+> `CodeBrix.Platform.WebView.ApacheLicenseForever` add-in, referenced once in
+> `WikipediaPublisher.Core` so every Skia head inherits it. It needs the system WPE WebKit
+> engine at run time: `sudo apt install libwpewebkit-2.0-1 libwpebackend-fdo-1.0-1 libwpe-1.0-1`.
+> The framebuffer head has no windowing system for a native file dialog, so on that head you
+> type the PDF save path directly into the box.
 
 **Native (non-Skia) heads** — same shared `MainViewModel`, native UI stacks, WebView2
 in XAML:
 
 | Project | UI stack | CodeBrix packages used |
 | --- | --- | --- |
-| `WikipediaPublisher.WinUi` | WinUI 3 (Windows App SDK) | `CodeBrix.Platform.WinUI.ApacheLicenseForever` |
+| `WikipediaPublisher.WinUI` | WinUI 3 (Windows App SDK) | `CodeBrix.Platform.WinUI.ApacheLicenseForever` |
 | `WikipediaPublisher.Wpf` | WPF + `Microsoft.Web.WebView2` | `CodeBrix.Platform.WPF.ApacheLicenseForever` |
 
-Each head sets `AppCapabilities.HasWebView` at startup; the shared page creates the
-`WebView2` control in code only when the head supports it, and shows the native
-search-results pane otherwise. All heads share the **CodeBrix "Simple" MVVM toolkit**
-(`SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`, …): one `MainViewModel`
-drives all eight heads.
+Every head now embeds a `WebView2` directly in its page. All heads share the **CodeBrix
+"Simple" MVVM toolkit** (`SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`, …):
+one `MainViewModel` drives all eight heads, including the *Save PDF to* path, the *Select…*
+file dialog (wired per-head through `IFileSaveBridge`), and the overwrite confirmation.
 
 ## Repository layout
 
@@ -129,7 +137,7 @@ WikipediaPublisher.Windows.slnx      Windows-only solution (adds WinUI + WPF hea
 │   ├─ WikipediaPublisher.Core/      Shared app library + CodeBrix.Platform packages
 │   └─ WikipediaPublisher.…/         The six platform heads (see above)
 │
-├─ WikipediaPublisher.WinUi/         Native WinUI 3 head (Windows solution only)
+├─ WikipediaPublisher.WinUI/         Native WinUI 3 head (Windows solution only)
 ├─ WikipediaPublisher.Wpf/           Native WPF head (Windows solution only)
 │
 ├─ Shared/                           File-linked view models, helpers, test fixture

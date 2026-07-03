@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using WikipediaPublisher.Helpers;
 using WikipediaPublisher.RenderArticle.Models;
 using WikipediaPublisher.RenderArticle.Services;
 
@@ -25,10 +24,27 @@ public interface IWebViewBridge
     void SetCurrentBrowserUrl(string url);
 }
 
+/// <summary>
+/// Lets the hosting page give the view model a native "Save PDF as…" file dialog. Each head
+/// wires this up with the file dialog appropriate to its UI stack (the CodeBrix.Platform
+/// <c>FileSavePicker</c> on the Skia heads and native WinUI, and <c>SaveFileDialog</c> on WPF).
+/// </summary>
+public interface IFileSaveBridge
+{
+    /// <summary>
+    /// Shows a "save PDF" dialog seeded with <paramref name="suggestedFileName"/> and returns the
+    /// full path the user chose, or <c>null</c> if they cancelled. The head leaves this null when
+    /// it has no file dialog (e.g. the Linux framebuffer head), in which case the user types the
+    /// path directly into the box.
+    /// Signature: <c>Func&lt;suggestedFileName, Task&lt;chosenPathOrNull&gt;&gt;</c>.
+    /// </summary>
+    Func<string, Task<string>> PickSavePdfPathAsync { get; set; }
+}
+
 #if HAS_CODEBRIX
 [Microsoft.UI.Xaml.Data.Bindable]
 #endif
-public class MainViewModel : SimpleViewModel, IWebViewBridge
+public class MainViewModel : SimpleViewModel, IWebViewBridge, IFileSaveBridge
 {
     public const string HomeUrl = "https://en.wikipedia.org/wiki/Main_Page";
 
@@ -43,7 +59,6 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge
     ];
 
     private IArticleRenderService _renderSvc;
-    private List<ArticleSearchResult> _searchResults = [];
 
     public MainViewModel()
     {
@@ -62,23 +77,35 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge
             base.NotifyPropertyChanged(nameof(PageSizeNames));
             base.NotifyPropertyChanged(nameof(SelectedPageSizeName));
 
-            _outputFolder = GetDefaultOutputFolder();
-            base.NotifyPropertyChanged(nameof(OutputFolder));
-
-            StatusText = AppCapabilities.HasWebView
-                ? "Search for an article, browse to it, then click Publish."
-                : "Search for an article, pick it from the results, then click Publish.";
+            StatusText = "Search for an article, browse to it, choose where to save the PDF, then click Publish.";
         }
     }
 
-    private static string GetDefaultOutputFolder()
+    /// <summary>
+    /// A sensible default PDF file name for the "Save PDF as…" dialog: the current article's
+    /// title when one is selected, otherwise a generic name.
+    /// </summary>
+    private string GetSuggestedFileName()
     {
-        var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        if (string.IsNullOrWhiteSpace(documents))
+        var name = "WikipediaPublisher";
+
+        if (Uri.TryCreate((ArticleUrl ?? "").Trim(), UriKind.Absolute, out var uri))
         {
-            documents = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            const string wikiPathPrefix = "/wiki/";
+            if (uri.AbsolutePath.StartsWith(wikiPathPrefix, StringComparison.Ordinal))
+            {
+                var title = Uri.UnescapeDataString(uri.AbsolutePath[wikiPathPrefix.Length..])
+                    .Replace('_', ' ')
+                    .Trim();
+                if (title.Length > 0)
+                {
+                    var invalid = Path.GetInvalidFileNameChars();
+                    name = new string(title.Select(c => invalid.Contains(c) ? '_' : c).ToArray()).Trim();
+                }
+            }
         }
-        return Path.Combine(documents, "WikipediaPublisher");
+
+        return $"{name}.pdf";
     }
 
     #region | Bindable properties |
@@ -99,13 +126,16 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge
         set => SetProperty(ref _articleUrl, value ?? string.Empty);
     }
 
-    private string _outputFolder = string.Empty;
+    private string _outputFilePath = string.Empty;
     [AffectsCommands(nameof(PublishCommand))]
-    public string OutputFolder
+    public string OutputFilePath
     {
-        get => _outputFolder;
-        set => SetProperty(ref _outputFolder, value ?? string.Empty);
+        get => _outputFilePath;
+        set => SetProperty(ref _outputFilePath, value ?? string.Empty);
     }
+
+    /// <summary>Set by the hosting head (see <see cref="IFileSaveBridge"/>); null on heads with no file dialog.</summary>
+    public Func<string, Task<string>> PickSavePdfPathAsync { get; set; }
 
     public List<string> PageSizeNames { get; } = new();
 
@@ -116,28 +146,8 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge
         set => SetProperty(ref _selectedPageSizeName, value ?? string.Empty);
     }
 
-    //ObservableCollection so the results ListView refreshes as results arrive
-    public System.Collections.ObjectModel.ObservableCollection<string> SearchResultItems { get; } = new();
-
-    private string _selectedSearchResultItem = string.Empty;
-    public string SelectedSearchResultItem
-    {
-        get => _selectedSearchResultItem;
-        set
-        {
-            SetProperty(ref _selectedSearchResultItem, value ?? string.Empty);
-
-            var index = SearchResultItems.IndexOf(_selectedSearchResultItem);
-            if (index >= 0 && index < _searchResults.Count)
-            {
-                ArticleUrl = _searchResults[index].ArticleUrl;
-                StatusText = $"Selected: {_searchResults[index].Title}";
-            }
-        }
-    }
-
     private bool _isBusy;
-    [AffectsCommands(nameof(SearchCommand), nameof(PublishCommand))]
+    [AffectsCommands(nameof(SearchCommand), nameof(PublishCommand), nameof(SelectOutputFileCommand))]
     public bool IsBusy
     {
         get => _isBusy;
@@ -158,8 +168,6 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge
         set => SetProperty(ref _progressValue, value);
     }
 
-    public bool HasWebView => AppCapabilities.HasWebView;
-
     #endregion
 
     #region | Commands and their implementations |
@@ -172,52 +180,64 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge
 
     private bool CanSearch() => (!IsBusy) && (!string.IsNullOrWhiteSpace(SearchTerms));
 
-    private async Task DoSearch()
+    private Task DoSearch()
     {
-        if (!CanSearch()) { return; }
-
-        if (AppCapabilities.HasWebView && NavigateToUrl != null)
+        //Every head has an embedded WebView: browse the real Wikipedia search page; the user
+        //  picks an article by navigating to it, and Publish uses whatever page is displayed.
+        if (CanSearch() && NavigateToUrl != null)
         {
-            //Browse the real Wikipedia search page; the user picks an article by
-            //  navigating to it, and Publish uses whatever page is displayed
             var searchUrl =
                 $"https://{WikiHost}/w/index.php?search={Uri.EscapeDataString(SearchTerms.Trim())}";
             InvokeOnMainThread(() => NavigateToUrl(searchUrl));
             StatusText = "Browse to the article you want, then click Publish.";
+        }
+
+        return Task.CompletedTask;
+    }
+
+    #endregion
+
+    #region SelectOutputFileCommand
+
+    private SimpleCommand _selectOutputFileCommand;
+    public SimpleCommand SelectOutputFileCommand =>
+        (_selectOutputFileCommand ??= new SimpleCommand(CanSelectOutputFile, DoSelectOutputFile));
+
+    private bool CanSelectOutputFile() => !IsBusy;
+
+    private async Task DoSelectOutputFile()
+    {
+        if (!CanSelectOutputFile()) { return; }
+
+        if (PickSavePdfPathAsync == null)
+        {
+            //No native file dialog on this head (e.g. the Linux framebuffer head) — the user
+            //  types the destination path directly into the box instead.
+            await ShowInfo(
+                "This head has no file dialog. Type the full path (including the .pdf file name) " +
+                "for the PDF into the “Save PDF to” box.");
             return;
         }
 
-        //No WebView on this head: use the MediaWiki search API and a results list
         try
         {
-            IsBusy = true;
-            StatusText = $"Searching for “{SearchTerms.Trim()}”…";
-
-            var results = await _renderSvc.SearchArticlesAsync(SearchTerms.Trim());
-
-            InvokeOnMainThread(() =>
+            var chosenPath = await PickSavePdfPathAsync(GetSuggestedFileName());
+            if (!string.IsNullOrWhiteSpace(chosenPath))
             {
-                _searchResults = results.ToList();
-                SearchResultItems.Clear();
-                foreach (var result in _searchResults)
-                {
-                    var snippet = string.IsNullOrWhiteSpace(result.Snippet)
-                        ? ""
-                        : $" — {result.Snippet}";
-                    SearchResultItems.Add($"{result.Title}{snippet}");
-                }
-                StatusText = _searchResults.Count == 0
-                    ? "No articles found — try different search terms."
-                    : $"Found {_searchResults.Count} articles — select one, then click Publish.";
-            });
+                OutputFilePath = chosenPath.Trim();
+                StatusText = $"Will save to: {OutputFilePath}";
+            }
+        }
+        catch (NotSupportedException)
+        {
+            //Some heads (Linux framebuffer) register no picker — there is no window to host a dialog
+            await ShowInfo(
+                "File dialogs are not supported on this head. Type the full path (including the " +
+                ".pdf file name) for the PDF into the “Save PDF to” box.");
         }
         catch (Exception e)
         {
-            await ShowError($"Error while searching: {e.Message}");
-        }
-        finally
-        {
-            IsBusy = false;
+            await ShowError($"Could not open the file dialog: {e.Message}");
         }
     }
 
@@ -231,12 +251,27 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge
 
     private bool CanPublish() =>
         (!IsBusy)
-        && (!string.IsNullOrWhiteSpace(OutputFolder))
+        && (!string.IsNullOrWhiteSpace(OutputFilePath))
         && IsPublishableArticleUrl(ArticleUrl);
 
     private async Task DoPublish()
     {
         if (!CanPublish()) { return; }
+
+        var outputPath = OutputFilePath.Trim();
+
+        //Confirm before clobbering an existing file (requirement: prompt via SimpleDialog)
+        if (File.Exists(outputPath))
+        {
+            var replace = await ConfirmDialog(
+                $"A file already exists at:\n{outputPath}\n\nDo you want to replace it?",
+                "Replace existing file?");
+            if (!replace)
+            {
+                StatusText = "Publishing cancelled — the existing file was kept.";
+                return;
+            }
+        }
 
         try
         {
@@ -250,7 +285,7 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge
             var request = new RenderRequest
             {
                 ArticleUrl = ArticleUrl.Trim(),
-                OutputDirectory = OutputFolder.Trim(),
+                OutputFilePath = outputPath,
                 PageSize = pageSize
             };
 
@@ -272,7 +307,7 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge
         catch (Exception e)
         {
             StatusText = "Publishing failed.";
-            await ShowError($"Error while publishing: {e.Message}");
+            await ShowError($"Error while publishing: {e.Message}\n\nArticle URL: {ArticleUrl}");
         }
         finally
         {
@@ -327,9 +362,12 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge
         _renderSvc = null;
         _searchCommand?.Dispose();
         _searchCommand = null;
+        _selectOutputFileCommand?.Dispose();
+        _selectOutputFileCommand = null;
         _publishCommand?.Dispose();
         _publishCommand = null;
         NavigateToUrl = null;
+        PickSavePdfPathAsync = null;
         base.Dispose();
     }
 
