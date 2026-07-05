@@ -13,18 +13,17 @@
     <None Remove="**\*.xaml" />
   </ItemGroup>
 
-  <!-- Shared UI files (linked from WikipediaPublisher.UI) -->
-  <Import Project="..\WikipediaPublisher.UI\WikipediaPublisher.UI.projitems" Label="Shared" />
+  <!-- Shared UI files (linked from PainDiagram.UI) -->
+  <Import Project="..\PainDiagram.UI\PainDiagram.UI.projitems" Label="Shared" />
   <ItemGroup>
-    <ProjectReference Include="..\WikipediaPublisher.Core\WikipediaPublisher.Core.csproj" />
+    <ProjectReference Include="..\PainDiagram.Core\PainDiagram.Core.csproj" />
   </ItemGroup>
 
   <!--
-    Platform-specific package: native Wayland Skia backend for Linux desktops. Requires a running Wayland compositor; it never falls back to X11/XWayland (use WikipediaPublisher.LinuxX11 for X11/XWayland environments).
-    All other packages come from WikipediaPublisher.Core.
+    Platform-specific package: native Wayland backend for Linux desktops (requires a Wayland compositor).
+    All other packages come from PainDiagram.Core.
   -->
   <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.Runtime.Skia.Wayland.ApacheLicenseForever" Version="1.0.186.414" />
   </ItemGroup>
-
 </Project>

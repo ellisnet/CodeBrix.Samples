@@ -1,10 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!--
+      The WPF-hosted head must target net10.0-windows (the runtime package flows a
+      Microsoft.WindowsDesktop.App.WPF FrameworkReference). Do NOT set <UseWPF> here -
+      that would make the WPF build targets grab the CodeBrix.Platform (Uno-style) XAML
+      Page items. EnableWindowsTargeting lets this head compile inside the cross-platform
+      solution on Linux and macOS build hosts.
+    -->
     <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>Exe</OutputType>
-
-    <!-- Allow this Windows-targeting head to compile (not run) on Linux/macOS dev
-         machines, so it can live in the cross-platform WikipediaPublisher.slnx -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
 
     <!-- CodeBrix.Platform needs this define for its internal conditional compilation -->
@@ -17,18 +21,17 @@
     <None Remove="**\*.xaml" />
   </ItemGroup>
 
-  <!-- Shared UI files (linked from WikipediaPublisher.UI) -->
-  <Import Project="..\WikipediaPublisher.UI\WikipediaPublisher.UI.projitems" Label="Shared" />
+  <!-- Shared UI files (linked from PainDiagram.UI) -->
+  <Import Project="..\PainDiagram.UI\PainDiagram.UI.projitems" Label="Shared" />
   <ItemGroup>
-    <ProjectReference Include="..\WikipediaPublisher.Core\WikipediaPublisher.Core.csproj" />
+    <ProjectReference Include="..\PainDiagram.Core\PainDiagram.Core.csproj" />
   </ItemGroup>
 
   <!--
-    Platform-specific package: Skia-on-WPF backend for Windows desktops. The CodeBrix WPF host loads the WindowsDesktop framework at runtime; do NOT set <UseWPF> here - that would make WPF's build targets treat the Uno-style .xaml Page items as WPF XAML.
-    All other packages come from WikipediaPublisher.Core.
+    Platform-specific package: Skia backend hosted inside a WPF application context.
+    All other packages come from PainDiagram.Core.
   -->
   <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.Runtime.Skia.Wpf.ApacheLicenseForever" Version="1.0.186.414" />
   </ItemGroup>
-
 </Project>

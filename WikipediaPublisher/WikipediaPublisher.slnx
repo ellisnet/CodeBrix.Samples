@@ -4,11 +4,6 @@
        on Linux, macOS and Windows. The native WinUI 3 and WPF heads live only in
        WikipediaPublisher.Windows.slnx, because they require Windows-host-only
        build tooling (WinAppSDK XAML compiler / WPF targets). -->
-  <Folder Name="/Solution Items/">
-    <File Path=".gitignore" />
-    <File Path="LICENSE" />
-    <File Path="README.md" />
-  </Folder>
   <Folder Name="/CodeBrixPlatform/">
     <Project Path="CodeBrixPlatform/WikipediaPublisher.UI/WikipediaPublisher.UI.shproj" />
     <Project Path="CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.Core.csproj" />

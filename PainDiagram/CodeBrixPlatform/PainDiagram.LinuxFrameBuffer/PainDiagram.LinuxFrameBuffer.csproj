@@ -13,18 +13,17 @@
     <None Remove="**\*.xaml" />
   </ItemGroup>
 
-  <!-- Shared UI files (linked from WikipediaPublisher.UI) -->
-  <Import Project="..\WikipediaPublisher.UI\WikipediaPublisher.UI.projitems" Label="Shared" />
+  <!-- Shared UI files (linked from PainDiagram.UI) -->
+  <Import Project="..\PainDiagram.UI\PainDiagram.UI.projitems" Label="Shared" />
   <ItemGroup>
-    <ProjectReference Include="..\WikipediaPublisher.Core\WikipediaPublisher.Core.csproj" />
+    <ProjectReference Include="..\PainDiagram.Core\PainDiagram.Core.csproj" />
   </ItemGroup>
 
   <!--
-    Platform-specific package: Skia FrameBuffer backend for Linux. Suitable for embedded/kiosk systems without X11.
-    All other packages come from WikipediaPublisher.Core.
+    Platform-specific package: Linux framebuffer backend for embedded/kiosk devices with no desktop.
+    All other packages come from PainDiagram.Core.
   -->
   <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.Runtime.Skia.FrameBuffer.ApacheLicenseForever" Version="1.0.186.414" />
   </ItemGroup>
-
 </Project>
