@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
 
@@ -25,7 +25,7 @@
          The Windows, Skia-on-WPF and macOS runtimes already have WebView2 built in, so the
          add-in is inert there. The Linux heads need the system WPE WebKit engine at run time:
          sudo apt install libwpewebkit-2.0-1 libwpebackend-fdo-1.0-1 libwpe-1.0-1 -->
-    <PackageReference Include="CodeBrix.Platform.WebView.ApacheLicenseForever" Version="1.0.186.415" />
+    <PackageReference Include="CodeBrix.Platform.WebView.ApacheLicenseForever" Version="1.0.186.416" />
 
     <!-- Bundled Open Sans font -->
     <PackageReference Include="CodeBrix.Platform.Fonts.OpenSans.ApacheLicenseForever" Version="1.0.181.655" />
