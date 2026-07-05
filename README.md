@@ -137,13 +137,13 @@ everywhere.
 | Package | Version | Role |
 | --- | --- | --- |
 | `CodeBrix.Imaging.Drawing.ApacheLicenseForever` | 1.0.185.1134 | The star of the sample: `DrawingSession`, named highlighter layers, live rendering, PNG export |
-| `CodeBrix.Platform.ApacheLicenseForever` | 1.0.186.414 | The cross-platform XAML/UI framework and the Simple MVVM toolkit |
+| `CodeBrix.Platform.ApacheLicenseForever` | 1.0.186.1273 | The cross-platform XAML/UI framework and the Simple MVVM toolkit |
 | `CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever` | 4.148.0 | `SKXamlCanvas`, the SkiaSharp drawing surface hosted in XAML |
 | `CodeBrix.Platform.Fonts.OpenSans.ApacheLicenseForever` | 1.0.181.655 | Bundled Open Sans font for the UI |
 
 Each Skia head then adds exactly one platform runtime package —
 `CodeBrix.Platform.Runtime.Skia.{Win32,Wpf,X11,Wayland,FrameBuffer,MacOS}.ApacheLicenseForever`
-(1.0.186.414) — and the native heads add `CodeBrix.Platform.WinUI` / `CodeBrix.Platform.WPF`
+(1.0.186.1273) — and the native heads add `CodeBrix.Platform.WinUI` / `CodeBrix.Platform.WPF`
 (1.0.183.475) plus the matching `SkiaSharp.Views.*` package.
 
 Inside `MainViewModel`, the drawing session is created and configured up front:
@@ -315,7 +315,7 @@ throughout:
 | `CodeBrix.Imaging.ApacheLicenseForever` | 1.0.164.1087 | Print-resolution image processing (download, resize by aspect ratio, format normalization) |
 
 The UI side (`WikipediaPublisher.Core` + heads) uses the same `CodeBrix.Platform.*`
-family as PainDiagram — `CodeBrix.Platform` (1.0.186.414), the six
+family as PainDiagram — `CodeBrix.Platform` (1.0.186.1273), the six
 `CodeBrix.Platform.Runtime.Skia.*` backends, `CodeBrix.Platform.WebView` for the Linux
 WebView, `CodeBrix.Platform.Fonts.OpenSans`, and `CodeBrix.Platform.WinUI` /
 `CodeBrix.Platform.WPF` (1.0.183.475) for the native heads — all driven by the Simple MVVM
