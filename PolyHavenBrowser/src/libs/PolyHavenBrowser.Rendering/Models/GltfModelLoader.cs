@@ -65,6 +65,11 @@ public sealed class GltfModelLoader : IModelLoader
             throw new InvalidDataException("The glTF model has no scene.");
         }
 
+        // glTF is a tree of nodes, each with a local transform; a mesh's final world position is
+        // its node's accumulated transform. We flatten the tree (Walk) and bake each node's world
+        // matrix into its vertices, so the renderer can draw everything with one shared MVP (no
+        // per-node transforms). While baking, we accumulate the bounding box (for camera framing)
+        // and the vertex centroid (for the orbit pivot).
         foreach (var node in Walk(scene.VisualChildren))
         {
             if (node.Mesh is null)

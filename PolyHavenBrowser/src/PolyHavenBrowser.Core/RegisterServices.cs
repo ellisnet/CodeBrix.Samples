@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
+using PolyHavenBrowser.Display;
 using PolyHavenBrowser.PolyHavenApiClient;
 using PolyHavenBrowser.Services;
 
@@ -23,6 +24,11 @@ public static class RegisterServices
         });
 
         services.AddSingleton<SampleAssetService>();
+
+        //The 3D rendering backend. Swap this single registration to change the graphics API
+        //for the whole app (e.g. a future Vulkan engine); nothing else needs to change.
+        services.AddSingleton<IModelRenderEngineFactory, OpenGlModelRenderEngineFactory>();
+
         return services;
     }
 }

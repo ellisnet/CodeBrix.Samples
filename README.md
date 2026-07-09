@@ -19,6 +19,7 @@ is self-contained and can be opened and built on its own.
 | Sample | What it is | Headline CodeBrix libraries |
 | --- | --- | --- |
 | [PainDiagram](#paindiagram) | Interactive body-map pain/symptom annotator with highlighter-style drawing | `CodeBrix.Imaging.Drawing`, `CodeBrix.Platform.*` |
+| [PolyHavenBrowser](#polyhavenbrowser) | Browses free Poly Haven assets and renders 3D models / textures / HDRIs with OpenGL onto a Skia canvas in the UI | `CodeBrix.Platform.OpenGL`, `CodeBrix.Imaging`, `CodeBrix.Platform.*` |
 | [WikipediaPublisher](#wikipediapublisher) | Turns any Wikipedia article into a book-designed, print-ready PDF | `CodeBrix.PdfDocCreate`, `CodeBrix.MarkupParse`, `CodeBrix.Imaging`, `CodeBrix.Platform.*` |
 
 Sections below are in alphabetical order.
@@ -137,13 +138,13 @@ everywhere.
 | Package | Version | Role |
 | --- | --- | --- |
 | `CodeBrix.Imaging.Drawing.ApacheLicenseForever` | 1.0.185.1134 | The star of the sample: `DrawingSession`, named highlighter layers, live rendering, PNG export |
-| `CodeBrix.Platform.ApacheLicenseForever` | 1.0.186.1273 | The cross-platform XAML/UI framework and the Simple MVVM toolkit |
+| `CodeBrix.Platform.ApacheLicenseForever` | 1.0.189.446 | The cross-platform XAML/UI framework and the Simple MVVM toolkit |
 | `CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever` | 4.148.0 | `SKXamlCanvas`, the SkiaSharp drawing surface hosted in XAML |
 | `CodeBrix.Platform.Fonts.OpenSans.ApacheLicenseForever` | 1.0.181.655 | Bundled Open Sans font for the UI |
 
 Each Skia head then adds exactly one platform runtime package —
 `CodeBrix.Platform.Runtime.Skia.{Win32,Wpf,X11,Wayland,FrameBuffer,MacOS}.ApacheLicenseForever`
-(1.0.186.1273) — and the native heads add `CodeBrix.Platform.WinUI` / `CodeBrix.Platform.WPF`
+(1.0.189.446) — and the native heads add `CodeBrix.Platform.WinUI` / `CodeBrix.Platform.WPF`
 (1.0.183.475) plus the matching `SkiaSharp.Views.*` package.
 
 Inside `MainViewModel`, the drawing session is created and configured up front:
@@ -192,6 +193,177 @@ CodeBrix "Simple" MVVM toolkit.
   the view model forwards them so each head simply invalidates its canvas — no per-frame
   polling, and (per the library's design notes) no per-frame background rescaling, which
   is what keeps drawing latency low.
+
+---
+
+## PolyHavenBrowser
+
+### What it is
+
+**PolyHavenBrowser** downloads free CC0 assets from [Poly Haven](https://polyhaven.com) —
+PBR textures, HDRI environments, and 3D models — and displays each one interactively. It is
+the reference application for **rendering real-time 3D content inside an ordinary
+CodeBrix.Platform view**: a model is drawn with **OpenGL ES (via EGL)** into an off-screen
+framebuffer, the pixels are read back and composited onto a **Skia canvas** (`SKXamlCanvas`)
+that lives in the app's normal XAML, and the user can orbit/zoom it — all powered by the
+**`CodeBrix.Platform.OpenGL`** package. It also ships two self-contained side libraries (a
+Poly Haven REST client and a headless rendering library), so it doubles as the reference for
+the CodeBrix "application with extra library assemblies" project layout.
+
+> 📄 **Want to understand (or copy) the 3D rendering?** Start with
+> **[`PolyHavenBrowser/src/PolyHavenBrowser.Core/Display/RENDERING-PIPELINE.md`](PolyHavenBrowser/src/PolyHavenBrowser.Core/Display/RENDERING-PIPELINE.md)** —
+> a self-contained architecture guide (pipeline diagram, file map, threading/orientation
+> gotchas, and step-by-step notes on swapping OpenGL for another backend such as Vulkan).
+
+Three display modes share one canvas, each showing off a different rendering path:
+
+| Button | Shows | How it's rendered |
+| --- | --- | --- |
+| **Sample Texture** | A texture's diffuse map | Wrapped on a lit, orbitable **cube** over a darkened backdrop of the same texture — GPU (OpenGL) |
+| **Sample HDRI** | An HDRI environment | An interactive **drag-to-look equirectangular panorama** — CPU ray-tracer → `SKBitmap` |
+| **Sample Model** | A glTF **3D model** | A real model rendered live with orbit + zoom — GPU (OpenGL) |
+
+### What it does / how to use it
+
+1. On startup the app downloads a representative texture (Poly Haven's *Red Brick*) through
+   the API client and shows it wrapped on the cube. The three buttons across the top switch
+   modes; the active one is highlighted.
+2. **Sample HDRI** downloads and shows the *Small Cathedral* environment; **Sample Model**
+   downloads and shows the *Vintage Radio Transceiver* (a glTF plus its texture/`.bin`
+   side-car files). A progress bar shows while an asset is being fetched.
+3. **Drag** to rotate the cube/model or look around the HDRI; **scroll** to zoom. Downloaded
+   assets are cached under `LocalApplicationData/PolyHavenBrowser/cache/…`, so after the first
+   run each sample loads offline.
+
+### Solutions — what to open where
+
+| Solution | Use on | Contains |
+| --- | --- | --- |
+| `PolyHavenBrowser.slnx` | Linux, macOS, Windows | The shared UI/Core, the six CodeBrix.Platform (Skia) heads, the two side libraries, and their test projects |
+
+```
+dotnet build PolyHavenBrowser.slnx
+dotnet test  PolyHavenBrowser.slnx
+dotnet run --project src/PolyHavenBrowser.LinuxX11
+```
+
+Unlike PainDiagram and WikipediaPublisher, PolyHavenBrowser is a **pure CodeBrix.Platform**
+app — it has no native WinUI 3 / WPF heads, so there is a single cross-platform solution and
+no `.Windows.slnx`. It is generated by CodeBrix.Develop's *File → New → CodeBrix.Platform
+Application* experience, so its layout is exactly what that scaffolder produces.
+
+### The six heads
+
+One shared `MainViewModel` (in `PolyHavenBrowser.Core`) drives all of them, and they share
+the XAML UI in `PolyHavenBrowser.UI`:
+
+| Project | Platform / windowing |
+| --- | --- |
+| `src/PolyHavenBrowser.Win32Skia` | Windows, native Win32 window |
+| `src/PolyHavenBrowser.WinWpfSkia` | Windows, Skia hosted in WPF |
+| `src/PolyHavenBrowser.LinuxX11` | Linux desktop, X11 |
+| `src/PolyHavenBrowser.LinuxWayland` | Linux desktop, native Wayland |
+| `src/PolyHavenBrowser.LinuxFrameBuffer` | Linux framebuffer (kiosk/embedded) |
+| `src/PolyHavenBrowser.MacOS` | macOS |
+
+Each head adds exactly one runtime package —
+`CodeBrix.Platform.Runtime.Skia.{Win32,Wpf,X11,Wayland,FrameBuffer,MacOS}.ApacheLicenseForever`
+(1.0.189.446). The Windows-targeting Skia heads compile on Linux/macOS but only *run* on
+Windows; the OpenGL 3D rendering works on every head that provides a GL/EGL stack (desktop GL
+via GLX/WGL, GLES via ANGLE / Wayland EGL / the framebuffer wrapper).
+
+### How the projects/files/folders are organized
+
+```
+PolyHavenBrowser/
+├─ PolyHavenBrowser.slnx                     Cross-platform solution (open anywhere)
+│
+├─ src/
+│   ├─ PolyHavenBrowser.UI/                  Shared XAML UI as a shared project (.shproj)
+│   │   ├─ App.xaml(.cs)                     App bootstrap + SimpleServiceResolver DI setup
+│   │   └─ Views/MainPage.xaml(.cs)          The three buttons + the SKXamlCanvas + input
+│   ├─ PolyHavenBrowser.Core/                Shared app library (view model, DI, and the
+│   │   ├─ ViewModels/MainViewModel.cs        3D→Skia display layer)
+│   │   ├─ Display/                          ★ The reusable "3D in a CodeBrix view" folder
+│   │   │   ├─ RENDERING-PIPELINE.md          Architecture doc — start here to copy this
+│   │   │   ├─ IModelRenderEngine.cs          The swappable graphics-backend seam
+│   │   │   ├─ OpenGlModelRenderEngine.cs     OpenGL/EGL implementation (FBO + readback)
+│   │   │   ├─ EglOffscreenGlContext.cs       Off-screen EGL/GLES context (create/make-current)
+│   │   │   ├─ ModelScenePainter.cs           API-agnostic: input + Skia compositing
+│   │   │   ├─ PanoramaScenePainter.cs        HDRI panorama (CPU → SKBitmap)
+│   │   │   └─ CubeMeshBuilder.cs             Texture → a cube LoadedModel
+│   │   ├─ Services/SampleAssetService.cs     Picks, downloads, and caches the sample assets
+│   │   └─ PolyHavenBrowser.{six heads}/      (in src/) The six thin platform heads
+│   │
+│   └─ libs/                                 The two side libraries
+│       ├─ PolyHavenBrowser.PolyHavenApiClient/   Typed REST client for api.polyhaven.com
+│       └─ PolyHavenBrowser.Rendering/            Headless model loading + GL/CPU renderers
+│
+└─ tests/
+    └─ libs/
+        ├─ PolyHavenBrowser.PolyHavenApiClient.Tests/
+        └─ PolyHavenBrowser.Rendering.Tests/      xUnit v3 + SilverAssertions (+ real headless GL)
+```
+
+The two `src/libs` assemblies each get a matching `tests/libs/*.Tests` project — the standard
+CodeBrix.Platform-application layout for a sample that carries extra libraries. The heavy
+lifting lives in `PolyHavenBrowser.Rendering` (glTF loading, the GL model renderer, the CPU
+panorama renderer, image/EXR/HDR decoding) so it is fully decoupled from any UI and is unit
+tested on its own; `PolyHavenBrowser.Core` sits on top of both libraries and adds only the
+3D→Skia bridge and view model.
+
+### How it uses the CodeBrix libraries
+
+`PolyHavenBrowser.Rendering.csproj` (the headless rendering library):
+
+| Package | Version | Role |
+| --- | --- | --- |
+| `CodeBrix.Platform.OpenGL.MitLicenseForever` | 1.0.165.1357 | The OpenGL / OpenGL ES binding used by the GL model renderer. Notably it depends on **no other `CodeBrix.Platform.*` package**, so a "side" library can reference it directly without dragging in the whole UI framework |
+| `CodeBrix.Imaging.ApacheLicenseForever` | 1.0.164.1087 | Decodes downloaded texture images (JPEG/PNG/WebP) to RGBA |
+
+(plus third-party `SharpGLTF.Runtime`, `TinyEXR.NET`, and `SkiaSharp` for glTF parsing, EXR
+decoding, and bitmaps).
+
+`PolyHavenBrowser.Core.csproj` (the UI-side app library):
+
+| Package | Version | Role |
+| --- | --- | --- |
+| `CodeBrix.Platform.ApacheLicenseForever` | 1.0.189.446 | The cross-platform XAML/UI framework and the Simple MVVM toolkit (`SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`) |
+| `CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever` | 4.148.0 | `SKXamlCanvas`, the SkiaSharp surface the 3D frame is composited onto |
+| `CodeBrix.Platform.OpenGL.MitLicenseForever` | 1.0.165.1357 | Referenced directly by the `Display/` layer for the off-screen GL rendering |
+| `CodeBrix.Platform.Fonts.Roboto.OflLicenseForever` | 1.0.181.661 | Bundled Roboto font for the UI |
+
+`PolyHavenBrowser.PolyHavenApiClient` is a plain typed REST client (only `Microsoft.Extensions.Http`),
+registered through `SimpleServiceResolver` at startup and resolved in the view model.
+
+### Why it's noteworthy for a CodeBrix developer
+
+- **Real-time 3D inside a normal app view.** This is the clearest example of taking a 3D model
+  off the internet and rendering it, live and interactively, into the same Skia canvas any
+  CodeBrix.Platform app draws to — OpenGL renders off-screen, the pixels are read back and
+  composited onto `SKXamlCanvas`. The whole recipe (and its two easy-to-get-wrong details —
+  the GL context must live on the render thread, and the model-view-projection matrix must not
+  be double-transposed) is documented in
+  **[`Display/RENDERING-PIPELINE.md`](PolyHavenBrowser/src/PolyHavenBrowser.Core/Display/RENDERING-PIPELINE.md)**.
+- **A swappable rendering backend.** The graphics API sits behind one interface,
+  `IModelRenderEngine`, chosen via `IModelRenderEngineFactory` in DI. OpenGL/EGL is the only
+  backend today, but a Vulkan engine can implement the same interface and be swapped in with a
+  one-line registration change — nothing above the seam (painter, camera, loaders, UI) moves.
+- **`CodeBrix.Platform.OpenGL` with no framework baggage.** Because the OpenGL package depends
+  on no other `CodeBrix.Platform.*` package, the headless rendering library can reference it
+  directly, keeping the dependency graph clean and the renderer usable with no UI at all.
+- **The "application + extra libraries" project layout.** It shows the exact folder shape the
+  CodeBrix.Platform-application scaffolder produces for a sample with side libraries:
+  `src/libs/*` for the libraries and a mirrored `tests/libs/*.Tests` for each.
+- **Genuinely headless GL tests.** `PolyHavenBrowser.Rendering.Tests` spins up a real
+  (llvmpipe or GPU) OpenGL ES context via Mesa's surfaceless EGL platform and renders to a
+  framebuffer it reads back and asserts on — including a depth-ordering regression test that
+  catches the flatten-the-model MVP bug. It's a template for testing GPU code on CI with no
+  window system.
+- **One renderer, two subjects.** The lit textured cube and the glTF model are drawn by the
+  *same* `GlModelSceneRenderer`: the texture case simply builds a cube `LoadedModel`
+  (`CubeMeshBuilder`) and feeds it in, so adding a new 3D subject means producing a
+  `LoadedModel`, not writing new GL.
 
 ---
 
@@ -315,7 +487,7 @@ throughout:
 | `CodeBrix.Imaging.ApacheLicenseForever` | 1.0.164.1087 | Print-resolution image processing (download, resize by aspect ratio, format normalization) |
 
 The UI side (`WikipediaPublisher.Core` + heads) uses the same `CodeBrix.Platform.*`
-family as PainDiagram — `CodeBrix.Platform` (1.0.186.1273), the six
+family as PainDiagram — `CodeBrix.Platform` (1.0.189.446), the six
 `CodeBrix.Platform.Runtime.Skia.*` backends, `CodeBrix.Platform.WebView` for the Linux
 WebView, `CodeBrix.Platform.Fonts.OpenSans`, and `CodeBrix.Platform.WinUI` /
 `CodeBrix.Platform.WPF` (1.0.183.475) for the native heads — all driven by the Simple MVVM

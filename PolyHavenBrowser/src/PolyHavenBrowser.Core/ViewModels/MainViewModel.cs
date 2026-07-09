@@ -32,7 +32,7 @@ public interface ICanvasInvalidator
 public class MainViewModel : SimpleViewModel, ICanvasInvalidator
 {
     private readonly SampleAssetService _assets;
-    private readonly GlModelScenePainter _modelPainter = new();
+    private readonly ModelScenePainter _modelPainter;
 
     private IScenePainter _currentPainter;
     private PanoramaScenePainter _panoramaPainter;
@@ -46,6 +46,11 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
         if (IsDesignMode(true)) { return; }
 
         _assets = GetService<SampleAssetService>();
+
+        //Create the model painter over whichever 3D engine the DI container is configured with
+        //(OpenGL today; a Vulkan engine would be a one-line change in RegisterServices).
+        _modelPainter = new ModelScenePainter(GetService<IModelRenderEngineFactory>().Create());
+
         _ = SelectAsync(SampleAssetKind.Texture);
     }
 

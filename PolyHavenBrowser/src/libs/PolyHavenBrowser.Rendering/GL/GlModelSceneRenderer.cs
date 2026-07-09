@@ -108,10 +108,13 @@ public sealed class GlModelSceneRenderer : IModelSceneRenderer
     {
         ArgumentNullException.ThrowIfNull(gl);
 
+        // The same shader source runs on desktop OpenGL and OpenGL ES; only the #version header
+        // differs, so we detect the context type and prepend the right one.
         var isGles = (gl.GetStringS(StringName.Version) ?? string.Empty)
             .Contains("OpenGL ES", StringComparison.OrdinalIgnoreCase);
         var header = isGles ? "#version 300 es\n" : "#version 330 core\n";
 
+        // Compile the vertex + fragment shaders and link them into a program.
         var vertexShader = CompileShader(gl, ShaderType.VertexShader, header + VertexShaderBody);
         var fragmentShader = CompileShader(gl, ShaderType.FragmentShader, header + FragmentShaderBody);
 
@@ -132,6 +135,7 @@ public sealed class GlModelSceneRenderer : IModelSceneRenderer
             throw new InvalidOperationException($"Shader program link failed: {log}");
         }
 
+        // Cache the uniform locations once, to set them cheaply every frame.
         _mvpLocation = gl.GetUniformLocation(_program, "uMvp");
         _baseColorFactorLocation = gl.GetUniformLocation(_program, "uBaseColorFactor");
         _hasTextureLocation = gl.GetUniformLocation(_program, "uHasTexture");
@@ -150,6 +154,8 @@ public sealed class GlModelSceneRenderer : IModelSceneRenderer
             return;
         }
 
+        // Per frame: (1) upload any model queued via SetModel, (2) clear colour + depth,
+        // (3) set the camera (MVP) and light uniforms, (4) draw each primitive with its material.
         ApplyPendingModel(gl);
 
         gl.Viewport(0, 0, width, height);
@@ -236,6 +242,7 @@ public sealed class GlModelSceneRenderer : IModelSceneRenderer
             _hasPendingModel = false;
         }
 
+        // Free the previous model's GPU buffers/textures, then upload the new one.
         ReleaseModelResources(gl);
         _currentModel = model;
         if (model is null)
@@ -243,11 +250,13 @@ public sealed class GlModelSceneRenderer : IModelSceneRenderer
             return;
         }
 
+        // Upload each triangle batch's vertex data to a GPU vertex array object (VAO)...
         foreach (var primitive in model.Primitives)
         {
             _gpuPrimitives.Add(UploadPrimitive(gl, primitive));
         }
 
+        // ...and each material's base-colour image to a GPU texture.
         for (var materialIndex = 0; materialIndex < model.Materials.Count; materialIndex++)
         {
             var material = model.Materials[materialIndex];
@@ -264,15 +273,19 @@ public sealed class GlModelSceneRenderer : IModelSceneRenderer
         }
     }
 
+    // Uploads one triangle batch to the GPU: a VAO recording three vertex attribute buffers
+    // (position/normal/texcoord, at the shader's layout locations 0/1/2) plus an index buffer.
     private static unsafe GpuPrimitive UploadPrimitive(GL gl, ModelPrimitive primitive)
     {
         var vao = gl.GenVertexArray();
         gl.BindVertexArray(vao);
 
+        // Vertex attributes, matching the vertex shader's `layout(location = N)` inputs.
         var positionBuffer = UploadAttribute(gl, 0, 3, primitive.Positions);
         var normalBuffer = UploadAttribute(gl, 1, 3, primitive.Normals);
         var texCoordBuffer = UploadAttribute(gl, 2, 2, primitive.TexCoords);
 
+        // Triangle indices (three per triangle) into those vertex arrays.
         var indexBuffer = gl.GenBuffer();
         gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, indexBuffer);
         gl.BufferData<uint>(BufferTargetARB.ElementArrayBuffer, primitive.Indices, BufferUsageARB.StaticDraw);
@@ -296,6 +309,7 @@ public sealed class GlModelSceneRenderer : IModelSceneRenderer
         return buffer;
     }
 
+    // Uploads an RGBA image as a mip-mapped, repeating 2D texture and returns its GL handle.
     private static uint UploadTexture(GL gl, byte[] rgba, uint width, uint height)
     {
         var texture = gl.GenTexture();
