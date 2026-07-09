@@ -14,6 +14,12 @@ public sealed class PanoramaScenePainter : IScenePainter
     private const float LookDegreesPerPixel = 0.2f;
     private const float ZoomDegreesPerNotch = 5f;
 
+    //Cap the CPU ray-traced resolution so a maximized window stays interactive; the result
+    //is scaled up to fill the canvas. A lower cap while dragging keeps the look-around smooth;
+    //the crisp full cap is used once the drag stops.
+    private const int MaxRenderDimension = 1440;
+    private const int DragRenderDimension = 960;
+
     private readonly EquirectPanoramaRenderer _renderer;
 
     private SKBitmap _buffer;
@@ -39,12 +45,13 @@ public sealed class PanoramaScenePainter : IScenePainter
             return;
         }
 
-        if (_buffer == null || _bufferWidth != info.Width || _bufferHeight != info.Height)
+        var (renderWidth, renderHeight) = CapResolution(info.Width, info.Height);
+        if (_buffer == null || _bufferWidth != renderWidth || _bufferHeight != renderHeight)
         {
             _buffer?.Dispose();
-            _buffer = new SKBitmap(new SKImageInfo(info.Width, info.Height, SKColorType.Rgba8888, SKAlphaType.Opaque));
-            _bufferWidth = info.Width;
-            _bufferHeight = info.Height;
+            _buffer = new SKBitmap(new SKImageInfo(renderWidth, renderHeight, SKColorType.Rgba8888, SKAlphaType.Opaque));
+            _bufferWidth = renderWidth;
+            _bufferHeight = renderHeight;
         }
 
         _renderer.RenderTo(_buffer);
@@ -67,8 +74,29 @@ public sealed class PanoramaScenePainter : IScenePainter
         var deltaPitch = (float)(y - _lastY) * LookDegreesPerPixel;
         _lastX = x;
         _lastY = y;
-        //Drag right turns the view right; drag up looks up.
-        _renderer.Camera.Rotate(deltaYaw, deltaPitch);
+        //Grab-and-drag feel: dragging right pulls the scene right (turns the view left);
+        //dragging up looks up.
+        _renderer.Camera.Rotate(-deltaYaw, deltaPitch);
+    }
+
+    private (int Width, int Height) CapResolution(int width, int height)
+    {
+        var max = _dragging ? DragRenderDimension : MaxRenderDimension;
+        var longest = Math.Max(width, height);
+        if (longest <= max)
+        {
+            return (width, height);
+        }
+        var scale = (double)max / longest;
+        return (Math.Max(1, (int)Math.Round(width * scale)), Math.Max(1, (int)Math.Round(height * scale)));
+    }
+
+    /// <inheritdoc />
+    public void PointerSkip(double x, double y)
+    {
+        if (!_dragging) { return; }
+        _lastX = x;
+        _lastY = y;
     }
 
     /// <inheritdoc />

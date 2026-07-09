@@ -56,6 +56,8 @@ public sealed class GltfModelLoader : IModelLoader
         var primitives = new List<ModelPrimitive>();
         var boundsMin = new Vector3(float.PositiveInfinity);
         var boundsMax = new Vector3(float.NegativeInfinity);
+        var vertexSum = Vector3.Zero;
+        var vertexCount = 0L;
 
         var scene = model.DefaultScene ?? (model.LogicalScenes.Count > 0 ? model.LogicalScenes[0] : null);
         if (scene is null)
@@ -85,6 +87,8 @@ public sealed class GltfModelLoader : IModelLoader
                     var p = new Vector3(converted.Positions[i], converted.Positions[i + 1], converted.Positions[i + 2]);
                     boundsMin = Vector3.Min(boundsMin, p);
                     boundsMax = Vector3.Max(boundsMax, p);
+                    vertexSum += p;
+                    vertexCount++;
                 }
             }
         }
@@ -101,6 +105,7 @@ public sealed class GltfModelLoader : IModelLoader
             Materials = materials,
             BoundsMin = boundsMin,
             BoundsMax = boundsMax,
+            Pivot = vertexCount > 0 ? vertexSum / vertexCount : null,
         };
     }
 

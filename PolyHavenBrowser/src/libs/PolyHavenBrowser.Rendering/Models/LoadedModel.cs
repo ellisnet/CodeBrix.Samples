@@ -26,6 +26,14 @@ public sealed class LoadedModel
     /// <summary>The center of the bounding box.</summary>
     public Vector3 BoundsCenter => (BoundsMin + BoundsMax) * 0.5f;
 
+    /// <summary>
+    /// The point to orbit around (the vertex centroid, weighted toward where the geometry
+    /// is dense), or <see langword="null"/> to fall back to <see cref="BoundsCenter"/>.
+    /// Using the centroid keeps a model with a sparse extremity (e.g. a tall antenna) rotating
+    /// in place rather than swinging around the bounding-box center.
+    /// </summary>
+    public Vector3? Pivot { get; init; }
+
     /// <summary>The radius of the bounding sphere enclosing the bounding box.</summary>
     public float BoundsRadius => (BoundsMax - BoundsMin).Length() * 0.5f;
 

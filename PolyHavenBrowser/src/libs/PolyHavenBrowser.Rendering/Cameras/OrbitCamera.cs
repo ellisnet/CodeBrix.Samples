@@ -38,6 +38,20 @@ public sealed class OrbitCamera
     /// <summary>The smallest allowed <see cref="Distance"/>. Defaults to 0.001.</summary>
     public float MinDistance { get; set; } = 0.001f;
 
+    /// <summary>
+    /// The extra distance multiplier applied when framing a model, controlling how much of
+    /// the view it fills. 1.1 fits it snugly; larger values leave more empty space around it
+    /// (useful for a compact shape whose silhouette should stay fully visible while rotating);
+    /// values below 1 zoom in past a snug fit (its extremities may leave the view).
+    /// </summary>
+    public float FitMargin { get; set; } = 1.1f;
+
+    /// <summary>
+    /// Raises the framing look-at point above the model's pivot by this fraction of the model
+    /// radius, so the model sits lower in the view. 0 (the default) centers it vertically.
+    /// </summary>
+    public float VerticalFramingBias { get; set; }
+
     /// <summary>The point the camera looks at and orbits around.</summary>
     public Vector3 Target { get; set; }
 
@@ -105,6 +119,11 @@ public sealed class OrbitCamera
     {
         ArgumentNullException.ThrowIfNull(model);
         FitToBounds(model.BoundsMin, model.BoundsMax);
+        //Orbit around the centroid when the model provides one, so a model with a sparse
+        //extremity rotates in place instead of swinging around the bounding-box center. Raise
+        //the look-at point by VerticalFramingBias so the model can sit lower in the view.
+        var radius = MathF.Max((model.BoundsMax - model.BoundsMin).Length() * 0.5f, 0.001f);
+        Target = (model.Pivot ?? model.BoundsCenter) + new Vector3(0f, radius * VerticalFramingBias, 0f);
     }
 
     /// <summary>Frames the camera on a bounding box, keeping the current yaw/pitch.</summary>
@@ -112,8 +131,8 @@ public sealed class OrbitCamera
     {
         Target = (boundsMin + boundsMax) * 0.5f;
         var radius = Math.Max((boundsMax - boundsMin).Length() * 0.5f, 0.001f);
-        // Distance so the bounding sphere fits the vertical fov, with a little margin.
-        Distance = radius / MathF.Sin(FovDegrees * MathF.PI / 360f) * 1.1f;
+        // Distance so the bounding sphere fits the vertical fov, with FitMargin of headroom.
+        Distance = radius / MathF.Sin(FovDegrees * MathF.PI / 360f) * FitMargin;
     }
 
     private (Vector3 Right, Vector3 Up) GetViewPlaneAxes()

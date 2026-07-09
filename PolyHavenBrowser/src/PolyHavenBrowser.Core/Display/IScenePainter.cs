@@ -20,6 +20,12 @@ public interface IScenePainter : IDisposable
     /// <summary>Continues a drag to the given canvas position (no-op when no drag is in progress).</summary>
     void PointerDrag(double x, double y);
 
+    /// <summary>
+    /// Advances the drag anchor to the given position without moving the camera, used to
+    /// discard a stale (backlogged) pointer frame while staying in sync with the cursor.
+    /// </summary>
+    void PointerSkip(double x, double y);
+
     /// <summary>Ends the current drag.</summary>
     void PointerUp();
 

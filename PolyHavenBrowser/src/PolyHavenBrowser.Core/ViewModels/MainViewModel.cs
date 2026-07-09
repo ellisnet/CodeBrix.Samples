@@ -145,10 +145,14 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
                 _modelPainter.SetBackgroundTexture(textureBitmap);
                 //A fixed key light (from upper-front-left) shades the faces distinctly so the
                 //  cube reads as solid, and a 3/4 angle with perspective shows three faces.
+                //  Extra framing margin keeps the whole cube (and its rotating silhouette)
+                //  in view against the backdrop, which reads as clearly 3D.
                 _modelPainter.FixedLightDirection = new Vector3(-0.4f, 1f, 0.7f);
-                _modelPainter.Camera.FovDegrees = 45f;
+                _modelPainter.Camera.FovDegrees = 40f;
                 _modelPainter.Camera.YawDegrees = 35f;
                 _modelPainter.Camera.PitchDegrees = 28f;
+                _modelPainter.Camera.FitMargin = 1.2f;
+                _modelPainter.Camera.VerticalFramingBias = 0f;
                 return _modelPainter;
 
             case SampleAssetKind.Model:
@@ -158,6 +162,8 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
                 _modelPainter.Camera.FovDegrees = 45f;
                 _modelPainter.Camera.YawDegrees = 30f;
                 _modelPainter.Camera.PitchDegrees = 15f;
+                _modelPainter.Camera.FitMargin = 0.73f;         // ~1.5x closer than before
+                _modelPainter.Camera.VerticalFramingBias = 0.22f; // sit the model lower in view
                 return _modelPainter;
 
             case SampleAssetKind.Hdri:

@@ -166,10 +166,12 @@ public sealed class GlModelSceneRenderer : IModelSceneRenderer
 
         gl.UseProgram(_program);
 
-        // Model transforms are baked at load time, so MVP = view * projection. System.Numerics
-        // matrices are row-major; transpose for GL's column-major uniform layout.
-        var viewProjection = Camera.GetViewMatrix() * Camera.GetProjectionMatrix(width / (float)height);
-        var mvp = Matrix4x4.Transpose(viewProjection);
+        // MVP = view * projection (node transforms are baked at load time). System.Numerics
+        // stores matrices row-major; uploading with transpose=false makes GL read that
+        // row-major data as its own column-major layout, which is exactly the transpose GL
+        // needs. Calling Matrix4x4.Transpose here as well would double-transpose and flatten
+        // the depth axis for any non-axis-aligned camera.
+        var mvp = Camera.GetViewMatrix() * Camera.GetProjectionMatrix(width / (float)height);
         gl.UniformMatrix4(_mvpLocation, 1, false, (float*)&mvp);
 
         // A fixed light shades a solid shape by orientation; otherwise a headlight (from the

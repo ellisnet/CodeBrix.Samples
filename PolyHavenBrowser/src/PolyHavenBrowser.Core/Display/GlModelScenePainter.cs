@@ -15,7 +15,7 @@ namespace PolyHavenBrowser.Display;
 /// </summary>
 public sealed class GlModelScenePainter : IScenePainter
 {
-    private const float OrbitDegreesPerPixel = 0.4f;
+    private const float OrbitDegreesPerPixel = 0.25f;
     private static readonly (float R, float G, float B, float A) SolidBackground = (0.13f, 0.13f, 0.15f, 1f);
 
     private readonly GlModelSceneRenderer _renderer = new();
@@ -70,6 +70,9 @@ public sealed class GlModelScenePainter : IScenePainter
             return;
         }
 
+        //Render at full canvas resolution so the model stays crisp even when maximized;
+        //smoothness under load comes from dropping frames (coalescing + stale-frame skip),
+        //not from lowering resolution.
         var width = (uint)info.Width;
         var height = (uint)info.Height;
         var hasBackground = _backgroundBitmap != null;
@@ -164,8 +167,17 @@ public sealed class GlModelScenePainter : IScenePainter
         var deltaPitch = (float)(y - _lastY) * OrbitDegreesPerPixel;
         _lastX = x;
         _lastY = y;
-        //Drag right spins right; drag up tilts the view up.
-        _renderer.Camera.Orbit(deltaYaw, -deltaPitch);
+        //Grab-and-drag feel: dragging right rolls the model's near face to the right, and
+        //dragging up rolls its top toward you.
+        _renderer.Camera.Orbit(-deltaYaw, deltaPitch);
+    }
+
+    /// <inheritdoc />
+    public void PointerSkip(double x, double y)
+    {
+        if (!_dragging) { return; }
+        _lastX = x;
+        _lastY = y;
     }
 
     /// <inheritdoc />
