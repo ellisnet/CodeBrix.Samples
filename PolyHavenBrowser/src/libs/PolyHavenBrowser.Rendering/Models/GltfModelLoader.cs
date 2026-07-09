@@ -1,0 +1,260 @@
+using System.Numerics;
+using SharpGLTF.Schema2;
+
+namespace PolyHavenBrowser.Rendering;
+
+/// <summary>
+/// The default <see cref="IModelLoader"/>, backed by SharpGLTF. Loads .glb and .gltf
+/// files (the format Poly Haven serves for every model), bakes node transforms into the
+/// vertex data, generates smooth normals when the source has none, and decodes base
+/// color textures via CodeBrix.Imaging.
+/// </summary>
+public sealed class GltfModelLoader : IModelLoader
+{
+    /// <inheritdoc />
+    public LoadedModel Load(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        ModelRoot model;
+        try
+        {
+            model = ModelRoot.ReadGLB(stream);
+        }
+        catch (Exception ex) when (ex is not InvalidDataException)
+        {
+            throw new InvalidDataException("The stream does not contain a loadable glTF binary (.glb) model.", ex);
+        }
+
+        return Convert(model);
+    }
+
+    /// <inheritdoc />
+    public LoadedModel LoadFile(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ModelRoot model;
+        try
+        {
+            model = ModelRoot.Load(path);
+        }
+        catch (Exception ex) when (ex is not InvalidDataException)
+        {
+            throw new InvalidDataException($"'{path}' is not a loadable glTF model.", ex);
+        }
+
+        return Convert(model);
+    }
+
+    private static LoadedModel Convert(ModelRoot model)
+    {
+        var materials = new List<ModelMaterial>(model.LogicalMaterials.Count);
+        foreach (var material in model.LogicalMaterials)
+        {
+            materials.Add(ConvertMaterial(material));
+        }
+
+        var primitives = new List<ModelPrimitive>();
+        var boundsMin = new Vector3(float.PositiveInfinity);
+        var boundsMax = new Vector3(float.NegativeInfinity);
+
+        var scene = model.DefaultScene ?? (model.LogicalScenes.Count > 0 ? model.LogicalScenes[0] : null);
+        if (scene is null)
+        {
+            throw new InvalidDataException("The glTF model has no scene.");
+        }
+
+        foreach (var node in Walk(scene.VisualChildren))
+        {
+            if (node.Mesh is null)
+            {
+                continue;
+            }
+
+            var worldMatrix = node.WorldMatrix;
+            foreach (var primitive in node.Mesh.Primitives)
+            {
+                var converted = ConvertPrimitive(primitive, worldMatrix);
+                if (converted is null)
+                {
+                    continue;
+                }
+
+                primitives.Add(converted);
+                for (var i = 0; i < converted.Positions.Length; i += 3)
+                {
+                    var p = new Vector3(converted.Positions[i], converted.Positions[i + 1], converted.Positions[i + 2]);
+                    boundsMin = Vector3.Min(boundsMin, p);
+                    boundsMax = Vector3.Max(boundsMax, p);
+                }
+            }
+        }
+
+        if (primitives.Count == 0)
+        {
+            throw new InvalidDataException("The glTF model contains no triangle geometry.");
+        }
+
+        return new LoadedModel
+        {
+            Name = model.Asset?.Copyright is null ? model.DefaultScene?.Name : model.DefaultScene?.Name,
+            Primitives = primitives,
+            Materials = materials,
+            BoundsMin = boundsMin,
+            BoundsMax = boundsMax,
+        };
+    }
+
+    private static IEnumerable<Node> Walk(IEnumerable<Node> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            yield return node;
+            foreach (var child in Walk(node.VisualChildren))
+            {
+                yield return child;
+            }
+        }
+    }
+
+    private static ModelPrimitive? ConvertPrimitive(MeshPrimitive primitive, Matrix4x4 worldMatrix)
+    {
+        var positionAccessor = primitive.GetVertexAccessor("POSITION");
+        if (positionAccessor is null)
+        {
+            return null;
+        }
+
+        var triangles = primitive.GetTriangleIndices().ToList();
+        if (triangles.Count == 0)
+        {
+            return null;
+        }
+
+        var sourcePositions = positionAccessor.AsVector3Array();
+        var sourceNormals = primitive.GetVertexAccessor("NORMAL")?.AsVector3Array();
+        var sourceTexCoords = primitive.GetVertexAccessor("TEXCOORD_0")?.AsVector2Array();
+        var vertexCount = sourcePositions.Count;
+
+        var positions = new float[vertexCount * 3];
+        var texCoords = new float[vertexCount * 2];
+        for (var i = 0; i < vertexCount; i++)
+        {
+            var world = Vector3.Transform(sourcePositions[i], worldMatrix);
+            positions[i * 3] = world.X;
+            positions[i * 3 + 1] = world.Y;
+            positions[i * 3 + 2] = world.Z;
+
+            if (sourceTexCoords is not null)
+            {
+                texCoords[i * 2] = sourceTexCoords[i].X;
+                texCoords[i * 2 + 1] = sourceTexCoords[i].Y;
+            }
+        }
+
+        var indices = new uint[triangles.Count * 3];
+        for (var i = 0; i < triangles.Count; i++)
+        {
+            indices[i * 3] = (uint)triangles[i].A;
+            indices[i * 3 + 1] = (uint)triangles[i].B;
+            indices[i * 3 + 2] = (uint)triangles[i].C;
+        }
+
+        float[] normals;
+        if (sourceNormals is not null)
+        {
+            // TransformNormal is exact for rigid transforms and uniform scale — the cases
+            // that occur in practice in Poly Haven exports.
+            normals = new float[vertexCount * 3];
+            for (var i = 0; i < vertexCount; i++)
+            {
+                var n = Vector3.TransformNormal(sourceNormals[i], worldMatrix);
+                if (n.LengthSquared() > 0f)
+                {
+                    n = Vector3.Normalize(n);
+                }
+                normals[i * 3] = n.X;
+                normals[i * 3 + 1] = n.Y;
+                normals[i * 3 + 2] = n.Z;
+            }
+        }
+        else
+        {
+            normals = GenerateSmoothNormals(positions, indices);
+        }
+
+        return new ModelPrimitive
+        {
+            Positions = positions,
+            Normals = normals,
+            TexCoords = texCoords,
+            Indices = indices,
+            MaterialIndex = primitive.Material?.LogicalIndex ?? -1,
+        };
+    }
+
+    /// <summary>Generates per-vertex normals by area-weighted accumulation of face normals.</summary>
+    internal static float[] GenerateSmoothNormals(float[] positions, uint[] indices)
+    {
+        var normals = new float[positions.Length];
+        for (var i = 0; i < indices.Length; i += 3)
+        {
+            var ia = (int)indices[i] * 3;
+            var ib = (int)indices[i + 1] * 3;
+            var ic = (int)indices[i + 2] * 3;
+
+            var a = new Vector3(positions[ia], positions[ia + 1], positions[ia + 2]);
+            var b = new Vector3(positions[ib], positions[ib + 1], positions[ib + 2]);
+            var c = new Vector3(positions[ic], positions[ic + 1], positions[ic + 2]);
+            var faceNormal = Vector3.Cross(b - a, c - a); // length ∝ face area → area weighting
+
+            foreach (var offset in (ReadOnlySpan<int>)[ia, ib, ic])
+            {
+                normals[offset] += faceNormal.X;
+                normals[offset + 1] += faceNormal.Y;
+                normals[offset + 2] += faceNormal.Z;
+            }
+        }
+
+        for (var i = 0; i < normals.Length; i += 3)
+        {
+            var n = new Vector3(normals[i], normals[i + 1], normals[i + 2]);
+            n = n.LengthSquared() > 0f ? Vector3.Normalize(n) : Vector3.UnitY;
+            normals[i] = n.X;
+            normals[i + 1] = n.Y;
+            normals[i + 2] = n.Z;
+        }
+
+        return normals;
+    }
+
+    private static ModelMaterial ConvertMaterial(Material material)
+    {
+        var baseColor = material.FindChannel("BaseColor");
+
+        byte[]? textureRgba = null;
+        var textureWidth = 0;
+        var textureHeight = 0;
+        var imageContent = baseColor?.Texture?.PrimaryImage?.Content;
+        if (imageContent is { Content.Length: > 0 } content)
+        {
+            try
+            {
+                (textureRgba, textureWidth, textureHeight) = LdrImageDecoder.DecodeToRgbaBytes(content.Content.ToArray());
+            }
+            catch (InvalidDataException)
+            {
+                // An undecodable texture degrades to the base color factor rather than failing the load.
+            }
+        }
+
+        return new ModelMaterial
+        {
+            Name = material.Name,
+            BaseColorFactor = baseColor?.Color ?? Vector4.One,
+            BaseColorTextureRgba = textureRgba,
+            BaseColorTextureWidth = textureWidth,
+            BaseColorTextureHeight = textureHeight,
+            DoubleSided = material.DoubleSided,
+        };
+    }
+}
