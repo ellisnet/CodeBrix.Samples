@@ -1,7 +1,9 @@
+using CodeBrix.Platform.Simple;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using PolyHavenBrowser.Helpers;
 using System;
 
 namespace PolyHavenBrowser;
@@ -13,6 +15,13 @@ public partial class App : Application
         //Set Roboto as the default font for all text in the application
         global::CodeBrix.Platform.UI.FeatureConfiguration.Font.DefaultTextFontFamily =
             "ms-appx:///CodeBrix.Platform.Fonts.Roboto/Fonts/Roboto.ttf#Roboto";
+
+        SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
+        {
+            //Register the app's services (Poly Haven API client, catalog + download services)
+            services.AddPolyHavenBrowser();
+        });
+        SimpleViewModel.SetIsDesignMode(false);
 
         InitializeComponent();
     }

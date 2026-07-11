@@ -1,19 +1,348 @@
 <Page
     x:Class="PolyHavenBrowser.Views.MainPage"
+    x:Name="RootPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:PolyHavenBrowser.ViewModels"
+    xmlns:conv="using:PolyHavenBrowser.Converters"
+    xmlns:skia="using:SkiaSharp.Views.Windows"
     FontFamily="{StaticResource RobotoFont}"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="#16181D">
 
     <Page.DataContext>
         <vm:MainViewModel />
     </Page.DataContext>
 
-    <Grid>
-        <TextBlock Text="{Binding Greeting}"
-                   FontSize="24"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center" />
+    <Page.Resources>
+        <conv:NullToVisibilityConverter x:Key="VisibleWhenNull" />
+
+        <!-- ═══ The app's dark palette ═══ -->
+        <Color x:Key="AccentColor">#F96854</Color>
+        <SolidColorBrush x:Key="WindowBrush" Color="#16181D" />
+        <SolidColorBrush x:Key="HeaderBrush" Color="#1B1E25" />
+        <SolidColorBrush x:Key="CardBrush" Color="#1F232B" />
+        <SolidColorBrush x:Key="CardWellBrush" Color="#171A20" />
+        <SolidColorBrush x:Key="HairlineBrush" Color="#2A2F39" />
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F2F4F8" />
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A8B0BF" />
+        <SolidColorBrush x:Key="TextTertiaryBrush" Color="#6E7686" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#F96854" />
+        <SolidColorBrush x:Key="AccentDimBrush" Color="#C2503F" />
+
+        <!-- Re-key the theme's accent-button brushes to the app's coral accent, so
+             {ThemeResource AccentButtonStyle} buttons follow the app palette -->
+        <SolidColorBrush x:Key="AccentButtonBackground" Color="#F96854" />
+        <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FF7F6C" />
+        <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#D65344" />
+        <SolidColorBrush x:Key="AccentButtonBackgroundDisabled" Color="#3A3F49" />
+        <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="AccentButtonForegroundDisabled" Color="#6E7686" />
+
+        <!-- The primary (accent) button: the theme's accent style plus app shaping -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16,7" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <!-- One catalog cell: a fixed-size card presenting one Poly Haven model -->
+        <DataTemplate x:Key="ModelCellTemplate">
+            <Border Width="308" Height="368"
+                    Background="{StaticResource CardBrush}"
+                    BorderBrush="{StaticResource HairlineBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="172" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Hero thumbnail (a quiet loading ring shows until it arrives) -->
+                    <Border Grid.Row="0" Background="{StaticResource CardWellBrush}"
+                            CornerRadius="11,11,0,0">
+                        <Grid>
+                            <TextBlock Text="⬢" FontSize="30"
+                                       Foreground="#262B34"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Visibility="{Binding Thumbnail, Converter={StaticResource VisibleWhenNull}}" />
+                            <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Title, creator credit, and the short description -->
+                    <StackPanel Grid.Row="1" Padding="16,12,16,0" Spacing="5">
+                        <TextBlock Text="{Binding Title}"
+                                   FontSize="15.5" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="by" FontSize="12"
+                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                            <TextBlock Text="{Binding AuthorCredit}" FontSize="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Blurb}"
+                                   FontSize="12.5" LineHeight="18"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                   MaxLines="3" Margin="0,3,0,0" />
+                    </StackPanel>
+
+                    <!-- Footer: category + download count on the left, Download on the right -->
+                    <Grid Grid.Row="2" Padding="16,10,14,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding CategoriesText}"
+                                       FontSize="11" Foreground="{StaticResource TextTertiaryBrush}"
+                                       TextTrimming="CharacterEllipsis" MaxLines="1" />
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="⭳" FontSize="11"
+                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                <TextBlock Text="{Binding DownloadsText}" FontSize="11"
+                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                <TextBlock Text="downloads" FontSize="11"
+                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="Download"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                VerticalAlignment="Center"
+                                Command="{Binding DataContext.DownloadCommand, ElementName=RootPage}"
+                                CommandParameter="{Binding}" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- One label/value row of the Model View's facts panel -->
+        <DataTemplate x:Key="ModelFactTemplate">
+            <Grid Padding="0,7">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="12.5"
+                           Foreground="{StaticResource TextTertiaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="12.5"
+                           Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap" />
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid x:Name="RootGrid" RequestedTheme="Dark" Background="{StaticResource WindowBrush}">
+
+        <!-- ══════════════════════════ BROWSING VIEW ══════════════════════════ -->
+        <Grid Visibility="{Binding BrowsingViewVisibility}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Header: identity on the left; search, sort and the download folder on the right -->
+            <Border Grid.Row="0" Background="{StaticResource HeaderBrush}"
+                    BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,0,1"
+                    Padding="24,16,24,16">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="⬢" FontSize="19" Foreground="{StaticResource AccentBrush}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="Poly Haven Models" FontSize="19" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="Free, CC0-licensed 3D models — browse, download, explore"
+                                   FontSize="11.5" Foreground="{StaticResource TextTertiaryBrush}" />
+                    </StackPanel>
+
+                    <TextBox Grid.Column="2" Width="300" VerticalAlignment="Center"
+                             PlaceholderText="Search models…"
+                             Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             CornerRadius="8" />
+
+                    <ComboBox Grid.Column="3" Width="150" VerticalAlignment="Center"
+                              CornerRadius="8"
+                              ItemsSource="{Binding SortOptions}"
+                              SelectedItem="{Binding SelectedSortOption, Mode=TwoWay}" />
+
+                    <Button Grid.Column="4"
+                            Background="#262B34" Foreground="{StaticResource TextPrimaryBrush}"
+                            BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
+                            CornerRadius="8" Padding="14,8"
+                            VerticalAlignment="Center" MaxWidth="280"
+                            Command="{Binding PickFolderCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="⛁" FontSize="13"
+                                       Foreground="{StaticResource AccentBrush}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding DownloadFolderLabel}" FontSize="12.5"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- The catalog: fixed-size cells, as many per row as the window fits,
+                 loading lazily as the user scrolls -->
+            <ScrollViewer x:Name="CatalogScroll" Grid.Row="1"
+                          Padding="24,14,24,8"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="{Binding ResultCountText}" FontSize="12"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Margin="2,2,0,10" />
+                    <!-- Fixed-size cells; the per-row count follows the window width. Cells
+                         materialize lazily: the page asks for more as this view scrolls
+                         toward its bottom edge. -->
+                    <ItemsRepeater ItemsSource="{Binding Cells}"
+                                   ItemTemplate="{StaticResource ModelCellTemplate}">
+                        <ItemsRepeater.Layout>
+                            <UniformGridLayout Orientation="Horizontal"
+                                               MinItemWidth="308" MinItemHeight="368"
+                                               MinColumnSpacing="14" MinRowSpacing="14"
+                                               ItemsStretch="None" />
+                        </ItemsRepeater.Layout>
+                    </ItemsRepeater>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Initial catalog load (and load-failure) indicator -->
+            <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Spacing="14" Visibility="{Binding CatalogLoadingVisibility}">
+                <ProgressBar Width="220" Height="4" IsIndeterminate="True"
+                             Foreground="{StaticResource AccentBrush}" Background="#262B34" />
+                <TextBlock Text="{Binding CatalogStatusText}" FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           TextAlignment="Center" TextWrapping="Wrap" MaxWidth="420" />
+            </StackPanel>
+
+            <!-- The thin download bar along the bottom of the window -->
+            <StackPanel Grid.Row="2" Visibility="{Binding DownloadBarVisibility}">
+                <TextBlock Text="{Binding DownloadStatusText}" FontSize="11.5"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Margin="24,4,24,4" />
+                <ProgressBar Height="4" Minimum="0" Maximum="100"
+                             Value="{Binding DownloadProgress}"
+                             Foreground="{StaticResource AccentBrush}"
+                             Background="#262B34" />
+            </StackPanel>
+        </Grid>
+
+        <!-- ══════════════════════════ MODEL VIEW ══════════════════════════ -->
+        <Grid Visibility="{Binding ModelViewVisibility}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Top bar: back to the catalog, then the model's name and credit -->
+            <Border Grid.Row="0" Background="{StaticResource HeaderBrush}"
+                    BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,0,1"
+                    Padding="16,12,24,12">
+                <StackPanel Orientation="Horizontal" Spacing="16">
+                    <Button Background="#262B34" Foreground="{StaticResource TextPrimaryBrush}"
+                            BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
+                            CornerRadius="8" Width="42" Height="38"
+                            Padding="0" VerticalAlignment="Center"
+                            Command="{Binding BackCommand}"
+                            Content="←" FontSize="17" />
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{Binding ModelTitle}" FontSize="18" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding ModelAuthorLine}" FontSize="11.5"
+                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Info panel on the left; the interactive 3D preview on the right -->
+            <Grid Grid.Row="1" Padding="24,20,24,8" ColumnSpacing="20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="420" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="16" Padding="0,0,10,10">
+                        <Border Background="{StaticResource CardBrush}"
+                                BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
+                                CornerRadius="12" Padding="20,16,20,18">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="ABOUT THIS MODEL" FontSize="11" FontWeight="SemiBold"
+                                           CharacterSpacing="80"
+                                           Foreground="{StaticResource AccentBrush}" />
+                                <TextBlock Text="{Binding ModelDescription}" FontSize="13" LineHeight="21"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding ModelTagsText}" FontSize="12"
+                                           Foreground="{StaticResource AccentDimBrush}"
+                                           TextWrapping="Wrap" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="{StaticResource CardBrush}"
+                                BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
+                                CornerRadius="12" Padding="20,16,20,12">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="DETAILS" FontSize="11" FontWeight="SemiBold"
+                                           CharacterSpacing="80"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           Margin="0,0,0,6" />
+                                <ItemsControl ItemsSource="{Binding ModelFacts}"
+                                              ItemTemplate="{StaticResource ModelFactTemplate}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- The OpenGL preview, rendered offscreen and composited onto this canvas -->
+                <Grid Grid.Column="1" RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Background="{StaticResource CardWellBrush}"
+                            BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
+                            CornerRadius="12">
+                        <skia:SKXamlCanvas x:Name="ModelCanvas" />
+                    </Border>
+                    <TextBlock Grid.Row="1" Text="{Binding ViewerHint}" FontSize="12"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               HorizontalAlignment="Center" />
+                </Grid>
+            </Grid>
+
+            <!-- Footer: the (future) document generator lives bottom-right -->
+            <Grid Grid.Row="2" Padding="24,4,24,16">
+                <Button HorizontalAlignment="Right"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Command="{Binding DocumentCommand}"
+                        ToolTipService.ToolTip="Creating a PDF document about this model is coming in a future version">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="🗎" FontSize="14" VerticalAlignment="Center" />
+                        <TextBlock Text="Document" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Grid>
     </Grid>
 </Page>
