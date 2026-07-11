@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using CodeBrix.Platform.Simple;
 using Microsoft.UI.Xaml.Controls;
 using PolyHavenBrowser.ViewModels;
 using Windows.Foundation;
@@ -29,6 +30,10 @@ public sealed partial class MainPage : Page
             {
                 invalidator.InvalidateCanvas = RequestRender;
             }
+
+            //Give the view model's SimpleDialog helpers a XamlRoot to attach dialogs to
+            //(e.g. the "Vulkan rendering is not available on this platform." alert).
+            (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
         };
 
         InitializeComponent();

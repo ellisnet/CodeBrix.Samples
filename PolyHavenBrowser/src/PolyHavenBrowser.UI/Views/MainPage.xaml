@@ -23,7 +23,9 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Sample selector: the active button is highlighted with the accent style -->
+        <!-- Sample selector: the active button is highlighted with the accent style. To its
+             right, the rendering-engine dropdown (OpenGL/Vulkan) - hidden in HDRI mode, whose
+             CPU panorama renderer is unaffected by the engine choice -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
             <Button Content="Sample Texture" Command="{Binding SelectTextureCommand}" MinWidth="140"
                     Style="{Binding IsTextureSelected, Converter={StaticResource SelectedButtonStyle}}" />
@@ -31,6 +33,13 @@
                     Style="{Binding IsHdriSelected, Converter={StaticResource SelectedButtonStyle}}" />
             <Button Content="Sample Model" Command="{Binding SelectModelCommand}" MinWidth="140"
                     Style="{Binding IsModelSelected, Converter={StaticResource SelectedButtonStyle}}" />
+            <TextBlock Text="Rendering engine:" VerticalAlignment="Center" Margin="12,0,0,0"
+                       Visibility="{Binding EngineSelectorVisibility}" />
+            <ComboBox Width="130" Height="36" VerticalAlignment="Center"
+                      ItemsSource="{Binding RenderEngineNames}"
+                      SelectedItem="{Binding SelectedRenderEngineName, Mode=TwoWay}"
+                      IsEnabled="{Binding IsNotBusy}"
+                      Visibility="{Binding EngineSelectorVisibility}" />
         </StackPanel>
 
         <!-- The rendering/display canvas, with a thin border between it and the window edge -->

@@ -9,13 +9,13 @@ namespace PolyHavenBrowser.Display;
 /// <see cref="OrbitCamera"/> and hands back the resulting pixels, which the higher-level
 /// <see cref="ModelScenePainter"/> then composites onto the app's Skia canvas.
 /// <para>
-/// This interface is the <b>seam that makes the graphics API replaceable</b>. The only
-/// implementation today is <see cref="OpenGlModelRenderEngine"/> (OpenGL ES via EGL), but a
-/// future Vulkan engine can implement this same contract and be selected through
-/// <see cref="IModelRenderEngineFactory"/> with no change to the painter, camera, mesh loading,
-/// or UI. Everything <i>below</i> this seam is graphics-API-specific (GL/Vulkan contexts,
-/// shaders/pipelines, pixel readback); everything <i>above</i> it (models, camera, pointer
-/// input, Skia compositing) is API-agnostic.
+/// This interface is the <b>seam that makes the graphics API replaceable</b>. Two engines
+/// implement it - <see cref="OpenGlModelRenderEngine"/> (OpenGL ES via EGL, the default) and
+/// <see cref="VulkanModelRenderEngine"/> (Vulkan via Silk.NET) - and the user picks between
+/// them at runtime through <see cref="IModelRenderEngineSelector"/> with no change to the
+/// painter, camera, mesh loading, or UI. Everything <i>below</i> this seam is
+/// graphics-API-specific (GL/Vulkan contexts, shaders/pipelines, pixel readback); everything
+/// <i>above</i> it (models, camera, pointer input, Skia compositing) is API-agnostic.
 /// </para>
 /// </summary>
 public interface IModelRenderEngine : IDisposable

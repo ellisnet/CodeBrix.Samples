@@ -25,9 +25,10 @@ public static class RegisterServices
 
         services.AddSingleton<SampleAssetService>();
 
-        //The 3D rendering backend. Swap this single registration to change the graphics API
-        //for the whole app (e.g. a future Vulkan engine); nothing else needs to change.
-        services.AddSingleton<IModelRenderEngineFactory, OpenGlModelRenderEngineFactory>();
+        //The 3D rendering backends. The selector owns the list of engines (OpenGL + Vulkan),
+        //knows which are supported on the running platform, and creates them on demand for
+        //the view model's rendering-engine dropdown.
+        services.AddSingleton<IModelRenderEngineSelector, ModelRenderEngineSelector>();
 
         return services;
     }

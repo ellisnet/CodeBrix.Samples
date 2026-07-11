@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Threading;
@@ -32,11 +33,14 @@ public interface ICanvasInvalidator
 public class MainViewModel : SimpleViewModel, ICanvasInvalidator
 {
     private readonly SampleAssetService _assets;
-    private readonly ModelScenePainter _modelPainter;
+    private readonly IModelRenderEngineSelector _engineSelector;
+    private ModelScenePainter _modelPainter;
 
     private IScenePainter _currentPainter;
     private PanoramaScenePainter _panoramaPainter;
     private SampleAssetKind _selectedKind = SampleAssetKind.Texture;
+    private RenderEngineKind _currentEngineKind = RenderEngineKind.OpenGL;
+    private string _selectedRenderEngineName = nameof(RenderEngineKind.OpenGL);
     private bool _isBusy;
     private string _statusText = "Starting up…";
 
@@ -47,9 +51,17 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
 
         _assets = GetService<SampleAssetService>();
 
-        //Create the model painter over whichever 3D engine the DI container is configured with
-        //(OpenGL today; a Vulkan engine would be a one-line change in RegisterServices).
-        _modelPainter = new ModelScenePainter(GetService<IModelRenderEngineFactory>().Create());
+        //The engine selector owns the available 3D backends (OpenGL + Vulkan) and creates
+        //them on demand; the app always starts on OpenGL (no persistence).
+        _engineSelector = GetService<IModelRenderEngineSelector>();
+        foreach (var kind in _engineSelector.AvailableKinds)
+        {
+            RenderEngineNames.Add(kind.ToString());
+        }
+        NotifyPropertyChanged(nameof(RenderEngineNames));
+        NotifyPropertyChanged(nameof(SelectedRenderEngineName));
+
+        _modelPainter = new ModelScenePainter(_engineSelector.Create(RenderEngineKind.OpenGL));
 
         _ = SelectAsync(SampleAssetKind.Texture);
     }
@@ -69,8 +81,12 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
         {
             SetProperty(ref _isBusy, value);
             NotifyPropertyChanged(nameof(BusyVisibility));
+            NotifyPropertyChanged(nameof(IsNotBusy));
         }
     }
+
+    /// <summary>The inverse of <see cref="IsBusy"/> (disables the engine dropdown while loading).</summary>
+    public bool IsNotBusy => !IsBusy;
 
     /// <summary>The busy indicator's visibility (visible while an asset is downloading/loading).</summary>
     public Visibility BusyVisibility => IsBusy ? Visibility.Visible : Visibility.Collapsed;
@@ -81,6 +97,36 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
         get => _statusText;
         private set => SetProperty(ref _statusText, value ?? string.Empty);
     }
+
+    /// <summary>The rendering-engine names shown in the dropdown (OpenGL first - the default).</summary>
+    public List<string> RenderEngineNames { get; } = new();
+
+    /// <summary>
+    /// The rendering engine picked in the dropdown. Selecting an engine that is not supported
+    /// on this platform shows an alert and snaps the selection back; selecting a supported one
+    /// swaps the 3D engine and re-displays the current texture/model sample through it.
+    /// </summary>
+    public string SelectedRenderEngineName
+    {
+        get => _selectedRenderEngineName;
+        set
+        {
+            if (string.IsNullOrEmpty(value) || value == _selectedRenderEngineName) { return; }
+
+            //Optimistic: show the new selection at once; SwitchEngineAsync reverts it if the
+            //engine is unsupported or fails to initialize.
+            _selectedRenderEngineName = value;
+            NotifyPropertyChanged(nameof(SelectedRenderEngineName));
+            _ = SwitchEngineAsync(value);
+        }
+    }
+
+    /// <summary>
+    /// The engine dropdown's visibility: shown in Texture and Model modes, hidden in HDRI mode
+    /// (the HDRI panorama is CPU-rendered and unaffected by the engine choice).
+    /// </summary>
+    public Visibility EngineSelectorVisibility =>
+        _selectedKind == SampleAssetKind.Hdri ? Visibility.Collapsed : Visibility.Visible;
 
     /// <summary>Whether the texture sample is selected (drives the button highlight).</summary>
     public bool IsTextureSelected => _selectedKind == SampleAssetKind.Texture;
@@ -108,6 +154,84 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
     /// <summary>Selects and shows the sample 3D model.</summary>
     public SimpleCommand SelectModelCommand =>
         _selectModelCommand ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Model));
+
+    //Switches the 3D engine behind the model painter: alert + snap back when the engine is
+    //not okayed for this platform, otherwise swap painters and re-display the current sample.
+    private async Task SwitchEngineAsync(string engineName)
+    {
+        if (!Enum.TryParse<RenderEngineKind>(engineName, out var kind) || kind == _currentEngineKind)
+        {
+            return;
+        }
+
+        if (IsBusy)
+        {
+            //The dropdown is disabled while busy; this is just a belt-and-braces revert.
+            RevertEngineSelection();
+            return;
+        }
+
+        if (!_engineSelector.IsSupported(kind))
+        {
+            using (var alert = CreateDialog(
+                "Vulkan rendering is not available on this platform.", "Vulkan Rendering"))
+            {
+                _ = await alert.ShowAsync();
+            }
+            RevertEngineSelection();
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var engine = _engineSelector.Create(kind);
+            if (kind == RenderEngineKind.Vulkan)
+            {
+                //Fail fast off the UI thread (a supported platform can still lack a working
+                //driver) so a failure never surfaces inside the Skia paint callback. Safe for
+                //Vulkan only: it has no thread-affinity, unlike the OpenGL engine's EGL
+                //context, which must be created on the render thread at first paint.
+                await Task.Run(() => engine.RenderFrame(1, 1, (0f, 0f, 0f, 1f)));
+            }
+
+            var oldPainter = _modelPainter;
+            _modelPainter = new ModelScenePainter(engine);
+            _currentEngineKind = kind;
+            if (ReferenceEquals(_currentPainter, oldPainter))
+            {
+                _currentPainter = null;
+            }
+            oldPainter?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Could not switch to {engineName} rendering: {ex.Message}";
+            RevertEngineSelection();
+            return;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+
+        //Re-display the current sample through the new engine (from the local cache, so no
+        //network). The dropdown is hidden in HDRI mode, so this is always Texture or Model.
+        if (_selectedKind != SampleAssetKind.Hdri)
+        {
+            await SelectAsync(_selectedKind);
+        }
+        else
+        {
+            InvalidateCanvas?.Invoke();
+        }
+    }
+
+    private void RevertEngineSelection()
+    {
+        _selectedRenderEngineName = _currentEngineKind.ToString();
+        NotifyPropertyChanged(nameof(SelectedRenderEngineName));
+    }
 
     private async Task SelectAsync(SampleAssetKind kind)
     {
@@ -190,6 +314,7 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
         NotifyPropertyChanged(nameof(IsTextureSelected));
         NotifyPropertyChanged(nameof(IsHdriSelected));
         NotifyPropertyChanged(nameof(IsModelSelected));
+        NotifyPropertyChanged(nameof(EngineSelectorVisibility));
     }
 
     private static string Label(SampleAssetKind kind) => kind switch
