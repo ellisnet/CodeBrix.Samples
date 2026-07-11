@@ -93,7 +93,7 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
 
     private SimpleCommand _selectTextureCommand;
 
-    /// <summary>Selects and shows the sample texture (on a lit sphere).</summary>
+    /// <summary>Selects and shows the sample texture (on a lit cube).</summary>
     public SimpleCommand SelectTextureCommand =>
         _selectTextureCommand ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Texture));
 

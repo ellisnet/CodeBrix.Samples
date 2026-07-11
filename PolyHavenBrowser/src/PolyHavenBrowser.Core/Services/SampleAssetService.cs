@@ -12,7 +12,7 @@ namespace PolyHavenBrowser.Services;
 /// <summary>The kind of sample asset the browser can display.</summary>
 public enum SampleAssetKind
 {
-    /// <summary>A PBR texture set (its diffuse map is shown on a lit sphere).</summary>
+    /// <summary>A PBR texture set (its diffuse map is shown on a lit cube).</summary>
     Texture,
 
     /// <summary>An equirectangular HDRI panorama.</summary>

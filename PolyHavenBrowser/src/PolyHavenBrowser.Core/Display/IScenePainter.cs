@@ -4,7 +4,7 @@ using SkiaSharp;
 namespace PolyHavenBrowser.Display;
 
 /// <summary>
-/// Draws the current preview (a lit textured sphere, a 3D model, or an HDRI panorama) onto
+/// Draws the current preview (a lit textured cube, a 3D model, or an HDRI panorama) onto
 /// the hosting page's Skia canvas, and translates pointer/scroll input into camera motion.
 /// The hosting page calls <see cref="Paint"/> from the canvas's <c>PaintSurface</c> handler
 /// and the pointer methods from its pointer handlers, all on the UI thread.
