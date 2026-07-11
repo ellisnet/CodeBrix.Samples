@@ -5,8 +5,9 @@
     <!-- Match the namespace used by the app code -->
     <RootNamespace>PolyHavenBrowser</RootNamespace>
 
-    <!-- CodeBrix.Platform needs these for internal conditional compilation -->
-    <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI</DefineConstants>
+    <!-- CodeBrix.Platform needs these for internal conditional compilation;
+         HAS_CODEBRIXPLATFORM selects the SKXamlCanvas base for the hosted Skia canvas -->
+    <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI;HAS_CODEBRIXPLATFORM</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +15,13 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.9" />
     <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.189.446" />
     <PackageReference Include="CodeBrix.Platform.Fonts.Roboto.OflLicenseForever" Version="1.0.181.661" />
+
+    <!-- SKXamlCanvas - the SkiaSharp drawing surface hosted in CodeBrix.Platform XAML -->
+    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.148.0" />
+
+    <!-- The GL binding used by the offscreen model/texture renderer in Display/.
+         Depends on no other CodeBrix.Platform.* package, so referencing it here is clean. -->
+    <PackageReference Include="CodeBrix.Platform.OpenGL.MitLicenseForever" Version="1.0.165.1357" />
   </ItemGroup>
 
   <ItemGroup>

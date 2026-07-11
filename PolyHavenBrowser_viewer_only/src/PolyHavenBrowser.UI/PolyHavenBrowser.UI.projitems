@@ -3,7 +3,7 @@
   <PropertyGroup>
     <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <HasSharedItems>true</HasSharedItems>
-    <SharedGUID>d700a09a-47a1-4399-9cf2-da1542e537c3</SharedGUID>
+    <SharedGUID>7c35ef06-7254-4588-a984-ee9078c3c46b</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
     <Import_RootNamespace>PolyHavenBrowser.UI</Import_RootNamespace>
