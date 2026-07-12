@@ -12,7 +12,7 @@
     <PackageReference Include="CodeBrix.Platform.OpenGL.MitLicenseForever" Version="1.0.165.1357" />
     <PackageReference Include="SharpGLTF.Runtime" Version="1.0.6" />
     <PackageReference Include="Silk.NET.Vulkan" Version="2.23.0" />
-    <PackageReference Include="SkiaSharp" Version="4.148.0" />
+    <PackageReference Include="SkiaSharp" Version="4.150.0" />
     <PackageReference Include="TinyEXR.NET" Version="1.0.0" />
   </ItemGroup>
 </Project>

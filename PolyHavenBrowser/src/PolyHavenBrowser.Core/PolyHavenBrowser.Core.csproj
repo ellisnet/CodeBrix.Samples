@@ -17,7 +17,7 @@
     <PackageReference Include="CodeBrix.Platform.Fonts.Roboto.OflLicenseForever" Version="1.0.181.661" />
 
     <!-- SKXamlCanvas - the SkiaSharp drawing surface hosted in CodeBrix.Platform XAML -->
-    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.148.0" />
+    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.150.0" />
 
     <!-- The GL binding used by the offscreen model renderer in Display/.
          Depends on no other CodeBrix.Platform.* package, so referencing it here is clean. -->

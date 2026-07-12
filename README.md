@@ -139,7 +139,7 @@ everywhere.
 | --- | --- | --- |
 | `CodeBrix.Imaging.Drawing.ApacheLicenseForever` | 1.0.185.1134 | The star of the sample: `DrawingSession`, named highlighter layers, live rendering, PNG export |
 | `CodeBrix.Platform.ApacheLicenseForever` | 1.0.189.446 | The cross-platform XAML/UI framework and the Simple MVVM toolkit |
-| `CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever` | 4.148.0 | `SKXamlCanvas`, the SkiaSharp drawing surface hosted in XAML |
+| `CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever` | 4.150.0 | `SKXamlCanvas`, the SkiaSharp drawing surface hosted in XAML |
 | `CodeBrix.Platform.Fonts.OpenSans.ApacheLicenseForever` | 1.0.181.655 | Bundled Open Sans font for the UI |
 
 Each Skia head then adds exactly one platform runtime package —
@@ -329,7 +329,7 @@ decoding, and bitmaps).
 | Package | Version | Role |
 | --- | --- | --- |
 | `CodeBrix.Platform.ApacheLicenseForever` | 1.0.189.446 | The cross-platform XAML/UI framework and the Simple MVVM toolkit (`SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`) |
-| `CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever` | 4.148.0 | `SKXamlCanvas`, the SkiaSharp surface the 3D frame is composited onto |
+| `CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever` | 4.150.0 | `SKXamlCanvas`, the SkiaSharp surface the 3D frame is composited onto |
 | `CodeBrix.Platform.OpenGL.MitLicenseForever` | 1.0.165.1357 | Referenced directly by the `Display/` layer for the off-screen GL rendering |
 | `CodeBrix.Platform.Fonts.Roboto.OflLicenseForever` | 1.0.181.661 | Bundled Roboto font for the UI |
 
