@@ -22,14 +22,24 @@ namespace PolyHavenBrowser.ViewModels;
 public class ModelCellViewModel : SimpleViewModel
 {
     private readonly ModelCatalogService _catalog;
+    private readonly Func<ModelCellViewModel, Task> _downloadAsync;
+    private readonly Func<bool> _canDownload;
     private ImageSource _thumbnail;
     private bool _thumbnailFailed;
 
-    /// <summary>Creates a cell for one model of the catalog.</summary>
-    public ModelCellViewModel(PolyHavenAsset asset, ModelCatalogService catalog)
+    /// <summary>
+    /// Creates a cell for one model of the catalog. The owning view model supplies what
+    /// downloading actually does (<paramref name="downloadAsync"/>) and the app-wide
+    /// "may a download start right now?" gate (<paramref name="canDownload"/>); the cell
+    /// only owns the command itself.
+    /// </summary>
+    public ModelCellViewModel(PolyHavenAsset asset, ModelCatalogService catalog,
+        Func<ModelCellViewModel, Task> downloadAsync, Func<bool> canDownload)
     {
         Asset = asset ?? throw new ArgumentNullException(nameof(asset));
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+        _downloadAsync = downloadAsync ?? throw new ArgumentNullException(nameof(downloadAsync));
+        _canDownload = canDownload ?? throw new ArgumentNullException(nameof(canDownload));
 
         Title = string.IsNullOrWhiteSpace(asset.Name) ? asset.Id : asset.Name;
         AuthorCredit = BuildAuthorCredit(asset);
@@ -37,6 +47,22 @@ public class ModelCellViewModel : SimpleViewModel
         DownloadsText = ModelDescriptionBuilder.FormatCompactCount(asset.DownloadCount);
         CategoriesText = BuildCategoriesText(asset);
     }
+
+    private SimpleCommand _downloadCommand;
+
+    /// <summary>
+    /// Downloads this cell's model and opens the Model View. Living on the cell itself keeps
+    /// the cell template's binding a plain <c>{Binding DownloadCommand}</c> - a template binds
+    /// to its own item.
+    /// </summary>
+    public SimpleCommand DownloadCommand => _downloadCommand ??=
+        new SimpleCommand(() => _canDownload(), (Func<object, Task>)(_ => _downloadAsync(this)));
+
+    /// <summary>
+    /// Lets the owning view model tell this cell's Download button to re-query its enabled
+    /// state (called on every cell when a download starts or finishes).
+    /// </summary>
+    public void NotifyCanDownloadChanged() => _downloadCommand?.RaiseCanExecuteChanged();
 
     /// <summary>The Poly Haven asset this cell represents.</summary>
     public PolyHavenAsset Asset { get; }

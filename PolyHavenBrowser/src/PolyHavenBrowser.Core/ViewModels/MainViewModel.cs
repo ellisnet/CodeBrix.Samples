@@ -185,7 +185,8 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
         if (_allModels.Count == 0 && IsCatalogLoading) { return; }
 
         var matching = ModelCatalogService.SortAndFilter(_allModels, SelectedSortOrder, SearchText);
-        Cells = new ModelCellCollection(matching, asset => new ModelCellViewModel(asset, _catalog));
+        Cells = new ModelCellCollection(matching,
+            asset => new ModelCellViewModel(asset, _catalog, DownloadAsync, () => !IsDownloading));
         ResultCountText = matching.Count == 1 ? "1 model" : $"{matching.Count:N0} models";
     }
 
@@ -250,7 +251,6 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
     #region | Downloading |
 
     /// <summary>Whether a model download is in flight (drives the bottom progress bar).</summary>
-    [AffectsCommands(nameof(DownloadCommand))]
     public bool IsDownloading
     {
         get => _isDownloading;
@@ -258,6 +258,13 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
         {
             SetProperty(ref _isDownloading, value);
             NotifyPropertyChanged(nameof(DownloadBarVisibility));
+
+            //The download gate lives on each cell's own command; tell every materialized
+            //cell to re-query it. (Cells materialized later evaluate the gate fresh anyway.)
+            if (Cells is { } cells)
+            {
+                foreach (var cell in cells) { cell.NotifyCanDownloadChanged(); }
+            }
         }
     }
 
@@ -284,16 +291,9 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
         private set => SetProperty(ref _downloadStatusText, value);
     }
 
-    private SimpleCommand _downloadCommand;
-
-    /// <summary>
-    /// Downloads the cell passed as the command parameter (each cell's Download button binds
-    /// here), then opens the Model View. With no download folder chosen yet, explains itself
-    /// with a dialog instead.
-    /// </summary>
-    public SimpleCommand DownloadCommand => _downloadCommand ??=
-        new SimpleCommand(() => !IsDownloading, (Func<object, Task>)(parameter => DownloadAsync(parameter as ModelCellViewModel)));
-
+    //Each cell owns its Download command; this is the shared implementation the cells'
+    //commands delegate to (see the cell factory in RebuildCells). With no download folder
+    //chosen yet, explains itself with a dialog instead.
     private async Task DownloadAsync(ModelCellViewModel cell)
     {
         if (cell == null || IsDownloading) { return; }
