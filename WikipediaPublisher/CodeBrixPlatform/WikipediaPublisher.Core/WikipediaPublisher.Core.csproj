@@ -18,14 +18,14 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.9" />
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.189.446" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.193.1124" />
 
     <!-- WebView add-in: gives the Linux Skia heads an embedded WebView2 (WPE WebKit,
          offscreen). Referenced once here in Core; every Skia head inherits it transitively.
          The Windows, Skia-on-WPF and macOS runtimes already have WebView2 built in, so the
          add-in is inert there. The Linux heads need the system WPE WebKit engine at run time:
          sudo apt install libwpewebkit-2.0-1 libwpebackend-fdo-1.0-1 libwpe-1.0-1 -->
-    <PackageReference Include="CodeBrix.Platform.WebView.ApacheLicenseForever" Version="1.0.189.446" />
+    <PackageReference Include="CodeBrix.Platform.WebView.ApacheLicenseForever" Version="1.0.193.1124" />
 
     <!-- Bundled Open Sans font -->
     <PackageReference Include="CodeBrix.Platform.Fonts.OpenSans.ApacheLicenseForever" Version="1.0.181.655" />

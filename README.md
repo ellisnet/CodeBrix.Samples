@@ -138,13 +138,13 @@ everywhere.
 | Package | Version | Role |
 | --- | --- | --- |
 | `CodeBrix.Imaging.Drawing.ApacheLicenseForever` | 1.0.185.1134 | The star of the sample: `DrawingSession`, named highlighter layers, live rendering, PNG export |
-| `CodeBrix.Platform.ApacheLicenseForever` | 1.0.189.446 | The cross-platform XAML/UI framework and the Simple MVVM toolkit |
+| `CodeBrix.Platform.ApacheLicenseForever` | 1.0.193.1124 | The cross-platform XAML/UI framework and the Simple MVVM toolkit |
 | `CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever` | 4.150.0 | `SKXamlCanvas`, the SkiaSharp drawing surface hosted in XAML |
 | `CodeBrix.Platform.Fonts.OpenSans.ApacheLicenseForever` | 1.0.181.655 | Bundled Open Sans font for the UI |
 
 Each Skia head then adds exactly one platform runtime package —
 `CodeBrix.Platform.Runtime.Skia.{Win32,Wpf,X11,Wayland,FrameBuffer,MacOS}.ApacheLicenseForever`
-(1.0.189.446) — and the native heads add `CodeBrix.Platform.WinUI` / `CodeBrix.Platform.WPF`
+(1.0.193.1124) — and the native heads add `CodeBrix.Platform.WinUI` / `CodeBrix.Platform.WPF`
 (1.0.183.475) plus the matching `SkiaSharp.Views.*` package.
 
 Inside `MainViewModel`, the drawing session is created and configured up front:
@@ -268,7 +268,7 @@ the XAML UI in `PolyHavenBrowser.UI`:
 
 Each head adds exactly one runtime package —
 `CodeBrix.Platform.Runtime.Skia.{Win32,Wpf,X11,Wayland,FrameBuffer,MacOS}.ApacheLicenseForever`
-(1.0.189.446). The Windows-targeting Skia heads compile on Linux/macOS but only *run* on
+(1.0.193.1124). The Windows-targeting Skia heads compile on Linux/macOS but only *run* on
 Windows; the OpenGL 3D rendering works on every head that provides a GL/EGL stack (desktop GL
 via GLX/WGL, GLES via ANGLE / Wayland EGL / the framebuffer wrapper).
 
@@ -328,7 +328,7 @@ decoding, and bitmaps).
 
 | Package | Version | Role |
 | --- | --- | --- |
-| `CodeBrix.Platform.ApacheLicenseForever` | 1.0.189.446 | The cross-platform XAML/UI framework and the Simple MVVM toolkit (`SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`) |
+| `CodeBrix.Platform.ApacheLicenseForever` | 1.0.193.1124 | The cross-platform XAML/UI framework and the Simple MVVM toolkit (`SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`) |
 | `CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever` | 4.150.0 | `SKXamlCanvas`, the SkiaSharp surface the 3D frame is composited onto |
 | `CodeBrix.Platform.OpenGL.MitLicenseForever` | 1.0.165.1357 | Referenced directly by the `Display/` layer for the off-screen GL rendering |
 | `CodeBrix.Platform.Fonts.Roboto.OflLicenseForever` | 1.0.181.661 | Bundled Roboto font for the UI |
@@ -487,7 +487,7 @@ throughout:
 | `CodeBrix.Imaging.ApacheLicenseForever` | 1.0.164.1087 | Print-resolution image processing (download, resize by aspect ratio, format normalization) |
 
 The UI side (`WikipediaPublisher.Core` + heads) uses the same `CodeBrix.Platform.*`
-family as PainDiagram — `CodeBrix.Platform` (1.0.189.446), the six
+family as PainDiagram — `CodeBrix.Platform` (1.0.193.1124), the six
 `CodeBrix.Platform.Runtime.Skia.*` backends, `CodeBrix.Platform.WebView` for the Linux
 WebView, `CodeBrix.Platform.Fonts.OpenSans`, and `CodeBrix.Platform.WinUI` /
 `CodeBrix.Platform.WPF` (1.0.183.475) for the native heads — all driven by the Simple MVVM
