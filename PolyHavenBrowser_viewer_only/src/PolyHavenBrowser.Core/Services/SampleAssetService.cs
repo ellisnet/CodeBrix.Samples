@@ -73,9 +73,14 @@ public sealed class SampleAssetService
         {
             var kindDir = Path.Combine(_cacheRoot, kind.ToString().ToLowerInvariant());
             var markerPath = Path.Combine(kindDir, "sample.json");
+            var slug = SlugFor(kind);
 
+            //Reuse the cached asset only when it is the SAME curated slug. The marker is keyed by
+            //kind, so changing the curated slug (SlugFor) must invalidate a stale marker and
+            //re-download rather than keep serving the previously-cached asset.
             var cached = TryReadMarker(markerPath);
-            if (cached != null && File.Exists(cached.PrimaryFilePath))
+            if (cached != null && string.Equals(cached.Slug, slug, StringComparison.Ordinal)
+                && File.Exists(cached.PrimaryFilePath))
             {
                 status?.Report($"{Describe(kind)}: {cached.Name} (cached)");
                 return cached;
@@ -83,7 +88,6 @@ public sealed class SampleAssetService
 
             using var client = _factory.GetClient();
 
-            var slug = SlugFor(kind);
             status?.Report($"Finding {slug} on Poly Haven…");
             var asset = await client.GetAssetAsync(slug, cancellationToken).ConfigureAwait(false);
             var name = string.IsNullOrWhiteSpace(asset.Name) ? slug : asset.Name;
@@ -117,7 +121,7 @@ public sealed class SampleAssetService
     {
         SampleAssetKind.Texture => "red_brick",
         SampleAssetKind.Hdri => "small_cathedral",
-        SampleAssetKind.Model => "vintage_radio_transceiver",
+        SampleAssetKind.Model => "alarm_clock_01",
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 

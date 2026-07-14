@@ -78,7 +78,8 @@ public sealed unsafe class VulkanSceneRenderer : IDisposable
     private DescriptorSetLayout _descriptorSetLayout;
     private PipelineLayout _pipelineLayout;
     private RenderPass _renderPass;
-    private Pipeline _pipeline;
+    private Pipeline _pipeline;        // opaque/mask: depth writes on, no blending
+    private Pipeline _blendPipeline;   // BLEND (glass): depth test on, writes off, alpha "over"
     private Sampler _sampler;
 
     // The fallback bound for untextured materials (the shader's hasTexture flag skips the
@@ -553,29 +554,57 @@ public sealed unsafe class VulkanSceneRenderer : IDisposable
                 SType = StructureType.PipelineMultisampleStateCreateInfo,
                 RasterizationSamples = SampleCountFlags.Count1Bit,
             };
-            var depthStencil = new PipelineDepthStencilStateCreateInfo
+
+            var writeMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit
+                | ColorComponentFlags.BBit | ColorComponentFlags.ABit;
+
+            // Two pipelines share everything but their depth-write + blend state, mirroring the GL
+            // renderer's two passes. Opaque/mask: depth writes on, fragments overwrite (alpha lands
+            // in the target and compositing happens later on the Skia canvas).
+            var depthStencilOpaque = new PipelineDepthStencilStateCreateInfo
             {
                 SType = StructureType.PipelineDepthStencilStateCreateInfo,
                 DepthTestEnable = true,
                 DepthWriteEnable = true,
                 DepthCompareOp = CompareOp.LessOrEqual,
             };
-
-            // No blending, like the GL path: fragments overwrite, alpha lands in the target
-            // and compositing happens later on the Skia canvas.
-            var blendAttachment = new PipelineColorBlendAttachmentState
-            {
-                ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit
-                    | ColorComponentFlags.BBit | ColorComponentFlags.ABit,
-            };
-            var colorBlend = new PipelineColorBlendStateCreateInfo
+            var blendAttachmentOpaque = new PipelineColorBlendAttachmentState { ColorWriteMask = writeMask };
+            var colorBlendOpaque = new PipelineColorBlendStateCreateInfo
             {
                 SType = StructureType.PipelineColorBlendStateCreateInfo,
                 AttachmentCount = 1,
-                PAttachments = &blendAttachment,
+                PAttachments = &blendAttachmentOpaque,
             };
 
-            var pipelineInfo = new GraphicsPipelineCreateInfo
+            // BLEND (glass): depth test on but writes off, straight-alpha "over" with the alpha
+            // channel accumulating coverage (One, OneMinusSrcAlpha) - the Vulkan mirror of the GL
+            // renderer's BlendFuncSeparate, so translucent surfaces don't occlude what's behind them.
+            var depthStencilBlend = new PipelineDepthStencilStateCreateInfo
+            {
+                SType = StructureType.PipelineDepthStencilStateCreateInfo,
+                DepthTestEnable = true,
+                DepthWriteEnable = false,
+                DepthCompareOp = CompareOp.LessOrEqual,
+            };
+            var blendAttachmentBlend = new PipelineColorBlendAttachmentState
+            {
+                BlendEnable = true,
+                SrcColorBlendFactor = BlendFactor.SrcAlpha,
+                DstColorBlendFactor = BlendFactor.OneMinusSrcAlpha,
+                ColorBlendOp = BlendOp.Add,
+                SrcAlphaBlendFactor = BlendFactor.One,
+                DstAlphaBlendFactor = BlendFactor.OneMinusSrcAlpha,
+                AlphaBlendOp = BlendOp.Add,
+                ColorWriteMask = writeMask,
+            };
+            var colorBlendBlend = new PipelineColorBlendStateCreateInfo
+            {
+                SType = StructureType.PipelineColorBlendStateCreateInfo,
+                AttachmentCount = 1,
+                PAttachments = &blendAttachmentBlend,
+            };
+
+            var baseInfo = new GraphicsPipelineCreateInfo
             {
                 SType = StructureType.GraphicsPipelineCreateInfo,
                 StageCount = 2,
@@ -585,16 +614,25 @@ public sealed unsafe class VulkanSceneRenderer : IDisposable
                 PViewportState = &viewportState,
                 PRasterizationState = &rasterization,
                 PMultisampleState = &multisample,
-                PDepthStencilState = &depthStencil,
-                PColorBlendState = &colorBlend,
                 PDynamicState = &dynamicState,
                 Layout = _pipelineLayout,
                 RenderPass = _renderPass,
                 Subpass = 0,
             };
+            var pipelineInfos = stackalloc GraphicsPipelineCreateInfo[2];
+            pipelineInfos[0] = baseInfo;
+            pipelineInfos[0].PDepthStencilState = &depthStencilOpaque;
+            pipelineInfos[0].PColorBlendState = &colorBlendOpaque;
+            pipelineInfos[1] = baseInfo;
+            pipelineInfos[1].PDepthStencilState = &depthStencilBlend;
+            pipelineInfos[1].PColorBlendState = &colorBlendBlend;
+
+            var pipelines = stackalloc Pipeline[2];
             Check(
-                vk.CreateGraphicsPipelines(_device, default, 1, in pipelineInfo, null, out _pipeline),
+                vk.CreateGraphicsPipelines(_device, default, 2, pipelineInfos, null, pipelines),
                 "CreateGraphicsPipelines");
+            _pipeline = pipelines[0];
+            _blendPipeline = pipelines[1];
         }
         finally
         {
@@ -731,8 +769,6 @@ public sealed unsafe class VulkanSceneRenderer : IDisposable
 
         if (_currentModel is not null && _gpuPrimitives.Count > 0)
         {
-            vk.CmdBindPipeline(_commandBuffer, PipelineBindPoint.Graphics, _pipeline);
-
             var viewport = new Viewport(0, 0, width, height, 0f, 1f);
             var scissor = new Rect2D(new Offset2D(0, 0), new Extent2D((uint)width, (uint)height));
             vk.CmdSetViewport(_commandBuffer, 0, 1, in viewport);
@@ -746,44 +782,68 @@ public sealed unsafe class VulkanSceneRenderer : IDisposable
                 : Vector3.Normalize(Camera.GetEyePosition() - Camera.Target);
             var doubleSided = FixedLightDirection is null ? 1 : 0;
 
-            var vertexBuffers = stackalloc Buffer[3];
-            var offsets = stackalloc ulong[3] { 0, 0, 0 };
-            foreach (var primitive in _gpuPrimitives)
-            {
-                var material = primitive.MaterialIndex >= 0 && primitive.MaterialIndex < _currentModel.Materials.Count
-                    ? _currentModel.Materials[primitive.MaterialIndex]
-                    : null;
-                var baseColor = material?.BaseColorFactor ?? Vector4.One;
-                var hasTexture = _materialTextures.TryGetValue(primitive.MaterialIndex, out var texture);
-
-                var pushConstants = new PushConstants
-                {
-                    Mvp = mvp,
-                    BaseColorFactor = baseColor,
-                    LightDirection = new Vector4(lightDirection, 0f),
-                    HasTexture = hasTexture ? 1 : 0,
-                    DoubleSided = doubleSided,
-                };
-                vk.CmdPushConstants(
-                    _commandBuffer, _pipelineLayout,
-                    ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit,
-                    0, (uint)sizeof(PushConstants), &pushConstants);
-
-                var descriptorSet = hasTexture ? texture!.DescriptorSet : _whiteTexture!.DescriptorSet;
-                vk.CmdBindDescriptorSets(
-                    _commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout,
-                    0, 1, in descriptorSet, 0, null);
-
-                vertexBuffers[0] = primitive.Positions.Buffer;
-                vertexBuffers[1] = primitive.Normals.Buffer;
-                vertexBuffers[2] = primitive.TexCoords.Buffer;
-                vk.CmdBindVertexBuffers(_commandBuffer, 0, 3, vertexBuffers, offsets);
-                vk.CmdBindIndexBuffer(_commandBuffer, primitive.Indices.Buffer, 0, IndexType.Uint32);
-                vk.CmdDrawIndexed(_commandBuffer, primitive.IndexCount, 1, 0, 0, 0);
-            }
+            // Opaque/mask pass first (depth writes on), then the translucent BLEND pass over it
+            // with the blend pipeline (depth writes off), so glass shows the geometry behind it.
+            RecordPrimitives(blendPass: false, _pipeline, mvp, lightDirection, doubleSided);
+            RecordPrimitives(blendPass: true, _blendPipeline, mvp, lightDirection, doubleSided);
         }
 
         vk.CmdEndRenderPass(_commandBuffer);
+    }
+
+    // Records either the opaque/mask primitives (blendPass = false) or the translucent BLEND
+    // primitives (blendPass = true) with the given pipeline. BLEND materials get a fixed preview
+    // opacity so glass surfaces let the geometry behind them show through. BLEND primitives are
+    // not depth-sorted - fine for the small amount of transparent geometry these preview models
+    // carry.
+    private void RecordPrimitives(
+        bool blendPass, Pipeline pipeline, Matrix4x4 mvp, Vector3 lightDirection, int doubleSided)
+    {
+        var vk = _vk!;
+        vk.CmdBindPipeline(_commandBuffer, PipelineBindPoint.Graphics, pipeline);
+
+        var vertexBuffers = stackalloc Buffer[3];
+        var offsets = stackalloc ulong[3] { 0, 0, 0 };
+        foreach (var primitive in _gpuPrimitives)
+        {
+            var material = primitive.MaterialIndex >= 0 && primitive.MaterialIndex < _currentModel!.Materials.Count
+                ? _currentModel.Materials[primitive.MaterialIndex]
+                : null;
+            var isBlend = material?.AlphaMode == ModelAlphaMode.Blend;
+            if (isBlend != blendPass)
+            {
+                continue;
+            }
+
+            var baseColor = material?.BaseColorFactor ?? Vector4.One;
+            var alpha = isBlend ? ModelMaterial.BlendPreviewOpacity * baseColor.W : baseColor.W;
+            var hasTexture = _materialTextures.TryGetValue(primitive.MaterialIndex, out var texture);
+
+            var pushConstants = new PushConstants
+            {
+                Mvp = mvp,
+                BaseColorFactor = new Vector4(baseColor.X, baseColor.Y, baseColor.Z, alpha),
+                LightDirection = new Vector4(lightDirection, 0f),
+                HasTexture = hasTexture ? 1 : 0,
+                DoubleSided = doubleSided,
+            };
+            vk.CmdPushConstants(
+                _commandBuffer, _pipelineLayout,
+                ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit,
+                0, (uint)sizeof(PushConstants), &pushConstants);
+
+            var descriptorSet = hasTexture ? texture!.DescriptorSet : _whiteTexture!.DescriptorSet;
+            vk.CmdBindDescriptorSets(
+                _commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout,
+                0, 1, in descriptorSet, 0, null);
+
+            vertexBuffers[0] = primitive.Positions.Buffer;
+            vertexBuffers[1] = primitive.Normals.Buffer;
+            vertexBuffers[2] = primitive.TexCoords.Buffer;
+            vk.CmdBindVertexBuffers(_commandBuffer, 0, 3, vertexBuffers, offsets);
+            vk.CmdBindIndexBuffer(_commandBuffer, primitive.Indices.Buffer, 0, IndexType.Uint32);
+            vk.CmdDrawIndexed(_commandBuffer, primitive.IndexCount, 1, 0, 0, 0);
+        }
     }
 
     private void RecordReadback(uint width, uint height)
@@ -1241,6 +1301,7 @@ public sealed unsafe class VulkanSceneRenderer : IDisposable
 
             if (_whiteTexture is not null) { DestroyTexture(_whiteTexture); _whiteTexture = null; }
             if (_staticDescriptorPool.Handle != 0) { vk.DestroyDescriptorPool(_device, _staticDescriptorPool, null); }
+            if (_blendPipeline.Handle != 0) { vk.DestroyPipeline(_device, _blendPipeline, null); }
             if (_pipeline.Handle != 0) { vk.DestroyPipeline(_device, _pipeline, null); }
             if (_renderPass.Handle != 0) { vk.DestroyRenderPass(_device, _renderPass, null); }
             if (_pipelineLayout.Handle != 0) { vk.DestroyPipelineLayout(_device, _pipelineLayout, null); }

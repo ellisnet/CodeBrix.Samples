@@ -260,6 +260,12 @@ public sealed class GltfModelLoader : IModelLoader
         return new ModelMaterial
         {
             Name = material.Name,
+            AlphaMode = material.Alpha switch
+            {
+                AlphaMode.MASK => ModelAlphaMode.Mask,
+                AlphaMode.BLEND => ModelAlphaMode.Blend,
+                _ => ModelAlphaMode.Opaque,
+            },
             BaseColorFactor = baseColor?.Color ?? Vector4.One,
             BaseColorTextureRgba = textureRgba,
             BaseColorTextureWidth = textureWidth,

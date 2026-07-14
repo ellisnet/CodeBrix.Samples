@@ -189,13 +189,48 @@ public sealed class GlModelSceneRenderer : IModelSceneRenderer
         gl.Uniform1(_doubleSidedLocation, FixedLightDirection is null ? 1 : 0);
         gl.Uniform1(_baseColorTextureLocation, 0);
 
+        // Two passes over the primitives: opaque (and mask) first with depth writes on, then the
+        // translucent (BLEND) primitives over them with blending and depth writes off, so
+        // glass-like surfaces show what's behind them instead of occluding it. BLEND primitives
+        // are not depth-sorted - fine for the small amount of transparent geometry these preview
+        // models carry.
+        DrawPrimitives(gl, blendPass: false);
+
+        gl.Enable(EnableCap.Blend);
+        // Straight-alpha "over": colour is weighted by source alpha, while the alpha channel
+        // accumulates coverage (One, OneMinusSrcAlpha) so a region already opaque behind the
+        // glass stays opaque in the frame the Skia bridge composites.
+        gl.BlendFuncSeparate(
+            BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha,
+            BlendingFactor.One, BlendingFactor.OneMinusSrcAlpha);
+        gl.DepthMask(false);
+        DrawPrimitives(gl, blendPass: true);
+        gl.DepthMask(true);
+        gl.Disable(EnableCap.Blend);
+
+        gl.BindVertexArray(0);
+        gl.UseProgram(0);
+    }
+
+    // Draws either the opaque/mask primitives (blendPass = false) or the translucent BLEND
+    // primitives (blendPass = true). BLEND materials are given a fixed preview opacity so glass
+    // surfaces let the geometry behind them show through.
+    private unsafe void DrawPrimitives(GL gl, bool blendPass)
+    {
         foreach (var primitive in _gpuPrimitives)
         {
-            var material = primitive.MaterialIndex >= 0 && primitive.MaterialIndex < _currentModel.Materials.Count
+            var material = primitive.MaterialIndex >= 0 && primitive.MaterialIndex < _currentModel!.Materials.Count
                 ? _currentModel.Materials[primitive.MaterialIndex]
                 : null;
+            var isBlend = material?.AlphaMode == ModelAlphaMode.Blend;
+            if (isBlend != blendPass)
+            {
+                continue;
+            }
+
             var baseColor = material?.BaseColorFactor ?? Vector4.One;
-            gl.Uniform4(_baseColorFactorLocation, baseColor.X, baseColor.Y, baseColor.Z, baseColor.W);
+            var alpha = isBlend ? ModelMaterial.BlendPreviewOpacity * baseColor.W : baseColor.W;
+            gl.Uniform4(_baseColorFactorLocation, baseColor.X, baseColor.Y, baseColor.Z, alpha);
 
             var hasTexture = _materialTextures.TryGetValue(primitive.MaterialIndex, out var texture);
             gl.Uniform1(_hasTextureLocation, hasTexture ? 1 : 0);
@@ -208,9 +243,6 @@ public sealed class GlModelSceneRenderer : IModelSceneRenderer
             gl.BindVertexArray(primitive.Vao);
             gl.DrawElements(PrimitiveType.Triangles, primitive.IndexCount, DrawElementsType.UnsignedInt, (void*)0);
         }
-
-        gl.BindVertexArray(0);
-        gl.UseProgram(0);
     }
 
     /// <inheritdoc />
