@@ -21,9 +21,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.WPF.ApacheLicenseForever" Version="1.0.183.475" />
+    <PackageReference Include="CodeBrix.Platform.WPF.ApacheLicenseForever" Version="1.0.193.1013" />
     <!-- The native Microsoft Edge WebView2 control for WPF -->
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4022.49" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
   </ItemGroup>
 
 </Project>

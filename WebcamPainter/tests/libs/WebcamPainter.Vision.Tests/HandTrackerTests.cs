@@ -97,7 +97,7 @@ public class HandTrackerTests
         //Act
         tracker.Start();
         tracker.SubmitFrame(pixels, image.Width, image.Height);
-        bool signaled = resultArrived.Wait(TimeSpan.FromSeconds(30));
+        bool signaled = resultArrived.Wait(TimeSpan.FromSeconds(30), CancellationToken.None);
         tracker.Stop();
 
         //Assert
@@ -126,7 +126,7 @@ public class HandTrackerTests
         //Act
         tracker.Start();
         tracker.SubmitFrame(pixels, 320, 240);
-        bool signaled = resultArrived.Wait(TimeSpan.FromSeconds(30));
+        bool signaled = resultArrived.Wait(TimeSpan.FromSeconds(30), CancellationToken.None);
         tracker.Stop();
 
         //Assert

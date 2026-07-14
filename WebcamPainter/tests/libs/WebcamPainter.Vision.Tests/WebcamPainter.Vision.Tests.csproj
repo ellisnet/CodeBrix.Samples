@@ -26,10 +26,10 @@
     <PackageReference Include="xunit.v3" Version="3.2.2" />
 
     <!-- The tests run real TFLite inference - the native OpenCV library must be present -->
-    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.LinuxX64.ApacheLicenseForever" Version="1.0.193.377" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
-    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.WindowsX64.ApacheLicenseForever" Version="1.0.193.377" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
-    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.MacOSArm64.ApacheLicenseForever" Version="1.0.193.377" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
-    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.MacOSX64.ApacheLicenseForever" Version="1.0.193.377" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
+    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.LinuxX64.ApacheLicenseForever" Version="1.0.195.358" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
+    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.WindowsX64.ApacheLicenseForever" Version="1.0.195.358" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.MacOSArm64.ApacheLicenseForever" Version="1.0.195.358" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
+    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.MacOSX64.ApacheLicenseForever" Version="1.0.195.358" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
   </ItemGroup>
 
   <!-- Test fixture: a public-domain photograph of two open hands (Evan-Amos, Wikimedia

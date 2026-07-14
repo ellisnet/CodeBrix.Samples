@@ -26,7 +26,7 @@
 
   <!-- Native OpenCV library for the hand-tracking (Paint Mode) pipeline -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.WindowsX64.ApacheLicenseForever" Version="1.0.193.377" />
-    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.WindowsArm64.ApacheLicenseForever" Version="1.0.193.377" />
+    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.WindowsX64.ApacheLicenseForever" Version="1.0.195.358" />
+    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.WindowsArm64.ApacheLicenseForever" Version="1.0.195.358" />
   </ItemGroup>
 </Project>

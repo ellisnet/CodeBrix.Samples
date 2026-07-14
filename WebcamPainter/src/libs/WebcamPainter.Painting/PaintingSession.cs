@@ -20,7 +20,7 @@ public sealed class PaintingSession : IDisposable
     /// The brush radius, in calibrated drawing units (the drawing space's long side is 1000).
     /// This is THE knob for how wide the frosting-spatula stroke feels - tweak freely.
     /// </summary>
-    public const float BrushRadius = 30f;
+    public const float BrushRadius = 15f;
 
     private DrawingSession _session;
     private SKBitmap _background;
