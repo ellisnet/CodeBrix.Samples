@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>$(MSBuildProjectName.Replace(" ", "_").Replace(".Wpf", ""))</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Shared\Helpers\HostHelper.cs" Link="Helpers\HostHelper.cs" />
+    <Compile Include="..\Shared\ViewModels\EncryptionMode.cs" Link="ViewModels\EncryptionMode.cs" />
+    <Compile Include="..\Shared\ViewModels\MainViewModel.cs" Link="ViewModels\MainViewModel.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\JustBetweenUs.Encryption\JustBetweenUs.Encryption.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Helpers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Platform.WPF.ApacheLicenseForever" Version="1.0.193.1013" />
+  </ItemGroup>
+
+</Project>

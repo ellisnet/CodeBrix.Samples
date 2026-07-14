@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "JustBetweenUs.WinUI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "JustBetweenUs.WinUI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
