@@ -21,7 +21,7 @@
 
   <!-- EXACTLY ONE platform head package; all other packages come from WebcamPainter.Core -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.MacOS.ApacheLicenseForever" Version="1.0.193.1124" />
+    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.MacOS.ApacheLicenseForever" Version="1.0.195.787" />
   </ItemGroup>
 
   <!-- Native OpenCV library for the hand-tracking (Paint Mode) pipeline -->
