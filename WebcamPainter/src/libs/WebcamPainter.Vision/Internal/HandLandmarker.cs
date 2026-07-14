@@ -74,16 +74,20 @@ internal sealed class HandLandmarker : IDisposable
             new Size(InputSize, InputSize), new Scalar(0, 0, 0), swapRB: true, crop: false);
         _net.SetInput(blob);
 
-        //Identity = 21 x (x, y, z) in crop pixels; Identity_1 = presence probability
+        //Identity = 21 x (x, y, z) in crop pixels; Identity_1 = presence probability. Both
+        //  outputs are always needed, so read them in one pass with ForwardAll (the second
+        //  read reuses the first forward's results).
         float[] rawLandmarks;
-        using (Mat landmarks = _net.Forward("Identity"))
-        {
-            rawLandmarks = PalmDetector.MatToFloats(landmarks);
-        }
         float presence;
-        using (Mat presenceMat = _net.Forward("Identity_1"))
+        Mat[] outputs = _net.ForwardAll("Identity", "Identity_1");
+        try
         {
-            presence = PalmDetector.MatToFloats(presenceMat)[0];
+            rawLandmarks = outputs[0].ToArray<float>();
+            presence = outputs[1].ToArray<float>()[0];
+        }
+        finally
+        {
+            foreach (Mat output in outputs) { output.Dispose(); }
         }
 
         //Project crop-space landmarks back into frame pixels through the same rotation

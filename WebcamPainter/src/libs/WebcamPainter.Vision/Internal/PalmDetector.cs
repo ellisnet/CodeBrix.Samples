@@ -1,7 +1,6 @@
 using CodeBrix.VideoProcessing.OpenCV5;
 using CodeBrix.VideoProcessing.OpenCV5.Dnn;
 using System;
-using System.Runtime.InteropServices;
 
 namespace WebcamPainter.Vision.Internal;
 
@@ -105,11 +104,13 @@ internal sealed class PalmDetector : IDisposable
             new Size(InputSize, InputSize), new Scalar(0, 0, 0), swapRB: true, crop: false);
         _net.SetInput(blob);
 
-        //Identity_1 = per-anchor score logits; Identity = per-anchor box+keypoint offsets
+        //Identity_1 = per-anchor score logits; Identity = per-anchor box+keypoint offsets.
+        //Read them with separate single-name forwards (not ForwardAll) so the no-hand case
+        //  below can early-out before ever reading the far larger box tensor.
         float[] rawScores;
         using (Mat scores = _net.Forward("Identity_1"))
         {
-            rawScores = MatToFloats(scores);
+            rawScores = scores.ToArray<float>();
         }
 
         var bestAnchor = -1;
@@ -128,7 +129,7 @@ internal sealed class PalmDetector : IDisposable
         float[] regressors;
         using (Mat boxes = _net.Forward("Identity"))
         {
-            regressors = MatToFloats(boxes);
+            regressors = boxes.ToArray<float>();
         }
 
         //Decode the winning anchor. All values are normalized to the square input space.
@@ -167,13 +168,6 @@ internal sealed class PalmDetector : IDisposable
 
     internal static float NormalizeRadians(float angle) =>
         angle - (float)(2 * Math.PI * Math.Floor((angle + Math.PI) / (2 * Math.PI)));
-
-    internal static float[] MatToFloats(Mat mat)
-    {
-        var result = new float[mat.Total()];
-        Marshal.Copy(mat.Data, result, 0, result.Length);
-        return result;
-    }
 
     /// <summary>Exposed for unit tests: the anchor grid's X centers.</summary>
     internal static float[] TestAnchorsX => AnchorsX;

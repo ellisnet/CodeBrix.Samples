@@ -1,9 +1,7 @@
 using CodeBrix.Imaging;
 using CodeBrix.Imaging.Drawing;
 using CodeBrix.Imaging.Drawing.Models;
-using SkiaSharp;
 using System;
-using System.Runtime.InteropServices;
 
 namespace WebcamPainter.Painting;
 
@@ -23,12 +21,10 @@ public sealed class PaintingSession : IDisposable
     public const float BrushRadius = 15f;
 
     private DrawingSession _session;
-    private SKBitmap _background;
 
-    private PaintingSession(DrawingSession session, SKBitmap background)
+    private PaintingSession(DrawingSession session)
     {
         _session = session;
-        _background = background;
 
         foreach (HighlighterColor color in HighlighterPalette.Colors)
         {
@@ -56,31 +52,19 @@ public sealed class PaintingSession : IDisposable
         if (width < 1) { throw new ArgumentOutOfRangeException(nameof(width)); }
         if (height < 1) { throw new ArgumentOutOfRangeException(nameof(height)); }
 
-        var decoded = new SKBitmap(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Opaque));
-        Marshal.Copy(bgraPixels, 0, decoded.GetPixels(), width * height * 4);
-
-        SKBitmap background = decoded;
-        if (mirrorHorizontally)
-        {
-            background = new SKBitmap(decoded.Info);
-            using (var canvas = new SKCanvas(background))
-            {
-                canvas.Scale(-1, 1, width / 2f, 0);
-                canvas.DrawBitmap(decoded, new SKPoint(0, 0), new SKSamplingOptions(SKFilterMode.Nearest));
-            }
-            decoded.Dispose();
-        }
-
+        //The raw-BGRA factory copies the pixels, optionally mirrors, and owns the bitmap -
+        //  no SkiaSharp decode/mirror round-trip lives here anymore.
         DrawingSession session = DrawingSession.CreateForImage(
-            background,
+            bgraPixels, width, height,
             CalibrationSizing.DeriveFromBackgroundImage,
             new DrawingSessionOptions
             {
                 BackgroundFillColor = Color.White,   //JPEG has no alpha - keep the fill opaque
                 SurfaceClearColor = Color.Black,     //letterbox bars around the still
                 StrokeWidth = BrushRadius * 2f,
-            });
-        return new PaintingSession(session, background);
+            },
+            mirrorHorizontally);
+        return new PaintingSession(session);
     }
 
     /// <summary>
@@ -119,29 +103,24 @@ public sealed class PaintingSession : IDisposable
     #region | Normalized-coordinate stroke input |
 
     /// <summary>
-    /// Begins a stroke at the given normalized still-image position. No-op (returning
-    /// <c>false</c>) until the session has rendered at least once.
+    /// Begins a stroke at the given normalized still-image position. Works immediately - the
+    /// drawing space is calibrated from the captured photo, so no view size or prior render
+    /// is needed. A position outside 0..1 is ignored.
     /// </summary>
     /// <param name="normX">Horizontal position across the still, 0..1.</param>
     /// <param name="normY">Vertical position down the still, 0..1.</param>
-    /// <param name="viewWidth">The hosting canvas's logical width.</param>
-    /// <param name="viewHeight">The hosting canvas's logical height.</param>
     /// <returns><c>true</c> when a stroke was started.</returns>
-    public bool BeginStroke(float normX, float normY, float viewWidth, float viewHeight)
-        => _session.PointerPressed(NormalizedToView(normX, normY, viewWidth, viewHeight),
-            new SizeF(viewWidth, viewHeight));
+    public bool BeginStroke(float normX, float normY)
+        => _session.PointerPressedNormalized(normX, normY);
 
     /// <summary>
     /// Extends the in-progress stroke to the given normalized still-image position.
     /// </summary>
     /// <param name="normX">Horizontal position across the still, 0..1.</param>
     /// <param name="normY">Vertical position down the still, 0..1.</param>
-    /// <param name="viewWidth">The hosting canvas's logical width.</param>
-    /// <param name="viewHeight">The hosting canvas's logical height.</param>
     /// <returns><c>true</c> when the stroke was extended.</returns>
-    public bool ContinueStroke(float normX, float normY, float viewWidth, float viewHeight)
-        => _session.PointerMoved(NormalizedToView(normX, normY, viewWidth, viewHeight),
-            new SizeF(viewWidth, viewHeight));
+    public bool ContinueStroke(float normX, float normY)
+        => _session.PointerMovedNormalized(normX, normY);
 
     /// <summary>Completes and commits the in-progress stroke ("spatula" lifted).</summary>
     /// <returns><c>true</c> when a stroke was committed.</returns>
@@ -174,18 +153,7 @@ public sealed class PaintingSession : IDisposable
     /// <param name="viewHeight">The hosting canvas's height.</param>
     /// <returns>The still's display rectangle in canvas coordinates.</returns>
     public RectangleF GetImageRectInView(float viewWidth, float viewHeight)
-    {
-        Size calibration = _session.CalibrationSize;
-        if (viewWidth <= 0 || viewHeight <= 0 || calibration.Width <= 0 || calibration.Height <= 0)
-        {
-            return new RectangleF(0, 0, 0, 0);
-        }
-
-        float scale = Math.Min(viewWidth / calibration.Width, viewHeight / calibration.Height);
-        float width = calibration.Width * scale;
-        float height = calibration.Height * scale;
-        return new RectangleF((viewWidth - width) / 2f, (viewHeight - height) / 2f, width, height);
-    }
+        => _session.GetDrawingRect(new SizeF(viewWidth, viewHeight));
 
     /// <summary>
     /// The brush radius in canvas coordinates for a canvas of the given size - for drawing
@@ -195,13 +163,7 @@ public sealed class PaintingSession : IDisposable
     /// <param name="viewHeight">The hosting canvas's height.</param>
     /// <returns>The brush radius, scaled to canvas coordinates.</returns>
     public float GetBrushRadiusInView(float viewWidth, float viewHeight)
-    {
-        Size calibration = _session.CalibrationSize;
-        if (calibration.Width <= 0) { return 0f; }
-
-        RectangleF fit = GetImageRectInView(viewWidth, viewHeight);
-        return BrushRadius * (fit.Width / calibration.Width);
-    }
+        => _session.ScaleToView(BrushRadius, new SizeF(viewWidth, viewHeight));
 
     #endregion
 
@@ -222,11 +184,6 @@ public sealed class PaintingSession : IDisposable
         {
             _session.Dispose();
             _session = null;
-        }
-        if (_background != null)
-        {
-            _background.Dispose();
-            _background = null;
         }
     }
 }

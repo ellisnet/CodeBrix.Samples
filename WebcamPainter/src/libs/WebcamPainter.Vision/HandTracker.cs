@@ -1,5 +1,6 @@
 using CodeBrix.VideoProcessing.OpenCV5;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -147,8 +148,26 @@ public sealed class HandTracker : IDisposable
                     _hasPending = false;
                 }
 
-                HandTrackingResult result = ProcessFrame(detector, landmarker, _workingFrame, width, height);
-                TrackingUpdated?.Invoke(this, new HandTrackingEventArgs(result));
+                try
+                {
+                    HandTrackingResult result = ProcessFrame(detector, landmarker, _workingFrame, width, height);
+                    TrackingUpdated?.Invoke(this, new HandTrackingEventArgs(result));
+                }
+                catch (Exception ex) when (!_running)
+                {
+                    //Shutting down: a frame was in flight when the tracker - or the native
+                    //  OpenCV runtime at process exit - began tearing down (e.g. "terminated
+                    //  TLS container"). The app is going away; exit the loop quietly rather
+                    //  than surfacing this as a fatal unhandled exception on the worker thread.
+                    Debug.WriteLine($"HandTracker worker stopping during shutdown: {ex.Message}");
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    //A single frame failed to process - drop it and keep tracking rather than
+                    //  taking down the whole application over one bad frame.
+                    Debug.WriteLine($"HandTracker skipped a frame: {ex.Message}");
+                }
             }
         }
         finally

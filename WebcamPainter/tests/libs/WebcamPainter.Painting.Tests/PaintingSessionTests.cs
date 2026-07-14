@@ -92,8 +92,8 @@ public class PaintingSessionTests
         RenderOnce(session);
 
         //Act
-        bool began = session.BeginStroke(0.3f, 0.4f, 400, 300);
-        bool continued = session.ContinueStroke(0.6f, 0.5f, 400, 300);
+        bool began = session.BeginStroke(0.3f, 0.4f);
+        bool continued = session.ContinueStroke(0.6f, 0.5f);
         bool committed = session.EndStroke();
 
         //Assert
@@ -105,13 +105,15 @@ public class PaintingSessionTests
     }
 
     [Fact]
-    public void BeginStroke_before_first_render_returns_false()
+    public void BeginStroke_works_before_first_render()
     {
         //Arrange
         using PaintingSession session = CreateSession();
 
-        //Act / Assert - the drawing session cannot calibrate before it knows its canvas size
-        session.BeginStroke(0.5f, 0.5f, 400, 300).Should().Be(false);
+        //Act / Assert - normalized strokes use the drawing space calibrated from the photo,
+        //  so they work with no view size and no prior render
+        session.BeginStroke(0.5f, 0.5f).Should().Be(true);
+        session.IsStrokeActive.Should().Be(true);
     }
 
     [Fact]
@@ -120,7 +122,7 @@ public class PaintingSessionTests
         //Arrange
         using PaintingSession session = CreateSession();
         RenderOnce(session);
-        session.BeginStroke(0.5f, 0.5f, 400, 300);
+        session.BeginStroke(0.5f, 0.5f);
 
         //Act
         session.CancelStroke();
@@ -136,7 +138,7 @@ public class PaintingSessionTests
         //Arrange
         using PaintingSession session = CreateSession();
         RenderOnce(session);
-        session.BeginStroke(0.5f, 0.5f, 400, 300);
+        session.BeginStroke(0.5f, 0.5f);
         session.EndStroke();
 
         //Act

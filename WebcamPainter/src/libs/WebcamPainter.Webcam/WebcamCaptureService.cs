@@ -11,14 +11,12 @@ namespace WebcamPainter.Webcam;
 /// The webcam capture model for WebcamPainter: discovers connected cameras, runs a live
 /// capture session on the selected one, keeps the most recent BGRA frame available for
 /// rendering (and for the hand-tracking pipeline), and takes in-memory still photos.
-/// Audio is never captured - this application only paints.
+/// Audio is never captured - this application only paints. The latest-frame cache lives in
+/// the underlying <see cref="WebcamSession"/>; this service just forwards to it.
 /// </summary>
 public sealed class WebcamCaptureService : IDisposable
 {
-    private readonly object _frameLock = new object();
-    private byte[] _latestFrame;
-    private int _frameWidth;
-    private int _frameHeight;
+    private volatile bool _hasFrame;
 
     private WebcamSession _session;
 
@@ -41,16 +39,10 @@ public sealed class WebcamCaptureService : IDisposable
     public bool IsRunning => _session != null;
 
     /// <summary>Indicates whether at least one frame has arrived since the session started.</summary>
-    public bool HasFrame
-    {
-        get
-        {
-            lock (_frameLock) { return _latestFrame != null; }
-        }
-    }
+    public bool HasFrame => _hasFrame;
 
     /// <summary>
-    /// Raised after each new frame has been copied and is available via
+    /// Raised after each new frame has arrived and is available via
     /// <see cref="TryCopyLatestFrame"/>. Raised on the CAPTURE thread - handlers must get
     /// out fast and must marshal any UI work themselves.
     /// </summary>
@@ -82,29 +74,14 @@ public sealed class WebcamCaptureService : IDisposable
             _session.Dispose();
             _session = null;
         }
-        lock (_frameLock)
-        {
-            _latestFrame = null;
-            _frameWidth = 0;
-            _frameHeight = 0;
-        }
+        _hasFrame = false;
     }
 
     private void OnFrameReceived(object sender, WebcamFrameEventArgs frame)
     {
-        //Capture-thread context: copy the pixels and get out fast
-        lock (_frameLock)
-        {
-            var needed = (int)(frame.Width * frame.Height * 4);
-            if (_latestFrame == null || _latestFrame.Length != needed)
-            {
-                _latestFrame = new byte[needed];
-            }
-            frame.CopyTo(_latestFrame);
-            _frameWidth = (int)frame.Width;
-            _frameHeight = (int)frame.Height;
-        }
-
+        //Capture-thread context: the session caches the pixels itself (see TryCopyLatestFrame);
+        //  we only note that a frame exists and get out fast.
+        _hasFrame = true;
         FrameArrived?.Invoke(this, EventArgs.Empty);
     }
 
@@ -119,23 +96,14 @@ public sealed class WebcamCaptureService : IDisposable
     /// <returns><c>true</c> when a frame was copied.</returns>
     public bool TryCopyLatestFrame(ref byte[] buffer, out int width, out int height)
     {
-        lock (_frameLock)
+        WebcamSession session = _session;
+        if (session == null)
         {
-            if (_latestFrame == null)
-            {
-                width = 0;
-                height = 0;
-                return false;
-            }
-            if (buffer == null || buffer.Length != _latestFrame.Length)
-            {
-                buffer = new byte[_latestFrame.Length];
-            }
-            Array.Copy(_latestFrame, buffer, _latestFrame.Length);
-            width = _frameWidth;
-            height = _frameHeight;
-            return true;
+            width = 0;
+            height = 0;
+            return false;
         }
+        return session.TryCopyLatestFrame(ref buffer, out width, out height);
     }
 
     /// <summary>

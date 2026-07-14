@@ -27,11 +27,9 @@ public interface IFileSaveBridge
 }
 
 /// <summary>
-/// Lets the hosting page hand the view model everything it needs to drive the two Skia
-/// canvases: invalidate (repaint) delegates for each, and the main canvas's current logical
-/// size (which the painting session needs to map hand positions into strokes). Frames and
-/// tracking results arrive on capture/worker threads; the page's delegates are responsible
-/// for marshalling their invalidates onto the UI thread.
+/// Lets the hosting page hand the view model the invalidate (repaint) delegates for the two
+/// Skia canvases. Frames and tracking results arrive on capture/worker threads; the page's
+/// delegates are responsible for marshalling their invalidates onto the UI thread.
 /// </summary>
 public interface ICanvasBridge
 {
@@ -40,9 +38,6 @@ public interface ICanvasBridge
 
     /// <summary>Invalidates the small self-view canvas shown beside the painting in Paint Mode.</summary>
     Action InvalidateSelfView { get; set; }
-
-    /// <summary>Returns the main canvas's current logical size (width, height).</summary>
-    Func<(float Width, float Height)> GetMainCanvasSize { get; set; }
 }
 
 #if HAS_CODEBRIX
@@ -156,16 +151,17 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
             bool paintNow = result.HandDetected && result.IsOpenPalm;
             IsBrushPainting = paintNow;
 
-            (float width, float height) = GetMainCanvasSize?.Invoke() ?? (0f, 0f);
-            if (paintNow && width > 0 && height > 0)
+            //Strokes are driven in normalized still-image coordinates, so no canvas size is
+            //  needed - the drawing space is calibrated from the captured photo.
+            if (paintNow)
             {
                 if (session.IsStrokeActive)
                 {
-                    session.ContinueStroke(CrosshairNormX.Value, CrosshairNormY.Value, width, height);
+                    session.ContinueStroke(CrosshairNormX.Value, CrosshairNormY.Value);
                 }
                 else
                 {
-                    session.BeginStroke(CrosshairNormX.Value, CrosshairNormY.Value, width, height);
+                    session.BeginStroke(CrosshairNormX.Value, CrosshairNormY.Value);
                 }
             }
             else if (session.IsStrokeActive)
@@ -271,9 +267,6 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
 
     /// <summary>Set by the hosting page (see <see cref="ICanvasBridge"/>).</summary>
     public Action InvalidateSelfView { get; set; }
-
-    /// <summary>Set by the hosting page (see <see cref="ICanvasBridge"/>).</summary>
-    public Func<(float Width, float Height)> GetMainCanvasSize { get; set; }
 
     #endregion
 
@@ -559,7 +552,6 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
         PickSaveJpegPathAsync = null;
         InvalidateMainCanvas = null;
         InvalidateSelfView = null;
-        GetMainCanvasSize = null;
 
         if (_tracker != null)
         {

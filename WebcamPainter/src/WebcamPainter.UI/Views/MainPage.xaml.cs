@@ -39,7 +39,6 @@ public sealed partial class MainPage : Page
                 //  the repaints onto the UI thread
                 canvasBridge.InvalidateMainCanvas = () => DispatcherQueue?.TryEnqueue(() => MainCanvas?.Invalidate());
                 canvasBridge.InvalidateSelfView = () => DispatcherQueue?.TryEnqueue(() => SelfViewCanvas?.Invalidate());
-                canvasBridge.GetMainCanvasSize = () => ((float)MainCanvas.ActualWidth, (float)MainCanvas.ActualHeight);
             }
         };
 
