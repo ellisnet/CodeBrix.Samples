@@ -45,6 +45,8 @@ Everything **above** `IModelRenderEngine` is graphics-API-agnostic and is reused
 any backend:
 
 - `LoadedModel`, `GltfModelLoader`, `CubeMeshBuilder`, `OrbitCamera` — model data + camera math.
+  (`GltfModelLoader` also classifies each material's **alpha mode** — opaque, or translucent for
+  `alphaMode: BLEND` *and* `KHR_materials_transmission` glass — which both renderers act on below.)
 - `ModelScenePainter` — input handling + Skia compositing.
 - `IScenePainter`, the view model, the XAML/code-behind.
 
@@ -58,8 +60,8 @@ Everything **below** it is API-specific, one class-cluster per backend:
 
 ### How the backend is chosen (the dropdown)
 
-`IModelRenderEngineSelector` (registered in `RegisterServices`, replacing the old single
-`IModelRenderEngineFactory` registration) owns the list of backends and the platform gate:
+`IModelRenderEngineSelector` (registered in `RegisterServices`) owns the list of backends and
+the platform gate:
 
 - `AvailableKinds` → `[OpenGL, Vulkan]`, in dropdown order; the app always starts on OpenGL.
 - `IsSupported(kind)` → OpenGL everywhere; Vulkan only where the Rendering library's
@@ -78,7 +80,7 @@ platform the view model pre-warms the new Vulkan engine with a 1×1 off-thread f
 missing/broken driver fails fast into a status message (never inside the paint callback),
 then swaps painters and re-displays the current sample from the local cache.
 
-## Three things that are easy to get wrong
+## Four things that are easy to get wrong
 
 - **Threading / context (OpenGL only).** A GL context must be created and used on the thread
   that renders — the UI thread, inside `SKXamlCanvas.PaintSurface`. `OpenGlModelRenderEngine`
@@ -107,6 +109,21 @@ then swaps painters and re-displays the current sample from the local cache.
   once at development time and the words embedded as static source in `VulkanShaders.cs`
   (with the GLSL alongside in comments), so building and running the app needs no shader
   compiler — the same pre-captured-output approach as the CodeBrix.Platform.OpenGL bindings.
+- **Transparent (glass) materials.** glTF marks glass two ways: `alphaMode: BLEND`, and — more
+  subtly — a `KHR_materials_transmission` extension on an otherwise `alphaMode: OPAQUE` material
+  (a camera lens, a clock face). `GltfModelLoader` treats **both** as translucent. This preview
+  doesn't implement real transmission/refraction, so a translucent material is instead given a
+  fixed preview opacity (`ModelMaterial.BlendPreviewOpacity`, currently 15%) — otherwise glass
+  renders as an opaque disc that hides everything behind it. Each renderer then draws in **two
+  passes**: opaque/mask primitives first with depth writes **on**, then the translucent ones with
+  depth writes **off** and straight-alpha "over" blending. GL uses
+  `BlendFuncSeparate(SrcAlpha, OneMinusSrcAlpha, One, OneMinusSrcAlpha)` (the alpha channel
+  accumulates coverage so a region already opaque behind the glass stays opaque for the Skia
+  composite); Vulkan uses a **second pipeline** (`_blendPipeline`: blend enabled,
+  `DepthWriteEnable = false`) drawn after the opaque pass. The preview opacity rides in the
+  existing `BaseColorFactor.W` (a GL uniform / a Vulkan push-constant field), so no shader or
+  SPIR-V change was needed. BLEND primitives are **not** depth-sorted — fine for the small amount
+  of transparent geometry these preview models carry.
 
 ## File map
 
@@ -124,7 +141,7 @@ then swaps painters and re-displays the current sample from the local cache.
 
 (The off-screen GL context itself is `CodeBrix.Platform.WinUI.Graphics3DGL.OffscreenGLContext`,
 supplied by the `CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever` package — cross-platform,
-so there is no app-owned EGL/WGL/GLX class here anymore.)
+so there is no app-owned EGL/WGL/GLX class here.)
 
 (The heavy lifting lives in the Rendering library:
 `GL/GlModelSceneRenderer.cs` for OpenGL shaders/VAOs/drawing, and

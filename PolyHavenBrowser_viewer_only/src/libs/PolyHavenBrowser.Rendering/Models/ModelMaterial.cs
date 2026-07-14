@@ -29,7 +29,7 @@ public sealed class ModelMaterial
     /// this preview doesn't implement); this constant instead gives such surfaces a fixed
     /// see-through look, multiplied onto any real base-color alpha.
     /// </summary>
-    public const float BlendPreviewOpacity = 0.2f;
+    public const float BlendPreviewOpacity = 0.15f;
 
     /// <summary>The material name, when the source file provides one.</summary>
     public string? Name { get; init; }

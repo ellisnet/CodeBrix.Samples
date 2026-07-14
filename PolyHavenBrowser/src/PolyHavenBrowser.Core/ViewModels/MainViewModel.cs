@@ -215,7 +215,7 @@ public class MainViewModel : SimpleViewModel
 
     /// <summary>Opens the folder picker to choose where models download to.</summary>
     public SimpleCommand PickFolderCommand => _pickFolderCommand ??=
-        new SimpleCommand(() => true, (Func<object, Task>)(_ => PickFolderAsync()));
+        new SimpleCommand((Func<object, Task>)(_ => PickFolderAsync()));
 
     private async Task PickFolderAsync()
     {
@@ -382,7 +382,7 @@ public class MainViewModel : SimpleViewModel
 
     /// <summary>Returns from the Model View to the Browsing View.</summary>
     public SimpleCommand BackCommand => _backCommand ??=
-        new SimpleCommand(() => true, (Func<object, Task>)(_ => { CloseModelView(); return Task.CompletedTask; }));
+        new SimpleCommand((Func<object, Task>)(_ => { CloseModelView(); return Task.CompletedTask; }));
 
     private SimpleCommand _documentCommand;
 

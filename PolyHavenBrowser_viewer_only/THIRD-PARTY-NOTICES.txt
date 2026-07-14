@@ -1,0 +1,24 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the PolyHavenBrowser_viewer_only sample application, together with the
+licenses under which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here.
+
+------------------------------------------------------------------------
+Poly Haven assets (downloaded at run time)
+------------------------------------------------------------------------
+This sample downloads sample textures, HDRI environments, and 3D models from
+Poly Haven (https://polyhaven.com) at run time.
+
+Poly Haven assets are released under the Creative Commons CC0 1.0 Universal
+public-domain dedication (https://creativecommons.org/publicdomain/zero/1.0/);
+no attribution is required, though Poly Haven appreciates a credit.
+
+None of these assets are redistributed as part of this repository; they are
+fetched on demand and cached locally.

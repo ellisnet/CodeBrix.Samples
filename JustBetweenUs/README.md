@@ -9,9 +9,8 @@ The same application is implemented here in **two distinct styles**, sharing the
 view models, services, and image/animation assets:
 
 1. **"CodeBrixPlatform" applications** (the `CodeBrixPlatform/` folder) — built on the
-   Skia-based `CodeBrix.Platform.*` UI framework (a friendly fork of the Uno Platform),
-   where one shared XAML UI runs on Windows, Linux (X11, Wayland, framebuffer), and
-   macOS, all rendered through Skia.
+   Skia-based `CodeBrix.Platform.*` UI framework, where one shared XAML UI runs on
+   Windows, Linux (X11, Wayland, framebuffer), and macOS, all rendered through Skia.
 2. **"Alternate platform" applications** (repo root) — native WinUI (Windows App SDK),
    WPF, and .NET MAUI apps that do **not** use the Skia-based UI framework, but instead
    use the native `CodeBrix.Platform.WinUI.*`, `CodeBrix.Platform.WPF.*`, and
@@ -67,13 +66,13 @@ Each head is a tiny `Program.cs` that selects its platform host and runs the sha
 app:
 
 ```csharp
-var host = CodeBrixPlatformHostBuilder.Create()
-    .App(() => new App())
-    .UseWindowsWin32()   // or .UseWindowsWpf() / .UseLinuxX11() / .UseLinuxWayland()
-                         //    / .UseLinuxFrameBuffer() / .UseMacOS()
-    .Build();
+var host = CodeBrixPlatformHostBuilder.Create
+    .App( => new App)
+    .UseWindowsWin32   // or .UseWindowsWpf / .UseLinuxX11 / .UseLinuxWayland
+                         //    / .UseLinuxFrameBuffer / .UseMacOS
+    .Build;
 
-await host.RunAsync();
+await host.RunAsync;
 ```
 
 The shared class library `JustBetweenUs.Core` carries the app logic and the
@@ -133,10 +132,10 @@ changing how its visual assets render.
 | Folder / project | Purpose |
 | --- | --- |
 | `Shared/ViewModels` | `MainViewModel` (all app behavior) and `EncryptionMode` (a `SimpleEnum`-based algorithm picker), file-linked into every head |
-| `Shared/Helpers` | `HostHelper` — the app-side `IHostBuilderProvider` that hands `Host.CreateDefaultBuilder()` to `SimpleServiceResolver` |
+| `Shared/Helpers` | `HostHelper` — the app-side `IHostBuilderProvider` that hands `Host.CreateDefaultBuilder` to `SimpleServiceResolver` |
 | `Shared/Assets` | The SVG icons (embedded resources) and the Lottie `star_icon.json` used by all heads |
 | `Shared/Testing` | `SimpleTestFixture` — a DI-container-backed xUnit fixture base |
-| `JustBetweenUs.Encryption` | The encryption service (`IEncryptionService`): AES, Triple DES, and Twofish (via .NET and BouncyCastle cryptography), Base64 transport encoding, embedded default key, DI registration via `AddEncryption()` |
+| `JustBetweenUs.Encryption` | The encryption service (`IEncryptionService`): AES, Triple DES, and Twofish (via .NET and BouncyCastle cryptography), Base64 transport encoding, embedded default key, DI registration via `AddEncryption` |
 | `Tests/JustBetweenUs.Encryption.Tests` | xUnit tests for the encryption service, using the `SimpleTestFixture` pattern and SilverAssertions |
 
 ---
@@ -145,13 +144,14 @@ changing how its visual assets render.
 
 | Solution | Use on | Contains |
 | --- | --- | --- |
-| `JustBetweenUs.sln` | Windows | Everything: all CodeBrixPlatform heads, WinUI, WPF, MAUI, encryption library and tests |
-| `JustBetweenUs.Linux.sln` | Linux | The CodeBrixPlatform heads, encryption library and tests |
-| `JustBetweenUs.Macos.sln` | macOS | The CodeBrixPlatform heads, the MAUI app, encryption library and tests |
+| `JustBetweenUs.Windows.sln` | Windows | Everything: all six CodeBrixPlatform (Skia) heads, the native WinUI, WPF and .NET MAUI (`Mobile`) heads, the encryption library and its tests |
+| `JustBetweenUs.Linux.sln` | Linux | The CodeBrixPlatform (Skia) heads (all except `WinWpfSkia`), the encryption library and its tests |
+| `JustBetweenUs.MacOS.sln` | macOS | The CodeBrixPlatform (Skia) heads (all except `WinWpfSkia`), the .NET MAUI (`Mobile`) head, the encryption library and its tests |
 
-Build with a current .NET SDK (see the `TargetFramework` values in the `.csproj`
-files for the exact version expected). The MAUI head requires the .NET MAUI
-workloads; the WinUI head builds/deploys like any packaged Windows App SDK app.
+There is no bare `JustBetweenUs.sln`; the Windows solution is `JustBetweenUs.Windows.sln`.
+Every project targets **.NET 10** (`net10.0` and its platform-specific TFMs). The MAUI
+head requires the .NET MAUI workloads; the WinUI head builds/deploys like any packaged
+Windows App SDK app.
 
 **Linux note:** on some Linux ARM64 environments the SkiaSharp native library needs
 FreeType preloaded (for example
@@ -203,9 +203,9 @@ fluent-assertion library from the same author.)
 ## Repository layout
 
 ```
-JustBetweenUs.sln                  All projects (open on Windows)
+JustBetweenUs.Windows.sln          All projects (open on Windows)
 JustBetweenUs.Linux.sln            Linux development
-JustBetweenUs.Macos.sln            macOS development
+JustBetweenUs.MacOS.sln            macOS development
 │
 ├─ CodeBrixPlatform/               The Skia-based (CodeBrix.Platform UI) applications
 │   ├─ JustBetweenUs.UI/           Shared XAML UI (shared project)

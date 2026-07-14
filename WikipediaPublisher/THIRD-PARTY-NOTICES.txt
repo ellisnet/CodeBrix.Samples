@@ -1,0 +1,46 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the WikipediaPublisher sample application, together with the licenses
+under which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here.
+
+------------------------------------------------------------------------
+EB Garamond
+  (bundled: WikipediaPublisher.RenderArticle/Fonts/EBGaramond-*.ttf)
+------------------------------------------------------------------------
+Copyright 2017 The EB Garamond Project Authors
+(https://github.com/octaviopardo/EBGaramond12).
+
+Licensed under the SIL Open Font License, Version 1.1.
+Full license text: WikipediaPublisher.RenderArticle/Fonts/OFL-EBGaramond.txt
+
+------------------------------------------------------------------------
+Source Sans 3
+  (bundled: WikipediaPublisher.RenderArticle/Fonts/SourceSans3-*.ttf)
+------------------------------------------------------------------------
+Copyright 2010-2020 Adobe (http://www.adobe.com/), with Reserved Font Name
+'Source'.
+
+Licensed under the SIL Open Font License, Version 1.1.
+Full license text: WikipediaPublisher.RenderArticle/Fonts/OFL-SourceSans3.txt
+
+------------------------------------------------------------------------
+Wikipedia article content and images (downloaded at run time)
+------------------------------------------------------------------------
+This sample fetches article text and images from Wikipedia
+(https://www.wikipedia.org) at run time and composes them into a PDF.
+
+Wikipedia article text is licensed under the Creative Commons
+Attribution-ShareAlike license (CC BY-SA;
+https://creativecommons.org/licenses/by-sa/4.0/). Article images carry their
+own individual licenses, as noted on their Wikimedia description pages. Each
+generated PDF includes a colophon carrying the article's attribution.
+
+Excepting a few sample output documents, none of this content is redistributed
+as part of this repository; it is fetched on demand.

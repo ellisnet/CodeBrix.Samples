@@ -121,7 +121,7 @@ public sealed class SampleAssetService
     {
         SampleAssetKind.Texture => "red_brick",
         SampleAssetKind.Hdri => "small_cathedral",
-        SampleAssetKind.Model => "alarm_clock_01",
+        SampleAssetKind.Model => "Camera_01",
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 

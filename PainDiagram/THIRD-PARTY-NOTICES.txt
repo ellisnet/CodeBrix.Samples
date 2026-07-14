@@ -1,0 +1,21 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents content bundled with the PainDiagram sample application and
+the licenses under which it is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here.
+
+------------------------------------------------------------------------
+body_map_master.png  (the medical body-map background image)
+  (bundled: Shared/Assets/body_map_master.png)
+------------------------------------------------------------------------
+Copyright (c) 2018 Jeremy Ellis.
+
+This body-map image is the author's own original work — not third-party
+content — and is made available under the repository's overall license, the
+Apache License, Version 2.0 (see the repository LICENSE file). It is recorded
+here only to document its provenance.

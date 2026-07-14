@@ -257,9 +257,29 @@ public sealed class GltfModelLoader : IModelLoader
             }
         }
 
+        // The standard glTF alpha mode...
+        var alphaMode = material.Alpha switch
+        {
+            AlphaMode.MASK => ModelAlphaMode.Mask,
+            AlphaMode.BLEND => ModelAlphaMode.Blend,
+            _ => ModelAlphaMode.Opaque,
+        };
+
+        // ...plus KHR_materials_transmission glass (e.g. a camera's lens/flash/viewfinder),
+        // which is alphaMode OPAQUE yet see-through. This preview doesn't implement real
+        // transmission/refraction, so treat any transmissive material as translucent and render it
+        // with the same fixed preview opacity as BLEND surfaces, rather than as an opaque solid.
+        // FindChannel("Transmission") returns a channel only when the extension is present (glTF
+        // exporters write it only for actual glass), so its presence is a reliable glass signal.
+        if (alphaMode == ModelAlphaMode.Opaque && material.FindChannel("Transmission") is not null)
+        {
+            alphaMode = ModelAlphaMode.Blend;
+        }
+
         return new ModelMaterial
         {
             Name = material.Name,
+            AlphaMode = alphaMode,
             BaseColorFactor = baseColor?.Color ?? Vector4.One,
             BaseColorTextureRgba = textureRgba,
             BaseColorTextureWidth = textureWidth,

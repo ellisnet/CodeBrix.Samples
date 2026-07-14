@@ -182,7 +182,7 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasInvalidato
 
     private SimpleCommand _selectPainCommand;
     public SimpleCommand SelectPainCommand =>
-        (_selectPainCommand ??= new SimpleCommand(() => true, DoSelectPain));
+        (_selectPainCommand ??= new SimpleCommand(DoSelectPain));
 
     private Task DoSelectPain()
     {
@@ -192,7 +192,7 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasInvalidato
 
     private SimpleCommand _selectNumbnessCommand;
     public SimpleCommand SelectNumbnessCommand =>
-        (_selectNumbnessCommand ??= new SimpleCommand(() => true, DoSelectNumbness));
+        (_selectNumbnessCommand ??= new SimpleCommand(DoSelectNumbness));
 
     private Task DoSelectNumbness()
     {
@@ -202,7 +202,7 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasInvalidato
 
     private SimpleCommand _selectTinglingCommand;
     public SimpleCommand SelectTinglingCommand =>
-        (_selectTinglingCommand ??= new SimpleCommand(() => true, DoSelectTingling));
+        (_selectTinglingCommand ??= new SimpleCommand(DoSelectTingling));
 
     private Task DoSelectTingling()
     {
