@@ -7,22 +7,12 @@ using System.Threading.Tasks;
 using CodeBrix.Platform.Simple;
 using Microsoft.UI.Xaml;
 using Windows.Storage.Pickers;
-using PolyHavenBrowser.Display;
 using PolyHavenBrowser.PolyHavenApiClient;
 using PolyHavenBrowser.Rendering;
 using PolyHavenBrowser.Services;
 
 // ReSharper disable once CheckNamespace
 namespace PolyHavenBrowser.ViewModels;
-
-/// <summary>
-/// Lets the hosting page hand the view model a way to invalidate (repaint) the Skia canvas.
-/// </summary>
-public interface ICanvasInvalidator
-{
-    /// <summary>Invalidates the hosting page's canvas (null before the page wires it up).</summary>
-    Action InvalidateCanvas { get; set; }
-}
 
 /// <summary>One label/value row of the Model View's facts panel.</summary>
 #if HAS_CODEBRIX
@@ -54,7 +44,7 @@ public sealed class ModelFact
 #if HAS_CODEBRIX
 [Microsoft.UI.Xaml.Data.Bindable]
 #endif
-public class MainViewModel : SimpleViewModel, ICanvasInvalidator
+public class MainViewModel : SimpleViewModel
 {
     private const string SortMostPopular = "Most popular";
     private const string SortNewest = "Newest";
@@ -78,7 +68,7 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
     private string _downloadStatusText = string.Empty;
 
     private bool _isModelViewActive;
-    private ModelScenePainter _painter;
+    private LoadedModel _currentModel;
     private string _modelTitle = string.Empty;
     private string _modelAuthorLine = string.Empty;
     private string _modelDescription = string.Empty;
@@ -94,9 +84,6 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
 
         _ = LoadCatalogAsync();
     }
-
-    /// <inheritdoc />
-    public Action InvalidateCanvas { get; set; }
 
     #region | Browsing View: catalog, search, sort |
 
@@ -354,8 +341,8 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
     /// <summary>The Model View's visibility.</summary>
     public Visibility ModelViewVisibility => IsModelViewActive ? Visibility.Visible : Visibility.Collapsed;
 
-    /// <summary>The painter the hosting canvas draws with (null while browsing).</summary>
-    public IScenePainter CurrentPainter => _painter;
+    /// <summary>The model shown in the 3D preview (null while browsing); the preview control binds to this.</summary>
+    public LoadedModel CurrentModel => _currentModel;
 
     /// <summary>The Model View's title (the model's name).</summary>
     public string ModelTitle
@@ -418,19 +405,9 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
             return (loaded, ModelFileStats.FromLoadedModel(loaded, downloaded.ModelFolder));
         });
 
-        var engine = new OpenGlModelRenderEngine();
-        engine.Camera.FovDegrees = 45f;
-        engine.Camera.YawDegrees = 30f;
-        engine.Camera.PitchDegrees = 15f;
-        engine.Camera.FitMargin = 0.73f;
-        engine.Camera.VerticalFramingBias = 0.22f;
-
-        var painter = new ModelScenePainter(engine);
-        painter.SetModel(model);
-
-        var previous = _painter;
-        _painter = painter;
-        previous?.Dispose();
+        // Hand the model to the preview control via its bound CurrentModel; the control frames
+        // the camera and repaints itself. The GPU upload happens lazily at its first render.
+        _currentModel = model;
 
         ModelTitle = string.IsNullOrWhiteSpace(asset.Name) ? downloaded.Slug : asset.Name;
         ModelAuthorLine = BuildAuthorLine(asset);
@@ -438,19 +415,16 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
         ModelTagsText = string.Join("   ", (asset.Tags ?? []).Select(t => $"#{t}"));
         PopulateFacts(asset, stats);
 
-        NotifyPropertyChanged(nameof(CurrentPainter));
+        NotifyPropertyChanged(nameof(CurrentModel));
         IsModelViewActive = true;
-        InvalidateCanvas?.Invoke();
     }
 
     private void CloseModelView()
     {
         IsModelViewActive = false;
 
-        var painter = _painter;
-        _painter = null;
-        NotifyPropertyChanged(nameof(CurrentPainter));
-        painter?.Dispose();
+        _currentModel = null;
+        NotifyPropertyChanged(nameof(CurrentModel));
     }
 
     private void PopulateFacts(PolyHavenAsset asset, ModelFileStats stats)

@@ -5,11 +5,26 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- This library now hosts the 3D preview control itself (ModelSceneGlCanvas, a
+         Graphics3DGL GLCanvasElement subclass), so it references CodeBrix.Platform and its
+         WinUI-compat XAML surface. Keep this library's OWN RootNamespace (not the app's
+         "PolyHavenBrowser") so the per-head generated GlobalStaticResources class does not
+         collide across assemblies (CS0433). -->
+    <RootNamespace>PolyHavenBrowser.Rendering</RootNamespace>
+    <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI;HAS_CODEBRIXPLATFORM</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.164.1087" />
-    <PackageReference Include="CodeBrix.Platform.OpenGL.MitLicenseForever" Version="1.0.165.1357" />
+
+    <!-- CodeBrix.Platform (base) supplies the FrameworkElement / DependencyProperty surface the
+         GLCanvasElement subclass is built on. Graphics3DGL supplies GLCanvasElement itself and,
+         transitively, the CodeBrix.Platform.OpenGL `GL` type the shader renderer draws with.
+         The app codes to Graphics3DGL and never references CodeBrix.Platform.OpenGL directly. -->
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.193.1124" />
+    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.193.1124" />
+
     <PackageReference Include="SharpGLTF.Runtime" Version="1.0.6" />
     <PackageReference Include="SkiaSharp" Version="4.150.0" />
   </ItemGroup>
