@@ -1,0 +1,95 @@
+<Page
+    x:Class="WebcamPainter.Views.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:WebcamPainter.ViewModels"
+    xmlns:webcam="using:WebcamPainter.Webcam"
+    xmlns:painting="using:WebcamPainter.Painting"
+    xmlns:converters="using:CodeBrix.Platform.UI.Converters"
+    FontFamily="{StaticResource RobotoFont}"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.DataContext>
+        <vm:MainViewModel />
+    </Page.DataContext>
+
+    <Page.Resources>
+        <converters:BoolToVisibilityConverter x:Key="VisibleWhenTrue" />
+        <converters:BoolToVisibilityConverter x:Key="VisibleWhenFalse" Invert="True" />
+    </Page.Resources>
+
+    <Grid Padding="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
+            <TextBlock Text="Webcam Painter" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <ComboBox MinWidth="280" VerticalAlignment="Center"
+                      ItemsSource="{Binding Cameras}"
+                      SelectedItem="{Binding SelectedCamera, Mode=TwoWay}"
+                      IsEnabled="{Binding IsCaptureMode}" />
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- The main viewer: the mirrored live preview in Capture Mode; the captured
+                 still being painted (plus the hand crosshair) in Paint Mode -->
+            <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Background="Black">
+                <painting:PaintCanvas x:Name="MainCanvas" />
+            </Border>
+
+            <!-- Paint Mode side panel: the little mirrored self-view (so the user can see
+                 their hand) and the highlighter colors. Beside the canvas - never over it. -->
+            <StackPanel Grid.Column="1" Width="200" Margin="12,0,0,0" Spacing="8"
+                        Visibility="{Binding IsPaintMode, Converter={StaticResource VisibleWhenTrue}}">
+                <Border BorderBrush="Gray" BorderThickness="1" Background="Black" Height="150">
+                    <webcam:CameraCanvas x:Name="SelfViewCanvas" />
+                </Border>
+
+                <TextBlock Text="{Binding ActiveColorText}" FontSize="13" TextWrapping="Wrap" />
+
+                <!-- Highlighter colors: keep these backgrounds in sync with HighlighterPalette -->
+                <Button Content="Red" HorizontalAlignment="Stretch" Background="#E61E1E" Foreground="White"
+                        Command="{Binding SelectColorCommand}" CommandParameter="Red" />
+                <Button Content="Orange" HorizontalAlignment="Stretch" Background="#FF8C14" Foreground="Black"
+                        Command="{Binding SelectColorCommand}" CommandParameter="Orange" />
+                <Button Content="Yellow" HorizontalAlignment="Stretch" Background="#F0DC14" Foreground="Black"
+                        Command="{Binding SelectColorCommand}" CommandParameter="Yellow" />
+                <Button Content="Green" HorizontalAlignment="Stretch" Background="#28C83C" Foreground="Black"
+                        Command="{Binding SelectColorCommand}" CommandParameter="Green" />
+                <Button Content="Blue" HorizontalAlignment="Stretch" Background="#285AEB" Foreground="White"
+                        Command="{Binding SelectColorCommand}" CommandParameter="Blue" />
+                <Button Content="Indigo" HorizontalAlignment="Stretch" Background="#552DB4" Foreground="White"
+                        Command="{Binding SelectColorCommand}" CommandParameter="Indigo" />
+                <Button Content="Violet" HorizontalAlignment="Stretch" Background="#BE3CDC" Foreground="White"
+                        Command="{Binding SelectColorCommand}" CommandParameter="Violet" />
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="0,8,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8"
+                        Visibility="{Binding IsCaptureMode, Converter={StaticResource VisibleWhenTrue}}">
+                <Button Content="Take Photo" Command="{Binding TakePhotoCommand}"
+                        MinWidth="120" Style="{ThemeResource AccentButtonStyle}" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8"
+                        Visibility="{Binding IsCaptureMode, Converter={StaticResource VisibleWhenFalse}}">
+                <Button Content="Clear" Command="{Binding ClearCommand}" MinWidth="100" />
+                <Button Content="Save…" Command="{Binding SaveCommand}"
+                        MinWidth="100" Style="{ThemeResource AccentButtonStyle}" />
+                <Button Content="Back" Command="{Binding BackCommand}" MinWidth="100" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock Grid.Row="3" Text="{Binding StatusText}" Margin="0,8,0,0" TextWrapping="Wrap" />
+    </Grid>
+</Page>

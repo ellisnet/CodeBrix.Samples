@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The stroke-based highlighter drawing library (brings CodeBrix.Imaging + SkiaSharp) -->
+    <PackageReference Include="CodeBrix.Imaging.Drawing.ApacheLicenseForever" Version="1.0.193.406" />
+
+    <!-- SKXamlCanvas - the SkiaSharp drawing surface hosted in CodeBrix.Platform XAML -->
+    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.150.0" />
+  </ItemGroup>
+</Project>

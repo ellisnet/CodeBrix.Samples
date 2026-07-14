@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Webcam capture: device enumeration, live BGRA frames, in-memory photos -->
+    <PackageReference Include="CodeBrix.Webcam.LgplLicenseForever" Version="3.0.193.417" />
+
+    <!-- SKXamlCanvas - the SkiaSharp video surface hosted in CodeBrix.Platform XAML -->
+    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.150.0" />
+  </ItemGroup>
+</Project>
