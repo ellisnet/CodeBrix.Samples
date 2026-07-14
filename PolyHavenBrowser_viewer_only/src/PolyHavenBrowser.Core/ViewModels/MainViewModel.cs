@@ -61,7 +61,7 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
         NotifyPropertyChanged(nameof(RenderEngineNames));
         NotifyPropertyChanged(nameof(SelectedRenderEngineName));
 
-        _modelPainter = new ModelScenePainter(_engineSelector.Create(RenderEngineKind.OpenGL));
+        _modelPainter = new ModelScenePainter(_engineSelector.Create(RenderEngineKind.OpenGL, GetXamlRoot));
 
         _ = SelectAsync(SampleAssetKind.Texture);
     }
@@ -185,12 +185,12 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
         IsBusy = true;
         try
         {
-            var engine = _engineSelector.Create(kind);
+            var engine = _engineSelector.Create(kind, GetXamlRoot);
             if (kind == RenderEngineKind.Vulkan)
             {
                 //Fail fast off the UI thread (a supported platform can still lack a working
                 //driver) so a failure never surfaces inside the Skia paint callback. Safe for
-                //Vulkan only: it has no thread-affinity, unlike the OpenGL engine's EGL
+                //Vulkan only: it has no thread-affinity, unlike the OpenGL engine's native GL
                 //context, which must be created on the render thread at first paint.
                 await Task.Run(() => engine.RenderFrame(1, 1, (0f, 0f, 0f, 1f)));
             }

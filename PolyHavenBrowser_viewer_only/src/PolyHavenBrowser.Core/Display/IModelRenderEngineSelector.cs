@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.UI.Xaml;
 using PolyHavenBrowser.Rendering;
 
 namespace PolyHavenBrowser.Display;
@@ -7,7 +8,7 @@ namespace PolyHavenBrowser.Display;
 /// <summary>The 3D rendering backends the app can offer.</summary>
 public enum RenderEngineKind
 {
-    /// <summary>OpenGL ES via EGL (<see cref="OpenGlModelRenderEngine"/>) - the default, available on every head.</summary>
+    /// <summary>OpenGL via the head's native GL context (<see cref="OpenGlModelRenderEngine"/>) - the default, available on every head.</summary>
     OpenGL,
 
     /// <summary>Vulkan via Silk.NET (<see cref="VulkanModelRenderEngine"/>) - only on platforms <see cref="VulkanPlatformSupport"/> okays.</summary>
@@ -34,7 +35,12 @@ public interface IModelRenderEngineSelector
     /// Creates a new, unused engine of the given kind. The caller owns it and disposes it.
     /// Throws <see cref="NotSupportedException"/> when <see cref="IsSupported"/> is false for it.
     /// </summary>
-    IModelRenderEngine Create(RenderEngineKind kind);
+    /// <param name="kind">The backend to create.</param>
+    /// <param name="getXamlRoot">
+    /// Returns the hosting page's <see cref="XamlRoot"/>; used by the OpenGL engine to create its
+    /// offscreen native GL context (the Vulkan engine owns its own stack and ignores it).
+    /// </param>
+    IModelRenderEngine Create(RenderEngineKind kind, Func<XamlRoot> getXamlRoot);
 }
 
 /// <summary>
@@ -57,7 +63,7 @@ public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
     };
 
     /// <inheritdoc />
-    public IModelRenderEngine Create(RenderEngineKind kind)
+    public IModelRenderEngine Create(RenderEngineKind kind, Func<XamlRoot> getXamlRoot)
     {
         if (!IsSupported(kind))
         {
@@ -66,7 +72,7 @@ public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
 
         return kind switch
         {
-            RenderEngineKind.OpenGL => new OpenGlModelRenderEngineFactory().Create(),
+            RenderEngineKind.OpenGL => new OpenGlModelRenderEngineFactory(getXamlRoot).Create(),
             RenderEngineKind.Vulkan => new VulkanModelRenderEngineFactory().Create(),
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };

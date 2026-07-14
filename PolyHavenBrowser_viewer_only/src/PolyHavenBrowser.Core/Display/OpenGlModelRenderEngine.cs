@@ -1,15 +1,18 @@
 using System;
 using System.Numerics;
 using CodeBrix.Platform.OpenGL;
+using CodeBrix.Platform.WinUI.Graphics3DGL;
+using Microsoft.UI.Xaml;
 using PolyHavenBrowser.Rendering;
 
 namespace PolyHavenBrowser.Display;
 
 /// <summary>
-/// The OpenGL ES implementation of <see cref="IModelRenderEngine"/> - the app's current 3D
-/// graphics backend. Each frame it:
+/// The OpenGL implementation of <see cref="IModelRenderEngine"/> - the app's default 3D
+/// graphics backend, available on every head. Each frame it:
 /// <list type="number">
-///   <item>makes an off-screen EGL/GLES context current (<see cref="EglOffscreenGlContext"/>);</item>
+///   <item>makes an off-screen native GL context current (Graphics3DGL's
+///   <see cref="OffscreenGLContext"/>);</item>
 ///   <item>draws the model with the shader-based <see cref="GlModelSceneRenderer"/> into a
 ///   framebuffer object (FBO) with colour + depth attachments;</item>
 ///   <item>reads the pixels back to CPU memory with <c>glReadPixels</c>;</item>
@@ -19,20 +22,32 @@ namespace PolyHavenBrowser.Display;
 /// context, the renderer, and the readback here while implementing the same interface, and the
 /// painter/camera/loaders/UI above it would not change.
 /// <para>
-/// The EGL context is created <b>lazily</b> on the first <see cref="RenderFrame"/> call, because
-/// a GL context must be created and used on the same thread that renders (the UI thread, inside
-/// the Skia paint callback). Constructing the engine itself is cheap and thread-agnostic - it
-/// only allocates the CPU-side renderer (and its camera).
+/// The context comes from <see cref="OffscreenGLContext"/>, which resolves the same per-head
+/// native OpenGL machinery that backs Graphics3DGL's on-screen <c>GLCanvasElement</c> - WGL on
+/// the Windows heads, GLX on X11, EGL on Wayland/FrameBuffer, CGL on macOS - so this engine
+/// renders on every head, not just Linux. The app never P/Invokes a platform GL loader itself.
+/// </para>
+/// <para>
+/// The context is created <b>lazily</b> on the first <see cref="RenderFrame"/> call, because a GL
+/// context must be created and used on the same thread that renders (the UI thread, inside the
+/// Skia paint callback). Constructing the engine itself is cheap and thread-agnostic - it only
+/// allocates the CPU-side renderer (and its camera) and captures the <see cref="XamlRoot"/>
+/// accessor the context is created from.
 /// </para>
 /// </summary>
 public sealed class OpenGlModelRenderEngine : IModelRenderEngine
 {
     // The framework-free shader renderer. It needs a live GL handle and a bound framebuffer;
-    // it owns the OrbitCamera and knows nothing about EGL, framebuffers, or Skia.
+    // it owns the OrbitCamera and knows nothing about the context, framebuffers, or Skia.
     private readonly GlModelSceneRenderer _renderer = new();
 
-    // The off-screen EGL/GLES context; null until the first render creates it on the GL thread.
-    private EglOffscreenGlContext _context;
+    // Supplies the XamlRoot the offscreen context is associated with. Invoked lazily on the
+    // render thread at first paint (never at construction), by which point the hosting page has
+    // set it. OffscreenGLContext resolves the native GL wrapper the head registered for this root.
+    private readonly Func<XamlRoot> _getXamlRoot;
+
+    // The off-screen native GL context; null until the first render creates it on the GL thread.
+    private OffscreenGLContext _context;
     private bool _rendererInitialized;
 
     // The off-screen framebuffer we render into, plus its colour and depth renderbuffers. These
@@ -44,6 +59,15 @@ public sealed class OpenGlModelRenderEngine : IModelRenderEngine
     private uint _fbHeight;
 
     private bool _disposed;
+
+    /// <summary>
+    /// Creates the engine. The <paramref name="getXamlRoot"/> accessor is invoked lazily on the
+    /// render thread at first paint to obtain the <see cref="XamlRoot"/> the offscreen GL context
+    /// is created from; it is never called here.
+    /// </summary>
+    /// <param name="getXamlRoot">Returns the hosting page's <see cref="XamlRoot"/>.</param>
+    public OpenGlModelRenderEngine(Func<XamlRoot> getXamlRoot) =>
+        _getXamlRoot = getXamlRoot ?? throw new ArgumentNullException(nameof(getXamlRoot));
 
     /// <inheritdoc />
     public OrbitCamera Camera => _renderer.Camera;
@@ -61,12 +85,24 @@ public sealed class OpenGlModelRenderEngine : IModelRenderEngine
     /// <inheritdoc />
     public RenderedFrame RenderFrame(int width, int height, (float R, float G, float B, float A) background)
     {
-        // Make our off-screen context current (creating it on first use). MakeCurrent saves
-        // whatever context the host head had current, and DoneCurrent (below) restores it, so
-        // this engine never disturbs the head's own renderer even though they share a thread.
-        _context ??= EglOffscreenGlContext.Create();
-        _context.MakeCurrent();
-        try
+        // Create the off-screen context on first use, from the hosting page's XamlRoot. This runs
+        // on the render thread (the Skia paint callback), so the XamlRoot accessor is valid here.
+        if (_context == null)
+        {
+            var xamlRoot = _getXamlRoot()
+                ?? throw new InvalidOperationException(
+                    "A XamlRoot is required to create the offscreen OpenGL context, but none was available.");
+            if (!OffscreenGLContext.TryCreate(xamlRoot, out _context))
+            {
+                throw new InvalidOperationException(
+                    "The running head does not provide a native OpenGL context for offscreen rendering.");
+            }
+        }
+
+        // MakeCurrent() saves whatever context the host head had current and restores it when the
+        // returned scope is disposed, so this engine never disturbs the head's own renderer even
+        // though they share a thread.
+        using (_context.MakeCurrent())
         {
             var gl = _context.Gl;
 
@@ -95,11 +131,7 @@ public sealed class OpenGlModelRenderEngine : IModelRenderEngine
             // OpenGL's first pixel row is the bottom of the image; flag that so the Skia bridge
             // flips it to match Skia's top-down surface.
             return new RenderedFrame(pixels, width, height, isBottomUp: true);
-        }
-        finally
-        {
-            // Hand the thread's GL state back to the host head before returning to Skia.
-            _context.DoneCurrent();
+            // Disposing the MakeCurrent() scope hands the thread's GL state back to the host head.
         }
     }
 
@@ -155,9 +187,9 @@ public sealed class OpenGlModelRenderEngine : IModelRenderEngine
 
         if (_context != null)
         {
-            // GL resources must be freed on the GL thread with the context current.
-            _context.MakeCurrent();
-            try
+            // GL resources must be freed on the GL thread with the context current; disposing the
+            // MakeCurrent() scope restores the previously-current context afterwards.
+            using (_context.MakeCurrent())
             {
                 DeleteFramebuffer(_context.Gl);
                 if (_rendererInitialized)
@@ -165,10 +197,6 @@ public sealed class OpenGlModelRenderEngine : IModelRenderEngine
                     _renderer.Uninitialize(_context.Gl);
                     _rendererInitialized = false;
                 }
-            }
-            finally
-            {
-                _context.DoneCurrent();
             }
 
             _context.Dispose();

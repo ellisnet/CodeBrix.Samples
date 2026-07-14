@@ -9,7 +9,14 @@
 
   <ItemGroup>
     <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.164.1087" />
-    <PackageReference Include="CodeBrix.Platform.OpenGL.MitLicenseForever" Version="1.0.165.1357" />
+
+    <!-- Graphics3DGL supplies, transitively, the CodeBrix.Platform.OpenGL `GL` type the shader
+         renderer (GlModelSceneRenderer) draws with. The app codes to Graphics3DGL and never
+         references CodeBrix.Platform.OpenGL directly (hard rule). This library hosts no XAML
+         control, so it keeps its own default RootNamespace (PolyHavenBrowser.Rendering) and does
+         not opt into the HAS_CODEBRIX_WINUI resource generation. -->
+    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.195.787" />
+
     <PackageReference Include="SharpGLTF.Runtime" Version="1.0.6" />
     <PackageReference Include="Silk.NET.Vulkan" Version="2.23.0" />
     <PackageReference Include="SkiaSharp" Version="4.150.0" />

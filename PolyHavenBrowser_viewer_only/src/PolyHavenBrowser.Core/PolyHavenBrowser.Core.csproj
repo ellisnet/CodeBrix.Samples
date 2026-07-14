@@ -19,9 +19,12 @@
     <!-- SKXamlCanvas - the SkiaSharp drawing surface hosted in CodeBrix.Platform XAML -->
     <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.150.0" />
 
-    <!-- The GL binding used by the offscreen model/texture renderer in Display/.
-         Depends on no other CodeBrix.Platform.* package, so referencing it here is clean. -->
-    <PackageReference Include="CodeBrix.Platform.OpenGL.MitLicenseForever" Version="1.0.165.1357" />
+    <!-- The offscreen model/texture renderer in Display/ builds on Graphics3DGL's
+         OffscreenGLContext, which hands back a cross-platform native GL context (WGL on the
+         Windows heads, GLX on X11, EGL on Wayland/FrameBuffer, CGL on macOS). The app codes to
+         Graphics3DGL — never to CodeBrix.Platform.OpenGL directly — so the OpenGL binding is
+         only ever a transitive dependency (Graphics3DGL -> CodeBrix.Platform.OpenGL). -->
+    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.195.787" />
   </ItemGroup>
 
   <ItemGroup>

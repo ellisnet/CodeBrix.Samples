@@ -1,3 +1,6 @@
+using System;
+using Microsoft.UI.Xaml;
+
 namespace PolyHavenBrowser.Display;
 
 /// <summary>
@@ -13,12 +16,22 @@ public interface IModelRenderEngineFactory
 }
 
 /// <summary>
-/// Creates the OpenGL ES (EGL) engine, <see cref="OpenGlModelRenderEngine"/> - the default
-/// backend, available on every head. Its Vulkan sibling is
-/// <see cref="VulkanModelRenderEngineFactory"/>.
+/// Creates the OpenGL engine, <see cref="OpenGlModelRenderEngine"/> - the default backend,
+/// available on every head. Its Vulkan sibling is <see cref="VulkanModelRenderEngineFactory"/>.
 /// </summary>
 public sealed class OpenGlModelRenderEngineFactory : IModelRenderEngineFactory
 {
+    private readonly Func<XamlRoot> _getXamlRoot;
+
+    /// <summary>
+    /// Creates the factory. The <paramref name="getXamlRoot"/> accessor is passed to each engine
+    /// and invoked lazily on the render thread to obtain the <see cref="XamlRoot"/> the offscreen
+    /// GL context is created from.
+    /// </summary>
+    /// <param name="getXamlRoot">Returns the hosting page's <see cref="XamlRoot"/>.</param>
+    public OpenGlModelRenderEngineFactory(Func<XamlRoot> getXamlRoot) =>
+        _getXamlRoot = getXamlRoot ?? throw new ArgumentNullException(nameof(getXamlRoot));
+
     /// <inheritdoc />
-    public IModelRenderEngine Create() => new OpenGlModelRenderEngine();
+    public IModelRenderEngine Create() => new OpenGlModelRenderEngine(_getXamlRoot);
 }

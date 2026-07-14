@@ -1,7 +1,7 @@
 # 3D rendering inside a CodeBrix.Platform view
 
 This folder is a self-contained reference for **rendering a 3D model into an ordinary
-CodeBrix.Platform UI view** — the model is drawn off-screen with OpenGL/EGL **or Vulkan**
+CodeBrix.Platform UI view** — the model is drawn off-screen with OpenGL **or Vulkan**
 (a runtime dropdown choice), the pixels are read back and composited onto a **Skia canvas**
 (`SKXamlCanvas`) that lives in the app's normal XAML, and the user can orbit/zoom it. Copy
 this folder (plus the `PolyHavenBrowser.Rendering` library it depends on) as a starting point.
@@ -19,8 +19,8 @@ this folder (plus the `PolyHavenBrowser.Rendering` library it depends on) as a s
    │  ONE OF (chosen at runtime via IModelRenderEngineSelector):      │
    │                                                                  │
    │  OpenGlModelRenderEngine            VulkanModelRenderEngine      │
-   │    EglOffscreenGlContext              VulkanSceneRenderer        │
-   │      → off-screen GLES context          (Rendering lib) → its    │
+   │    OffscreenGLContext                 VulkanSceneRenderer        │
+   │      → off-screen native GL ctx          (Rendering lib) → its   │
    │    GlModelSceneRenderer                 own instance/device,     │
    │      → shaders + VAOs → FBO             pipeline → off-screen    │
    │    glReadPixels → RGBA bytes            image → copy-to-buffer   │
@@ -50,7 +50,7 @@ any backend:
 
 Everything **below** it is API-specific, one class-cluster per backend:
 
-- OpenGL: `OpenGlModelRenderEngine` (+ `EglOffscreenGlContext`, + `GlModelSceneRenderer`'s
+- OpenGL: `OpenGlModelRenderEngine` (+ Graphics3DGL's `OffscreenGLContext`, + `GlModelSceneRenderer`'s
   GL shaders in the Rendering lib).
 - Vulkan: `VulkanModelRenderEngine`, a thin adapter over the Rendering lib's self-contained
   `VulkanSceneRenderer` (Silk.NET.Vulkan; instance → device → offscreen images → pipeline →
@@ -68,7 +68,9 @@ Everything **below** it is API-specific, one class-cluster per backend:
   Linux **FrameBuffer** head are deliberately excluded — this is a policy list, not a driver
   probe, so Vulkan is never even attempted on a platform that has not been okayed. The head is
   detected by scanning for the loaded `CodeBrix.Platform.UI.Runtime.Skia.*` runtime assembly.
-- `Create(kind)` → a fresh engine (the caller owns and disposes it).
+- `Create(kind, getXamlRoot)` → a fresh engine (the caller owns and disposes it). The
+  `getXamlRoot` accessor is used only by the OpenGL engine, to create its offscreen native GL
+  context from the hosting page's `XamlRoot`; the Vulkan engine ignores it.
 
 Picking Vulkan on an unsupported platform shows a `SimpleDialog` alert ("Vulkan rendering is
 not available on this platform.") and snaps the dropdown back to OpenGL. On a supported
@@ -80,11 +82,15 @@ then swaps painters and re-displays the current sample from the local cache.
 
 - **Threading / context (OpenGL only).** A GL context must be created and used on the thread
   that renders — the UI thread, inside `SKXamlCanvas.PaintSurface`. `OpenGlModelRenderEngine`
-  therefore creates its EGL context **lazily** on the first `RenderFrame`.
-  `EglOffscreenGlContext.MakeCurrent` also **saves and restores** whatever context the host
-  head had current, so this engine never disturbs the head's own renderer even though they
-  share the thread. Vulkan has no ambient context at all — `VulkanSceneRenderer` owns its
-  whole stack and cannot collide with the head — but it still initializes lazily on first use.
+  therefore creates its `OffscreenGLContext` **lazily** on the first `RenderFrame` (which is
+  also why the engine is handed a `Func<XamlRoot>` rather than a `XamlRoot`: the accessor is
+  invoked on the render thread, by which point the page has one). `OffscreenGLContext.MakeCurrent`
+  returns a scope that **saves and restores** whatever context the host head had current, so
+  this engine never disturbs the head's own renderer even though they share the thread. The
+  context itself is cross-platform — Graphics3DGL resolves the head's native GL wrapper (WGL on
+  Windows, GLX on X11, EGL on Wayland/FrameBuffer, CGL on macOS) — so the app P/Invokes no
+  platform GL loader of its own. Vulkan has no ambient context at all — `VulkanSceneRenderer`
+  owns its whole stack and cannot collide with the head — but it still initializes lazily on first use.
 - **Pixel orientation & the MVP.** OpenGL's first pixel row is the image bottom, so its
   `RenderedFrame.IsBottomUp` is true and `ModelScenePainter` flips vertically for Skia.
   The Vulkan engine uses the **same unmodified camera matrices** — and because Vulkan's
@@ -113,9 +119,12 @@ then swaps painters and re-displays the current sample from the local cache.
 | `ModelScenePainter.cs` | Input + Skia compositing over any engine | no |
 | `CubeMeshBuilder.cs` | Texture → a cube `LoadedModel` | no |
 | `PanoramaScenePainter.cs` | HDRI panorama (CPU → `SKBitmap`) | no |
-| `OpenGlModelRenderEngine.cs` | OpenGL context + FBO + readback | **yes** |
-| `EglOffscreenGlContext.cs` | Creates the off-screen EGL/GLES context | **yes** |
+| `OpenGlModelRenderEngine.cs` | OpenGL FBO + readback over Graphics3DGL's `OffscreenGLContext` | **yes** |
 | `VulkanModelRenderEngine.cs` | Vulkan engine adapter (+ its factory) | **yes** |
+
+(The off-screen GL context itself is `CodeBrix.Platform.WinUI.Graphics3DGL.OffscreenGLContext`,
+supplied by the `CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever` package — cross-platform,
+so there is no app-owned EGL/WGL/GLX class here anymore.)
 
 (The heavy lifting lives in the Rendering library:
 `GL/GlModelSceneRenderer.cs` for OpenGL shaders/VAOs/drawing, and
