@@ -26,9 +26,9 @@
     <PackageReference Include="xunit.v3" Version="3.2.2" />
 
     <!-- The tests render real Skia raster surfaces - the native Skia library must be present -->
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.150.0" />
-    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="4.150.0" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="4.150.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.150.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="4.150.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="4.150.1" />
   </ItemGroup>
 
 </Project>

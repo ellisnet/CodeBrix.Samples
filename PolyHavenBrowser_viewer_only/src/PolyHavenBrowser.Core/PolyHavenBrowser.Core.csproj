@@ -17,7 +17,7 @@
     <PackageReference Include="CodeBrix.Platform.Fonts.Roboto.OflLicenseForever" Version="1.0.181.661" />
 
     <!-- SKXamlCanvas - the SkiaSharp drawing surface hosted in CodeBrix.Platform XAML -->
-    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.150.0" />
+    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.150.1" />
 
     <!-- The offscreen model/texture renderer in Display/ builds on Graphics3DGL's
          OffscreenGLContext, which hands back a cross-platform native GL context (WGL on the
