@@ -24,7 +24,7 @@
     All other packages come from WikipediaPublisher.Core.
   -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.FrameBuffer.ApacheLicenseForever" Version="1.0.195.787" />
+    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.FrameBuffer.ApacheLicenseForever" Version="1.0.196.385" />
   </ItemGroup>
 
 </Project>
