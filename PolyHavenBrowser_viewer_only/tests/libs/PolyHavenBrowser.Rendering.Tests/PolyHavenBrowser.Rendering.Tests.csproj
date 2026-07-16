@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="CodeBrix.TestMocks.ApacheLicenseForever" Version="1.0.165.1173" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.6" />
     <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.164.180" />
     <!-- libSkiaSharp native for running bitmap tests on Linux (apps get it from the platform head) -->
