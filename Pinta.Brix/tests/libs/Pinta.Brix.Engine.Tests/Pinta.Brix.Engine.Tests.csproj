@@ -22,11 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <!-- The engine's SkiaSharp reference is managed-only; on Linux the native
          libSkiaSharp must be pulled in explicitly for the tests to run. -->
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.150.1"
-                      Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.150.1" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
     <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.164.180" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>

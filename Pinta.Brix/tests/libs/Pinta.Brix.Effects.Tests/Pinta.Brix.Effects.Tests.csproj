@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.164.180" />
     <!-- The SkiaSharp meta-package only carries Windows/macOS natives; the
          Linux native library ships separately (family convention for
