@@ -8,6 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="SkiaSharp" Version="4.150.1" />
-    <PackageReference Include="ParagonClipper" Version="6.4.2" />
+    <PackageReference Include="CodeBrix.PolygonTools.MitLicenseForever" Version="1.0.200.1267" />
   </ItemGroup>
 </Project>

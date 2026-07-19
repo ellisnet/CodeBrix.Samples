@@ -24,10 +24,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+using CodeBrix.PolygonTools;
+using CodeBrix.PolygonTools.Enumerations;
+using CodeBrix.PolygonTools.Models;
+using Pinta.Brix.Engine.Drawing;
 using System;
 using System.Collections.Generic;
-using Pinta.Brix.Engine.Drawing;
-using ClipperLib;
 
 //was previously: namespace Pinta.Core;
 namespace Pinta.Brix.Engine;
@@ -41,7 +43,7 @@ public sealed class DocumentSelection
 	private Path? selection_path;
 
 	public List<List<IntPoint>> SelectionPolygons { get; set; } = [];
-	public Clipper SelectionClipper { get; } = new ();
+	public PolyClip SelectionClipper { get; } = new ();
 
 	/// <summary>
 	/// Bounding rectangle which is used by tools to display interactive
@@ -369,7 +371,7 @@ public sealed class DocumentSelection
 		// Expand or contract the selection by the specified amount.
 		List<List<IntPoint>> offsetPolygons = [];
 
-		ClipperOffset clipperOffset = new ();
+		PolyClipOffset clipperOffset = new ();
 		clipperOffset.AddPaths (simplePolygons, JoinType.jtMiter, EndType.etClosedPolygon);
 		clipperOffset.Execute (ref offsetPolygons, delta);
 

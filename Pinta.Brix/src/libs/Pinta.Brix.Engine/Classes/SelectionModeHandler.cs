@@ -24,8 +24,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+using CodeBrix.PolygonTools.Enumerations;
+using CodeBrix.PolygonTools.Models;
 using System.Collections.Generic;
-using ClipperLib;
 
 //was previously: namespace Pinta.Core;
 namespace Pinta.Brix.Engine;

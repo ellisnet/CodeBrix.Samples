@@ -24,11 +24,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+using CodeBrix.PolygonTools.Models;
+using Pinta.Brix.Engine;
 using System;
 using System.Collections.Generic;
-using Pinta.Brix.Engine.Drawing;
-using ClipperLib;
-using Pinta.Brix.Engine;
 
 //was previously: namespace Pinta.Tools;
 namespace Pinta.Brix.Tools;
