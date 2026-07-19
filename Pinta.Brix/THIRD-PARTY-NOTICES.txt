@@ -1,0 +1,83 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content included in the Pinta.Brix sample
+application and the licenses under which it is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here.
+
+------------------------------------------------------------------------
+Pinta  (https://github.com/PintaProject/Pinta)
+------------------------------------------------------------------------
+Pinta.Brix is a port of the Pinta painting application to CodeBrix.Platform.
+Substantial portions of the source code in this folder are derived from
+Pinta, which is licensed under the MIT License:
+
+  The MIT License
+
+  Copyright (c) 2010 Jonathan Pobst <monkey@jpobst.com>
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+
+------------------------------------------------------------------------
+Paint.NET  (via Pinta; see the bundled license-pdn.txt)
+------------------------------------------------------------------------
+Pinta is itself a port of an early version of Paint.NET, and many of the
+algorithm and effect source files ported into Pinta.Brix carry Paint.NET
+(dotPDN LLC / Rick Brewster et al.) copyright headers. That code is licensed
+under the MIT License with one exception concerning the Paint.NET logo and
+icon artwork; the full license text is reproduced in the license-pdn.txt file
+in this folder (copied verbatim from the Pinta repository).
+
+Like Pinta, Pinta.Brix does not use the Paint.NET logo or icon artwork, so
+the exception does not apply to any content bundled here.
+
+------------------------------------------------------------------------
+Icon artwork  (bundled under the Pinta.Brix source folders)
+------------------------------------------------------------------------
+The icon assets carried over from the Pinta repository come from the
+following sources, as documented in Pinta's README:
+
+- Paint.Net 3.0 (http://www.getpaint.net/)
+  Used under the MIT License
+  (http://www.opensource.org/licenses/mit-license.php).
+  Note: these are the application's stock command/tool icons; the Paint.NET
+  LOGO and program icon artwork excluded by license-pdn.txt are NOT included.
+
+- Silk icon set (https://github.com/markjames/famfamfam-silk-icons)
+  Used under the Creative Commons Attribution 3.0 License
+  (http://creativecommons.org/licenses/by/3.0/).
+
+- Fugue icon set (https://p.yusukekamiyamane.com)
+  Used under the Creative Commons Attribution 3.0 License
+  (http://creativecommons.org/licenses/by/3.0/).
+
+- Icons contributed by Pinta contributors, under Pinta's own MIT license
+  (see the pinta-icons.md file alongside the icons for the list).
+
+As a matter of repository policy, the Paint.NET name appears only in this
+file and in license-pdn.txt, for license-compliance and software-provenance
+purposes; everywhere else Pinta.Brix is described simply as a port of Pinta.
+Ported source files retain their upstream copyright headers — naming the
+copyright holders (dotPDN LLC, Rick Brewster, and contributors; portions
+Microsoft Corporation) and pointing to license-pdn.txt — which preserves the
+attribution the MIT License requires.

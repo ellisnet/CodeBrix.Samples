@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <!-- Library referencing CodeBrix.Platform keeps its OWN RootNamespace
+         (heads fail CS0433 on GlobalStaticResources otherwise) -->
+    <RootNamespace>Pinta.Brix.Controls</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Pinta.Brix.Engine\Pinta.Brix.Engine.csproj" />
+    <ProjectReference Include="..\Pinta.Brix.Tools\Pinta.Brix.Tools.csproj" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.199.897" />
+    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.150.1" />
+    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.196.342" />
+  </ItemGroup>
+
+  <!-- The application icon set carried over from upstream (see
+       THIRD-PARTY-NOTICES.txt at the repo root for attribution) -->
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\icons\**\*.png" />
+    <EmbeddedResource Include="Assets\icons\**\*.svg" />
+  </ItemGroup>
+</Project>

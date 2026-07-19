@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <!-- Match the namespace used by the app code -->
+    <RootNamespace>Pinta.Brix</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.10" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.199.897" />
+    <PackageReference Include="CodeBrix.Platform.Fonts.OpenSans.ApacheLicenseForever" Version="1.0.181.655" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\libs\Pinta.Brix.Engine\Pinta.Brix.Engine.csproj" />
+    <ProjectReference Include="..\libs\Pinta.Brix.FileFormats\Pinta.Brix.FileFormats.csproj" />
+    <ProjectReference Include="..\libs\Pinta.Brix.Effects\Pinta.Brix.Effects.csproj" />
+    <ProjectReference Include="..\libs\Pinta.Brix.Tools\Pinta.Brix.Tools.csproj" />
+    <ProjectReference Include="..\libs\Pinta.Brix.Controls\Pinta.Brix.Controls.csproj" />
+  </ItemGroup>
+</Project>
