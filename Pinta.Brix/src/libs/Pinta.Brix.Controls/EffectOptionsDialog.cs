@@ -5,6 +5,12 @@
 // attributes, firing PropertyChanged so the live-preview system re-renders
 // as values change. Ports the role of the upstream reflection dialog onto
 // ContentDialog; unsupported member types degrade to a read-only note.
+//
+// PointI, CenterOffset<double> and Color members ARE editable here - upstream
+// renders them with PointPickerWidget and ColorPanelWidget. Without them nine
+// effects were configurable in name only: Bulge, Dents, Polar Inversion,
+// Radial Blur, Twist and Zoom Blur (CenterOffset), Vignette (PointI), and
+// Cells and Voronoi Diagram (Color).
 
 using System;
 using System.Collections.Generic;
@@ -13,7 +19,9 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Pinta.Brix.Engine;
+using Drawing = Pinta.Brix.Engine.Drawing;
 
 namespace Pinta.Brix.Controls;
 
@@ -118,9 +126,15 @@ public static class EffectOptionsDialog
 			return CreateAngleRow (data, member, caption);
 		if (type == typeof (RandomSeed))
 			return CreateSeedRow (data, member, caption);
+		if (type == typeof (PointI))
+			return CreatePointRow (data, member, caption);
+		if (type == typeof (CenterOffset<double>))
+			return CreateOffsetRow (data, member, caption);
+		if (type == typeof (Drawing.Color))
+			return CreateColorRow (data, member, caption);
 
-		// Unsupported member type (e.g. point/offset/color pickers): note it so
-		// the effect is still usable with its default value.
+		// Still unsupported: note it so the effect is at least usable with its
+		// default value rather than silently ignoring the member.
 		return new TextBlock {
 			Text = $"{caption}: (not yet editable in this port)",
 			Opacity = 0.6,
@@ -228,6 +242,139 @@ public static class EffectOptionsDialog
 		row.Children.Add (slider);
 		return row;
 	}
+
+	/// <summary>
+	/// A PointI member - upstream's PointPickerWidget. Rendered as an X/Y pair
+	/// of spin entries: the widget's draggable thumbnail needs the source image,
+	/// which the dialog does not have, and the numbers are the part that
+	/// actually configures the effect.
+	/// </summary>
+	private static FrameworkElement CreatePointRow (EffectData data, MemberInfo member, string caption)
+	{
+		PointI current = (PointI) (GetValue (data, member) ?? PointI.Zero);
+
+		StackPanel row = new () { Spacing = 2 };
+		row.Children.Add (new TextBlock { Text = caption });
+
+		NumberBox x = new () { Value = current.X, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline, Minimum = -32000, Maximum = 32000 };
+		NumberBox y = new () { Value = current.Y, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline, Minimum = -32000, Maximum = 32000 };
+
+		void Apply () => SetValue (data, member, new PointI (
+			double.IsNaN (x.Value) ? 0 : (int) x.Value,
+			double.IsNaN (y.Value) ? 0 : (int) y.Value));
+
+		x.ValueChanged += (_, _) => Apply ();
+		y.ValueChanged += (_, _) => Apply ();
+
+		Grid grid = new () { ColumnSpacing = 8 };
+		grid.ColumnDefinitions.Add (new ColumnDefinition { Width = new GridLength (1, GridUnitType.Star) });
+		grid.ColumnDefinitions.Add (new ColumnDefinition { Width = new GridLength (1, GridUnitType.Star) });
+		Grid.SetColumn (x, 0);
+		Grid.SetColumn (y, 1);
+		grid.Children.Add (x);
+		grid.Children.Add (y);
+		row.Children.Add (grid);
+
+		return row;
+	}
+
+	/// <summary>
+	/// A CenterOffset&lt;double&gt; member - upstream's PointPickerWidget in its
+	/// proportional mode. Both components run -1..1, where 0 is the centre of
+	/// the image and 1 is its right or bottom edge.
+	/// </summary>
+	private static FrameworkElement CreateOffsetRow (EffectData data, MemberInfo member, string caption)
+	{
+		CenterOffset<double> current = (CenterOffset<double>) (GetValue (data, member) ?? new CenterOffset<double> (0, 0));
+
+		StackPanel row = new () { Spacing = 2 };
+		row.Children.Add (new TextBlock { Text = caption });
+
+		Slider horizontal = new () { Minimum = -1, Maximum = 1, StepFrequency = 0.01, Value = current.Horizontal };
+		Slider vertical = new () { Minimum = -1, Maximum = 1, StepFrequency = 0.01, Value = current.Vertical };
+
+		TextBlock readout = new () { MinWidth = 90, Margin = new Thickness (8, 0, 0, 0) };
+
+		void Apply ()
+		{
+			readout.Text = $"{horizontal.Value:0.##}, {vertical.Value:0.##}";
+			SetValue (data, member, new CenterOffset<double> (horizontal.Value, vertical.Value));
+		}
+
+		horizontal.ValueChanged += (_, _) => Apply ();
+		vertical.ValueChanged += (_, _) => Apply ();
+		readout.Text = $"{current.Horizontal:0.##}, {current.Vertical:0.##}";
+
+		Grid grid = new ();
+		grid.ColumnDefinitions.Add (new ColumnDefinition { Width = new GridLength (1, GridUnitType.Star) });
+		grid.ColumnDefinitions.Add (new ColumnDefinition { Width = GridLength.Auto });
+
+		StackPanel sliders = new () { Spacing = 2 };
+		sliders.Children.Add (horizontal);
+		sliders.Children.Add (vertical);
+
+		Grid.SetColumn (sliders, 0);
+		Grid.SetColumn (readout, 1);
+		grid.Children.Add (sliders);
+		grid.Children.Add (readout);
+		row.Children.Add (grid);
+
+		return row;
+	}
+
+	/// <summary>
+	/// A Color member - upstream's ColorPanelWidget: a swatch that opens the
+	/// colour picker.
+	/// </summary>
+	private static FrameworkElement CreateColorRow (EffectData data, MemberInfo member, string caption)
+	{
+		Drawing.Color current = (Drawing.Color) (GetValue (data, member) ?? Drawing.Color.Black);
+
+		Button swatch = new () {
+			Width = 48,
+			Height = 24,
+			MinWidth = 48,
+			Padding = new Thickness (0),
+			Background = new SolidColorBrush (ToWindowsColor (current)),
+		};
+
+		swatch.Click += async (_, _) => {
+
+			XamlRoot? root = swatch.XamlRoot;
+
+			if (root is null)
+				return; // Not in a visual tree - nothing to attach a dialog to.
+
+			Drawing.Color? chosen = await ColorPickerDialog.ShowAsync (
+				caption,
+				(Drawing.Color) (GetValue (data, member) ?? Drawing.Color.Black),
+				root);
+
+			if (chosen is null)
+				return;
+
+			SetValue (data, member, chosen.Value);
+			swatch.Background = new SolidColorBrush (ToWindowsColor (chosen.Value));
+		};
+
+		Grid row = new () { ColumnSpacing = 8 };
+		row.ColumnDefinitions.Add (new ColumnDefinition { Width = new GridLength (1, GridUnitType.Star) });
+		row.ColumnDefinitions.Add (new ColumnDefinition { Width = GridLength.Auto });
+
+		TextBlock label = new () { Text = caption, VerticalAlignment = VerticalAlignment.Center };
+		Grid.SetColumn (label, 0);
+		Grid.SetColumn (swatch, 1);
+		row.Children.Add (label);
+		row.Children.Add (swatch);
+
+		return row;
+	}
+
+	private static Windows.UI.Color ToWindowsColor (Drawing.Color color) => Windows.UI.Color.FromArgb (
+		(byte) Math.Clamp (color.A * 255, 0, 255),
+		(byte) Math.Clamp (color.R * 255, 0, 255),
+		(byte) Math.Clamp (color.G * 255, 0, 255),
+		(byte) Math.Clamp (color.B * 255, 0, 255));
 
 	private static FrameworkElement CreateSeedRow (EffectData data, MemberInfo member, string caption)
 	{

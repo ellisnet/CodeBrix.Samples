@@ -7,7 +7,17 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Every persisted setting, option and remembered value goes through the
+         settings store; only Pinta.Brix.Settings references the SQLite package. -->
+    <ProjectReference Include="..\Pinta.Brix.Settings\Pinta.Brix.Settings.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="SkiaSharp" Version="4.150.1" />
+    <!-- The Pango replacement. Host-free and XAML-free, over the same engine
+         that lays out every TextBlock in CodeBrix.Platform; see the plan's P12.
+         MUST stay lock-stepped with the CodeBrix.Platform version the heads
+         reference - the family ships at one version. -->
+    <PackageReference Include="CodeBrix.Platform.TextLayout.ApacheLicenseForever" Version="1.0.201.336" />
     <PackageReference Include="CodeBrix.PolygonTools.MitLicenseForever" Version="1.0.200.1267" />
   </ItemGroup>
 </Project>

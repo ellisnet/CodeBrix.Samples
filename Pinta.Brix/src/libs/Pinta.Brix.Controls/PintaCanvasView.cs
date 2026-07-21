@@ -8,6 +8,7 @@
 using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Pinta.Brix.Engine;
 
 namespace Pinta.Brix.Controls;
@@ -26,8 +27,21 @@ public sealed class PintaCanvasView : Grid, ICanvasScrollView
 			VerticalAlignment = VerticalAlignment.Center,
 		};
 
+		// Upstream's style.css puts a shadow round the canvas:
+		//   #canvas { box-shadow: 0 0 2px 2px #7F7F7F; }
+		// A 2px border in the same colour is the closest equivalent that does
+		// not need a shadow-casting visual; it reads the same at every zoom and
+		// separates the image from the workspace background, which is the point.
+		Border canvasFrame = new () {
+			BorderThickness = new Thickness (2),
+			BorderBrush = new SolidColorBrush (Windows.UI.Color.FromArgb (0xFF, 0x7F, 0x7F, 0x7F)),
+			HorizontalAlignment = HorizontalAlignment.Center,
+			VerticalAlignment = VerticalAlignment.Center,
+			Child = Canvas,
+		};
+
 		canvasHost = new Grid ();
-		canvasHost.Children.Add (Canvas);
+		canvasHost.Children.Add (canvasFrame);
 
 		scroller = new ScrollViewer {
 			HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,

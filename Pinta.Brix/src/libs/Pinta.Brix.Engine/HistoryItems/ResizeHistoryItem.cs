@@ -40,7 +40,9 @@ public sealed class ResizeHistoryItem : CompoundHistoryItem
 		Text = Translations.GetString ("Resize Image");
 	}
 
-	public DocumentSelection? RestoreSelection { get; internal set; }
+	// Pinta.Brix note: settable from outside the assembly because the crop
+	// action lives in the UI layer here, where upstream had it in Pinta.Core.
+	public DocumentSelection? RestoreSelection { get; set; }
 
 	public override void Undo ()
 	{

@@ -9,7 +9,6 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Pinta.Brix.Controls;
 using Pinta.Brix.Engine;
 using Windows.Storage;
-using Windows.Storage.Pickers;
 
 namespace Pinta.Brix.Views;
 
@@ -30,23 +29,7 @@ public sealed partial class MainPage : Page
 
         this.InitializeComponent(); //Leave this line last
 
-        AddPageAccelerator(Windows.System.VirtualKey.Z, ctrl: true, shift: false, () => MenuEditUndo_Click(this, null));
-        AddPageAccelerator(Windows.System.VirtualKey.Z, ctrl: true, shift: true, () => MenuEditRedo_Click(this, null));
-        AddPageAccelerator(Windows.System.VirtualKey.Y, ctrl: true, shift: false, () => MenuEditRedo_Click(this, null));
-
         Loaded += MainPage_Loaded;
-    }
-
-    private void AddPageAccelerator(Windows.System.VirtualKey key, bool ctrl, bool shift, Action action)
-    {
-        var accelerator = new Microsoft.UI.Xaml.Input.KeyboardAccelerator
-        {
-            Key = key,
-            Modifiers = (ctrl ? Windows.System.VirtualKeyModifiers.Control : 0)
-                | (shift ? Windows.System.VirtualKeyModifiers.Shift : 0),
-        };
-        accelerator.Invoked += (_, args) => { action(); args.Handled = true; };
-        KeyboardAccelerators.Add(accelerator);
     }
 
     private void MainPage_Loaded(object sender, RoutedEventArgs e)
@@ -54,21 +37,33 @@ public sealed partial class MainPage : Page
         //Chrome wiring: dialogs need a XamlRoot, so this happens on Loaded
         PintaCore.Chrome.InitializeErrorDialogHandler(ShowErrorDialogAsync);
         PintaCore.Chrome.InitializeMessageDialog(ShowMessageDialogAsync);
-        PintaCore.Chrome.InitializeProgessDialog(new NullProgressDialog());
+        PintaCore.Chrome.InitializeProgessDialog(new ContentProgressDialog(() => XamlRoot));
         PintaCore.Chrome.InitializeSimpleEffectDialog(
             (effect, _) => EffectOptionsDialog.ShowAsync(effect, XamlRoot));
         PintaCore.Workspace.SaveDocumentHandler = SaveDocumentAsync;
 
+        //The clipboard is a UI-layer service; the engine and the tools reach it
+        //through PintaCore.Clipboard.
+        PintaCore.InitializeClipboard(new PlatformClipboardService());
+
         //Tool options toolbar renders the engine's descriptor model
         toolOptionsRenderer = new ToolBarRenderer(PintaCore.Chrome.ToolToolBar, ToolOptionsPanel);
+
+        //Menus, toolbar and command handlers all come from the action model
+        WireActions();
+        WirePaletteActions();
+        BuildMenus();
+        BuildMainToolbar();
+        BuildPadToolbars();
+        BuildPaletteWidget();
 
         //Workspace events drive the document tabs and pads
         PintaCore.Workspace.DocumentActivated += (_, args) => AddDocumentTab(args.Document);
         PintaCore.Workspace.DocumentClosed += (_, args) => RemoveDocumentTab(args.Document);
         PintaCore.Workspace.ActiveDocumentChanged += (_, _) => OnActiveDocumentChanged();
-        PintaCore.Workspace.LayerAdded += (_, _) => RefreshLayersPad();
-        PintaCore.Workspace.LayerRemoved += (_, _) => RefreshLayersPad();
-        PintaCore.Workspace.SelectedLayerChanged += (_, _) => RefreshLayersPad();
+        PintaCore.Workspace.LayerAdded += (_, _) => OnDocumentStateChanged();
+        PintaCore.Workspace.LayerRemoved += (_, _) => OnDocumentStateChanged();
+        PintaCore.Workspace.SelectedLayerChanged += (_, _) => OnDocumentStateChanged();
 
         //Status bar
         PintaCore.Chrome.LastCanvasCursorPointChanged += (_, _) =>
@@ -90,11 +85,21 @@ public sealed partial class MainPage : Page
         PintaCore.Tools.ToolActivated += (_, _) => RefreshToolbox();
         RefreshToolbox();
 
-        //Zoom presets, matching the workspace's list, plus editable text
+        //Zoom presets, matching the workspace's list
         updatingZoomCombo = true;
         foreach (double percent in DocumentWorkspace.ZoomPresets.Reverse())
             ZoomComboBox.Items.Add($"{percent:0.#}%");
         updatingZoomCombo = false;
+
+        //The tool box re-flows into more or fewer columns as the window height
+        //changes, so it has to be rebuilt on resize.
+        ToolboxScroll.SizeChanged += (_, args) =>
+        {
+            if (Math.Abs(args.NewSize.Height - args.PreviousSize.Height) > 1)
+                RefreshToolbox();
+        };
+
+        UpdateActionSensitivity();
     }
 
     // ---- Documents and tabs ------------------------------------------------
@@ -111,9 +116,25 @@ public sealed partial class MainPage : Page
         DocumentTabs.TabItems.Add(tab);
         DocumentTabs.SelectedItem = tab;
 
-        document.Renamed += (_, _) => tab.Header = document.DisplayName;
+        document.Renamed += (_, _) => { tab.Header = document.DisplayName; RebuildWindowMenu(); };
         document.IsDirtyChanged += (_, _) =>
+        {
             tab.Header = document.IsDirty ? $"{document.DisplayName}*" : document.DisplayName;
+            RebuildWindowMenu();
+        };
+
+        //History changes drive Undo/Redo enablement and the history pad.
+        document.History.HistoryItemAdded += (_, _) => OnDocumentStateChanged();
+        document.History.ActionUndone += (_, _) => OnDocumentStateChanged();
+        document.History.ActionRedone += (_, _) => OnDocumentStateChanged();
+        document.SelectionChanged += (_, _) =>
+        {
+            UpdateActionSensitivity();
+            UpdateSelectionSizeText();
+        };
+
+        RebuildWindowMenu();
+        UpdateActionSensitivity();
     }
 
     private void RemoveDocumentTab(Document document)
@@ -121,14 +142,18 @@ public sealed partial class MainPage : Page
         if (!documentTabs.TryGetValue(document, out TabViewItem tab)) { return; }
         documentTabs.Remove(document);
         DocumentTabs.TabItems.Remove(tab);
+        RebuildWindowMenu();
+        UpdateActionSensitivity();
     }
 
-    private void DocumentTabs_TabCloseRequested(TabView sender, TabViewTabCloseRequestedEventArgs args)
+    private async void DocumentTabs_TabCloseRequested(TabView sender, TabViewTabCloseRequestedEventArgs args)
     {
         Document document = documentTabs.FirstOrDefault(kv => kv.Value == args.Tab).Key;
         if (document is null) { return; }
-        //V1: close without save-confirmation prompt (added with the dialogs pass)
-        PintaCore.Workspace.CloseDocument(document);
+
+        //Prompt before discarding unsaved work - the tab close is the most
+        //likely way to lose a document.
+        await CloseDocumentAsync(document);
     }
 
     private void DocumentTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -156,52 +181,43 @@ public sealed partial class MainPage : Page
             document.Workspace.ZoomChanged += ActiveWorkspace_ZoomChanged;
             ActiveWorkspace_ZoomChanged(null, EventArgs.Empty);
         }
+        OnDocumentStateChanged();
+    }
+
+    /// <summary>
+    /// One place for "something about the document changed" - the pads and the
+    /// command enablement both follow from it.
+    /// </summary>
+    private void OnDocumentStateChanged()
+    {
         RefreshLayersPad();
         RefreshHistoryPad();
+        UpdateActionSensitivity();
+        UpdateSelectionSizeText();
     }
 
-    // ---- File menu ---------------------------------------------------------
-
-    private void MenuFileNew_Click(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Upstream shows the selection's size beside the cursor position; it is
+    /// blank when nothing is selected.
+    /// </summary>
+    private void UpdateSelectionSizeText()
     {
-        //V1: fixed default size with a white background (the New Image dialog
-        //arrives with the dialogs pass)
-        PintaCore.Workspace.NewDocument(new Size(800, 600), new Pinta.Brix.Engine.Drawing.Color(1, 1, 1));
-    }
-
-    private async void MenuFileOpen_Click(object sender, RoutedEventArgs e)
-    {
-        var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.PicturesLibrary };
-        foreach (var format in PintaCore.ImageFormats.Formats.Where(f => f.IsImportAvailable()))
+        if (!PintaCore.Workspace.HasOpenDocuments)
         {
-            foreach (string extension in format.Extensions.Where(x => x.All(char.IsLower)))
-            {
-                picker.FileTypeFilter.Add($".{extension}");
-            }
+            SelectionSizeText.Text = string.Empty;
+            return;
         }
 
-        StorageFile file = await picker.PickSingleFileAsync();
-        if (file is null) { return; }
-        PintaCore.Workspace.OpenFile(file.Path);
-        PintaCore.RecentFiles.AddFile(file.Path);
-    }
+        Document document = PintaCore.Workspace.ActiveDocument;
 
-    private async void MenuFileSave_Click(object sender, RoutedEventArgs e)
-    {
-        if (!PintaCore.Workspace.HasOpenDocuments) { return; }
-        await PintaCore.Workspace.ActiveDocument.Save(saveAs: false);
-    }
+        if (!document.Selection.Visible)
+        {
+            SelectionSizeText.Text = string.Empty;
+            return;
+        }
 
-    private async void MenuFileSaveAs_Click(object sender, RoutedEventArgs e)
-    {
-        if (!PintaCore.Workspace.HasOpenDocuments) { return; }
-        await PintaCore.Workspace.ActiveDocument.Save(saveAs: true);
-    }
-
-    private void MenuFileClose_Click(object sender, RoutedEventArgs e)
-    {
-        if (!PintaCore.Workspace.HasOpenDocuments) { return; }
-        PintaCore.Workspace.CloseActiveDocument();
+        RectangleI bounds = document.Selection.GetBounds().ToInt();
+        SelectionSizeText.Text = $"{bounds.Width} x {bounds.Height}";
     }
 
     private async Task<bool> SaveDocumentAsync(Document document, bool saveAs)
@@ -211,9 +227,9 @@ public sealed partial class MainPage : Page
 
         if (path is null || saveAs)
         {
-            var picker = new FileSavePicker
+            var picker = new Windows.Storage.Pickers.FileSavePicker
             {
-                SuggestedStartLocation = PickerLocationId.PicturesLibrary,
+                SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.PicturesLibrary,
                 SuggestedFileName = document.DisplayName,
             };
             foreach (var format in PintaCore.ImageFormats.Formats.Where(f => f.IsExportAvailable()))
@@ -242,61 +258,34 @@ public sealed partial class MainPage : Page
             return false;
         }
 
+        //Saving to a format that cannot hold layers flattens the image; upstream
+        //asks first, because the layers are gone from the FILE either way.
+        if (document.Layers.Count() > 1 && !descriptor.SupportsLayers)
+        {
+            ContentDialog flattenDialog = new()
+            {
+                Title = "Flatten Image?",
+                Content = $"The {descriptor.FilterName} format does not support layers. "
+                    + "The saved file will contain a flattened copy of the image.",
+                PrimaryButtonText = "Flatten",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = XamlRoot,
+            };
+
+            if (await flattenDialog.ShowAsync() != ContentDialogResult.Primary) { return false; }
+        }
+
         descriptor.Exporter.Export(document, path);
         document.File = path;
         document.FileType = fileType;
         document.Workspace.History.SetClean();
         PintaCore.Tools.DoAfterSave(document);
+        RebuildWindowMenu();
         return true;
     }
 
-    // ---- Edit menu ---------------------------------------------------------
-
-    private void MenuEditUndo_Click(object sender, RoutedEventArgs e)
-    {
-        if (!PintaCore.Workspace.HasOpenDocuments) { return; }
-        var history = PintaCore.Workspace.ActiveWorkspace.History;
-        if (history.CanUndo) { history.Undo(); }
-        RefreshHistoryPad();
-    }
-
-    private void MenuEditRedo_Click(object sender, RoutedEventArgs e)
-    {
-        if (!PintaCore.Workspace.HasOpenDocuments) { return; }
-        var history = PintaCore.Workspace.ActiveWorkspace.History;
-        if (history.CanRedo) { history.Redo(); }
-        RefreshHistoryPad();
-    }
-
-    // ---- View menu / zoom --------------------------------------------------
-
-    private void MenuViewZoomIn_Click(object sender, RoutedEventArgs e)
-    {
-        if (PintaCore.Workspace.HasOpenDocuments) { PintaCore.Workspace.ActiveWorkspace.ZoomIn(); }
-    }
-
-    private void MenuViewZoomOut_Click(object sender, RoutedEventArgs e)
-    {
-        if (PintaCore.Workspace.HasOpenDocuments) { PintaCore.Workspace.ActiveWorkspace.ZoomOut(); }
-    }
-
-    private void MenuViewZoomNormal_Click(object sender, RoutedEventArgs e)
-    {
-        if (PintaCore.Workspace.HasOpenDocuments) { PintaCore.Workspace.ActiveWorkspace.ZoomManually(1.0); }
-    }
-
-    private void MenuViewZoomFit_Click(object sender, RoutedEventArgs e)
-    {
-        if (!PintaCore.Workspace.HasOpenDocuments) { return; }
-        var workspace = PintaCore.Workspace.ActiveWorkspace;
-        var imageSize = PintaCore.Workspace.ActiveDocument.ImageSize;
-        var viewport = workspace.CanvasWindow?.ViewportSize ?? new Size(0, 0);
-        if (viewport.Width <= 0 || viewport.Height <= 0 || imageSize.Width <= 0 || imageSize.Height <= 0) { return; }
-        double ratio = Math.Min(
-            (double)viewport.Width / imageSize.Width,
-            (double)viewport.Height / imageSize.Height);
-        workspace.ZoomManually(ratio);
-    }
+    // ---- Zoom --------------------------------------------------------------
 
     private void ActiveWorkspace_ZoomChanged(object sender, EventArgs e)
     {
@@ -306,6 +295,12 @@ public sealed partial class MainPage : Page
         ZoomComboBox.SelectedIndex = -1;
         updatingZoomCombo = false;
     }
+
+    private void ZoomOutButton_Click(object sender, RoutedEventArgs e) =>
+        PintaCore.Actions.View.ZoomOut.Activate();
+
+    private void ZoomInButton_Click(object sender, RoutedEventArgs e) =>
+        PintaCore.Actions.View.ZoomIn.Activate();
 
     private void ZoomComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -317,62 +312,95 @@ public sealed partial class MainPage : Page
         }
     }
 
-    // ---- Adjustments / Effects menus ---------------------------------------
-
-    private void RebuildAdjustmentsMenu()
-    {
-        AdjustmentsMenu.Items.Clear();
-        foreach (Command command in PintaCore.Effects.AdjustmentCommands)
-        {
-            AdjustmentsMenu.Items.Add(CreateCommandMenuItem(command));
-        }
-    }
-
-    private void RebuildEffectsMenu()
-    {
-        EffectsMenu.Items.Clear();
-        foreach (string category in PintaCore.Effects.EffectCategories.OrderBy(c => c))
-        {
-            MenuFlyoutSubItem submenu = new() { Text = category };
-            foreach (Command command in PintaCore.Effects.GetEffectCommands(category))
-            {
-                submenu.Items.Add(CreateCommandMenuItem(command));
-            }
-            EffectsMenu.Items.Add(submenu);
-        }
-    }
-
-    private static MenuFlyoutItem CreateCommandMenuItem(Command command)
-    {
-        MenuFlyoutItem item = new() { Text = command.Label, IsEnabled = command.Sensitive };
-        item.Click += (_, _) => command.Activate();
-        command.SensitiveChanged += (_, _) => item.IsEnabled = command.Sensitive;
-        return item;
-    }
-
     // ---- Toolbox -----------------------------------------------------------
+
+    /// <summary>Upstream's icon size for the tool box (CSS -gtk-icon-size: 2rem).</summary>
+    private const int ToolboxIconSize = 32;
+
+    /// <summary>
+    /// Upstream's FlowBox uses MinChildrenPerLine = 8, i.e. at least eight
+    /// buttons per column before a second column is started.
+    /// </summary>
+    private const int ToolboxMinimumPerColumn = 8;
+
+    private const double ToolboxButtonExtent = 46;
 
     private void RefreshToolbox()
     {
         ToolboxPanel.Children.Clear();
-        foreach (BaseTool tool in PintaCore.Tools)
+
+        List<BaseTool> tools = [.. PintaCore.Tools];
+        if (tools.Count == 0) { return; }
+
+        //Flow into columns: a tall window shows one column, a short one shows
+        //two or three, exactly as upstream's vertical FlowBox does.
+        double available = ToolboxScroll.ActualHeight > 0 ? ToolboxScroll.ActualHeight : ActualHeight;
+        int perColumn = Math.Max(ToolboxMinimumPerColumn, (int)(available / ToolboxButtonExtent));
+
+        StackPanel columnsPanel = new() { Orientation = Orientation.Horizontal };
+        ToolboxPanel.Children.Add(columnsPanel);
+
+        StackPanel column = null;
+
+        for (int i = 0; i < tools.Count; i++)
         {
+            if (i % perColumn == 0)
+            {
+                column = new StackPanel { Orientation = Orientation.Vertical };
+                columnsPanel.Children.Add(column);
+            }
+
+            BaseTool tool = tools[i];
+
             ToggleButton button = new()
             {
                 Content = new Image
                 {
-                    Width = 24,
-                    Height = 24,
-                    Source = IconImageSource.Create(tool.Icon, 24),
+                    Width = ToolboxIconSize,
+                    Height = ToolboxIconSize,
+                    Source = IconImageSource.Create(tool.Icon, ToolboxIconSize),
                 },
                 IsChecked = PintaCore.Tools.CurrentTool == tool,
-                Margin = new Thickness(2),
+                Margin = new Thickness(1),
+                Padding = new Thickness(4),
             };
-            ToolTipService.SetToolTip(button, tool.Name);
+
+            ToolTipService.SetToolTip(button, BuildToolTooltip(tool));
             BaseTool captured = tool;
-            button.Click += (_, _) => PintaCore.Tools.SetCurrentTool(captured);
-            ToolboxPanel.Children.Add(button);
+
+            //Radio behaviour: clicking the active tool must not turn it off.
+            button.Click += (_, _) =>
+            {
+                if (PintaCore.Tools.CurrentTool == captured)
+                {
+                    button.IsChecked = true;
+                    return;
+                }
+                PintaCore.Tools.SetCurrentTool(captured);
+            };
+
+            column.Children.Add(button);
         }
+    }
+
+    /// <summary>
+    /// Upstream's toolbox tooltip: name, shortcut key, then the status-bar hint.
+    /// </summary>
+    private static string BuildToolTooltip(BaseTool tool)
+    {
+        string tooltip = tool.Name;
+
+        if (tool.ShortcutKey != default)
+        {
+            tooltip += $"\nShortcut key: {tool.ShortcutKey}";
+        }
+
+        if (!string.IsNullOrEmpty(tool.StatusBarText))
+        {
+            tooltip += $"\n\n{tool.StatusBarText}";
+        }
+
+        return tooltip;
     }
 
     // ---- Pads --------------------------------------------------------------
@@ -386,7 +414,7 @@ public sealed partial class MainPage : Page
         //Topmost layer first, matching the upstream layers pad
         for (int i = layers.Count() - 1; i >= 0; i--)
         {
-            LayersList.Items.Add(layers[i].Name);
+            LayersList.Items.Add(LayerRowFactory.Create(layers[i]));
         }
 
         updatingLayerSelection = true;
@@ -405,52 +433,85 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private void AddLayerButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (!PintaCore.Workspace.HasOpenDocuments) { return; }
-        var document = PintaCore.Workspace.ActiveDocument;
-        document.Layers.AddNewLayer(string.Empty);
-        document.Workspace.History.PushNewItem(
-            new AddLayerHistoryItem(Icons.LayerNew, "Add New Layer", document.Layers.CurrentUserLayerIndex));
-        RefreshLayersPad();
-    }
-
-    private void RemoveLayerButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (!PintaCore.Workspace.HasOpenDocuments) { return; }
-        var document = PintaCore.Workspace.ActiveDocument;
-        if (document.Layers.Count() <= 1) { return; }
-        var hist = new DeleteLayerHistoryItem(
-            Icons.LayerDelete, "Delete Layer",
-            document.Layers.CurrentUserLayer, document.Layers.CurrentUserLayerIndex);
-        document.Layers.DeleteLayer(document.Layers.CurrentUserLayerIndex);
-        document.Workspace.History.PushNewItem(hist);
-        RefreshLayersPad();
-    }
-
     private void RefreshHistoryPad()
     {
         HistoryList.Items.Clear();
         if (!PintaCore.Workspace.HasOpenDocuments) { return; }
-        //V1: a simple text list of history items (the interactive pad comes later)
-        foreach (var item in PintaCore.Workspace.ActiveWorkspace.History.Items)
+
+        DocumentHistory history = PintaCore.Workspace.ActiveWorkspace.History;
+        int pointer = history.Pointer;
+        List<BaseHistoryItem> items = [.. history.Items];
+
+        for (int i = 0; i < items.Count; i++)
         {
-            HistoryList.Items.Add(item.Text ?? string.Empty);
+            HistoryList.Items.Add(HistoryRowFactory.Create(items[i], undone: i > pointer));
         }
+
+        updatingHistorySelection = true;
+        HistoryList.SelectedIndex = pointer;
+        updatingHistorySelection = false;
+    }
+
+    private bool updatingHistorySelection;
+
+    private void HistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (updatingHistorySelection || !PintaCore.Workspace.HasOpenDocuments) { return; }
+
+        DocumentHistory history = PintaCore.Workspace.ActiveWorkspace.History;
+        int target = HistoryList.SelectedIndex;
+
+        if (target < 0 || target == history.Pointer) { return; }
+
+        //Travel to the clicked point, one step at a time so every history item's
+        //own Undo/Redo runs.
+        while (history.Pointer > target && history.CanUndo) { history.Undo(); }
+        while (history.Pointer < target && history.CanRedo) { history.Redo(); }
     }
 
     // ---- Dialog handlers ---------------------------------------------------
 
     private async Task<ErrorDialogResponse> ShowErrorDialogAsync(string message, string body, string details)
     {
+        StackPanel panel = new() { Spacing = 8, MinWidth = 360 };
+        panel.Children.Add(new TextBlock { Text = body, TextWrapping = TextWrapping.Wrap });
+
+        if (!string.IsNullOrEmpty(details))
+        {
+            //Upstream puts the detail behind an expander with a "file a bug"
+            //button; the expander is the part that matters for readability.
+            Expander expander = new()
+            {
+                Header = "Details",
+                Content = new ScrollViewer
+                {
+                    MaxHeight = 240,
+                    Content = new TextBlock
+                    {
+                        Text = details,
+                        TextWrapping = TextWrapping.Wrap,
+                        FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("monospace"),
+                    },
+                },
+            };
+            panel.Children.Add(expander);
+        }
+
         ContentDialog dialog = new()
         {
             Title = message,
-            Content = string.IsNullOrEmpty(details) ? body : $"{body}\n\n{details}",
+            Content = panel,
+            PrimaryButtonText = "File a Bug",
             CloseButtonText = "Close",
+            DefaultButton = ContentDialogButton.Close,
             XamlRoot = XamlRoot,
         };
-        await dialog.ShowAsync();
+
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        {
+            PintaCore.Actions.Help.Bugs.Activate();
+        }
+
         return ErrorDialogResponse.OK;
     }
 
@@ -464,17 +525,5 @@ public sealed partial class MainPage : Page
             XamlRoot = XamlRoot,
         };
         await dialog.ShowAsync();
-    }
-
-    private sealed class NullProgressDialog : IProgressDialog
-    {
-        public string Title { get; set; } = string.Empty;
-        public string Text { get; set; } = string.Empty;
-        public double Progress { get; set; }
-#pragma warning disable CS0067 //event never used - V1 placeholder
-        public event EventHandler Canceled;
-#pragma warning restore CS0067
-        public void Show() { }
-        public void Hide() { }
     }
 }

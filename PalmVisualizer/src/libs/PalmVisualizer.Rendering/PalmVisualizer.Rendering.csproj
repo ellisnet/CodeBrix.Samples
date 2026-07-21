@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <!-- Keep a distinct RootNamespace (not the app's "PalmVisualizer") so the transitive
+         CodeBrix.Platform reference does not generate a duplicate GlobalStaticResources. -->
+    <RootNamespace>PalmVisualizer.Rendering</RootNamespace>
+  </PropertyGroup>
+
+  <!-- This library owns the CodeBrix.Platform.GameEngine reference (consumed as a NuGet
+       package - one package bundles both the engine core and the Host layer); the app's
+       .Core project depends on this library rather than referencing the engine directly. -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Platform.GameEngine.MitLicenseForever" Version="1.0.201.518" />
+  </ItemGroup>
+</Project>

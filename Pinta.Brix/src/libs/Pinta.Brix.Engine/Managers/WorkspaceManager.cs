@@ -376,8 +376,8 @@ public sealed class WorkspaceManager : IWorkspaceService
 	{
 		chrome_manager.SetMainWindowTitle (
 			HasOpenDocuments
-			? $"{ActiveDocument.DisplayName}{(ActiveDocument.IsDirty ? "*" : "")} - Pinta"
-			: "Pinta");
+			? $"{ActiveDocument.DisplayName}{(ActiveDocument.IsDirty ? "*" : "")} - {PintaCore.ApplicationName}"
+			: PintaCore.ApplicationName);
 	}
 
 	public void SetActiveDocument (int index)
@@ -413,12 +413,27 @@ public sealed class WorkspaceManager : IWorkspaceService
 	private void OnDocumentActivated (DocumentEventArgs e)
 	{
 		e.Document.SelectionChanged += (_, _) => OnSelectionChanged ();
+
+		// Pinta.Brix note: upstream refreshed the window title from
+		// RebuildDocumentMenu, which the Window menu rebuilt on all of these.
+		// The port builds that menu in the UI layer, so the title is kept
+		// current here instead - otherwise a freshly created document does not
+		// reach the title bar until something else happens to dirty it.
+		e.Document.Renamed += (_, _) => ResetTitle ();
+		e.Document.IsDirtyChanged += (_, _) => ResetTitle ();
+
 		DocumentActivated?.Invoke (this, e);
+		ResetTitle ();
 	}
 
 	private void OnDocumentClosed (DocumentEventArgs e)
 	{
 		DocumentClosed?.Invoke (this, e);
+		ResetTitle ();
+
+		// The other natural flush point for tool options; see the note in
+		// ToolManager.SetCurrentTool.
+		PintaCore.Settings.DoSaveSettingsBeforeQuit ();
 	}
 
 	private void OnSelectionChanged ()
@@ -443,7 +458,8 @@ public sealed class WorkspaceManager : IWorkspaceService
 		StringBuilder body = new ();
 
 		body.AppendLine (Translations.GetString ("Could not open file: {0}", filename));
-		body.AppendLine (Translations.GetString ("Pinta supports the following file formats:"));
+		body.AppendLine (Translations.GetString (
+			"{0} supports the following file formats:", PintaCore.ApplicationName));
 
 		var extensions =
 			from format in image_formats.Formats

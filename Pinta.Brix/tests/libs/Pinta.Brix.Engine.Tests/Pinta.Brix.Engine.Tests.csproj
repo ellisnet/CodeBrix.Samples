@@ -9,6 +9,13 @@
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
     <Nullable>enable</Nullable>
+    <!-- The published CodeBrix.Platform nuget ships REFERENCE assemblies in
+         lib/; every method body throws NotSupportedException("Ref assembly").
+         Application heads get the real implementations swapped in
+         automatically, plain test projects do NOT. This is the lever that
+         swaps them in, and without it every text-layout call would compile
+         cleanly and then throw on first use. -->
+    <CodeBrixRuntimeIdentifier>skia</CodeBrixRuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +33,11 @@
     <!-- The engine's SkiaSharp reference is managed-only; on Linux the native
          libSkiaSharp must be pulled in explicitly for the tests to run. -->
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.150.1" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
+    <!-- Text layout shapes with HarfBuzz, so its native library is needed here
+         for the same reason libSkiaSharp is: an application head gets these
+         from its runtime package, a bare test project does not. The version
+         matches the one CodeBrix.Platform.TextLayout depends on. -->
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.1" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
     <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.164.180" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>

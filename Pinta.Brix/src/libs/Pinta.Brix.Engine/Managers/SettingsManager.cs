@@ -25,12 +25,7 @@
 // THE SOFTWARE.
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Xml;
-using System.Xml.Linq;
+using Pinta.Brix.Settings;
 
 //was previously: namespace Pinta.Core;
 namespace Pinta.Brix.Engine;
@@ -54,130 +49,59 @@ public interface ISettingsService
 	void PutSetting (string key, object value);
 
 	/// <summary>
-	/// An event that is fired when the user quits the application, giving subscribers
-	/// a chance to call PutSetting to store setting.
+	/// An event fired when settings should be flushed to storage, giving
+	/// subscribers a chance to call PutSetting to store their current values.
 	/// </summary>
 	event EventHandler? SaveSettingsBeforeQuit;
 }
 
+// Pinta.Brix note: upstream kept its settings in an in-memory dictionary that
+// was serialised to settings.xml ONCE, on quit. This port stores everything in
+// the single portable settings.sqlite instead (see Pinta.Brix.Settings), and
+// every PutSetting WRITES THROUGH IMMEDIATELY - so nothing is lost when the
+// application is closed from the window's own chrome, which is the only way it
+// can be closed here (there is deliberately no File > Quit).
+//
+// The SaveSettingsBeforeQuit event is kept because the ported tools push their
+// option values from inside it rather than as they change; it is now raised at
+// natural flush points (tool change, document close) rather than only at exit.
+/// <summary>
+/// The application's settings, stored in settings.sqlite.
+/// </summary>
 public sealed class SettingsManager : ISettingsService
 {
-	private const string SETTINGS_FILE = "settings.xml";
-
-	private readonly Dictionary<string, object> settings = [];
-
-	/// <summary>
-	/// Handle this event to be given a chance to save settings to disk
-	/// when the user is closing the application.
-	/// </summary>
+	/// <summary>Raised when settings should be flushed to storage.</summary>
 	public event EventHandler? SaveSettingsBeforeQuit;
 
-	public SettingsManager ()
-	{
-		var settings_file = Path.Combine (GetUserSettingsDirectory (), SETTINGS_FILE);
+	/// <summary>The settings folder - see <see cref="SettingsService.DefaultDirectory"/>.</summary>
+	public string GetUserSettingsDirectory () => SettingsService.DefaultDirectory;
 
-		if (!File.Exists (settings_file))
-			return;
+	/// <summary>
+	/// Reads a setting, returning the default when it is absent or cannot be
+	/// read as the requested type.
+	/// </summary>
+	public T GetSetting<T> (string key, T defaultValue) => SettingsService.Get (key, defaultValue);
 
-		XDocument document;
+	/// <summary>
+	/// Writes a setting through to settings.sqlite. A null value removes it.
+	/// </summary>
+	public void PutSetting (string key, object value) => SettingsService.Set (key, value);
 
-		try {
-			document = XDocument.Load (settings_file);
-		} catch (Exception ex) {
-			Console.Error.WriteLine (ex);
-			return;
-		}
-
-		var nodes = document.Element ("settings")?.Elements ("setting") ?? [];
-
-		foreach (var node in nodes) {
-			if (node.Attribute ("name")?.Value is not string name)
-				continue;
-
-			// Kinda cheating because we know there are only a few types stored in here
-			string? value = node.Attribute ("type")?.Value;
-			switch (value) {
-				case "System.Int32":
-					if (int.TryParse (node.Value, out var i))
-						PutSetting (name, i);
-					break;
-				case "System.Double":
-					if (double.TryParse (node.Value, out double d))
-						PutSetting (name, d);
-					break;
-				case "System.Boolean":
-					if (bool.TryParse (node.Value, out var b))
-						PutSetting (name, b);
-					break;
-				case "System.String":
-					if (node.Value is string s)
-						PutSetting (name, s);
-					break;
-				default:
-					System.Console.WriteLine ($"Unknown setting type {value} for {name}");
-					break;
-			}
-		}
-	}
-
-	public string GetUserSettingsDirectory ()
-	{
-		var appdata_folder = Environment.GetFolderPath (Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.Create);
-		var settings_directory = Path.Combine (appdata_folder, "Pinta");
-
-		// If someone is getting this, they probably are going to need
-		// the directory created, so just handle that here.
-		Directory.CreateDirectory (settings_directory);
-
-		return settings_directory;
-	}
-
-	public T GetSetting<T> (string key, T defaultValue)
-	{
-		if (settings.TryGetValue (key, out var value))
-			return (T) value;
-
-		return defaultValue;
-	}
-
-	public void PutSetting (string key, object value)
-	{
-		settings[key] = value;
-	}
-
+	/// <summary>
+	/// Asks every subscriber to push its current values, so anything held only
+	/// in memory reaches settings.sqlite.
+	/// </summary>
+	/// <remarks>
+	/// Safe and cheap to call often: each PutSetting is a single upsert, and the
+	/// store does nothing at all when the value has not changed.
+	/// </remarks>
 	public void DoSaveSettingsBeforeQuit ()
 	{
-		SaveSettingsBeforeQuit?.Invoke (this, EventArgs.Empty);
 		try {
-			SaveSettings ();
+			SaveSettingsBeforeQuit?.Invoke (this, EventArgs.Empty);
 		} catch (Exception ex) {
-			// Not much we can do at this point since the application is exiting,
-			// but I could imagine scenarios where the user doesn't have write permission.
-			Console.Error.WriteLine (ex);
+			// Flushing settings must never take the application down.
+			LoggingService.LogError ("Settings could not be saved", ex);
 		}
-	}
-
-	private void SaveSettings ()
-	{
-		var settings_dir = GetUserSettingsDirectory ();
-		var settings_file = Path.Combine (settings_dir, SETTINGS_FILE);
-
-		// Just in case the directory got deleted after the application started
-		Directory.CreateDirectory (settings_dir);
-
-		using var xw = new XmlTextWriter (settings_file, Encoding.UTF8);
-
-		xw.Formatting = Formatting.Indented;
-		xw.WriteStartElement ("settings");
-
-		foreach (var item in settings) {
-			xw.WriteStartElement ("setting");
-			xw.WriteAttributeString ("name", item.Key);
-			xw.WriteAttributeString ("type", item.Value.GetType ().ToString ());
-			xw.WriteValue (item.Value.ToString ());
-			xw.WriteEndElement ();
-		}
-
-		xw.WriteEndElement ();
 	}
 }

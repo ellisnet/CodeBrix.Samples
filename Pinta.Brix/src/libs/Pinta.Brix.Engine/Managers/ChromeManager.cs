@@ -127,7 +127,7 @@ public sealed class ChromeManager : IChromeService
 		return message_dialog_handler (message, body);
 	}
 
-	public string MainWindowTitle { get; private set; } = "Pinta";
+	public string MainWindowTitle { get; private set; } = PintaCore.ApplicationName;
 
 	public event EventHandler? MainWindowTitleChanged;
 

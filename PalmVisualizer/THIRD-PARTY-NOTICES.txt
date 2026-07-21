@@ -1,0 +1,24 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the PalmVisualizer sample application, together with the licenses under
+which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here.
+
+------------------------------------------------------------------------
+MediaPipe models (bundled: models/**/*.tflite)
+------------------------------------------------------------------------
+The .tflite machine-learning models under the models/ folder — the hand-
+tracking models (hand_detector and hand_landmarks_detector, extracted from
+the gesture_recognizer.task bundle) — are from Google's MediaPipe
+(https://ai.google.dev/edge/mediapipe).
+
+Copyright (c) Google LLC.
+
+Licensed under the Apache License, Version 2.0
+(https://www.apache.org/licenses/LICENSE-2.0).

@@ -1,6 +1,10 @@
 // TgaExporterTests.cs
 //
 // Golden-bytes coverage for the uncompressed 32-bit TGA exporter.
+//
+// The image ID field names THIS application, not upstream Pinta, so the
+// golden header's idLength changes with the name. It must stay non-empty:
+// GDK misidentifies the mime type as image/x-win-bitmap when idLength is 0.
 
 using System.Collections.Generic;
 using System.IO;
@@ -24,7 +28,7 @@ public class TgaExporterTests
 
 		List<byte> expected = [
 			// --- 18-byte TGA header (little endian)
-			17,     // idLength: "Created by Pinta" + BinaryWriter length prefix
+			22,     // idLength: "Created by Pinta.Brix" + BinaryWriter length prefix
 			0,      // cmapType: no color map
 			2,      // imageType: uncompressed RGB
 			0, 0,   // cmapIndex
@@ -37,8 +41,8 @@ public class TgaExporterTests
 			32,     // pixelDepth
 			8,      // imageDesc: 32-bit, lower-left origin
 			// --- image ID field (BinaryWriter string: 7-bit length prefix + bytes)
-			16,
-			.. Encoding.ASCII.GetBytes ("Created by Pinta"),
+			21,
+			.. Encoding.ASCII.GetBytes ("Created by " + PintaCore.ApplicationName),
 			// --- pixel data, bottom row first, BGRA little endian
 			255, 0, 0, 255,       // blue
 			255, 255, 255, 255,   // white

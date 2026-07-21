@@ -75,7 +75,7 @@ public sealed class GimpPalette : IPaletteLoader, IPaletteSaver
 		using StreamWriter writer = new (path);
 
 		writer.WriteLine ("GIMP Palette");
-		writer.WriteLine ("Name: Pinta Created {0}", DateTime.Now.ToString (DateTimeFormatInfo.InvariantInfo.RFC1123Pattern));
+		writer.WriteLine ($"Name: {PintaCore.ApplicationName} Created {{0}}", DateTime.Now.ToString (DateTimeFormatInfo.InvariantInfo.RFC1123Pattern));
 		writer.WriteLine ("#");
 
 		for (var i = 0; i < colors.Count; i++)

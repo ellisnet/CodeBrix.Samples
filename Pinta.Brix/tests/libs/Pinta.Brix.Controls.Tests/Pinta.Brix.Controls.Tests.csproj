@@ -8,6 +8,10 @@
     <OutputType>Exe</OutputType>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <!-- Set BEFORE any real test was added: the libraries under test are
+         NRT-on, so a ported test file would otherwise bring a wave of CS8632
+         (a nullable annotation in a context that has nullable disabled). -->
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

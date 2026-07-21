@@ -52,7 +52,12 @@ public sealed class PaletteManager : IPaletteService
 	private Color secondary;
 
 	private const int MAX_RECENT_COLORS = 10;
-	private const string PALETTE_FILE = "palette.txt";
+	// Pinta.Brix note: upstream kept the working palette in a palette.txt file
+	// beside settings.xml. Everything persisted now lives in settings.sqlite, so
+	// the palette is a setting like any other - stored as its list of colours.
+	// (Edit > Palette > Save As still writes a real file, but only where the
+	// user asks for one: that is an export, not application state.)
+	private const string CURRENT_PALETTE_KEY = "current-palette";
 
 	private readonly List<Color> recently_used;
 
@@ -94,10 +99,13 @@ public sealed class PaletteManager : IPaletteService
 
 		PopulateRecentlyUsedColors ();
 
-		settings.SaveSettingsBeforeQuit += (_, _) => {
-			SaveCurrentPalette ();
-			SaveRecentlyUsedColors ();
-		};
+		// Colours write through as they change rather than waiting for a flush:
+		// picking a colour has to survive the application closing, and the only
+		// way to close it is the window's own chrome.
+		PrimaryColorChanged += (_, _) => SaveColors ();
+		SecondaryColorChanged += (_, _) => SaveColors ();
+		RecentColorsChanged += (_, _) => SaveColors ();
+		CurrentPalette.PaletteChanged += (_, _) => SaveCurrentPalette ();
 	}
 
 	public void SwapColors ()
@@ -150,39 +158,50 @@ public sealed class PaletteManager : IPaletteService
 
 	private void PopulateSavedPalette (PaletteFormatManager paletteFormats)
 	{
-		string paletteFile = System.IO.Path.Combine (settings.GetUserSettingsDirectory (), PALETTE_FILE);
-		if (!System.IO.File.Exists (paletteFile)) return;
-		CurrentPalette.Load (paletteFormats, paletteFile);
+		string[] saved = settings.GetSetting (CURRENT_PALETTE_KEY, System.Array.Empty<string> ());
+
+		if (saved.Length == 0)
+			return;
+
+		List<Color> colors = new (saved.Length);
+
+		foreach (string hex in saved) {
+			Color? color = Color.FromHex (hex);
+			if (color is not null)
+				colors.Add (color.Value);
+		}
+
+		if (colors.Count > 0)
+			CurrentPalette.Load (colors);
 	}
 
 	private void PopulateRecentlyUsedColors ()
 	{
-		// Primary / Secondary colors
+		// Pinta.Brix note: upstream stored these as BGRA hex through an API that
+		// is [Obsolete], which is why this method used to carry a CS0618
+		// pragma. settings.sqlite serialises values as JSON, so the colours are
+		// stored in the engine's own RGBA hex form and the pragma is gone.
 		string primaryColor = settings.GetSetting (SettingNames.PRIMARY_COLOR, string.Empty);
 		string secondaryColor = settings.GetSetting (SettingNames.SECONDARY_COLOR, string.Empty);
 
-#pragma warning disable CS0618 // Type or member is obsolete
-
 		SetColor (
 			setPrimary: true,
-			Color.ParseBgraHexString (primaryColor) ?? Color.Black,
+			Color.FromHex (primaryColor) ?? Color.Black,
 			addToRecent: false);
 
 		SetColor (
 			setPrimary: false,
-			Color.ParseBgraHexString (secondaryColor) ?? Color.White,
+			Color.FromHex (secondaryColor) ?? Color.White,
 			addToRecent: false);
 
 		// Recently used palette
-		string savedColors = settings.GetSetting (SettingNames.RECENT_COLORS, string.Empty);
+		string[] savedColors = settings.GetSetting (SettingNames.RECENT_COLORS, System.Array.Empty<string> ());
 
-		foreach (string hexColor in savedColors.Split (',')) {
-			Color? color = Color.ParseBgraHexString (hexColor);
+		foreach (string hexColor in savedColors) {
+			Color? color = Color.FromHex (hexColor);
 			if (color is not null)
 				recently_used.Add (color.Value);
 		}
-
-#pragma warning restore CS0618
 
 		// Fill in with default color if not enough saved
 		int more_colors = MAX_RECENT_COLORS - recently_used.Count;
@@ -191,26 +210,17 @@ public sealed class PaletteManager : IPaletteService
 			recently_used.AddRange (Enumerable.Repeat (new Color (.9, .9, .9), more_colors));
 	}
 
-	private void SaveCurrentPalette ()
-	{
-		string palette_file = System.IO.Path.Combine (settings.GetUserSettingsDirectory (), PALETTE_FILE);
-		var palette_saver = palette_formats.Formats.FirstOrDefault (p => p.Extensions.Contains ("txt"))?.Saver;
-		if (palette_saver is not null)
-			CurrentPalette.Save (palette_file, palette_saver);
-	}
+	private void SaveCurrentPalette () =>
+		settings.PutSetting (CURRENT_PALETTE_KEY, CurrentPalette.Colors.Select (c => c.ToHex ()).ToArray ());
 
-	private void SaveRecentlyUsedColors ()
+	private void SaveColors ()
 	{
-#pragma warning disable CS0618 // Type or member is obsolete
-
 		// Primary / Secondary colors
-		settings.PutSetting (SettingNames.PRIMARY_COLOR, Color.ToBgraHexString (PrimaryColor));
-		settings.PutSetting (SettingNames.SECONDARY_COLOR, Color.ToBgraHexString (SecondaryColor));
+		settings.PutSetting (SettingNames.PRIMARY_COLOR, PrimaryColor.ToHex ());
+		settings.PutSetting (SettingNames.SECONDARY_COLOR, SecondaryColor.ToHex ());
 
 		// Recently used palette
-		string colors = string.Join (",", recently_used.Select (Color.ToBgraHexString));
-		settings.PutSetting (SettingNames.RECENT_COLORS, colors);
-#pragma warning restore CS0618
+		settings.PutSetting (SettingNames.RECENT_COLORS, recently_used.Select (c => c.ToHex ()).ToArray ());
 	}
 
 	private void OnPrimaryColorChanged ()

@@ -11,6 +11,7 @@
   <Project Path="src/Pinta.Brix.Win32Skia/Pinta.Brix.Win32Skia.csproj" />
   <Project Path="src/Pinta.Brix.WinWpfSkia/Pinta.Brix.WinWpfSkia.csproj" />
   <Folder Name="/Libraries/">
+    <Project Path="src/libs/Pinta.Brix.Settings/Pinta.Brix.Settings.csproj" />
     <Project Path="src/libs/Pinta.Brix.Engine/Pinta.Brix.Engine.csproj" />
     <Project Path="src/libs/Pinta.Brix.FileFormats/Pinta.Brix.FileFormats.csproj" />
     <Project Path="src/libs/Pinta.Brix.Effects/Pinta.Brix.Effects.csproj" />
@@ -18,6 +19,7 @@
     <Project Path="src/libs/Pinta.Brix.Controls/Pinta.Brix.Controls.csproj" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/libs/Pinta.Brix.Settings.Tests/Pinta.Brix.Settings.Tests.csproj" />
     <Project Path="tests/libs/Pinta.Brix.Engine.Tests/Pinta.Brix.Engine.Tests.csproj" />
     <Project Path="tests/libs/Pinta.Brix.FileFormats.Tests/Pinta.Brix.FileFormats.Tests.csproj" />
     <Project Path="tests/libs/Pinta.Brix.Effects.Tests/Pinta.Brix.Effects.Tests.csproj" />

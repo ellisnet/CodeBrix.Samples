@@ -29,7 +29,9 @@ namespace Pinta.Brix.Engine;
 
 public static class PintaCore
 {
+	public static ActionManager Actions { get; }
 	public static ChromeManager Chrome { get; }
+	public static IClipboardService Clipboard { get; private set; }
 	public static EffectsManager Effects { get; }
 	public static ImageConverterManager ImageFormats { get; }
 	public static IServiceManager Services { get; }
@@ -52,7 +54,20 @@ public static class PintaCore
 	public const string ApplicationId = "com.github.PintaProject.Pinta";
 
 	/// <summary>
-	/// The current version number of Pinta.
+	/// The name this application calls itself, everywhere a user can see it.
+	/// </summary>
+	/// <remarks>
+	/// Pinta.Brix note: the application must NEVER refer to itself as "Pinta"
+	/// in the UI - that is the upstream application's name. Naming the upstream
+	/// project is still correct where it is an attribution or a link to it
+	/// (the about box, the Help menu's upstream URLs); calling OURSELVES that
+	/// is not. Route every user-visible self-reference through this constant so
+	/// the two cannot drift apart again.
+	/// </remarks>
+	public const string ApplicationName = "Pinta.Brix";
+
+	/// <summary>
+	/// The version of upstream Pinta this port tracks.
 	/// </summary>
 	public const string ApplicationVersion = "3.2";
 
@@ -129,6 +144,13 @@ public static class PintaCore
 		Effects = effects;
 		CanvasGrid = canvasGrid;
 
+		// The action model is pure declaration - it takes no services, and the
+		// UI layer attaches the handlers.
+		Actions = new ActionManager ();
+
+		// Replaced by the platform clipboard at startup.
+		Clipboard = new NullClipboardService ();
+
 		Services = services;
 	}
 
@@ -146,5 +168,17 @@ public static class PintaCore
 	public static void InitializeTimer (ITimerService timer)
 	{
 		Timer.Inner = timer;
+	}
+
+	/// <summary>
+	/// Installs the UI-layer clipboard implementation. Call once at startup.
+	/// </summary>
+	/// <remarks>
+	/// Until this is called the clipboard is a no-op that reports nothing
+	/// available, so engine code can call it unconditionally.
+	/// </remarks>
+	public static void InitializeClipboard (IClipboardService clipboard)
+	{
+		Clipboard = clipboard;
 	}
 }

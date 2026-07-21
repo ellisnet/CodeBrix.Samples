@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- OpenCV 5 (managed binding): TFLite model inference via the DNN module.
+         The native OpenCV library comes from the per-platform
+         CodeBrix.VideoProcessing.OpenCV5.{Platform} packages referenced by each head. -->
+    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.ApacheLicenseForever" Version="1.0.195.358" />
+  </ItemGroup>
+
+  <!-- The two MediaPipe hand models this library runs (Apache-2.0; extracted from Google's
+       gesture_recognizer.task bundle - see the models folder at the repo root of this app).
+       The gesture-classifier stages of that bundle are NOT embedded: OpenCV's TFLite
+       importer cannot load them (unsupported GATHER operator), so open-palm detection is
+       computed geometrically from the 21 hand landmarks instead. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\models\gesture_recognizer_2026-07-13\hand_landmarker\hand_detector.tflite"
+                      Link="Models\hand_detector.tflite">
+      <LogicalName>PalmVisualizer.Vision.Models.hand_detector.tflite</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\models\gesture_recognizer_2026-07-13\hand_landmarker\hand_landmarks_detector.tflite"
+                      Link="Models\hand_landmarks_detector.tflite">
+      <LogicalName>PalmVisualizer.Vision.Models.hand_landmarks_detector.tflite</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

@@ -23,6 +23,12 @@ public partial class App : Application
         });
         SimpleViewModel.SetIsDesignMode(false);
 
+        //Open (or silently create) the single portable settings.sqlite store -
+        //including its startup auto-backup and pruning - before anything reads
+        //a setting. PintaCore's static constructor builds the palette manager,
+        //which reads settings, so this must come first.
+        Pinta.Brix.Settings.SettingsService.Initialize();
+
         InitializeComponent();
     }
 
@@ -32,7 +38,7 @@ public partial class App : Application
     {
         MainWindow = new Window
         {
-            Title = "Pinta.Brix"
+            Title = Pinta.Brix.Engine.PintaCore.ApplicationName
         };
 
         //Engine bootstrap: install the UI-layer services and register the

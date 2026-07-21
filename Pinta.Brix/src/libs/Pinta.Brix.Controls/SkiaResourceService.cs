@@ -37,6 +37,16 @@ public sealed class SkiaResourceService : IResourceService
 		return icon;
 	}
 
+	public bool HasIcon (string name)
+	{
+		if (string.IsNullOrEmpty (name))
+			return false;
+
+		return resource_names.Any (r =>
+			r.EndsWith ($".{name}.png", StringComparison.Ordinal)
+			|| r.EndsWith ($".{name}.svg", StringComparison.Ordinal));
+	}
+
 	private ImageSurface? LoadIcon (string name, int size)
 	{
 		// Embedded resource names look like:

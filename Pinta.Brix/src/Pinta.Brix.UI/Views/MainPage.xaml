@@ -14,76 +14,44 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Menu -->
-        <MenuBar Grid.Row="0">
-            <MenuBarItem Title="File">
-                <MenuFlyoutItem x:Name="MenuFileNew" Text="New" Click="MenuFileNew_Click">
-                    <MenuFlyoutItem.KeyboardAccelerators>
-                        <KeyboardAccelerator Modifiers="Control" Key="N" />
-                    </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem x:Name="MenuFileOpen" Text="Open…" Click="MenuFileOpen_Click">
-                    <MenuFlyoutItem.KeyboardAccelerators>
-                        <KeyboardAccelerator Modifiers="Control" Key="O" />
-                    </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutSeparator />
-                <MenuFlyoutItem x:Name="MenuFileSave" Text="Save" Click="MenuFileSave_Click">
-                    <MenuFlyoutItem.KeyboardAccelerators>
-                        <KeyboardAccelerator Modifiers="Control" Key="S" />
-                    </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem x:Name="MenuFileSaveAs" Text="Save As…" Click="MenuFileSaveAs_Click" />
-                <MenuFlyoutSeparator />
-                <MenuFlyoutItem x:Name="MenuFileClose" Text="Close" Click="MenuFileClose_Click">
-                    <MenuFlyoutItem.KeyboardAccelerators>
-                        <KeyboardAccelerator Modifiers="Control" Key="W" />
-                    </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-            </MenuBarItem>
-            <MenuBarItem Title="Edit">
-                <MenuFlyoutItem x:Name="MenuEditUndo" Text="Undo" Click="MenuEditUndo_Click">
-                    <MenuFlyoutItem.KeyboardAccelerators>
-                        <KeyboardAccelerator Modifiers="Control" Key="Z" />
-                    </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem x:Name="MenuEditRedo" Text="Redo" Click="MenuEditRedo_Click">
-                    <MenuFlyoutItem.KeyboardAccelerators>
-                        <KeyboardAccelerator Modifiers="Control,Shift" Key="Z" />
-                    </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-            </MenuBarItem>
-            <MenuBarItem Title="View">
-                <MenuFlyoutItem x:Name="MenuViewZoomIn" Text="Zoom In" Click="MenuViewZoomIn_Click" />
-                <MenuFlyoutItem x:Name="MenuViewZoomOut" Text="Zoom Out" Click="MenuViewZoomOut_Click" />
-                <MenuFlyoutItem x:Name="MenuViewZoomNormal" Text="Normal Size" Click="MenuViewZoomNormal_Click" />
-                <MenuFlyoutItem x:Name="MenuViewZoomFit" Text="Best Fit" Click="MenuViewZoomFit_Click" />
-            </MenuBarItem>
-            <MenuBarItem Title="Adjustments" x:Name="AdjustmentsMenu" />
-            <MenuBarItem Title="Effects" x:Name="EffectsMenu" />
-        </MenuBar>
+        <!-- Menu. Built from the Pinta.Brix.Engine action model at runtime; see
+             MainPage.Menus.cs. Nothing is declared here, so a command declared
+             once in Actions/*.cs gets its label, icon, enabled state and
+             shortcut without a second edit. -->
+        <MenuBar x:Name="MainMenuBar" Grid.Row="0" />
+
+        <!-- In-app icon toolbar row. Deliberately NOT an OS header bar: the
+             Frame Buffer head has no window chrome at all, so anything parked
+             there would be unreachable. -->
+        <Border x:Name="MainToolbarBorder" Grid.Row="1" BorderThickness="0,0,0,1"
+                BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="MainToolbarPanel" Orientation="Horizontal" Padding="6,3" Spacing="2" />
+            </ScrollViewer>
+        </Border>
 
         <!-- Tool options toolbar -->
-        <Border Grid.Row="1" BorderThickness="0,1,0,1" BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}">
+        <Border x:Name="ToolOptionsBorder" Grid.Row="2" BorderThickness="0,1,0,1" BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                <StackPanel x:Name="ToolOptionsPanel" Orientation="Horizontal" MinHeight="40" Padding="6,2" Spacing="2" />
+                <StackPanel x:Name="ToolOptionsPanel" Orientation="Horizontal" MinHeight="48" Padding="6,2" Spacing="2" />
             </ScrollViewer>
         </Border>
 
         <!-- Main content: toolbox | canvas tabs | pads -->
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-                <StackPanel x:Name="ToolboxPanel" Width="72" Padding="4" />
+            <ScrollViewer x:Name="ToolboxScroll" Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="ToolboxPanel" Padding="4" /><!-- Width flows from the button columns; see RefreshToolbox -->
             </ScrollViewer>
 
             <TabView x:Name="DocumentTabs"
@@ -92,10 +60,10 @@
                      TabCloseRequested="DocumentTabs_TabCloseRequested"
                      SelectionChanged="DocumentTabs_SelectionChanged" />
 
-            <Grid Grid.Column="2" Width="230">
+            <Grid x:Name="PadsColumn" Grid.Column="2" Width="230" MinWidth="200">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" MinHeight="120" />
+                    <RowDefinition Height="*" MinHeight="120" />
                 </Grid.RowDefinitions>
 
                 <Grid Grid.Row="0">
@@ -106,10 +74,9 @@
                     </Grid.RowDefinitions>
                     <TextBlock Grid.Row="0" Text="Layers" FontWeight="SemiBold" Margin="8,6,8,2" />
                     <ListView x:Name="LayersList" Grid.Row="1" SelectionChanged="LayersList_SelectionChanged" />
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4" Margin="8,2,8,6">
-                        <Button x:Name="AddLayerButton" Content="+" Click="AddLayerButton_Click" />
-                        <Button x:Name="RemoveLayerButton" Content="−" Click="RemoveLayerButton_Click" />
-                    </StackPanel>
+                    <!-- Pad toolbar, built from the Layers commands; see BuildPadToolbars -->
+                    <StackPanel x:Name="LayersPadToolbar" Grid.Row="2" Orientation="Horizontal"
+                                Spacing="2" Margin="6,2,6,6" />
                 </Grid>
 
                 <Grid Grid.Row="1">
@@ -117,22 +84,38 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Text="History" FontWeight="SemiBold" Margin="8,6,8,2" />
-                    <ListView x:Name="HistoryList" Grid.Row="1" />
+                    <Grid Grid.Row="0" Margin="8,6,6,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="History" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <StackPanel x:Name="HistoryPadToolbar" Grid.Column="1" Orientation="Horizontal" Spacing="2" />
+                    </Grid>
+                    <ListView x:Name="HistoryList" Grid.Row="1" SelectionChanged="HistoryList_SelectionChanged" />
                 </Grid>
             </Grid>
         </Grid>
 
-        <!-- Status bar -->
-        <Grid Grid.Row="3" Padding="8,4">
+        <!-- Status bar. Upstream's order: palette widget (hexpand), status
+             text, cursor position, selection size, then the zoom controls. -->
+        <Grid x:Name="StatusBarGrid" Grid.Row="4" Padding="8,2" ColumnSpacing="8">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock x:Name="StatusText" Grid.Column="0" VerticalAlignment="Center" />
-            <TextBlock x:Name="CursorPositionText" Grid.Column="1" VerticalAlignment="Center" Margin="12,0" />
-            <ComboBox x:Name="ZoomComboBox" Grid.Column="2" MinWidth="90" SelectionChanged="ZoomComboBox_SelectionChanged" />
+            <ContentControl x:Name="PaletteWidgetHost" Grid.Column="0" VerticalAlignment="Center" />
+            <TextBlock x:Name="StatusText" Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <TextBlock x:Name="CursorPositionText" Grid.Column="2" VerticalAlignment="Center" MinWidth="80" />
+            <TextBlock x:Name="SelectionSizeText" Grid.Column="3" VerticalAlignment="Center" MinWidth="80" />
+            <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                <Button x:Name="ZoomOutButton" Content="−" Click="ZoomOutButton_Click" />
+                <ComboBox x:Name="ZoomComboBox" MinWidth="90" IsEditable="True" SelectionChanged="ZoomComboBox_SelectionChanged" />
+                <Button x:Name="ZoomInButton" Content="+" Click="ZoomInButton_Click" />
+            </StackPanel>
         </Grid>
     </Grid>
 </Page>

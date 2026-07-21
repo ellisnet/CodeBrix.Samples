@@ -23,6 +23,11 @@ public static class IconImageSource
 		if (cache.TryGetValue ((iconName, size), out ImageSource? cached))
 			return cached;
 
+		// An unknown name must come back null so callers can fall back to a
+		// label rather than rendering a blank square.
+		if (!PintaCore.Resources.HasIcon (iconName))
+			return null;
+
 		ImageSurface surface = PintaCore.Resources.GetIcon (iconName, size);
 		byte[] pixels = surface.GetData ().ToArray ();
 

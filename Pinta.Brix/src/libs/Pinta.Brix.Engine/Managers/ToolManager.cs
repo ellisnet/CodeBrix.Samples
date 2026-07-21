@@ -170,6 +170,13 @@ public sealed class ToolManager : IEnumerable<BaseTool>, IToolService
 		if (CurrentTool is not null) {
 			PreviousTool = CurrentTool;
 			DeactivateTool (PreviousTool, tool);
+
+			// Pinta.Brix note: the ported tools push their option values from
+			// inside SaveSettingsBeforeQuit rather than as they change, and this
+			// application has no quit path - the window's own chrome closes it.
+			// Flushing on every tool change means a tool's options reach
+			// settings.sqlite while the user is still working.
+			PintaCore.Settings.DoSaveSettingsBeforeQuit ();
 		}
 
 		// Load new tool
@@ -271,6 +278,16 @@ public sealed class ToolManager : IEnumerable<BaseTool>, IToolService
 
 	public Task<bool> DoHandlePaste (Document document, IClipboardService clipboard)
 		=> CurrentTool?.DoHandlePaste (document, clipboard) ?? Task.FromResult (false);
+
+	// Pinta.Brix note: BaseTool's DoHandleCopy/DoHandleCut are internal, so the
+	// UI layer reaches them through here - the same shape DoHandlePaste already
+	// had. A tool gets first refusal on the clipboard (the text tool copies its
+	// own buffer rather than pixels); false means "not mine, do it normally".
+	public bool DoHandleCopy (Document document, IClipboardService clipboard)
+		=> CurrentTool?.DoHandleCopy (document, clipboard) ?? false;
+
+	public bool DoHandleCut (Document document, IClipboardService clipboard)
+		=> CurrentTool?.DoHandleCut (document, clipboard) ?? false;
 
 	public IEnumerator<BaseTool> GetEnumerator ()
 		=> tools.GetEnumerator ();
