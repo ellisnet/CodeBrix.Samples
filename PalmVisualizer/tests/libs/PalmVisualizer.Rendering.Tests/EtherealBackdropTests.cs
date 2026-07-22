@@ -42,7 +42,7 @@ public class EtherealBackdropTests
     public void Shader_paints_colors_onto_a_raster_surface()
     {
         //Arrange - evaluate the real shader on Skia's CPU backend, exactly what the
-        //  Tier A fallback does at run time
+        //  CpuRendering fallback does at run time
         using SKRuntimeEffect effect = EtherealBackdrop.CreateEffect();
         var uniforms = new SKRuntimeEffectUniforms(effect)
         {

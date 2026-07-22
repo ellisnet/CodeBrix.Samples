@@ -1,7 +1,7 @@
 # 3D rendering inside a CodeBrix.Platform view
 
 This folder is a self-contained reference for **rendering a 3D model into an ordinary
-CodeBrix.Platform UI view** — the model is drawn off-screen with OpenGL **or Vulkan**
+CodeBrix.Platform UI view** — the model is drawn off-screen with OpenGL, **Vulkan, or Metal**
 (a runtime dropdown choice), the pixels are read back and composited onto a **Skia canvas**
 (`SKXamlCanvas`) that lives in the app's normal XAML, and the user can orbit/zoom it. Copy
 this folder (plus the `PolyHavenBrowser.Rendering` library it depends on) as a starting point.
@@ -18,15 +18,16 @@ this folder (plus the `PolyHavenBrowser.Rendering` library it depends on) as a s
    ┌─────────────────────────────────────────────────────────────────┐
    │  ONE OF (chosen at runtime via IModelRenderEngineSelector):      │
    │                                                                  │
-   │  OpenGlModelRenderEngine            VulkanModelRenderEngine      │
-   │    OffscreenGLContext                 VulkanSceneRenderer        │
-   │      → off-screen native GL ctx          (Rendering lib) → its   │
-   │    GlModelSceneRenderer                 own instance/device,     │
-   │      → shaders + VAOs → FBO             pipeline → off-screen    │
-   │    glReadPixels → RGBA bytes            image → copy-to-buffer   │
-   │                                         → RGBA bytes             │
+   │  OpenGl…Engine        Vulkan…Engine          Metal…Engine        │
+   │    OffscreenGLContext    VulkanSceneRenderer    MetalSceneRenderer│
+   │      → native GL ctx       (Rendering lib) →      (Rendering lib)→│
+   │    GlModelSceneRenderer    own instance/device,   own device/     │
+   │      → shaders+VAOs→FBO    pipeline → offscreen    queue/pipeline →│
+   │    glReadPixels →          image → copy-to-buffer  offscreen tex → │
+   │      RGBA bytes            → RGBA bytes            blit-to-buffer →│
+   │                                                   RGBA bytes      │
    └─────────────────────────────────────────────────────────────────┘
-      │  RenderedFrame (RGBA pixels, IsBottomUp - true for BOTH engines, see below)
+      │  RenderedFrame (RGBA pixels; IsBottomUp true for GL/Vulkan, false for Metal - see below)
       ▼  ModelScenePainter  (API-agnostic)
    draw darkened background texture → SKImage.FromPixelCopy → flip if bottom-up → DrawImage
       │
@@ -57,28 +58,39 @@ Everything **below** it is API-specific, one class-cluster per backend:
 - Vulkan: `VulkanModelRenderEngine`, a thin adapter over the Rendering lib's self-contained
   `VulkanSceneRenderer` (Silk.NET.Vulkan; instance → device → offscreen images → pipeline →
   readback all in one class, SPIR-V pre-compiled into `VulkanShaders`).
+- Metal: `MetalModelRenderEngine`, a thin adapter over the Rendering lib's self-contained
+  `MetalSceneRenderer` (**direct to Metal via the raw Objective-C runtime** — `MetalInterop`'s
+  `objc_msgSend` P/Invoke, no MoltenVK/Silk.NET/managed-Apple-bindings and **no NuGet packages**;
+  device → queue → offscreen targets → pipeline → readback all in one class, MSL compiled at
+  runtime from `MetalShaders`). Works on Apple Silicon **and** Intel Macs — see the arch note below.
 
 ### How the backend is chosen (the dropdown)
 
 `IModelRenderEngineSelector` (registered in `RegisterServices`) owns the list of backends and
 the platform gate:
 
-- `AvailableKinds` → `[OpenGL, Vulkan]`, in dropdown order; the app always starts on OpenGL.
-- `IsSupported(kind)` → OpenGL everywhere; Vulkan only where the Rendering library's
-  **hardcoded** `VulkanPlatformSupport` allow-list okays it: the Linux **X11** and **Wayland**
-  heads and the **Win32Skia**/**WinWpfSkia** heads. **macOS** (no system Vulkan loader) and the
-  Linux **FrameBuffer** head are deliberately excluded — this is a policy list, not a driver
-  probe, so Vulkan is never even attempted on a platform that has not been okayed. The head is
-  detected by scanning for the loaded `CodeBrix.Platform.UI.Runtime.Skia.*` runtime assembly.
+- `AvailableKinds` → `[OpenGL, Vulkan, Metal]`, in dropdown order; the app always starts on OpenGL.
+- `IsSupported(kind)` → OpenGL everywhere; Vulkan and Metal each only where the Rendering
+  library's **hardcoded** allow-list okays them — and the two are **mirror images**:
+  - `VulkanPlatformSupport`: the Linux **X11** and **Wayland** heads and the **Win32Skia**/
+    **WinWpfSkia** heads. **macOS** (no system Vulkan loader) and the Linux **FrameBuffer** head
+    are excluded.
+  - `MetalPlatformSupport`: **macOS only** (Metal is an Apple API), on a supported process
+    architecture (arm64 or x64); every other head is excluded.
+
+  Both are policy lists, not driver probes, so an API is never even attempted on a platform that
+  has not been okayed. The head is detected once by scanning for the loaded
+  `CodeBrix.Platform.UI.Runtime.Skia.*` runtime assembly (the detection is shared).
 - `Create(kind, getXamlRoot)` → a fresh engine (the caller owns and disposes it). The
   `getXamlRoot` accessor is used only by the OpenGL engine, to create its offscreen native GL
-  context from the hosting page's `XamlRoot`; the Vulkan engine ignores it.
+  context from the hosting page's `XamlRoot`; the Vulkan and Metal engines ignore it.
 
-Picking Vulkan on an unsupported platform shows a `SimpleDialog` alert ("Vulkan rendering is
-not available on this platform.") and snaps the dropdown back to OpenGL. On a supported
-platform the view model pre-warms the new Vulkan engine with a 1×1 off-thread frame so a
-missing/broken driver fails fast into a status message (never inside the paint callback),
-then swaps painters and re-displays the current sample from the local cache.
+Picking an unsupported engine (Vulkan on macOS, or Metal off macOS) shows a `SimpleDialog` alert
+("{engine} rendering is not available on this platform.") and snaps the dropdown back to OpenGL.
+On a supported platform the view model pre-warms the new own-stack engine (Vulkan **or** Metal)
+with a 1×1 off-thread frame so a missing/broken driver fails fast into a status message (never
+inside the paint callback), then swaps painters and re-displays the current sample from the local
+cache.
 
 ## Four things that are easy to get wrong
 
@@ -91,24 +103,39 @@ then swaps painters and re-displays the current sample from the local cache.
   this engine never disturbs the head's own renderer even though they share the thread. The
   context itself is cross-platform — Graphics3DGL resolves the head's native GL wrapper (WGL on
   Windows, GLX on X11, EGL on Wayland/FrameBuffer, CGL on macOS) — so the app P/Invokes no
-  platform GL loader of its own. Vulkan has no ambient context at all — `VulkanSceneRenderer`
-  owns its whole stack and cannot collide with the head — but it still initializes lazily on first use.
+  platform GL loader of its own. Vulkan and Metal have no ambient context at all —
+  `VulkanSceneRenderer`/`MetalSceneRenderer` each own their whole stack (own device/queue) and
+  cannot collide with the head — but both still initialize lazily on first use.
 - **Pixel orientation & the MVP.** OpenGL's first pixel row is the image bottom, so its
   `RenderedFrame.IsBottomUp` is true and `ModelScenePainter` flips vertically for Skia.
   The Vulkan engine uses the **same unmodified camera matrices** — and because Vulkan's
   clip-space Y points down (and its depth range is [0, 1], which
   `Matrix4x4.CreatePerspectiveFieldOfView` already produces), its readback comes out
   vertically inverted too, so it **also** reports `IsBottomUp: true` and the same flip serves
-  both engines. Separately, the model-view-projection matrix is uploaded **without** an extra
-  `Matrix4x4.Transpose` on both APIs: System.Numerics is row-major, and GL/SPIR-V reading it
-  as column-major already applies the transpose needed — transposing again silently flattens
-  the depth axis for rotated cameras (see the regression test
-  `nearer_geometry_occludes_farther_geometry_regardless_of_draw_order`, which exists for both
-  renderers).
-- **SPIR-V without a toolchain.** Vulkan consumes SPIR-V, not GLSL. The shaders are compiled
-  once at development time and the words embedded as static source in `VulkanShaders.cs`
-  (with the GLSL alongside in comments), so building and running the app needs no shader
-  compiler — the same pre-captured-output approach as the CodeBrix.Platform.OpenGL bindings.
+  both. **Metal is the exception**: its clip-space Y points *up* (like GL) while its framebuffer
+  origin is top-left (like Vulkan), so with the same matrices the readback comes out **top-down**
+  and `MetalModelRenderEngine` reports `IsBottomUp: false` (no flip). Separately, the
+  model-view-projection matrix is uploaded **without** an extra `Matrix4x4.Transpose` on all
+  three APIs: System.Numerics is row-major, and GL/SPIR-V/MSL reading it as column-major already
+  applies the transpose needed — transposing again silently flattens the depth axis for rotated
+  cameras (see the regression test
+  `nearer_geometry_occludes_farther_geometry_regardless_of_draw_order`, which exists for all
+  three renderers).
+- **Shaders without a toolchain.** Vulkan consumes SPIR-V, not GLSL, so its shaders are compiled
+  once at development time and the words embedded as static source in `VulkanShaders.cs` (GLSL
+  alongside in comments) — the same pre-captured-output approach as the CodeBrix.Platform.OpenGL
+  bindings. Metal is simpler still: it compiles **MSL from source at runtime**
+  (`newLibraryWithSource:`), so `MetalShaders.cs` just holds the MSL string and no shader
+  artifact is pre-baked. Either way, building and running the app needs no shader compiler.
+- **Metal on both Mac architectures.** `MetalInterop` deliberately avoids any Objective-C method
+  that *returns* a struct by value — the only place the `objc_msgSend` calling convention differs
+  between Apple Silicon (arm64) and Intel/Rosetta (x86-64, which would otherwise need
+  `objc_msgSend_stret`). Every message returns an `id`/pointer or `void`, or takes a struct only
+  as an *argument* (which the P/Invoke marshaller lays out per-architecture automatically), so one
+  `objc_msgSend` serves both. Every GPU↔CPU transfer also goes through a shared staging *buffer*
+  blitted to/from a private texture (256-byte-aligned rows) — the one path supported identically
+  on Apple Silicon, Intel, and Rosetta, unlike shared/managed *textures* whose availability splits
+  by GPU family.
 - **Transparent (glass) materials.** glTF marks glass two ways: `alphaMode: BLEND`, and — more
   subtly — a `KHR_materials_transmission` extension on an otherwise `alphaMode: OPAQUE` material
   (a camera lens, a clock face). `GltfModelLoader` treats **both** as translucent. This preview
@@ -138,12 +165,16 @@ then swaps painters and re-displays the current sample from the local cache.
 | `PanoramaScenePainter.cs` | HDRI panorama (CPU → `SKBitmap`) | no |
 | `OpenGlModelRenderEngine.cs` | OpenGL FBO + readback over Graphics3DGL's `OffscreenGLContext` | **yes** |
 | `VulkanModelRenderEngine.cs` | Vulkan engine adapter (+ its factory) | **yes** |
+| `MetalModelRenderEngine.cs` | Metal engine adapter (+ its factory) | **yes** |
 
 (The off-screen GL context itself is `CodeBrix.Platform.WinUI.Graphics3DGL.OffscreenGLContext`,
 supplied by the `CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever` package — cross-platform,
 so there is no app-owned EGL/WGL/GLX class here.)
 
 (The heavy lifting lives in the Rendering library:
-`GL/GlModelSceneRenderer.cs` for OpenGL shaders/VAOs/drawing, and
+`GL/GlModelSceneRenderer.cs` for OpenGL shaders/VAOs/drawing;
 `Vulkan/VulkanSceneRenderer.cs` + `Vulkan/VulkanShaders.cs` + `Vulkan/VulkanPlatformSupport.cs`
-for the whole Vulkan stack and the hardcoded platform allow-list.)
+for the whole Vulkan stack and its allow-list; and
+`Metal/MetalSceneRenderer.cs` + `Metal/MetalShaders.cs` + `Metal/MetalInterop.cs` +
+`Metal/MetalPlatformSupport.cs` for the whole direct-to-Metal stack, its raw Objective-C interop,
+and its macOS-only allow-list.)

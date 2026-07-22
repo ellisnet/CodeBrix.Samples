@@ -173,8 +173,10 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
 
         if (!_engineSelector.IsSupported(kind))
         {
+            //The unsupported engine differs by platform: Vulkan is excluded on macOS, Metal is
+            //excluded everywhere except macOS - so name whichever one was picked.
             using (var alert = CreateDialog(
-                "Vulkan rendering is not available on this platform.", "Vulkan Rendering"))
+                $"{kind} rendering is not available on this platform.", $"{kind} Rendering"))
             {
                 _ = await alert.ShowAsync();
             }
@@ -186,12 +188,13 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
         try
         {
             var engine = _engineSelector.Create(kind, GetXamlRoot);
-            if (kind == RenderEngineKind.Vulkan)
+            if (kind is RenderEngineKind.Vulkan or RenderEngineKind.Metal)
             {
                 //Fail fast off the UI thread (a supported platform can still lack a working
-                //driver) so a failure never surfaces inside the Skia paint callback. Safe for
-                //Vulkan only: it has no thread-affinity, unlike the OpenGL engine's native GL
-                //context, which must be created on the render thread at first paint.
+                //driver) so a failure never surfaces inside the Skia paint callback. Safe for the
+                //own-stack engines (Vulkan, Metal): they have no thread-affinity, unlike the
+                //OpenGL engine's native GL context, which must be created on the render thread at
+                //first paint.
                 await Task.Run(() => engine.RenderFrame(1, 1, (0f, 0f, 0f, 1f)));
             }
 

@@ -10,14 +10,14 @@ using CodeBrix.Platform.GameEngine.Rendering.Backbuffers;
 namespace PalmVisualizer.Rendering;
 
 /// <summary>
-/// The Visualize Mode scene: runs the game engine (Tier B GPU rendering by default, so the
+/// The Visualize Mode scene: runs the game engine (GpuRendering-OpenGL GPU rendering by default, so the
 /// SkSL shader executes on the GPU) into a <see cref="GameSurfaceCanvas"/> and fills it with
 /// the palm-reactive <see cref="EtherealBackdrop"/> - no stats overlay, just the moving
 /// color. The hosting application feeds palm positions in through
 /// <see cref="UpdatePalms"/> (from any thread) and pauses the whole visual with
 /// <see cref="Pause"/>/<see cref="Resume"/> while the user is back at Camera Mode.
 /// Set the environment variable <c>PALMVISUALIZER_USE_CPU=1</c> to run the identical scene
-/// on the Tier A (CPU) render path.
+/// on the CpuRendering (CPU) render path.
 /// </summary>
 public sealed class VisualizerSession
 {
@@ -50,7 +50,7 @@ public sealed class VisualizerSession
     {
         if (IsStarted) { return; }
 
-        //Tier B (GPU) by default; must be chosen before the first access to Host. The
+        //GpuRendering-OpenGL (GPU) by default; must be chosen before the first access to Host. The
         //  render resolution tracks the window (no SetRenderResolution) - the shader
         //  scene is resolution-independent.
         _canvas.UseGpuRendering = Environment.GetEnvironmentVariable("PALMVISUALIZER_USE_CPU") != "1";

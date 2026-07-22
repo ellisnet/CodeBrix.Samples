@@ -13,6 +13,9 @@ public enum RenderEngineKind
 
     /// <summary>Vulkan via Silk.NET (<see cref="VulkanModelRenderEngine"/>) - only on platforms <see cref="VulkanPlatformSupport"/> okays.</summary>
     Vulkan,
+
+    /// <summary>Metal via the raw Objective-C runtime (<see cref="MetalModelRenderEngine"/>) - only on platforms <see cref="MetalPlatformSupport"/> okays (macOS).</summary>
+    Metal,
 }
 
 /// <summary>
@@ -45,11 +48,14 @@ public interface IModelRenderEngineSelector
 
 /// <summary>
 /// The default selector: OpenGL everywhere, Vulkan only on the platforms the Rendering
-/// library's hardcoded <see cref="VulkanPlatformSupport"/> allow-list okays.
+/// library's hardcoded <see cref="VulkanPlatformSupport"/> allow-list okays, and Metal only on
+/// the platforms <see cref="MetalPlatformSupport"/> okays (macOS). The two GPU-API gates are
+/// mirror images - Vulkan excludes macOS, Metal is macOS-only.
 /// </summary>
 public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
 {
-    private static readonly RenderEngineKind[] Kinds = [RenderEngineKind.OpenGL, RenderEngineKind.Vulkan];
+    private static readonly RenderEngineKind[] Kinds =
+        [RenderEngineKind.OpenGL, RenderEngineKind.Vulkan, RenderEngineKind.Metal];
 
     /// <inheritdoc />
     public IReadOnlyList<RenderEngineKind> AvailableKinds => Kinds;
@@ -59,6 +65,7 @@ public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
     {
         RenderEngineKind.OpenGL => true,
         RenderEngineKind.Vulkan => VulkanPlatformSupport.IsCurrentPlatformSupported,
+        RenderEngineKind.Metal => MetalPlatformSupport.IsCurrentPlatformSupported,
         _ => false,
     };
 
@@ -74,6 +81,7 @@ public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
         {
             RenderEngineKind.OpenGL => new OpenGlModelRenderEngineFactory(getXamlRoot).Create(),
             RenderEngineKind.Vulkan => new VulkanModelRenderEngineFactory().Create(),
+            RenderEngineKind.Metal => new MetalModelRenderEngineFactory().Create(),
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };
     }

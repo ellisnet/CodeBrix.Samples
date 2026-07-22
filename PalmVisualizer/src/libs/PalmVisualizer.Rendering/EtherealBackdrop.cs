@@ -20,9 +20,9 @@ namespace PalmVisualizer.Rendering;
 /// drawn toward it - so the whole visual appears to chase the hand. When every attractor
 /// strength is zero the shader reduces EXACTLY to its undisturbed form, which is how the
 /// visual melts back to its normal motion when the palms close. Because it is an ordinary
-/// <see cref="DirectDrawingBase"/>, on the Tier B (GPU) path its <see cref="OnDraw"/> runs
+/// <see cref="DirectDrawingBase"/>, on the GpuRendering-OpenGL (GPU) path its <see cref="OnDraw"/> runs
 /// on the GL thread with the <c>GRContext</c> current, so the shader executes on the GPU;
-/// on Tier A the same shader is evaluated by Skia's raster backend on the CPU.
+/// on CpuRendering the same shader is evaluated by Skia's raster backend on the CPU.
 /// </summary>
 public sealed class EtherealBackdrop : DirectDrawingBase
 {
@@ -167,8 +167,8 @@ half4 main(float2 fragCoord) {
             ?? throw new InvalidOperationException($"Ethereal shader failed to compile: {errors}");
 
     /// <summary>
-    /// Marks the backdrop dirty every engine frame so the Tier A (CPU) dirty-rectangle path
-    /// keeps animating it; the Tier B (GPU) path re-renders the full surface each frame
+    /// Marks the backdrop dirty every engine frame so the CpuRendering (CPU) dirty-rectangle path
+    /// keeps animating it; the GpuRendering-OpenGL (GPU) path re-renders the full surface each frame
     /// regardless.
     /// </summary>
     /// <param name="tick">The current engine tick.</param>
