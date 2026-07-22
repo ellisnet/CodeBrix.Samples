@@ -11,6 +11,6 @@
        package - one package bundles both the engine core and the Host layer); the app's
        .Core project depends on this library rather than referencing the engine directly. -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.GameEngine.MitLicenseForever" Version="1.0.201.518" />
+    <PackageReference Include="CodeBrix.Platform.GameEngine.MitLicenseForever" Version="1.0.203.200" />
   </ItemGroup>
 </Project>
