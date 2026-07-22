@@ -13,7 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.10" />
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.201.336" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.203.162" />
     <PackageReference Include="CodeBrix.Platform.Fonts.Roboto.OflLicenseForever" Version="1.0.181.661" />
 
     <!-- SKXamlCanvas - the SkiaSharp drawing surface hosted in CodeBrix.Platform XAML -->
@@ -24,7 +24,7 @@
          Windows heads, GLX on X11, EGL on Wayland/FrameBuffer, CGL on macOS). The app codes to
          Graphics3DGL — never to CodeBrix.Platform.OpenGL directly — so the OpenGL binding is
          only ever a transitive dependency (Graphics3DGL -> CodeBrix.Platform.OpenGL). -->
-    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.201.336" />
+    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.203.162" />
   </ItemGroup>
 
   <ItemGroup>

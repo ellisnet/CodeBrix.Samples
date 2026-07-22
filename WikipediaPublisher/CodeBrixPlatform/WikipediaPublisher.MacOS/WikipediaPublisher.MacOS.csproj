@@ -24,7 +24,7 @@
     All other packages come from WikipediaPublisher.Core.
   -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.MacOS.ApacheLicenseForever" Version="1.0.201.336" />
+    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.MacOS.ApacheLicenseForever" Version="1.0.203.162" />
   </ItemGroup>
 
 </Project>

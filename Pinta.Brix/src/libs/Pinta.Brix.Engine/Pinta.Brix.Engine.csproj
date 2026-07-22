@@ -17,7 +17,7 @@
          that lays out every TextBlock in CodeBrix.Platform; see the plan's P12.
          MUST stay lock-stepped with the CodeBrix.Platform version the heads
          reference - the family ships at one version. -->
-    <PackageReference Include="CodeBrix.Platform.TextLayout.ApacheLicenseForever" Version="1.0.201.336" />
+    <PackageReference Include="CodeBrix.Platform.TextLayout.ApacheLicenseForever" Version="1.0.203.162" />
     <PackageReference Include="CodeBrix.PolygonTools.MitLicenseForever" Version="1.0.200.1267" />
   </ItemGroup>
 </Project>
