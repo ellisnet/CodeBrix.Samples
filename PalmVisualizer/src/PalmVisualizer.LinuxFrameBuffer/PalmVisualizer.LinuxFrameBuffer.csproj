@@ -23,7 +23,7 @@
 
   <!-- Native OpenCV library for the palm-tracking (Visualize Mode) pipeline -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.LinuxX64.ApacheLicenseForever" Version="1.0.195.358" />
-    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.LinuxArm64.ApacheLicenseForever" Version="1.0.195.358" />
+    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.LinuxX64.ApacheLicenseForever" Version="1.0.204.221" />
+    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.LinuxArm64.ApacheLicenseForever" Version="1.0.204.221" />
   </ItemGroup>
 </Project>

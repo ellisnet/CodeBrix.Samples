@@ -7,7 +7,7 @@
     <!-- OpenCV 5 (managed binding): TFLite model inference via the DNN module.
          The native OpenCV library comes from the per-platform
          CodeBrix.VideoProcessing.OpenCV5.{Platform} packages referenced by each head. -->
-    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.ApacheLicenseForever" Version="1.0.195.358" />
+    <PackageReference Include="CodeBrix.VideoProcessing.OpenCV5.ApacheLicenseForever" Version="1.0.204.221" />
   </ItemGroup>
 
   <!-- The two MediaPipe hand models this library runs (Apache-2.0; extracted from Google's
