@@ -1,4 +1,6 @@
+using System.Threading.Tasks;
 using CodeBrix.Platform.Simple;
+using CodeBrix.Platform.WinUI.Graphics3DGL;
 using Microsoft.UI.Xaml.Controls;
 using PolyHavenBrowser.ViewModels;
 
@@ -7,6 +9,9 @@ namespace PolyHavenBrowser.Views;
 public sealed partial class MainPage : Page
 {
     private MainViewModel ViewModel => DataContext as MainViewModel;
+
+    //Whether the "3D preview unavailable" dialog has been shown already (once per app run).
+    private bool _renderingUnavailableReported;
 
     public MainPage()
     {
@@ -25,11 +30,22 @@ public sealed partial class MainPage : Page
                     {
                         CatalogScroll.ChangeView(null, 0, null, disableAnimation: true);
                     }
+
+                    //The user just opened the Model View: if the GL canvas already knows its
+                    //OpenGL initialization failed, tell them why the preview pane is empty.
+                    if (args.PropertyName == nameof(MainViewModel.IsModelViewActive))
+                    {
+                        _ = MaybeReportRenderingUnavailableAsync();
+                    }
                 };
             }
         };
 
         InitializeComponent();
+
+        //The canvas may only attempt its OpenGL initialization when it loads into the visual
+        //tree, which can happen after IsModelViewActive is set - so check at both moments.
+        ModelCanvas.Loaded += (_, _) => _ = MaybeReportRenderingUnavailableAsync();
 
         //Lazy catalog loading: as the grid scrolls within two screens of its bottom edge,
         //ask the cell collection to materialize the next batch.
@@ -44,5 +60,22 @@ public sealed partial class MainPage : Page
                 cells.RequestMore(24);
             }
         };
+    }
+
+    //When the Model View is active and the preview canvas reports failed OpenGL initialization,
+    //surface the failure (status + reason) in a dialog instead of leaving a silently empty pane.
+    private async Task MaybeReportRenderingUnavailableAsync()
+    {
+        if (_renderingUnavailableReported || ViewModel is not { IsModelViewActive: true } viewModel)
+        {
+            return;
+        }
+
+        var state = ModelCanvas.GetGLInitializationState();
+        if (state.Status == GLInitializationStatus.InitializationFailed)
+        {
+            _renderingUnavailableReported = true;
+            await viewModel.ShowRenderingUnavailableAsync(state);
+        }
     }
 }

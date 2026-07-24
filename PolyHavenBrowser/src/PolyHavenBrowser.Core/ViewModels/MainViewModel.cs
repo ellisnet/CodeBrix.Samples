@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeBrix.Platform.Simple;
+using CodeBrix.Platform.WinUI.Graphics3DGL;
 using Microsoft.UI.Xaml;
 using Windows.Storage.Pickers;
 using PolyHavenBrowser.PolyHavenApiClient;
@@ -425,6 +426,36 @@ public class MainViewModel : SimpleViewModel
 
         _currentModel = null;
         NotifyPropertyChanged(nameof(CurrentModel));
+    }
+
+    /// <summary>
+    /// Shows a dialog explaining why the 3D preview cannot render. Called from the view when
+    /// the Model View is active and the preview's GLCanvasElement reports that its OpenGL
+    /// initialization failed (e.g. on systems without OpenGL 3.0+ support, where the preview
+    /// would otherwise just be an empty pane).
+    /// </summary>
+    public async Task ShowRenderingUnavailableAsync(GLInitializationState state)
+    {
+        var message =
+            "The interactive 3D model preview is not available on this system, so the preview " +
+            "pane will stay empty.\n\n";
+
+        //On Windows, the usual cause is a missing OpenGL driver; Microsoft's free "OpenCL and
+        //OpenGL Compatibility Pack" adds one. Only show this hint when actually on Windows.
+        var osInfo = await SimpleOsInfo.GatherInfo(withConsoleOutput: false);
+        if (osInfo.IsWindows)
+        {
+            message +=
+                "On Windows, you may be able to fix this by installing the free Microsoft " +
+                "\"OpenCL and OpenGL Compatibility Pack\". Download and install it from:\n" +
+                "https://apps.microsoft.com/detail/9NQPSL29BFFF\n\n" +
+                "After installing it, restart this app.\n\n";
+        }
+
+        message += $"Details:\nStatus: {state.Status}\n{state.FailedReason ?? "(none reported)"}";
+
+        using var dialog = CreateDialog(message, "3D Preview Unavailable");
+        _ = await dialog.ShowAsync();
     }
 
     private void PopulateFacts(PolyHavenAsset asset, ModelFileStats stats)
