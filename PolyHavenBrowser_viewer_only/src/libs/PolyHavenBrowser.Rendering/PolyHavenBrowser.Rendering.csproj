@@ -15,7 +15,7 @@
          references CodeBrix.Platform.OpenGL directly (hard rule). This library hosts no XAML
          control, so it keeps its own default RootNamespace (PolyHavenBrowser.Rendering) and does
          not opt into the HAS_CODEBRIX_WINUI resource generation. -->
-    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.203.162" />
+    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.205.475" />
 
     <PackageReference Include="SharpGLTF.Runtime" Version="1.0.6" />
     <PackageReference Include="Silk.NET.Vulkan" Version="2.23.0" />
