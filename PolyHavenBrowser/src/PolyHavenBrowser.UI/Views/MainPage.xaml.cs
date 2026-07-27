@@ -1,6 +1,8 @@
 using System.Threading.Tasks;
 using CodeBrix.Platform.Simple;
+using CodeBrix.Platform.UI.FlexPanel;
 using CodeBrix.Platform.WinUI.Graphics3DGL;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using PolyHavenBrowser.ViewModels;
 
@@ -46,6 +48,21 @@ public sealed partial class MainPage : Page
         //The canvas may only attempt its OpenGL initialization when it loads into the visual
         //tree, which can happen after IsModelViewActive is set - so check at both moments.
         ModelCanvas.Loaded += (_, _) => _ = MaybeReportRenderingUnavailableAsync();
+
+        //The Model View's content panes: side-by-side while the window is landscape. In
+        //portrait the FlexPanel's main axis flips so the 3D viewer drops below the info
+        //panes, and the info panes trade their fixed-width column (an explicit Width, so
+        //their content measures - and wraps - against it) for half the height as a flex
+        //basis, still scrolling internally.
+        SizeChanged += (_, args) =>
+        {
+            var portrait = args.NewSize.Width < args.NewSize.Height;
+            ModelContentFlex.Direction = portrait ? FlexDirection.Column : FlexDirection.Row;
+            ModelInfoPane.Width = portrait ? double.NaN : 420;
+            FlexPanel.SetBasis(ModelInfoPane,
+                portrait ? new FlexBasis(0.5f, isRelative: true) : FlexBasis.Auto);
+            ModelInfoPane.Margin = portrait ? new Thickness(0, 0, 0, 20) : new Thickness(0, 0, 20, 0);
+        };
 
         //Lazy catalog loading: as the grid scrolls within two screens of its bottom edge,
         //ask the cell collection to materialize the next batch.

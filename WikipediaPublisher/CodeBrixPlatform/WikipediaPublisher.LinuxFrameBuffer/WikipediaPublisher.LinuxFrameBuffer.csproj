@@ -22,9 +22,12 @@
   <!--
     Platform-specific package: Skia FrameBuffer backend for Linux. Suitable for embedded/kiosk systems without X11.
     All other packages come from WikipediaPublisher.Core.
+    TEMPORARY: pinned to the CodeBrix.Platform working-tree local feed (see ../../NuGet.Config)
+    to test not-yet-published FrameBuffer/FrameBuffer.Emulated work. Revert to the nuget.org
+    version (and delete ../../NuGet.Config) after the family's next real publish.
   -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.FrameBuffer.ApacheLicenseForever" Version="1.0.205.475" />
+    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.FrameBuffer.ApacheLicenseForever" Version="1.0.205.9999" />
   </ItemGroup>
 
 </Project>

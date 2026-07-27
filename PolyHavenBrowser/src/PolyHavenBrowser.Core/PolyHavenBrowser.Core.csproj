@@ -13,7 +13,12 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.10" />
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.205.475" />
+
+    <!-- TEMPORARY: pinned to the CodeBrix.Platform working-tree local feed (see
+         ../NuGet.Config) to test not-yet-published FrameBuffer/FrameBuffer.Emulated work.
+         Revert to the nuget.org version (and delete ../NuGet.Config) after the family's
+         next real publish. -->
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.205.9999" />
     <PackageReference Include="CodeBrix.Platform.Fonts.Roboto.OflLicenseForever" Version="1.0.181.661" />
 
     <!-- SKXamlCanvas - the SkiaSharp drawing surface hosted in CodeBrix.Platform XAML -->
@@ -22,8 +27,16 @@
     <!-- The 3D preview control (ModelSceneGlCanvas) lives in PolyHavenBrowser.Rendering and is
          built on Graphics3DGL's GLCanvasElement. The app codes to Graphics3DGL — never to
          CodeBrix.Platform.OpenGL directly — so the OpenGL binding is only ever a transitive
-         dependency (Graphics3DGL -> CodeBrix.Platform.OpenGL). -->
-    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.205.475" />
+         dependency (Graphics3DGL -> CodeBrix.Platform.OpenGL).
+         TEMPORARY: local feed pin, see comment above. -->
+    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.205.9999" />
+    
+    <!-- FlexPanel - a flexbox-style layout control for CodeBrix.Platform XAML; lays out the
+         catalog view's wrapping toolbar.
+         TEMPORARY: local feed pin, see comment above. FlexPanel is not covered by
+         pack-local-feed.sh - its 1.0.205.9999 package was packed into the feed separately
+         (same csproj-pack command shape, run against src/AddIns/Platform.UI.FlexPanel). -->
+    <PackageReference Include="CodeBrix.Platform.FlexPanel.ApacheLicenseForever" Version="1.0.205.9999" />
   </ItemGroup>
 
   <ItemGroup>

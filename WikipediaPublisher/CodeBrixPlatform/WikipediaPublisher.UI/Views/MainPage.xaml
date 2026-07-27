@@ -1,6 +1,7 @@
 <Page x:Class="WikipediaPublisher.Views.MainPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:flex="using:CodeBrix.Platform.UI.FlexPanel"
       xmlns:local="using:WikipediaPublisher.Views"
       xmlns:vm="using:WikipediaPublisher.ViewModels"
       Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
@@ -57,36 +58,43 @@
                        Text="{Binding StatusText}" />
         </Grid>
 
-        <!-- Bottom bar: output file path (+ Select dialog), page size, Publish -->
-        <Grid Grid.Row="3" Margin="0,12,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+        <!-- Bottom bar: output file path (+ Select dialog), page size, Publish.
+             A wrapping FlexPanel: one row while the window is wide enough; in portrait
+             the save-target group and the page-size/Publish group split onto two rows -->
+        <flex:FlexPanel Grid.Row="3" Margin="0,8,0,0" Direction="Row" Wrap="Wrap"
+                        AlignItems="Center">
 
-            <TextBlock Grid.Column="0" Text="Save PDF to:"
-                       VerticalAlignment="Center" Margin="0,0,12,0" />
-            <TextBox Grid.Column="1" Height="36"
-                     VerticalAlignment="Center" VerticalContentAlignment="Center"
-                     PlaceholderText="Click Select… (or type a full .pdf path)"
-                     Text="{Binding OutputFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Grid.Column="2" Height="36" Margin="8,0,0,0"
-                    Content="Select…"
-                    Command="{Binding SelectOutputFileCommand}" />
-            <TextBlock Grid.Column="3" Text="Page size:"
-                       VerticalAlignment="Center" Margin="16,0,12,0" />
-            <ComboBox Grid.Column="4" Width="210" Height="36" VerticalAlignment="Center"
-                      ItemsSource="{Binding PageSizeNames}"
-                      SelectedItem="{Binding SelectedPageSizeName, Mode=TwoWay}" />
-            <Button Grid.Column="5" Width="130" Height="40" Margin="16,0,0,0"
-                    HorizontalAlignment="Right"
-                    Style="{ThemeResource AccentButtonStyle}"
-                    Content="Publish"
-                    Command="{Binding PublishCommand}" />
-        </Grid>
+            <!-- Save-target group; Grow=1 so the path box stretches into whatever
+                 width its row has, Basis so the wrap point is deterministic -->
+            <Grid Margin="0,4,16,4" flex:FlexPanel.Grow="1" flex:FlexPanel.Basis="420">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Save PDF to:"
+                           VerticalAlignment="Center" Margin="0,0,12,0" />
+                <TextBox Grid.Column="1" Height="36"
+                         VerticalAlignment="Center" VerticalContentAlignment="Center"
+                         PlaceholderText="Click Select… (or type a full .pdf path)"
+                         Text="{Binding OutputFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Button Grid.Column="2" Height="36" Margin="8,0,0,0"
+                        Content="Select…"
+                        Command="{Binding SelectOutputFileCommand}" />
+            </Grid>
+
+            <!-- Page-size + Publish group -->
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,4">
+                <TextBlock Text="Page size:"
+                           VerticalAlignment="Center" Margin="0,0,12,0" />
+                <ComboBox Width="210" Height="36" VerticalAlignment="Center"
+                          ItemsSource="{Binding PageSizeNames}"
+                          SelectedItem="{Binding SelectedPageSizeName, Mode=TwoWay}" />
+                <Button Width="130" Height="40" Margin="16,0,0,0"
+                        Style="{ThemeResource AccentButtonStyle}"
+                        Content="Publish"
+                        Command="{Binding PublishCommand}" />
+            </StackPanel>
+        </flex:FlexPanel>
     </Grid>
 </Page>

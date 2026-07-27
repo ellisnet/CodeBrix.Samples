@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:PolyHavenBrowser.ViewModels"
     xmlns:conv="using:PolyHavenBrowser.Converters"
+    xmlns:flex="using:CodeBrix.Platform.UI.FlexPanel"
     xmlns:render="using:PolyHavenBrowser.Rendering"
     FontFamily="{StaticResource RobotoFont}"
     Background="#16181D">
@@ -145,20 +146,18 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Header: identity on the left; search, sort and the download folder on the right -->
+            <!-- Header: identity on the left; search, sort and the download folder on the right.
+                 A wrapping FlexPanel: everything sits on one row while the window is wide
+                 enough; in portrait the search+sort group wraps to its own row and the
+                 download-folder button to a third. -->
             <Border Grid.Row="0" Background="{StaticResource HeaderBrush}"
                     BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,0,1"
-                    Padding="24,16,24,16">
-                <Grid ColumnSpacing="16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                    Padding="24,10,24,10">
+                <flex:FlexPanel Direction="Row" Wrap="Wrap" AlignItems="Center">
 
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                    <!-- Grow=1: the identity block soaks up the free main-axis space, keeping
+                         the other groups pinned right while they still share its row -->
+                    <StackPanel Spacing="2" Margin="0,6,16,6" flex:FlexPanel.Grow="1">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="⬢" FontSize="19" Foreground="{StaticResource AccentBrush}"
                                        VerticalAlignment="Center" />
@@ -170,21 +169,22 @@
                                    FontSize="11.5" Foreground="{StaticResource TextTertiaryBrush}" />
                     </StackPanel>
 
-                    <TextBox Grid.Column="2" Width="300" VerticalAlignment="Center"
-                             PlaceholderText="Search models…"
-                             Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             CornerRadius="8" />
+                    <!-- Search and sort travel as one unit when the panel wraps -->
+                    <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,6,16,6">
+                        <TextBox Width="300" VerticalAlignment="Center"
+                                 PlaceholderText="Search models…"
+                                 Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 CornerRadius="8" />
+                        <ComboBox Width="150" VerticalAlignment="Center"
+                                  CornerRadius="8"
+                                  ItemsSource="{Binding SortOptions}"
+                                  SelectedItem="{Binding SelectedSortOption, Mode=TwoWay}" />
+                    </StackPanel>
 
-                    <ComboBox Grid.Column="3" Width="150" VerticalAlignment="Center"
-                              CornerRadius="8"
-                              ItemsSource="{Binding SortOptions}"
-                              SelectedItem="{Binding SelectedSortOption, Mode=TwoWay}" />
-
-                    <Button Grid.Column="4"
-                            Background="#262B34" Foreground="{StaticResource TextPrimaryBrush}"
+                    <Button Background="#262B34" Foreground="{StaticResource TextPrimaryBrush}"
                             BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
-                            CornerRadius="8" Padding="14,8"
-                            VerticalAlignment="Center" MaxWidth="280"
+                            CornerRadius="8" Padding="14,8" Margin="0,6,0,6"
+                            MaxWidth="280"
                             Command="{Binding PickFolderCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="⛁" FontSize="13"
@@ -195,7 +195,7 @@
                                        TextTrimming="CharacterEllipsis" MaxLines="1" />
                         </StackPanel>
                     </Button>
-                </Grid>
+                </flex:FlexPanel>
             </Border>
 
             <!-- The catalog: fixed-size cells, as many per row as the window fits,
@@ -203,7 +203,10 @@
             <ScrollViewer x:Name="CatalogScroll" Grid.Row="1"
                           Padding="24,14,24,8"
                           VerticalScrollBarVisibility="Auto">
-                <StackPanel>
+                <!-- The result count and the cell grid center as one block, so leftover row
+                     space splits evenly left and right instead of pooling on the right, and
+                     the count caption stays aligned with the cards' left edge -->
+                <StackPanel HorizontalAlignment="Center">
                     <TextBlock Text="{Binding ResultCountText}" FontSize="12"
                                Foreground="{StaticResource TextTertiaryBrush}"
                                Margin="2,2,0,10" />
@@ -272,14 +275,16 @@
                 </StackPanel>
             </Border>
 
-            <!-- Info panel on the left; the interactive 3D preview on the right -->
-            <Grid Grid.Row="1" Padding="24,20,24,8" ColumnSpacing="20">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="420" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+            <!-- Info panel and the 3D preview share a FlexPanel whose main axis follows the
+                 window's orientation (flipped in MainPage.xaml.cs): info beside the viewer
+                 in landscape, above it in portrait -->
+            <flex:FlexPanel x:Name="ModelContentFlex" Grid.Row="1" Padding="24,20,24,8"
+                            Direction="Row">
 
-                <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                <!-- Explicit Width (not FlexPanel.Basis) in landscape: the pane's content is
+                     measured against it, so the text inside wraps at the pane width -->
+                <ScrollViewer x:Name="ModelInfoPane" VerticalScrollBarVisibility="Auto"
+                              Margin="0,0,20,0" Width="420">
                     <StackPanel Spacing="16" Padding="0,0,10,10">
                         <Border Background="{StaticResource CardBrush}"
                                 BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
@@ -313,8 +318,9 @@
                 </ScrollViewer>
 
                 <!-- The 3D preview: a self-contained GL canvas that draws the bound model and
-                     handles rotate/zoom itself. All rendering lives in PolyHavenBrowser.Rendering. -->
-                <Grid Grid.Column="1" RowSpacing="8">
+                     handles rotate/zoom itself. All rendering lives in PolyHavenBrowser.Rendering.
+                     Grow=1: the viewer takes whatever main-axis space the info pane leaves -->
+                <Grid RowSpacing="8" flex:FlexPanel.Grow="1">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
@@ -328,7 +334,7 @@
                                Foreground="{StaticResource TextTertiaryBrush}"
                                HorizontalAlignment="Center" />
                 </Grid>
-            </Grid>
+            </flex:FlexPanel>
 
             <!-- Footer: the (future) document generator lives bottom-right -->
             <Grid Grid.Row="2" Padding="24,4,24,16">

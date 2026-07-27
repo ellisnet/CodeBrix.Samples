@@ -18,14 +18,27 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.9" />
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.205.475" />
+
+    <!-- TEMPORARY: pinned to the CodeBrix.Platform working-tree local feed (see
+         ../../NuGet.Config) to test not-yet-published FrameBuffer/FrameBuffer.Emulated work.
+         Revert to the nuget.org version (and delete ../../NuGet.Config) after the family's
+         next real publish. -->
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.205.9999" />
 
     <!-- WebView add-in: gives the Linux Skia heads an embedded WebView2 (WPE WebKit,
          offscreen). Referenced once here in Core; every Skia head inherits it transitively.
          The Windows, Skia-on-WPF and macOS runtimes already have WebView2 built in, so the
          add-in is inert there. The Linux heads need the system WPE WebKit engine at run time:
-         sudo apt install libwpewebkit-2.0-1 libwpebackend-fdo-1.0-1 libwpe-1.0-1 -->
-    <PackageReference Include="CodeBrix.Platform.WebView.ApacheLicenseForever" Version="1.0.205.475" />
+         sudo apt install libwpewebkit-2.0-1 libwpebackend-fdo-1.0-1 libwpe-1.0-1
+         TEMPORARY: local feed pin, see comment above. -->
+    <PackageReference Include="CodeBrix.Platform.WebView.ApacheLicenseForever" Version="1.0.205.9999" />
+
+    <!-- FlexPanel - a flexbox-style layout control for CodeBrix.Platform XAML; lays out
+         the bottom bar so its two control groups wrap onto two rows in portrait.
+         TEMPORARY: local feed pin, see comment above. FlexPanel is not covered by
+         pack-local-feed.sh - pack it separately with the script's csproj-pack command
+         shape, run against src/AddIns/Platform.UI.FlexPanel. -->
+    <PackageReference Include="CodeBrix.Platform.FlexPanel.ApacheLicenseForever" Version="1.0.205.9999" />
 
     <!-- Bundled Open Sans font -->
     <PackageReference Include="CodeBrix.Platform.Fonts.OpenSans.ApacheLicenseForever" Version="1.0.181.655" />

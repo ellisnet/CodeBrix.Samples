@@ -1,5 +1,7 @@
 using CodeBrix.Platform.UI.Hosting;
+using CodeBrix.Platform.UI.Runtime.Skia;
 using System;
+using Windows.Graphics.Display;
 
 // ReSharper disable CheckNamespace
 
@@ -12,11 +14,25 @@ internal class Program
     {
         App.InitializeLogging();
 
-        //Note: this kiosk/embedded head has no windowing system for native file dialogs, so the
-        //  user types the PDF save path directly into the box (the WebView still works via WPE).
         var host = CodeBrixPlatformHostBuilder.Create()
             .App(() => new App())
-            .UseLinuxFrameBuffer()
+            .UseLinuxFrameBuffer(fb => fb
+                .Orientation(DisplayOrientations.Landscape, isPreferredOrientation: true)
+                .AutoRotationEnabled(true)
+                .EnableFileSavePicker(new FilePickerOptions {
+                    AllowNewFolderCreate = true,
+                    ShowHiddenFiles = false,  //default behavior = false
+                    RestrictToFolder = "/home/jeremy",
+                    RequiredExtension = ".pdf",
+                })
+                .EnableSoftwareKeyboard(new SoftwareKeyboardOptions{
+                    ShowDismissKey = true,  //default behavior = true
+                    //ShowDismissKey = false,
+                    //KeyHeight = SoftwareKeyHeight.FullHeight,  //default behavior = FullHeight
+                    KeyHeight = SoftwareKeyHeight.HalfHeight,
+                })
+            )
+            .UseDirectSkiaCanvasMode()
             .Build();
 
         host.Run();
