@@ -14,7 +14,14 @@ public partial class App : Application
     {
         //Set Roboto as the default font for all text in the application
         global::CodeBrix.Platform.UI.FeatureConfiguration.Font.DefaultTextFontFamily =
-            "ms-appx:///CodeBrix.Platform.Fonts.Roboto/Fonts/Roboto.ttf#Roboto";
+            "ms-appx:///CodeBrix.Platform.Fonts.Roboto/Fonts/Roboto.ttf";
+
+        //Fonts consulted for characters the default font has no glyph for
+        global::CodeBrix.Platform.UI.FeatureConfiguration.Font.FallbackFontFamilies =
+        [
+            "ms-appx:///CodeBrix.Platform.Fonts.Roboto/Fonts/NotoSansArmenian.ttf",
+            "ms-appx:///CodeBrix.Platform.Fonts.Roboto/Fonts/NotoSansGeorgian.ttf",
+        ];
 
         SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
         {

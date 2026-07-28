@@ -11,7 +11,7 @@
       </ResourceDictionary.MergedDictionaries>
       <!-- Roboto font - reference the .ttf file directly (the Fonts.xaml
            merge does not work on Skia targets) -->
-      <FontFamily x:Key="RobotoFont">ms-appx:///CodeBrix.Platform.Fonts.Roboto/Fonts/Roboto.ttf#Roboto</FontFamily>
+      <FontFamily x:Key="RobotoFont">ms-appx:///CodeBrix.Platform.Fonts.Roboto/Fonts/Roboto.ttf</FontFamily>
 
       <!-- Dialogs open in the popup layer, which follows the app default theme (the
            RequestedTheme="Dark" above) rather than RootGrid's - these ContentDialog

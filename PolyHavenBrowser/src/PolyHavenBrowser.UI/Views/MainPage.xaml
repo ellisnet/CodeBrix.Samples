@@ -65,10 +65,15 @@
                     <Border Grid.Row="0" Background="{StaticResource CardWellBrush}"
                             CornerRadius="11,11,0,0">
                         <Grid>
-                            <TextBlock Text="⬢" FontSize="30"
-                                       Foreground="#262B34"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Visibility="{Binding Thumbnail, Converter={StaticResource VisibleWhenNull}}" />
+                            <!-- FontIcon resolves through the Fluent symbols font that every
+                                 CodeBrix.Platform application ships, so it renders on a device
+                                 that has no system fonts at all. A literal symbol character
+                                 here would depend on the host's fonts and come out as a
+                                 missing-glyph box on an embedded frame-buffer device. -->
+                            <FontIcon Glyph="&#xE82C;" FontSize="30"
+                                      Foreground="#262B34"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Visibility="{Binding Thumbnail, Converter={StaticResource VisibleWhenNull}}" />
                             <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
                         </Grid>
                     </Border>
@@ -104,8 +109,8 @@
                                        FontSize="11" Foreground="{StaticResource TextTertiaryBrush}"
                                        TextTrimming="CharacterEllipsis" MaxLines="1" />
                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="⭳" FontSize="11"
-                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                <FontIcon Glyph="&#xE896;" FontSize="11"
+                                          Foreground="{StaticResource TextTertiaryBrush}" />
                                 <TextBlock Text="{Binding DownloadsText}" FontSize="11"
                                            Foreground="{StaticResource TextTertiaryBrush}" />
                                 <TextBlock Text="downloads" FontSize="11"
@@ -159,8 +164,8 @@
                          the other groups pinned right while they still share its row -->
                     <StackPanel Spacing="2" Margin="0,6,16,6" flex:FlexPanel.Grow="1">
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="⬢" FontSize="19" Foreground="{StaticResource AccentBrush}"
-                                       VerticalAlignment="Center" />
+                            <FontIcon Glyph="&#xE82C;" FontSize="19" Foreground="{StaticResource AccentBrush}"
+                                      VerticalAlignment="Center" />
                             <TextBlock Text="Poly Haven Models" FontSize="19" FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimaryBrush}"
                                        VerticalAlignment="Center" />
@@ -187,9 +192,9 @@
                             MaxWidth="280"
                             Command="{Binding PickFolderCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="⛁" FontSize="13"
-                                       Foreground="{StaticResource AccentBrush}"
-                                       VerticalAlignment="Center" />
+                            <FontIcon Glyph="&#xE8B7;" FontSize="13"
+                                      Foreground="{StaticResource AccentBrush}"
+                                      VerticalAlignment="Center" />
                             <TextBlock Text="{Binding DownloadFolderLabel}" FontSize="12.5"
                                        VerticalAlignment="Center"
                                        TextTrimming="CharacterEllipsis" MaxLines="1" />
@@ -343,7 +348,7 @@
                         Command="{Binding DocumentCommand}"
                         ToolTipService.ToolTip="Creating a PDF document about this model is coming in a future version">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="🗎" FontSize="14" VerticalAlignment="Center" />
+                        <FontIcon Glyph="&#xE8A5;" FontSize="14" VerticalAlignment="Center" />
                         <TextBlock Text="Document" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
