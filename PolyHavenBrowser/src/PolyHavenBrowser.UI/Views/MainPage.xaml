@@ -9,7 +9,7 @@
     xmlns:local="using:PolyHavenBrowser.Views"
     xmlns:vm="clr-namespace:PolyHavenBrowser.ViewModels;assembly=PolyHavenBrowser.Core"
     xmlns:conv="clr-namespace:PolyHavenBrowser.Converters;assembly=PolyHavenBrowser.Core"
-    xmlns:flex="using:CodeBrix.Platform.UI.FlexPanel"
+    xmlns:flex="clr-namespace:CodeBrix.Platform.UI.FlexPanel;assembly=CodeBrix.Platform.UI.FlexPanel"
     xmlns:render="clr-namespace:PolyHavenBrowser.Rendering;assembly=PolyHavenBrowser.Rendering"
     FontFamily="{StaticResource RobotoFont}"
     Background="#16181D">

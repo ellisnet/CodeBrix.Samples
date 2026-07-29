@@ -2,7 +2,7 @@
       xmlns="clr-namespace:Microsoft.UI.Xaml.Controls;assembly=CodeBrix.Platform.UI"
       xmlns:d="clr-namespace:Microsoft.UI.Xaml.Data;assembly=CodeBrix.Platform.UI"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:flex="using:CodeBrix.Platform.UI.FlexPanel"
+      xmlns:flex="clr-namespace:CodeBrix.Platform.UI.FlexPanel;assembly=CodeBrix.Platform.UI.FlexPanel"
       xmlns:local="using:WikipediaPublisher.Views"
       xmlns:vm="clr-namespace:WikipediaPublisher.ViewModels;assembly=WikipediaPublisher.Core"
       Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
