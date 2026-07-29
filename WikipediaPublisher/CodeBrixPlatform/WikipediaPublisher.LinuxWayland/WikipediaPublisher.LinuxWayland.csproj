@@ -22,12 +22,9 @@
   <!--
     Platform-specific package: native Wayland Skia backend for Linux desktops. Requires a running Wayland compositor; it never falls back to X11/XWayland (use WikipediaPublisher.LinuxX11 for X11/XWayland environments).
     All other packages come from WikipediaPublisher.Core.
-    TEMPORARY: pinned to the CodeBrix.Platform working-tree local feed (see ../../NuGet.Config),
-    bumped alongside the FrameBuffer head so the family stays consistent. Revert to the
-    nuget.org version (and delete ../../NuGet.Config) after the family's next real publish.
   -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.Wayland.ApacheLicenseForever" Version="1.0.205.9999" />
+    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.Wayland.ApacheLicenseForever" Version="1.0.209.480" />
   </ItemGroup>
 
 </Project>

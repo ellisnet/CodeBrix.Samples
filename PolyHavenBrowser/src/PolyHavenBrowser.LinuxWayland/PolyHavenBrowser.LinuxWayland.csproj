@@ -19,11 +19,8 @@
     <ProjectReference Include="..\PolyHavenBrowser.Core\PolyHavenBrowser.Core.csproj" />
   </ItemGroup>
 
-  <!-- EXACTLY ONE platform head package; all other packages come from PolyHavenBrowser.Core.
-       TEMPORARY: pinned to the CodeBrix.Platform working-tree local feed (see ../../NuGet.Config),
-       bumped alongside the FrameBuffer head so the family stays consistent. Revert to the
-       nuget.org version (and delete ../../NuGet.Config) after the family's next real publish. -->
+  <!-- EXACTLY ONE platform head package; all other packages come from PolyHavenBrowser.Core. -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.Wayland.ApacheLicenseForever" Version="1.0.205.9999" />
+    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.Wayland.ApacheLicenseForever" Version="1.0.209.480" />
   </ItemGroup>
 </Project>
