@@ -10,10 +10,7 @@ using System.Threading.Tasks;
 // ReSharper disable once CheckNamespace
 namespace JustBetweenUs.ViewModels;
 
-public interface ICopyToClipboard
-{
-    Action<string> CopyTextToClipboard { get; set; }
-}
+public interface ICopyToClipboard { Action<string> CopyTextToClipboard { get; set; }}
 
 #if HAS_CODEBRIX
 [Microsoft.UI.Xaml.Data.Bindable]
@@ -96,29 +93,26 @@ public class MainViewModel : SimpleViewModel, ICopyToClipboard
 
     #endregion
 
-    private string _encryptionKey = string.Empty;
     [AffectsCommands(nameof(EncryptCommand), nameof(DecryptCommand))]
     public string EncryptionKey
     {
-        get => _encryptionKey;
-        set => SetProperty(ref _encryptionKey, value ?? string.Empty);
-    }
+        get;
+        set => SetProperty(ref field, value ?? string.Empty);
+    } = string.Empty;
 
-    private string _enteredText = string.Empty;
     [AffectsCommands(nameof(EncryptCommand), nameof(DecryptCommand))]
     public string EnteredText
     {
-        get => _enteredText;
-        set => SetProperty(ref _enteredText, value ?? string.Empty);
-    }
+        get;
+        set => SetProperty(ref field, value ?? string.Empty);
+    } = string.Empty;
 
-    private string _processedText = string.Empty;
     [AffectsCommands(nameof(CopyToClipboardCommand))]
     public string ProcessedText
     {
-        get => _processedText;
-        set => SetProperty(ref _processedText, value ?? string.Empty);
-    }
+        get;
+        set => SetProperty(ref field, value ?? string.Empty);
+    } = string.Empty;
 
     #endregion
 
@@ -243,10 +237,9 @@ public class MainViewModel : SimpleViewModel, ICopyToClipboard
     #endregion
 
     #region ShowOsInfoCommand
-    
-    private SimpleCommand _showOsInfoCommand;
+
     public SimpleCommand ShowOsInfoCommand =>
-        (_showOsInfoCommand ??= new SimpleCommand(DoShowOsInfo));
+        (field ??= new SimpleCommand(DoShowOsInfo));
 
     private async Task DoShowOsInfo()
     {

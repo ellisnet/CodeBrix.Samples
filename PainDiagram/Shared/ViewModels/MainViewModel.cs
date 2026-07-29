@@ -19,7 +19,7 @@ namespace PainDiagram.ViewModels;
 public interface IFileSaveBridge
 {
     /// <summary>
-    /// Shows a "save PNG" dialog seeded with <paramref name="suggestedFileName"/> and returns the
+    /// Shows a "save PNG" dialog seeded with suggestedFileName and returns the
     /// full path the user chose, or <c>null</c> if they cancelled. The head leaves this null when
     /// it has no file dialog (e.g. the Linux framebuffer head), in which case the image is saved
     /// to a default location.
@@ -75,8 +75,8 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasInvalidato
 
             LoadBodyMapBackground();
 
-            _session.RedrawRequested += (sender, args) => InvalidateCanvas?.Invoke();
-            _session.DrawingChanged += (sender, args) => InvokeOnMainThread(() => HasDrawing = _session.HasStrokes);
+            _session.RedrawRequested += (_, _) => InvalidateCanvas?.Invoke();
+            _session.DrawingChanged += (_, _) => InvokeOnMainThread(() => HasDrawing = _session.HasStrokes);
 
             StatusText = "Select Pain, Numbness, or Tingling - then draw on the body map with the left mouse button.";
         }
@@ -118,45 +118,41 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasInvalidato
 
     #region | Bindable properties |
 
-    private string _activeLayerName = PainLayerName;
     public string ActiveLayerName
     {
-        get => _activeLayerName;
+        get;
         private set
         {
-            SetProperty(ref _activeLayerName, value);
+            SetProperty(ref field, value);
             NotifyPropertyChanged(nameof(PainButtonText));
             NotifyPropertyChanged(nameof(NumbnessButtonText));
             NotifyPropertyChanged(nameof(TinglingButtonText));
         }
-    }
+    } = PainLayerName;
 
     public string PainButtonText => ActiveLayerName == PainLayerName ? "✓ Pain" : "Pain";
     public string NumbnessButtonText => ActiveLayerName == NumbnessLayerName ? "✓ Numbness" : "Numbness";
     public string TinglingButtonText => ActiveLayerName == TinglingLayerName ? "✓ Tingling" : "Tingling";
 
-    private bool _hasDrawing;
     [AffectsCommands(nameof(SaveCommand), nameof(ClearCommand))]
     public bool HasDrawing
     {
-        get => _hasDrawing;
-        private set => SetProperty(ref _hasDrawing, value);
+        get;
+        private set => SetProperty(ref field, value);
     }
 
-    private bool _isBusy;
     [AffectsCommands(nameof(SaveCommand), nameof(ClearCommand))]
     public bool IsBusy
     {
-        get => _isBusy;
-        set => SetProperty(ref _isBusy, value);
+        get;
+        set => SetProperty(ref field, value);
     }
 
-    private string _statusText = string.Empty;
     public string StatusText
     {
-        get => _statusText;
-        set => SetProperty(ref _statusText, value ?? string.Empty);
-    }
+        get;
+        set => SetProperty(ref field, value ?? string.Empty);
+    } = string.Empty;
 
     /// <summary>Set by the hosting head (see <see cref="IFileSaveBridge"/>); null on heads with no file dialog.</summary>
     public Func<string, Task<string>> PickSavePngPathAsync { get; set; }

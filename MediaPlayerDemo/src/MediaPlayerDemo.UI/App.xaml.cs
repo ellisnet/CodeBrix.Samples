@@ -1,9 +1,9 @@
 using CodeBrix.Platform.Simple;
+using MediaPlayerDemo.Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
-using MediaPlayerDemo.Helpers;
 using System;
 
 namespace MediaPlayerDemo;

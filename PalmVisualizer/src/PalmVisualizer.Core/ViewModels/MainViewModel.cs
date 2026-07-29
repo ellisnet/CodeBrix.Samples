@@ -65,7 +65,7 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas
             InvokeOnMainThread(() =>
             {
                 Cameras.Clear();
-                foreach (CameraDevice camera in cameras)
+                foreach (var camera in cameras)
                 {
                     Cameras.Add(camera);
                 }
@@ -106,9 +106,9 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas
         else
         {
             //Visualize Mode: the live feed drives the palm tracker
-            PalmTracker tracker = _tracker;
-            if (tracker != null && tracker.IsRunning
-                && _captureService.TryCopyLatestFrame(ref _visionFrame, out int width, out int height))
+            var tracker = _tracker;
+            if (tracker is { IsRunning: true }
+                && _captureService.TryCopyLatestFrame(ref _visionFrame, out var width, out var height))
             {
                 tracker.SubmitFrame(_visionFrame, width, height);
             }
@@ -119,11 +119,11 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas
     {
         //Worker-thread context: the visualizer's attractor field is thread-safe, so the
         //  palms feed straight in - only the status line needs the UI thread
-        VisualizerSession session = _visualizerSession;
+        var session = _visualizerSession;
         if (IsCameraMode || session == null) { return; }
 
         var attractors = new List<PalmAttractor>(e.Result.Palms.Count);
-        foreach (TrackedPalm palm in e.Result.Palms)
+        foreach (var palm in e.Result.Palms)
         {
             //Only OPEN palms attract the colors - and the user watched a mirrored
             //  preview, so mirror the palm positions to match
@@ -134,7 +134,7 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas
         }
         session.UpdatePalms(attractors);
 
-        int openCount = attractors.Count;
+        var openCount = attractors.Count;
         if (openCount != _reportedOpenPalmCount)
         {
             _reportedOpenPalmCount = openCount;
@@ -154,49 +154,45 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas
     /// <summary>The connected cameras shown in the dropdown.</summary>
     public ObservableCollection<CameraDevice> Cameras { get; } = new();
 
-    private CameraDevice _selectedCamera;
     public CameraDevice SelectedCamera
     {
-        get => _selectedCamera;
+        get;
         set
         {
-            if (_selectedCamera != value)
+            if (field != value)
             {
-                SetProperty(ref _selectedCamera, value);
+                SetProperty(ref field, value);
                 SwitchCamera(value);
             }
         }
     }
 
-    private bool _isCameraMode = true;
     [AffectsCommands(nameof(VisualizeCommand), nameof(BackCommand))]
     public bool IsCameraMode
     {
-        get => _isCameraMode;
+        get;
         private set
         {
-            SetProperty(ref _isCameraMode, value);
+            SetProperty(ref field, value);
             NotifyPropertyChanged(nameof(IsVisualizeMode));
         }
-    }
+    } = true;
 
     /// <summary>Visualize Mode is simply not-Camera Mode.</summary>
     public bool IsVisualizeMode => !IsCameraMode;
 
-    private bool _hasFrame;
     [AffectsCommands(nameof(VisualizeCommand))]
     public bool HasFrame
     {
-        get => _hasFrame;
-        private set => SetProperty(ref _hasFrame, value);
+        get;
+        private set => SetProperty(ref field, value);
     }
 
-    private string _statusText = string.Empty;
     public string StatusText
     {
-        get => _statusText;
-        set => SetProperty(ref _statusText, value ?? string.Empty);
-    }
+        get;
+        set => SetProperty(ref field, value ?? string.Empty);
+    } = string.Empty;
 
     /// <summary>Set by the hosting page (see <see cref="ICanvasBridge"/>).</summary>
     public Action InvalidatePreviewCanvas { get; set; }
@@ -315,7 +311,7 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas
             _tracker = null;
         }
 
-        VisualizerSession session = _visualizerSession;
+        var session = _visualizerSession;
         _visualizerSession = null;
         session?.Stop();
 

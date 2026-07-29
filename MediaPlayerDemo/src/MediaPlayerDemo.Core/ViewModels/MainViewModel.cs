@@ -40,46 +40,42 @@ public class MainViewModel : SimpleViewModel
 
     #region | Bindable properties |
 
-    private string _mediaAddress = DefaultMediaAddress;
     [AffectsCommands(nameof(LoadCommand))]
     public string MediaAddress
     {
-        get => _mediaAddress;
-        set => SetProperty(ref _mediaAddress, value ?? string.Empty);
-    }
+        get;
+        set => SetProperty(ref field, value ?? string.Empty);
+    } = DefaultMediaAddress;
 
-    private IMediaPlaybackSource _playerSource;
     public IMediaPlaybackSource PlayerSource
     {
-        get => _playerSource;
-        private set => SetProperty(ref _playerSource, value);
+        get;
+        private set => SetProperty(ref field, value);
     }
 
-    private string _statusText = "Ready";
     public string StatusText
     {
-        get => _statusText;
-        private set => SetProperty(ref _statusText, value ?? string.Empty);
-    }
+        get;
+        private set => SetProperty(ref field, value ?? string.Empty);
+    } = "Ready";
 
     //The stretch modes offered by the ComboBox. The Stretch enum's member names ("Uniform",
     //  "UniformToFill", "Fill", "None") are exactly the text we want shown, so the ComboBox can
     //  bind straight to the enum values with no separate label list.
-    public IReadOnlyList<Stretch> StretchOptions { get; } = new[]
-    {
+    public IReadOnlyList<Stretch> StretchOptions { get; } =
+    [
         Stretch.Uniform,
         Stretch.UniformToFill,
         Stretch.Fill,
-        Stretch.None,
-    };
+        Stretch.None
+    ];
 
     //The player's stretch mode, two-way bound to the ComboBox's SelectedItem.
-    private Stretch _selectedStretch = Stretch.Uniform;
     public Stretch SelectedStretch
     {
-        get => _selectedStretch;
-        set => SetEnumProperty(ref _selectedStretch, value);
-    }
+        get;
+        set => SetEnumProperty(ref field, value);
+    } = Stretch.Uniform;
 
     #endregion
 

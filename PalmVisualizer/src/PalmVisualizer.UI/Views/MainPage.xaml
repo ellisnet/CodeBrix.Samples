@@ -1,11 +1,13 @@
 <Page
     x:Class="PalmVisualizer.Views.MainPage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns="clr-namespace:Microsoft.UI.Xaml.Controls;assembly=CodeBrix.Platform.UI"
+    xmlns:c="clr-namespace:CodeBrix.Platform.UI.Converters;assembly=CodeBrix.Platform.UI.Toolkit"
+    xmlns:d="clr-namespace:Microsoft.UI.Xaml.Data;assembly=CodeBrix.Platform.UI"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:PalmVisualizer.ViewModels"
-    xmlns:camera="using:PalmVisualizer.Camera"
-    xmlns:game="using:CodeBrix.Platform.GameEngine.Host.Rendering"
-    xmlns:converters="using:CodeBrix.Platform.UI.Converters"
+    xmlns:local="using:PalmVisualizer.Views"
+    xmlns:vm="clr-namespace:PalmVisualizer.ViewModels;assembly=PalmVisualizer.Core"
+    xmlns:camera="clr-namespace:PalmVisualizer.Camera;assembly=PalmVisualizer.Camera"
+    xmlns:game="clr-namespace:CodeBrix.Platform.GameEngine.Host.Rendering;assembly=CodeBrix.Platform.GameEngine.Host"
     FontFamily="{StaticResource RobotoFont}"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -14,8 +16,8 @@
     </Page.DataContext>
 
     <Page.Resources>
-        <converters:BoolToVisibilityConverter x:Key="VisibleWhenTrue" />
-        <converters:BoolToVisibilityConverter x:Key="VisibleWhenFalse" Invert="True" />
+        <c:BoolToVisibilityConverter x:Key="VisibleWhenTrue" />
+        <c:BoolToVisibilityConverter x:Key="VisibleWhenFalse" Invert="True" />
     </Page.Resources>
 
     <Grid Padding="12">
@@ -29,9 +31,9 @@
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
             <TextBlock Text="Palm Visualizer" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center" />
             <ComboBox MinWidth="280" VerticalAlignment="Center"
-                      ItemsSource="{Binding Cameras}"
-                      SelectedItem="{Binding SelectedCamera, Mode=TwoWay}"
-                      IsEnabled="{Binding IsCameraMode}" />
+                      ItemsSource="{d:Binding Cameras}"
+                      SelectedItem="{d:Binding SelectedCamera, Mode=TwoWay}"
+                      IsEnabled="{d:Binding IsCameraMode}" />
         </StackPanel>
 
         <!-- The main viewer: the mirrored live preview in Camera Mode; the palm-reactive
@@ -39,25 +41,25 @@
         <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Background="Black">
             <Grid>
                 <camera:CameraCanvas x:Name="PreviewCanvas"
-                                     Visibility="{Binding IsCameraMode, Converter={StaticResource VisibleWhenTrue}}" />
+                                     Visibility="{d:Binding IsCameraMode, Converter={StaticResource VisibleWhenTrue}}" />
                 <game:GameSurfaceCanvas x:Name="VisualizerCanvas"
-                                        Visibility="{Binding IsCameraMode, Converter={StaticResource VisibleWhenFalse}}" />
+                                        Visibility="{d:Binding IsCameraMode, Converter={StaticResource VisibleWhenFalse}}" />
             </Grid>
         </Border>
 
         <Grid Grid.Row="2" Margin="0,8,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8"
-                        Visibility="{Binding IsCameraMode, Converter={StaticResource VisibleWhenTrue}}">
-                <Button Content="Visualize!" Command="{Binding VisualizeCommand}"
+                        Visibility="{d:Binding IsCameraMode, Converter={StaticResource VisibleWhenTrue}}">
+                <Button Content="Visualize!" Command="{d:Binding VisualizeCommand}"
                         MinWidth="120" Style="{ThemeResource AccentButtonStyle}" />
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8"
-                        Visibility="{Binding IsCameraMode, Converter={StaticResource VisibleWhenFalse}}">
-                <Button Content="Back" Command="{Binding BackCommand}" MinWidth="100" />
+                        Visibility="{d:Binding IsCameraMode, Converter={StaticResource VisibleWhenFalse}}">
+                <Button Content="Back" Command="{d:Binding BackCommand}" MinWidth="100" />
             </StackPanel>
         </Grid>
 
-        <TextBlock Grid.Row="3" Text="{Binding StatusText}" Margin="0,8,0,0" TextWrapping="Wrap" />
+        <TextBlock Grid.Row="3" Text="{d:Binding StatusText}" Margin="0,8,0,0" TextWrapping="Wrap" />
     </Grid>
 </Page>
