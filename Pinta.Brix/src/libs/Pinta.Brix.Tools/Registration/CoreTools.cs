@@ -34,8 +34,12 @@ public static class CoreTools
 		PintaCore.Tools.AddTool (new PaintBucketTool (services));
 		PintaCore.Tools.AddTool (new GradientTool (services));
 		PintaCore.Tools.AddTool (new ColorPickerTool (services));
-		//TextTool, LineCurveTool, RectangleTool, RoundedRectangleTool,
-		//EllipseTool and FreeformShapeTool arrive with the shapes/text phase.
+		PintaCore.Tools.AddTool (new TextTool (services));
+		PintaCore.Tools.AddTool (new LineCurveTool (services));
+		PintaCore.Tools.AddTool (new RectangleTool (services));
+		PintaCore.Tools.AddTool (new RoundedRectangleTool (services));
+		PintaCore.Tools.AddTool (new EllipseTool (services));
+		PintaCore.Tools.AddTool (new FreeformShapeTool (services));
 		PintaCore.Tools.AddTool (new CloneStampTool (services));
 		PintaCore.Tools.AddTool (new RecolorTool (services));
 	}

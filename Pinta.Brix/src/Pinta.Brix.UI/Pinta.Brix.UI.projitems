@@ -37,5 +37,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Views\MainPage.Palette.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\AlignmentDialog.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\CurvesDialog.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\LevelsDialog.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dialogs\PosterizeDialog.cs" />
   </ItemGroup>
 </Project>

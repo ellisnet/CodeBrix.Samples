@@ -42,17 +42,27 @@ public static class ColorPickerDialog
 			MinWidth = 320,
 		};
 
-		StackPanel panel = new () { Spacing = 10 };
-		panel.Children.Add (picker);
-
 		// Upstream's picker carries both strips, and they are the fastest way
-		// back to a colour already in use.
-		AddSwatchStrip (panel, "Recently used", PintaCore.Palette.RecentlyUsedColors, picker);
-		AddSwatchStrip (panel, "Palette", PintaCore.Palette.CurrentPalette.Colors, picker);
+		// back to a colour already in use. They sit BESIDE the picker, as in
+		// upstream's swatch box - stacked underneath they end up below the
+		// fold of the scroll area and are effectively invisible.
+		StackPanel swatchColumn = new () { Spacing = 10, MinWidth = 190 };
+		AddSwatchStrip (swatchColumn, "Recently used", PintaCore.Palette.RecentlyUsedColors, picker);
+		AddSwatchStrip (swatchColumn, "Palette", PintaCore.Palette.CurrentPalette.Colors, picker);
+
+		Grid layout = new () { ColumnSpacing = 16 };
+		layout.ColumnDefinitions.Add (new ColumnDefinition { Width = GridLength.Auto });
+		layout.ColumnDefinitions.Add (new ColumnDefinition { Width = GridLength.Auto });
+		Grid.SetColumn (picker, 0);
+		layout.Children.Add (picker);
+		if (swatchColumn.Children.Count > 0) {
+			Grid.SetColumn (swatchColumn, 1);
+			layout.Children.Add (swatchColumn);
+		}
 
 		ContentDialog dialog = new () {
 			Title = title,
-			Content = new ScrollViewer { Content = panel, MaxHeight = 560 },
+			Content = new ScrollViewer { Content = layout, MaxHeight = 560 },
 			PrimaryButtonText = "OK",
 			CloseButtonText = "Cancel",
 			DefaultButton = ContentDialogButton.Primary,
@@ -77,10 +87,10 @@ public static class ColorPickerDialog
 		parent.Children.Add (new TextBlock { Text = header, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
 
 		// A wrapping strip: a fixed-width host with the swatches flowed into
-		// rows, which is what upstream's 500px-wide swatch box amounts to.
-		Grid strip = new () { MaxWidth = 500 };
+		// rows - upstream's swatch box, narrowed to fit beside the picker.
+		Grid strip = new () { MaxWidth = 200, HorizontalAlignment = HorizontalAlignment.Left };
 
-		const int columns = 20;
+		const int columns = 8;
 
 		for (int i = 0; i < columns; i++)
 			strip.ColumnDefinitions.Add (new ColumnDefinition { Width = GridLength.Auto });

@@ -13,8 +13,27 @@ namespace Pinta.Brix.Engine;
 
 public abstract class ToolBarItem
 {
+	private bool visible = true;
+
 	/// <summary>Tooltip the UI layer shows for this item, when set.</summary>
 	public string? TooltipText { get; set; }
+
+	/// <summary>
+	/// Whether the rendered control is shown. A hidden item keeps its state;
+	/// tools toggle this the way upstream toggled widget visibility.
+	/// </summary>
+	public bool Visible {
+		get => visible;
+		set {
+			if (visible == value)
+				return;
+			visible = value;
+			VisibleChanged?.Invoke (this, EventArgs.Empty);
+		}
+	}
+
+	/// <summary>Raised when <see cref="Visible"/> changes.</summary>
+	public event EventHandler? VisibleChanged;
 }
 
 public sealed class ToolBarLabel : ToolBarItem
@@ -54,11 +73,54 @@ public sealed class ToolBar
 		ItemsChanged?.Invoke (this, EventArgs.Empty);
 	}
 
+	/// <summary>Inserts an item directly after another (upstream Gtk.Box.InsertChildAfter); appends when the anchor is absent.</summary>
+	public void InsertChildAfter (ToolBarItem item, ToolBarItem after)
+	{
+		int index = items.IndexOf (after);
+		items.Insert (index < 0 ? items.Count : index + 1, item);
+		ItemsChanged?.Invoke (this, EventArgs.Empty);
+	}
+
+	public void Remove (ToolBarItem item)
+	{
+		if (items.Remove (item))
+			ItemsChanged?.Invoke (this, EventArgs.Empty);
+	}
+
 	public void Clear ()
 	{
 		items.Clear ();
 		ItemsChanged?.Invoke (this, EventArgs.Empty);
 	}
+}
+
+/// <summary>
+/// A two-state toggle button (upstream Gtk.ToggleButton) with an icon and an
+/// optional short label fallback for when the icon is unavailable.
+/// </summary>
+public sealed class ToolBarToggleButton : ToolBarItem
+{
+	private bool active;
+
+	public string? IconName { get; init; }
+
+	/// <summary>Short text shown when the icon cannot be resolved.</summary>
+	public string? Label { get; init; }
+
+	public event EventHandler? Toggled;
+
+	public bool Active {
+		get => active;
+		set {
+			if (active == value)
+				return;
+			active = value;
+			Toggled?.Invoke (this, EventArgs.Empty);
+		}
+	}
+
+	public void Toggle ()
+		=> Active = !Active;
 }
 
 public sealed class ToolBarDropDownItem

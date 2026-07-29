@@ -40,21 +40,16 @@ public static class EffectOptionsDialog
 				panel.Children.Add (row);
 		}
 
-		ContentDialog dialog = new () {
-			Title = effect.Name,
-			Content = new ScrollViewer {
+		//Modeless floating panel, not a ContentDialog: the live preview keeps
+		//rendering on a fully visible, un-dimmed canvas while values change.
+		return await FloatingDialogHost.ShowAsync (
+			effect.Name,
+			new ScrollViewer {
 				Content = panel,
 				VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
 				MaxHeight = 480,
 			},
-			PrimaryButtonText = "OK",
-			CloseButtonText = "Cancel",
-			DefaultButton = ContentDialogButton.Primary,
-			XamlRoot = xamlRoot,
-		};
-
-		ContentDialogResult result = await dialog.ShowAsync ();
-		return result == ContentDialogResult.Primary;
+			xamlRoot);
 	}
 
 	private static IEnumerable<MemberInfo> GetDialogMembers (EffectData data)
@@ -147,32 +142,66 @@ public static class EffectOptionsDialog
 		double max = member.GetCustomAttribute<MaximumValueAttribute> () is { } maxAttr ? maxAttr.Value : 100;
 		double increment = member.GetCustomAttribute<IncrementValueAttribute> ()?.Value ?? (isInteger ? 1 : 0.01);
 
-		double current = Convert.ToDouble (GetValue (data, member) ?? 0);
+		double initial = Convert.ToDouble (GetValue (data, member) ?? 0);
 
 		StackPanel row = new () { Spacing = 2 };
-		TextBlock valueLabel = new ();
 		row.Children.Add (new TextBlock { Text = caption });
+
+		//Upstream's HScaleSpinButtonWidget: slider + spin entry + reset, all
+		//bound to the same value.
 		Slider slider = new () {
 			Minimum = min,
 			Maximum = max,
 			StepFrequency = increment,
-			Value = current,
+			Value = initial,
 		};
-		valueLabel.Text = isInteger ? $"{(int) current}" : $"{current:0.##}";
-		slider.ValueChanged += (_, e) => {
-			object newValue = isInteger ? (object) (int) Math.Round (e.NewValue) : e.NewValue;
-			valueLabel.Text = isInteger ? $"{(int) Math.Round (e.NewValue)}" : $"{e.NewValue:0.##}";
+		NumberBox spin = new () {
+			Minimum = min,
+			Maximum = max,
+			SmallChange = increment,
+			Value = initial,
+			SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
+			MinWidth = 72,
+			Margin = new Thickness (8, 0, 0, 0),
+		};
+		Button reset = new () {
+			Content = new SymbolIcon (Symbol.Undo),
+			Padding = new Thickness (6, 4, 6, 4),
+			Margin = new Thickness (4, 0, 0, 0),
+		};
+		ToolTipService.SetToolTip (reset, "Reset to default");
+
+		bool updating = false;
+		void Apply (double raw)
+		{
+			if (updating)
+				return;
+			updating = true;
+			double clamped = Math.Clamp (raw, min, max);
+			object newValue = isInteger ? (object) (int) Math.Round (clamped) : clamped;
+			slider.Value = clamped;
+			spin.Value = isInteger ? (int) Math.Round (clamped) : clamped;
 			SetValue (data, member, newValue);
+			updating = false;
+		}
+
+		slider.ValueChanged += (_, e) => Apply (e.NewValue);
+		spin.ValueChanged += (_, _) => {
+			if (!double.IsNaN (spin.Value))
+				Apply (spin.Value);
 		};
+		reset.Click += (_, _) => Apply (initial);
+
 		Grid grid = new ();
 		grid.ColumnDefinitions.Add (new ColumnDefinition { Width = new GridLength (1, GridUnitType.Star) });
 		grid.ColumnDefinitions.Add (new ColumnDefinition { Width = GridLength.Auto });
+		grid.ColumnDefinitions.Add (new ColumnDefinition { Width = GridLength.Auto });
 		Grid.SetColumn (slider, 0);
-		Grid.SetColumn (valueLabel, 1);
-		valueLabel.MinWidth = 40;
-		valueLabel.Margin = new Thickness (8, 0, 0, 0);
+		Grid.SetColumn (spin, 1);
+		Grid.SetColumn (reset, 2);
 		grid.Children.Add (slider);
-		grid.Children.Add (valueLabel);
+		grid.Children.Add (spin);
+		grid.Children.Add (reset);
 		row.Children.Add (grid);
 		return row;
 	}
@@ -231,15 +260,61 @@ public static class EffectOptionsDialog
 	{
 		StackPanel row = new () { Spacing = 2 };
 		row.Children.Add (new TextBlock { Text = caption });
-		DegreesAngle current = (DegreesAngle) (GetValue (data, member) ?? new DegreesAngle (0));
+		DegreesAngle initial = (DegreesAngle) (GetValue (data, member) ?? new DegreesAngle (0));
+
 		Slider slider = new () {
 			Minimum = 0,
 			Maximum = 360,
 			StepFrequency = 1,
-			Value = current.Degrees,
+			Value = initial.Degrees,
 		};
-		slider.ValueChanged += (_, e) => SetValue (data, member, new DegreesAngle (e.NewValue));
-		row.Children.Add (slider);
+		NumberBox spin = new () {
+			Minimum = 0,
+			Maximum = 360,
+			SmallChange = 1,
+			Value = initial.Degrees,
+			SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
+			MinWidth = 72,
+			Margin = new Thickness (8, 0, 0, 0),
+		};
+		Button reset = new () {
+			Content = new SymbolIcon (Symbol.Undo),
+			Padding = new Thickness (6, 4, 6, 4),
+			Margin = new Thickness (4, 0, 0, 0),
+		};
+		ToolTipService.SetToolTip (reset, "Reset to default");
+
+		bool updating = false;
+		void Apply (double raw)
+		{
+			if (updating)
+				return;
+			updating = true;
+			double clamped = Math.Clamp (raw, 0, 360);
+			slider.Value = clamped;
+			spin.Value = clamped;
+			SetValue (data, member, new DegreesAngle (clamped));
+			updating = false;
+		}
+
+		slider.ValueChanged += (_, e) => Apply (e.NewValue);
+		spin.ValueChanged += (_, _) => {
+			if (!double.IsNaN (spin.Value))
+				Apply (spin.Value);
+		};
+		reset.Click += (_, _) => Apply (initial.Degrees);
+
+		Grid grid = new ();
+		grid.ColumnDefinitions.Add (new ColumnDefinition { Width = new GridLength (1, GridUnitType.Star) });
+		grid.ColumnDefinitions.Add (new ColumnDefinition { Width = GridLength.Auto });
+		grid.ColumnDefinitions.Add (new ColumnDefinition { Width = GridLength.Auto });
+		Grid.SetColumn (slider, 0);
+		Grid.SetColumn (spin, 1);
+		Grid.SetColumn (reset, 2);
+		grid.Children.Add (slider);
+		grid.Children.Add (spin);
+		grid.Children.Add (reset);
+		row.Children.Add (grid);
 		return row;
 	}
 

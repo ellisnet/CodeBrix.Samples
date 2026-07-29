@@ -12,6 +12,9 @@ internal static class SettingNames
 	internal const string PAINT_BRUSH_BRUSH = "paint-brush-brush";
 
 	internal const string TEXT_FONT = "text-font";
+	// Pinta.Brix addition: upstream kept the size inside the Pango font
+	// description string; here the family and the size are separate settings.
+	internal const string TEXT_SIZE = "text-size";
 	internal const string TEXT_VARIANT = "text-variant";
 	internal const string TEXT_WEIGHT = "text-weight";
 	internal const string TEXT_ITALIC = "text-italic";

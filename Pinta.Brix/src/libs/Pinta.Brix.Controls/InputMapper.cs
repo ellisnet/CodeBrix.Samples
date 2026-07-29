@@ -36,6 +36,32 @@ public static class InputMapper
 		return state;
 	}
 
+	//Modifier state tracked from the modifier keys' own down/up events. The
+	//CoreWindow.GetKeyState probe below returns nothing on the Skia heads
+	//(Window.Current is null there - the same platform gap that keeps XAML
+	//KeyboardAccelerators from firing), so the canvas reports every key
+	//transition here and this is the state that counts.
+	private static ModifierType tracked_modifiers;
+
+	/// <summary>Records a modifier key transition; called by the canvas for every key event.</summary>
+	public static void NoteKey (VirtualKey key, bool down)
+	{
+		ModifierType mask = key switch {
+			VirtualKey.Shift or VirtualKey.LeftShift or VirtualKey.RightShift => ModifierType.ShiftMask,
+			VirtualKey.Control or VirtualKey.LeftControl or VirtualKey.RightControl => ModifierType.ControlMask,
+			VirtualKey.Menu or VirtualKey.LeftMenu or VirtualKey.RightMenu => ModifierType.AltMask,
+			_ => ModifierType.None,
+		};
+
+		if (mask == ModifierType.None)
+			return;
+
+		if (down)
+			tracked_modifiers |= mask;
+		else
+			tracked_modifiers &= ~mask;
+	}
+
 	public static ToolKeyEventArgs ToKeyArgs (KeyRoutedEventArgs e)
 		=> new () {
 			Key = new Key (ToKeysym (e.Key)),
@@ -44,7 +70,7 @@ public static class InputMapper
 
 	private static ModifierType CurrentModifiers ()
 	{
-		ModifierType state = ModifierType.None;
+		ModifierType state = tracked_modifiers;
 		if (IsDown (VirtualKey.Shift))
 			state |= ModifierType.ShiftMask;
 		if (IsDown (VirtualKey.Control))
@@ -92,6 +118,18 @@ public static class InputMapper
 			VirtualKey.Menu => KeyConstants.KEY_Alt_L,
 			(VirtualKey) 219 => KeyConstants.KEY_bracketleft,  // OEM 4
 			(VirtualKey) 221 => KeyConstants.KEY_bracketright, // OEM 6
+			// The remaining OEM punctuation keys map onto their unshifted
+			// ASCII keysyms; the text tool derives shifted characters from
+			// these plus the shift state.
+			(VirtualKey) 186 => (uint) ';',  // OEM 1
+			(VirtualKey) 187 => (uint) '=',  // OEM plus
+			(VirtualKey) 188 => (uint) ',',  // OEM comma
+			(VirtualKey) 189 => (uint) '-',  // OEM minus
+			(VirtualKey) 190 => (uint) '.',  // OEM period
+			(VirtualKey) 191 => (uint) '/',  // OEM 2
+			(VirtualKey) 192 => (uint) '`',  // OEM 3
+			(VirtualKey) 220 => (uint) '\\', // OEM 5
+			(VirtualKey) 222 => (uint) '\'', // OEM 7
 			_ => KeyConstants.KEY_VoidSymbol,
 		};
 	}

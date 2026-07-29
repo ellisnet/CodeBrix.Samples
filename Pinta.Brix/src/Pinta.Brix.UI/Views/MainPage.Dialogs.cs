@@ -97,7 +97,7 @@ public sealed partial class MainPage
     /// There is deliberately no File &gt; Quit command to reach this from - on
     /// a chrome-less head there is no way out of the application by design.
     /// </remarks>
-    private async Task<bool> ConfirmCloseApplicationAsync() => await CloseAllAsync();
+    internal async Task<bool> ConfirmCloseApplicationAsync() => await CloseAllAsync();
 
     // ---- Image dialogs -----------------------------------------------------
 

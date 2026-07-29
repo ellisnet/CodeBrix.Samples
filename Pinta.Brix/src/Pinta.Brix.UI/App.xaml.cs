@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Pinta.Brix.Helpers;
 using System;
+using System.Linq;
 
 namespace Pinta.Brix;
 
@@ -29,10 +30,23 @@ public partial class App : Application
         //which reads settings, so this must come first.
         Pinta.Brix.Settings.SettingsService.Initialize();
 
+        //Restore the persisted window size BEFORE any window exists - the
+        //Skia heads consult ApplicationView.PreferredLaunchViewSize when they
+        //create the native window, and that is the only public seam for the
+        //initial size. Setting names and the 1100x750 defaults match
+        //upstream. The maximized flag is not restored: the platform exposes
+        //no public presenter state on the Skia heads.
+        int windowWidth = Pinta.Brix.Settings.SettingsService.Get("window-size-width", 1100);
+        int windowHeight = Pinta.Brix.Settings.SettingsService.Get("window-size-height", 750);
+        Windows.UI.ViewManagement.ApplicationView.PreferredLaunchViewSize =
+            new Windows.Foundation.Size(windowWidth, windowHeight);
+
         InitializeComponent();
     }
 
     protected Window MainWindow { get; private set; }
+
+    private bool windowCloseConfirmed;
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
@@ -53,6 +67,49 @@ public partial class App : Application
         //Window title tracks the active document
         Pinta.Brix.Engine.PintaCore.Chrome.MainWindowTitleChanged += (_, _) =>
             MainWindow.Title = Pinta.Brix.Engine.PintaCore.Chrome.MainWindowTitle;
+
+        //Window-close save prompt. Closed is the platform's cancellable-close
+        //event: setting Handled vetoes the close, and the X11 head reports
+        //SupportsClosingCancellation. The save-prompt loop is async, so when
+        //dirty documents exist the close is vetoed first and re-issued once
+        //the user has decided. Mirrors upstream's exit-path prompt loop; it
+        //is triggered by window close because there is no File > Quit here.
+        MainWindow.Closed += async (_, e) =>
+        {
+            if (windowCloseConfirmed) { return; }
+
+            if (!Pinta.Brix.Engine.PintaCore.Workspace.OpenDocuments.Any(d => d.IsDirty)) { return; }
+
+            e.Handled = true;
+
+            try
+            {
+                if (Views.MainPage.Current is { } page && await page.ConfirmCloseApplicationAsync())
+                {
+                    windowCloseConfirmed = true;
+                    MainWindow.Close();
+                }
+            }
+            catch (Exception)
+            {
+                //A failed prompt must never take the window down with unsaved
+                //work - the veto above stands and the application stays open.
+            }
+        };
+
+        //Write-through persistence of the window size; the store ignores
+        //writes when the value is unchanged. args.Size is in logical units
+        //but the X11 head consumes PreferredLaunchViewSize as NATIVE pixels,
+        //so the stored value must be native pixels or every restart would
+        //rescale the window by the display-scale factor.
+        MainWindow.SizeChanged += (_, args) =>
+        {
+            if (MainWindow.Content?.XamlRoot is not { } root) { return; }
+
+            double scale = root.RasterizationScale;
+            Pinta.Brix.Settings.SettingsService.Set("window-size-width", (int)Math.Round(args.Size.Width * scale));
+            Pinta.Brix.Settings.SettingsService.Set("window-size-height", (int)Math.Round(args.Size.Height * scale));
+        };
 
         if (MainWindow.Content is not Frame rootFrame)
         {

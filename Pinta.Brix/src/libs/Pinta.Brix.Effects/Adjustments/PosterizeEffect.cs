@@ -31,19 +31,22 @@ public sealed class PosterizeEffect : BaseEffect
 	public PosterizeData Data => (PosterizeData) EffectData!;  // NRT - Set in constructor
 
 	private readonly IChromeService chrome;
+	private readonly IWorkspaceService workspace;
 
 	public PosterizeEffect (IServiceProvider services)
 	{
 		chrome = services.GetService<IChromeService> ();
+		workspace = services.GetService<IWorkspaceService> ();
 
 		EffectData = new PosterizeData ();
 	}
 
 	public override Task<bool> LaunchConfiguration ()
 	{
-		// Pinta.Brix note: upstream launched the custom PosterizeDialog here;
-		// the custom effect dialogs are ported later with the UI layer. Until
-		// then configuration reports "cancelled" so the effect is a safe no-op.
+		// Pinta.Brix note: upstream constructed the custom PosterizeDialog
+		// directly; this library stays UI-free, so the dialog request goes
+		// through the chrome seam and the UI layer routes it to the ported
+		// PosterizeDialog by effect type.
 		//was previously:
 		//	using PosterizeDialog dialog = PosterizeDialog.New (chrome);
 		//	dialog.Title = Name;
@@ -55,7 +58,7 @@ public sealed class PosterizeEffect : BaseEffect
 		//	dialog.Destroy ();
 		//
 		//	return Gtk.ResponseType.Ok == response;
-		return Task.FromResult (false);
+		return chrome.LaunchSimpleEffectDialog (this, workspace);
 	}
 
 	public override void Render (ImageSurface src, ImageSurface dest, ReadOnlySpan<RectangleI> rois)

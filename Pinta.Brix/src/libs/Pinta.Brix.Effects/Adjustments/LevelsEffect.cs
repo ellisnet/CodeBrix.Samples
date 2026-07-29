@@ -45,9 +45,10 @@ public sealed class LevelsEffect : BaseEffect
 
 	public override Task<bool> LaunchConfiguration ()
 	{
-		// Pinta.Brix note: upstream launched the custom LevelsDialog here; the
-		// custom effect dialogs are ported later with the UI layer. Until then
-		// configuration reports "cancelled" so the effect is a safe no-op.
+		// Pinta.Brix note: upstream constructed the custom LevelsDialog
+		// directly; this library stays UI-free, so the dialog request goes
+		// through the chrome seam and the UI layer routes it to the ported
+		// LevelsDialog by effect type.
 		//was previously:
 		//	// TODO: Delegate `EffectData` changes to event handlers or similar
 		//	using LevelsDialog dialog = LevelsDialog.New (chrome, palette, workspace, Data);
@@ -59,7 +60,7 @@ public sealed class LevelsEffect : BaseEffect
 		//	dialog.Destroy ();
 		//
 		//	return Gtk.ResponseType.Ok == response;
-		return Task.FromResult (false);
+		return chrome.LaunchSimpleEffectDialog (this, workspace);
 	}
 
 	public override void Render (ImageSurface src, ImageSurface dest, ReadOnlySpan<RectangleI> rois)

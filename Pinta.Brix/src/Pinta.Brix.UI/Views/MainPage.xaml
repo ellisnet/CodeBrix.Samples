@@ -43,11 +43,14 @@
             </ScrollViewer>
         </Border>
 
-        <!-- Main content: toolbox | canvas tabs | pads -->
-        <Grid Grid.Row="3">
+        <!-- Main content: toolbox | canvas tabs | splitter | pads. The
+             splitter bars are added in code (MainPage_Loaded); the extra
+             column and row here are their homes. -->
+        <Grid x:Name="ContentGrid" Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
@@ -61,9 +64,10 @@
                      TabCloseRequested="DocumentTabs_TabCloseRequested"
                      SelectionChanged="DocumentTabs_SelectionChanged" />
 
-            <Grid x:Name="PadsColumn" Grid.Column="2" Width="230" MinWidth="200">
+            <Grid x:Name="PadsColumn" Grid.Column="3" Width="230" MinWidth="200">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" MinHeight="120" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" MinHeight="120" />
                 </Grid.RowDefinitions>
 
@@ -80,7 +84,7 @@
                                 Spacing="2" Margin="6,2,6,6" />
                 </Grid>
 
-                <Grid Grid.Row="1">
+                <Grid Grid.Row="2">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
@@ -109,7 +113,9 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <ContentControl x:Name="PaletteWidgetHost" Grid.Column="0" VerticalAlignment="Center" />
-            <TextBlock x:Name="StatusText" Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <!-- MaxLines keeps the bar one line tall: the shape tools carry
+                 many-line StatusBarText and would otherwise grow the bar. -->
+            <TextBlock x:Name="StatusText" Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="1" />
             <TextBlock x:Name="CursorPositionText" Grid.Column="2" VerticalAlignment="Center" MinWidth="80" />
             <TextBlock x:Name="SelectionSizeText" Grid.Column="3" VerticalAlignment="Center" MinWidth="80" />
             <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">

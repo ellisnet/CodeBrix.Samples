@@ -27,6 +27,14 @@ public sealed class PintaCanvas : SKXamlCanvas, ICanvasView
 	private bool surface_stale = true;
 	private ToolCursor? tool_cursor;
 
+	//Marching ants: the dash offset ticks backwards while a selection is
+	//visible (upstream ticks -1 per timer fire), wrapping at the dash
+	//pattern's period. The redraw is display-only.
+	private readonly Microsoft.UI.Xaml.DispatcherTimer ants_timer = new () {
+		Interval = TimeSpan.FromMilliseconds (100),
+	};
+	private float ants_offset;
+
 	public PintaCanvas ()
 	{
 		PaintSurface += OnPaintSurface;
@@ -38,6 +46,20 @@ public sealed class PintaCanvas : SKXamlCanvas, ICanvasView
 		PointerWheelChanged += OnCanvasPointerWheelChanged;
 		KeyDown += OnCanvasKeyDown;
 		KeyUp += OnCanvasKeyUp;
+
+		ants_timer.Tick += (_, _) => {
+			if (document is null || !document.Selection.Visible || document.Selection.SelectionPolygons.Count == 0)
+				return;
+			ants_offset -= 1;
+			if (ants_offset < 0)
+				ants_offset += 8; // dash pattern period: 4 on + 4 off
+			Invalidate ();
+		};
+
+		//The timer only runs while the canvas is in the tree, so closed
+		//documents do not keep ticking.
+		Loaded += (_, _) => ants_timer.Start ();
+		Unloaded += (_, _) => ants_timer.Stop ();
 	}
 
 	/// <summary>The document this canvas displays; wires invalidation events.</summary>
@@ -150,7 +172,7 @@ public sealed class PintaCanvas : SKXamlCanvas, ICanvasView
 			new SKRect (0, 0, viewSize.Width, viewSize.Height),
 			sampling);
 
-		// 4. Selection outline ("marching ants" drawn as static dashes in V1).
+		// 4. Selection outline - the marching ants, animated by ants_timer.
 		DrawSelection (canvas);
 
 		// 5. Tool overlay handles, drawn in view space at constant size.
@@ -215,7 +237,7 @@ public sealed class PintaCanvas : SKXamlCanvas, ICanvasView
 			StrokeWidth = 1,
 			Color = SKColors.Black,
 			IsAntialias = true,
-			PathEffect = SKPathEffect.CreateDash ([4f, 4f], 0),
+			PathEffect = SKPathEffect.CreateDash ([4f, 4f], ants_offset),
 		};
 		canvas.DrawPath (path, white);
 		canvas.DrawPath (path, black);
@@ -356,6 +378,7 @@ public sealed class PintaCanvas : SKXamlCanvas, ICanvasView
 
 	private void OnCanvasKeyDown (object sender, KeyRoutedEventArgs e)
 	{
+		InputMapper.NoteKey (e.Key, down: true);
 		if (document is null)
 			return;
 		ToolKeyEventArgs args = InputMapper.ToKeyArgs (e);
@@ -364,6 +387,7 @@ public sealed class PintaCanvas : SKXamlCanvas, ICanvasView
 
 	private void OnCanvasKeyUp (object sender, KeyRoutedEventArgs e)
 	{
+		InputMapper.NoteKey (e.Key, down: false);
 		if (document is null)
 			return;
 		ToolKeyEventArgs args = InputMapper.ToKeyArgs (e);

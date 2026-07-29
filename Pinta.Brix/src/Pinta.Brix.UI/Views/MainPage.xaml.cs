@@ -19,8 +19,16 @@ public sealed partial class MainPage : Page
     private bool updatingZoomCombo;
     private bool updatingLayerSelection;
 
+    /// <summary>
+    /// The single MainPage instance. The App's window-close handler reaches
+    /// the save-prompt loop through this.
+    /// </summary>
+    internal static MainPage Current { get; private set; }
+
     public MainPage()
     {
+        Current = this;
+
         DataContextChanged += (_, _) =>
         {
             //Give the view model's SimpleDialog helpers a XamlRoot to attach dialogs to
@@ -38,8 +46,19 @@ public sealed partial class MainPage : Page
         PintaCore.Chrome.InitializeErrorDialogHandler(ShowErrorDialogAsync);
         PintaCore.Chrome.InitializeMessageDialog(ShowMessageDialogAsync);
         PintaCore.Chrome.InitializeProgessDialog(new ContentProgressDialog(() => XamlRoot));
+        //Custom effect dialogs route by effect type; everything else gets the
+        //reflection-generated dialog. Upstream's effects each opened their own
+        //Gtk dialog directly; here the Effects library stays UI-free, so the
+        //routing lives at this seam instead.
         PintaCore.Chrome.InitializeSimpleEffectDialog(
-            (effect, _) => EffectOptionsDialog.ShowAsync(effect, XamlRoot));
+            (effect, _) => effect switch
+            {
+                Effects.AlignObjectEffect align => Dialogs.AlignmentDialog.ShowAsync(align, XamlRoot),
+                Effects.CurvesEffect curves => Dialogs.CurvesDialog.ShowAsync(curves, XamlRoot),
+                Effects.LevelsEffect levels => Dialogs.LevelsDialog.ShowAsync(levels, XamlRoot),
+                Effects.PosterizeEffect posterize => Dialogs.PosterizeDialog.ShowAsync(posterize, XamlRoot),
+                _ => EffectOptionsDialog.ShowAsync(effect, XamlRoot),
+            });
         PintaCore.Workspace.SaveDocumentHandler = SaveDocumentAsync;
 
         //The clipboard is a UI-layer service; the engine and the tools reach it
@@ -100,6 +119,52 @@ public sealed partial class MainPage : Page
         };
 
         UpdateActionSensitivity();
+
+        //Pad splitters - upstream's Gtk.Paned equivalents (the platform has
+        //no GridSplitter). Positions persist through settings.sqlite.
+        BuildSplitters();
+
+        //Match upstream: the application opens with a blank document already
+        //created (upstream Main.cs makes an 800x600 white document when no
+        //files are given on the command line). Goes through the same path as
+        //File > New so the two can never drift apart. If command-line file
+        //opening is ever ported, this must be skipped for that path, exactly
+        //as upstream skips it.
+        NewImage();
+    }
+
+    private void BuildSplitters()
+    {
+        PadsColumn.Width = Math.Clamp(
+            PintaCore.Settings.GetSetting("pads-width", 230), 200, 800);
+
+        int savedLayersHeight = PintaCore.Settings.GetSetting("layers-pad-height", 0);
+        if (savedLayersHeight > 0)
+        {
+            PadsColumn.RowDefinitions[0].Height = new GridLength(Math.Max(120, savedLayersHeight));
+        }
+
+        ThumbSplitter columnSplitter = new(Orientation.Vertical);
+        Grid.SetColumn(columnSplitter, 2);
+        ContentGrid.Children.Add(columnSplitter);
+        columnSplitter.DragDelta += (_, delta) =>
+        {
+            double width = Math.Clamp(PadsColumn.ActualWidth - delta, 200, 800);
+            PadsColumn.Width = width;
+            PintaCore.Settings.PutSetting("pads-width", (int)width);
+        };
+
+        ThumbSplitter padSplitter = new(Orientation.Horizontal);
+        Grid.SetRow(padSplitter, 1);
+        PadsColumn.Children.Add(padSplitter);
+        padSplitter.DragDelta += (_, delta) =>
+        {
+            double maxHeight = PadsColumn.ActualHeight - padSplitter.ActualHeight - 120;
+            double height = Math.Clamp(
+                PadsColumn.RowDefinitions[0].ActualHeight + delta, 120, Math.Max(120, maxHeight));
+            PadsColumn.RowDefinitions[0].Height = new GridLength(height);
+            PintaCore.Settings.PutSetting("layers-pad-height", (int)height);
+        };
     }
 
     // ---- Documents and tabs ------------------------------------------------

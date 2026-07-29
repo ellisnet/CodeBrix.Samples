@@ -460,6 +460,40 @@ public sealed partial class TextEngine
 		action (start.Line, start.Offset, end.Offset);
 	}
 
+	// Pinta.Brix note (G3): the text-layout add-in works in .NET string (UTF-16
+	// char) indices, not Pango's UTF-8 byte offsets, so the layout goes through
+	// this pair. The UTF-8 pair below stays for the .ora/TextHistoryItem paths
+	// until proven unreferenced.
+
+	public int PositionToCharIndex (TextPosition p)
+	{
+		int index = 0;
+
+		for (int i = 0; i < p.Line; i++)
+			index += lines[i].Length + 1; // + 1 for the newline
+
+		return index + Math.Min (p.Offset, lines[p.Line].Length);
+	}
+
+	public TextPosition CharIndexToPosition (int index)
+	{
+		int current = 0;
+
+		for (int line = 0; line < lines.Count; line++) {
+			int length = lines[line].Length;
+
+			if (index <= current + length)
+				return new (line, Math.Max (0, index - current));
+
+			current += length + 1; // + 1 for the newline
+		}
+
+		// It's below all of our lines, return the end of the last line
+		return new (
+			line: lines.Count - 1,
+			offset: lines[^1].Length);
+	}
+
 	public TextPosition UTF8IndexToPosition (int index)
 	{
 		int current = 0;
