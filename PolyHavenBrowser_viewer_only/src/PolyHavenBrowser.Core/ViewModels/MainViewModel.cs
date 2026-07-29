@@ -1,14 +1,14 @@
+using CodeBrix.Platform.Simple;
+using Microsoft.UI.Xaml;
+using PolyHavenBrowser.Display;
+using PolyHavenBrowser.Rendering;
+using PolyHavenBrowser.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
-using CodeBrix.Platform.Simple;
-using Microsoft.UI.Xaml;
-using PolyHavenBrowser.Display;
-using PolyHavenBrowser.Rendering;
-using PolyHavenBrowser.Services;
 
 // ReSharper disable once CheckNamespace
 namespace PolyHavenBrowser.ViewModels;
@@ -27,10 +27,8 @@ public interface ICanvasInvalidator
 /// download a representative Poly Haven asset on demand and display it on the shared Skia
 /// canvas through an <see cref="IScenePainter"/>.
 /// </summary>
-#if HAS_CODEBRIX
 [Microsoft.UI.Xaml.Data.Bindable]
-#endif
-public class MainViewModel : SimpleViewModel, ICanvasInvalidator
+public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
 {
     private readonly SampleAssetService _assets;
     private readonly IModelRenderEngineSelector _engineSelector;
@@ -41,8 +39,6 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
     private SampleAssetKind _selectedKind = SampleAssetKind.Texture;
     private RenderEngineKind _currentEngineKind = RenderEngineKind.OpenGL;
     private string _selectedRenderEngineName = nameof(RenderEngineKind.OpenGL);
-    private bool _isBusy;
-    private string _statusText = "Starting up…";
 
     /// <summary>Creates the view model and begins loading the initial texture sample.</summary>
     public MainViewModel()
@@ -76,10 +72,10 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
     [AffectsCommands(nameof(SelectTextureCommand), nameof(SelectHdriCommand), nameof(SelectModelCommand))]
     public bool IsBusy
     {
-        get => _isBusy;
+        get;
         private set
         {
-            SetProperty(ref _isBusy, value);
+            SetProperty(ref field, value);
             NotifyPropertyChanged(nameof(BusyVisibility));
             NotifyPropertyChanged(nameof(IsNotBusy));
         }
@@ -94,9 +90,9 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
     /// <summary>A short status line shown beneath the canvas.</summary>
     public string StatusText
     {
-        get => _statusText;
-        private set => SetProperty(ref _statusText, value ?? string.Empty);
-    }
+        get;
+        private set => SetProperty(ref field, value ?? string.Empty);
+    } = "Starting up…";
 
     /// <summary>The rendering-engine names shown in the dropdown (OpenGL first - the default).</summary>
     public List<string> RenderEngineNames { get; } = new();
@@ -137,23 +133,17 @@ public class MainViewModel : SimpleViewModel, ICanvasInvalidator
     /// <summary>Whether the model sample is selected.</summary>
     public bool IsModelSelected => _selectedKind == SampleAssetKind.Model;
 
-    private SimpleCommand _selectTextureCommand;
-
     /// <summary>Selects and shows the sample texture (on a lit cube).</summary>
     public SimpleCommand SelectTextureCommand =>
-        _selectTextureCommand ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Texture));
-
-    private SimpleCommand _selectHdriCommand;
+        field ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Texture));
 
     /// <summary>Selects and shows the sample HDRI panorama.</summary>
     public SimpleCommand SelectHdriCommand =>
-        _selectHdriCommand ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Hdri));
-
-    private SimpleCommand _selectModelCommand;
+        field ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Hdri));
 
     /// <summary>Selects and shows the sample 3D model.</summary>
     public SimpleCommand SelectModelCommand =>
-        _selectModelCommand ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Model));
+        field ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Model));
 
     //Switches the 3D engine behind the model painter: alert + snap back when the engine is
     //not okayed for this platform, otherwise swap painters and re-display the current sample.

@@ -32,7 +32,7 @@ public interface IWebViewBridge
 public interface IFileSaveBridge
 {
     /// <summary>
-    /// Shows a "save PDF" dialog seeded with <paramref name="suggestedFileName"/> and returns the
+    /// Shows a "save PDF" dialog seeded with suggestedFileName and returns the
     /// full path the user chose, or <c>null</c> if they cancelled. The head leaves this null when
     /// it has no file dialog (e.g. the Linux framebuffer head), in which case the user types the
     /// path directly into the box.
@@ -110,29 +110,26 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge, IFileSaveBridge
 
     #region | Bindable properties |
 
-    private string _searchTerms = string.Empty;
     [AffectsCommands(nameof(SearchCommand))]
     public string SearchTerms
     {
-        get => _searchTerms;
-        set => SetProperty(ref _searchTerms, value ?? string.Empty);
-    }
+        get;
+        set => SetProperty(ref field, value ?? string.Empty);
+    } = string.Empty;
 
-    private string _articleUrl = string.Empty;
     [AffectsCommands(nameof(PublishCommand))]
     public string ArticleUrl
     {
-        get => _articleUrl;
-        set => SetProperty(ref _articleUrl, value ?? string.Empty);
-    }
+        get;
+        set => SetProperty(ref field, value ?? string.Empty);
+    } = string.Empty;
 
-    private string _outputFilePath = string.Empty;
     [AffectsCommands(nameof(PublishCommand))]
     public string OutputFilePath
     {
-        get => _outputFilePath;
-        set => SetProperty(ref _outputFilePath, value ?? string.Empty);
-    }
+        get;
+        set => SetProperty(ref field, value ?? string.Empty);
+    } = string.Empty;
 
     /// <summary>Set by the hosting head (see <see cref="IFileSaveBridge"/>); null on heads with no file dialog.</summary>
     public Func<string, Task<string>> PickSavePdfPathAsync { get; set; }
@@ -146,26 +143,23 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge, IFileSaveBridge
         set => SetProperty(ref _selectedPageSizeName, value ?? string.Empty);
     }
 
-    private bool _isBusy;
     [AffectsCommands(nameof(SearchCommand), nameof(PublishCommand), nameof(SelectOutputFileCommand))]
     public bool IsBusy
     {
-        get => _isBusy;
-        set => SetProperty(ref _isBusy, value);
+        get;
+        set => SetProperty(ref field, value);
     }
 
-    private string _statusText = string.Empty;
     public string StatusText
     {
-        get => _statusText;
-        set => SetProperty(ref _statusText, value ?? string.Empty);
-    }
+        get;
+        set => SetProperty(ref field, value ?? string.Empty);
+    } = string.Empty;
 
-    private int _progressValue;
     public int ProgressValue
     {
-        get => _progressValue;
-        set => SetProperty(ref _progressValue, value);
+        get;
+        set => SetProperty(ref field, value);
     }
 
     #endregion

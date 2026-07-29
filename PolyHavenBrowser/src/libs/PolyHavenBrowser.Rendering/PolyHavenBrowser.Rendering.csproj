@@ -12,7 +12,6 @@
          "PolyHavenBrowser") so the per-head generated GlobalStaticResources class does not
          collide across assemblies (CS0433). -->
     <RootNamespace>PolyHavenBrowser.Rendering</RootNamespace>
-    <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI;HAS_CODEBRIXPLATFORM</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

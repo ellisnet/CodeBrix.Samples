@@ -1,7 +1,7 @@
-using System.Diagnostics;
 using CodeBrix.Platform.Simple;
 using Microsoft.UI.Xaml.Controls;
 using PolyHavenBrowser.ViewModels;
+using System.Diagnostics;
 using Windows.Foundation;
 
 namespace PolyHavenBrowser.Views;

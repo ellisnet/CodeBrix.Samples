@@ -1,12 +1,12 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using CodeBrix.Platform.Simple;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using PolyHavenBrowser.PolyHavenApiClient;
 using PolyHavenBrowser.Services;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 // ReSharper disable once CheckNamespace
 namespace PolyHavenBrowser.ViewModels;
@@ -16,9 +16,7 @@ namespace PolyHavenBrowser.ViewModels;
 /// title, creator credit, short description and download stats. Cells are materialized
 /// lazily as the user scrolls, and each cell fetches its own thumbnail when created.
 /// </summary>
-#if HAS_CODEBRIX
 [Microsoft.UI.Xaml.Data.Bindable]
-#endif
 public class ModelCellViewModel : SimpleViewModel
 {
     private readonly ModelCatalogService _catalog;
@@ -56,7 +54,7 @@ public class ModelCellViewModel : SimpleViewModel
     /// to its own item.
     /// </summary>
     public SimpleCommand DownloadCommand => _downloadCommand ??=
-        new SimpleCommand(() => _canDownload(), (Func<object, Task>)(_ => _downloadAsync(this)));
+        new SimpleCommand(() => _canDownload(), _ => _downloadAsync(this));
 
     /// <summary>
     /// Lets the owning view model tell this cell's Download button to re-query its enabled

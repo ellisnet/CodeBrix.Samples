@@ -67,10 +67,7 @@ public partial class App : Application
         });
 
         global::CodeBrix.Platform.Extensions.LogExtensionPoint.AmbientLoggerFactory = factory;
-
-#if HAS_CODEBRIX
         global::CodeBrix.Platform.UI.Adapter.Microsoft.Extensions.Logging.LoggingAdapter.Initialize();
-#endif
 #endif
     }
 }

@@ -1,11 +1,16 @@
 <Page
     x:Class="PolyHavenBrowser.Views.MainPage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns="clr-namespace:Microsoft.UI.Xaml.Controls;assembly=CodeBrix.Platform.UI"
+    xmlns:c="clr-namespace:Microsoft.UI.Xaml.Controls;assembly=CodeBrix.Platform.UI"
+    xmlns:d="clr-namespace:Microsoft.UI.Xaml.Data;assembly=CodeBrix.Platform.UI"
+    xmlns:m="clr-namespace:Microsoft.UI.Xaml.Media;assembly=CodeBrix.Platform.UI"
+    xmlns:ui="clr-namespace:Microsoft.UI.Xaml;assembly=CodeBrix.Platform.UI"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:PolyHavenBrowser.ViewModels"
-    xmlns:conv="using:PolyHavenBrowser.Converters"
+    xmlns:local="using:PolyHavenBrowser.Views"
+    xmlns:vm="clr-namespace:PolyHavenBrowser.ViewModels;assembly=PolyHavenBrowser.Core"
+    xmlns:conv="clr-namespace:PolyHavenBrowser.Converters;assembly=PolyHavenBrowser.Core"
     xmlns:flex="using:CodeBrix.Platform.UI.FlexPanel"
-    xmlns:render="using:PolyHavenBrowser.Rendering"
+    xmlns:render="clr-namespace:PolyHavenBrowser.Rendering;assembly=PolyHavenBrowser.Rendering"
     FontFamily="{StaticResource RobotoFont}"
     Background="#16181D">
 
@@ -17,38 +22,37 @@
         <conv:NullToVisibilityConverter x:Key="VisibleWhenNull" />
 
         <!-- ═══ The app's dark palette ═══ -->
-        <Color x:Key="AccentColor">#F96854</Color>
-        <SolidColorBrush x:Key="WindowBrush" Color="#16181D" />
-        <SolidColorBrush x:Key="HeaderBrush" Color="#1B1E25" />
-        <SolidColorBrush x:Key="CardBrush" Color="#1F232B" />
-        <SolidColorBrush x:Key="CardWellBrush" Color="#171A20" />
-        <SolidColorBrush x:Key="HairlineBrush" Color="#2A2F39" />
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F2F4F8" />
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A8B0BF" />
-        <SolidColorBrush x:Key="TextTertiaryBrush" Color="#6E7686" />
-        <SolidColorBrush x:Key="AccentBrush" Color="#F96854" />
-        <SolidColorBrush x:Key="AccentDimBrush" Color="#C2503F" />
+        <m:SolidColorBrush x:Key="WindowBrush" Color="#16181D" />
+        <m:SolidColorBrush x:Key="HeaderBrush" Color="#1B1E25" />
+        <m:SolidColorBrush x:Key="CardBrush" Color="#1F232B" />
+        <m:SolidColorBrush x:Key="CardWellBrush" Color="#171A20" />
+        <m:SolidColorBrush x:Key="HairlineBrush" Color="#2A2F39" />
+        <m:SolidColorBrush x:Key="TextPrimaryBrush" Color="#F2F4F8" />
+        <m:SolidColorBrush x:Key="TextSecondaryBrush" Color="#A8B0BF" />
+        <m:SolidColorBrush x:Key="TextTertiaryBrush" Color="#6E7686" />
+        <m:SolidColorBrush x:Key="AccentBrush" Color="#F96854" />
+        <m:SolidColorBrush x:Key="AccentDimBrush" Color="#C2503F" />
 
         <!-- Re-key the theme's accent-button brushes to the app's coral accent, so
              {ThemeResource AccentButtonStyle} buttons follow the app palette -->
-        <SolidColorBrush x:Key="AccentButtonBackground" Color="#F96854" />
-        <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FF7F6C" />
-        <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#D65344" />
-        <SolidColorBrush x:Key="AccentButtonBackgroundDisabled" Color="#3A3F49" />
-        <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="AccentButtonForegroundDisabled" Color="#6E7686" />
+        <m:SolidColorBrush x:Key="AccentButtonBackground" Color="#F96854" />
+        <m:SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FF7F6C" />
+        <m:SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#D65344" />
+        <m:SolidColorBrush x:Key="AccentButtonBackgroundDisabled" Color="#3A3F49" />
+        <m:SolidColorBrush x:Key="AccentButtonForeground" Color="#FFFFFF" />
+        <m:SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFFFFF" />
+        <m:SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFFFFF" />
+        <m:SolidColorBrush x:Key="AccentButtonForegroundDisabled" Color="#6E7686" />
 
         <!-- The primary (accent) button: the theme's accent style plus app shaping -->
-        <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="16,7" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-        </Style>
+        <ui:Style x:Key="PrimaryButtonStyle" TargetType="c:Button" BasedOn="{StaticResource AccentButtonStyle}">
+            <ui:Setter Property="CornerRadius" Value="8" />
+            <ui:Setter Property="Padding" Value="16,7" />
+            <ui:Setter Property="FontWeight" Value="SemiBold" />
+        </ui:Style>
 
         <!-- One catalog cell: a fixed-size card presenting one Poly Haven model -->
-        <DataTemplate x:Key="ModelCellTemplate">
+        <ui:DataTemplate x:Key="ModelCellTemplate">
             <Border Width="308" Height="368"
                     Background="{StaticResource CardBrush}"
                     BorderBrush="{StaticResource HairlineBrush}"
@@ -73,25 +77,25 @@
                             <FontIcon Glyph="&#xE82C;" FontSize="30"
                                       Foreground="#262B34"
                                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                                      Visibility="{Binding Thumbnail, Converter={StaticResource VisibleWhenNull}}" />
-                            <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                                      Visibility="{d:Binding Thumbnail, Converter={StaticResource VisibleWhenNull}}" />
+                            <Image Source="{d:Binding Thumbnail}" Stretch="UniformToFill" />
                         </Grid>
                     </Border>
 
                     <!-- Title, creator credit, and the short description -->
                     <StackPanel Grid.Row="1" Padding="16,12,16,0" Spacing="5">
-                        <TextBlock Text="{Binding Title}"
+                        <TextBlock Text="{d:Binding Title}"
                                    FontSize="15.5" FontWeight="SemiBold"
                                    Foreground="{StaticResource TextPrimaryBrush}"
                                    TextTrimming="CharacterEllipsis" MaxLines="1" />
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="by" FontSize="12"
                                        Foreground="{StaticResource TextTertiaryBrush}" />
-                            <TextBlock Text="{Binding AuthorCredit}" FontSize="12"
+                            <TextBlock Text="{d:Binding AuthorCredit}" FontSize="12"
                                        Foreground="{StaticResource TextSecondaryBrush}"
                                        TextTrimming="CharacterEllipsis" MaxLines="1" />
                         </StackPanel>
-                        <TextBlock Text="{Binding Blurb}"
+                        <TextBlock Text="{d:Binding Blurb}"
                                    FontSize="12.5" LineHeight="18"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
@@ -105,13 +109,13 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
-                            <TextBlock Text="{Binding CategoriesText}"
+                            <TextBlock Text="{d:Binding CategoriesText}"
                                        FontSize="11" Foreground="{StaticResource TextTertiaryBrush}"
                                        TextTrimming="CharacterEllipsis" MaxLines="1" />
                             <StackPanel Orientation="Horizontal" Spacing="4">
                                 <FontIcon Glyph="&#xE896;" FontSize="11"
                                           Foreground="{StaticResource TextTertiaryBrush}" />
-                                <TextBlock Text="{Binding DownloadsText}" FontSize="11"
+                                <TextBlock Text="{d:Binding DownloadsText}" FontSize="11"
                                            Foreground="{StaticResource TextTertiaryBrush}" />
                                 <TextBlock Text="downloads" FontSize="11"
                                            Foreground="{StaticResource TextTertiaryBrush}" />
@@ -120,31 +124,31 @@
                         <Button Grid.Column="1" Content="Download"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 VerticalAlignment="Center"
-                                Command="{Binding DownloadCommand}" />
+                                Command="{d:Binding DownloadCommand}" />
                     </Grid>
                 </Grid>
             </Border>
-        </DataTemplate>
+        </ui:DataTemplate>
 
         <!-- One label/value row of the Model View's facts panel -->
-        <DataTemplate x:Key="ModelFactTemplate">
+        <ui:DataTemplate x:Key="ModelFactTemplate">
             <Grid Padding="0,7">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="150" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="12.5"
+                <TextBlock Grid.Column="0" Text="{d:Binding Label}" FontSize="12.5"
                            Foreground="{StaticResource TextTertiaryBrush}" />
-                <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="12.5"
+                <TextBlock Grid.Column="1" Text="{d:Binding Value}" FontSize="12.5"
                            Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap" />
             </Grid>
-        </DataTemplate>
+        </ui:DataTemplate>
     </Page.Resources>
 
     <Grid x:Name="RootGrid" RequestedTheme="Dark" Background="{StaticResource WindowBrush}">
 
         <!-- ══════════════════════════ BROWSING VIEW ══════════════════════════ -->
-        <Grid Visibility="{Binding BrowsingViewVisibility}">
+        <Grid Visibility="{d:Binding BrowsingViewVisibility}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -178,24 +182,24 @@
                     <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,6,16,6">
                         <TextBox Width="300" VerticalAlignment="Center"
                                  PlaceholderText="Search models…"
-                                 Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Text="{d:Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  CornerRadius="8" />
                         <ComboBox Width="150" VerticalAlignment="Center"
                                   CornerRadius="8"
-                                  ItemsSource="{Binding SortOptions}"
-                                  SelectedItem="{Binding SelectedSortOption, Mode=TwoWay}" />
+                                  ItemsSource="{d:Binding SortOptions}"
+                                  SelectedItem="{d:Binding SelectedSortOption, Mode=TwoWay}" />
                     </StackPanel>
 
                     <Button Background="#262B34" Foreground="{StaticResource TextPrimaryBrush}"
                             BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
                             CornerRadius="8" Padding="14,8" Margin="0,6,0,6"
                             MaxWidth="280"
-                            Command="{Binding PickFolderCommand}">
+                            Command="{d:Binding PickFolderCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon Glyph="&#xE8B7;" FontSize="13"
                                       Foreground="{StaticResource AccentBrush}"
                                       VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding DownloadFolderLabel}" FontSize="12.5"
+                            <TextBlock Text="{d:Binding DownloadFolderLabel}" FontSize="12.5"
                                        VerticalAlignment="Center"
                                        TextTrimming="CharacterEllipsis" MaxLines="1" />
                         </StackPanel>
@@ -212,13 +216,13 @@
                      space splits evenly left and right instead of pooling on the right, and
                      the count caption stays aligned with the cards' left edge -->
                 <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding ResultCountText}" FontSize="12"
+                    <TextBlock Text="{d:Binding ResultCountText}" FontSize="12"
                                Foreground="{StaticResource TextTertiaryBrush}"
                                Margin="2,2,0,10" />
                     <!-- Fixed-size cells; the per-row count follows the window width. Cells
                          materialize lazily: the page asks for more as this view scrolls
                          toward its bottom edge. -->
-                    <ItemsRepeater ItemsSource="{Binding Cells}"
+                    <ItemsRepeater ItemsSource="{d:Binding Cells}"
                                    ItemTemplate="{StaticResource ModelCellTemplate}">
                         <ItemsRepeater.Layout>
                             <UniformGridLayout Orientation="Horizontal"
@@ -232,28 +236,28 @@
 
             <!-- Initial catalog load (and load-failure) indicator -->
             <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
-                        Spacing="14" Visibility="{Binding CatalogLoadingVisibility}">
+                        Spacing="14" Visibility="{d:Binding CatalogLoadingVisibility}">
                 <ProgressBar Width="220" Height="4" IsIndeterminate="True"
                              Foreground="{StaticResource AccentBrush}" Background="#262B34" />
-                <TextBlock Text="{Binding CatalogStatusText}" FontSize="13"
+                <TextBlock Text="{d:Binding CatalogStatusText}" FontSize="13"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            TextAlignment="Center" TextWrapping="Wrap" MaxWidth="420" />
             </StackPanel>
 
             <!-- The thin download bar along the bottom of the window -->
-            <StackPanel Grid.Row="2" Visibility="{Binding DownloadBarVisibility}">
-                <TextBlock Text="{Binding DownloadStatusText}" FontSize="11.5"
+            <StackPanel Grid.Row="2" Visibility="{d:Binding DownloadBarVisibility}">
+                <TextBlock Text="{d:Binding DownloadStatusText}" FontSize="11.5"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            Margin="24,4,24,4" />
                 <ProgressBar Height="4" Minimum="0" Maximum="100"
-                             Value="{Binding DownloadProgress}"
+                             Value="{d:Binding DownloadProgress}"
                              Foreground="{StaticResource AccentBrush}"
                              Background="#262B34" />
             </StackPanel>
         </Grid>
 
         <!-- ══════════════════════════ MODEL VIEW ══════════════════════════ -->
-        <Grid Visibility="{Binding ModelViewVisibility}">
+        <Grid Visibility="{d:Binding ModelViewVisibility}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -269,12 +273,12 @@
                             BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
                             CornerRadius="8" Width="42" Height="38"
                             Padding="0" VerticalAlignment="Center"
-                            Command="{Binding BackCommand}"
+                            Command="{d:Binding BackCommand}"
                             Content="←" FontSize="17" />
                     <StackPanel VerticalAlignment="Center" Spacing="2">
-                        <TextBlock Text="{Binding ModelTitle}" FontSize="18" FontWeight="SemiBold"
+                        <TextBlock Text="{d:Binding ModelTitle}" FontSize="18" FontWeight="SemiBold"
                                    Foreground="{StaticResource TextPrimaryBrush}" />
-                        <TextBlock Text="{Binding ModelAuthorLine}" FontSize="11.5"
+                        <TextBlock Text="{d:Binding ModelAuthorLine}" FontSize="11.5"
                                    Foreground="{StaticResource TextTertiaryBrush}" />
                     </StackPanel>
                 </StackPanel>
@@ -298,10 +302,10 @@
                                 <TextBlock Text="ABOUT THIS MODEL" FontSize="11" FontWeight="SemiBold"
                                            CharacterSpacing="80"
                                            Foreground="{StaticResource AccentBrush}" />
-                                <TextBlock Text="{Binding ModelDescription}" FontSize="13" LineHeight="21"
+                                <TextBlock Text="{d:Binding ModelDescription}" FontSize="13" LineHeight="21"
                                            Foreground="{StaticResource TextSecondaryBrush}"
                                            TextWrapping="Wrap" />
-                                <TextBlock Text="{Binding ModelTagsText}" FontSize="12"
+                                <TextBlock Text="{d:Binding ModelTagsText}" FontSize="12"
                                            Foreground="{StaticResource AccentDimBrush}"
                                            TextWrapping="Wrap" Margin="0,2,0,0" />
                             </StackPanel>
@@ -315,7 +319,7 @@
                                            CharacterSpacing="80"
                                            Foreground="{StaticResource AccentBrush}"
                                            Margin="0,0,0,6" />
-                                <ItemsControl ItemsSource="{Binding ModelFacts}"
+                                <ItemsControl ItemsSource="{d:Binding ModelFacts}"
                                               ItemTemplate="{StaticResource ModelFactTemplate}" />
                             </StackPanel>
                         </Border>
@@ -333,9 +337,9 @@
                     <Border Grid.Row="0" Background="{StaticResource CardWellBrush}"
                             BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
                             CornerRadius="12">
-                        <render:ModelSceneGlCanvas x:Name="ModelCanvas" Model="{Binding CurrentModel}" />
+                        <render:ModelSceneGlCanvas x:Name="ModelCanvas" Model="{d:Binding CurrentModel}" />
                     </Border>
-                    <TextBlock Grid.Row="1" Text="{Binding ViewerHint}" FontSize="12"
+                    <TextBlock Grid.Row="1" Text="{d:Binding ViewerHint}" FontSize="12"
                                Foreground="{StaticResource TextTertiaryBrush}"
                                HorizontalAlignment="Center" />
                 </Grid>
@@ -345,7 +349,7 @@
             <Grid Grid.Row="2" Padding="24,4,24,16">
                 <Button HorizontalAlignment="Right"
                         Style="{StaticResource PrimaryButtonStyle}"
-                        Command="{Binding DocumentCommand}"
+                        Command="{d:Binding DocumentCommand}"
                         ToolTipService.ToolTip="Creating a PDF document about this model is coming in a future version">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE8A5;" FontSize="14" VerticalAlignment="Center" />

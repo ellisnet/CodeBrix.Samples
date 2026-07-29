@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Microsoft.UI.Xaml;
 using PolyHavenBrowser.Rendering;
 
+// ReSharper disable InconsistentNaming
+
 namespace PolyHavenBrowser.Display;
 
 /// <summary>The 3D rendering backends the app can offer.</summary>

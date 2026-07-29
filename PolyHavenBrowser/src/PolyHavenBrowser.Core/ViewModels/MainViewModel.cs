@@ -1,24 +1,22 @@
+using CodeBrix.Platform.Simple;
+using CodeBrix.Platform.WinUI.Graphics3DGL;
+using Microsoft.UI.Xaml;
+using PolyHavenBrowser.PolyHavenApiClient;
+using PolyHavenBrowser.Rendering;
+using PolyHavenBrowser.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CodeBrix.Platform.Simple;
-using CodeBrix.Platform.WinUI.Graphics3DGL;
-using Microsoft.UI.Xaml;
 using Windows.Storage.Pickers;
-using PolyHavenBrowser.PolyHavenApiClient;
-using PolyHavenBrowser.Rendering;
-using PolyHavenBrowser.Services;
 
 // ReSharper disable once CheckNamespace
 namespace PolyHavenBrowser.ViewModels;
 
 /// <summary>One label/value row of the Model View's facts panel.</summary>
-#if HAS_CODEBRIX
 [Microsoft.UI.Xaml.Data.Bindable]
-#endif
 public sealed class ModelFact
 {
     /// <summary>Creates a fact row.</summary>
@@ -42,9 +40,7 @@ public sealed class ModelFact
 /// (everything the API knows about one downloaded model, beside an interactive OpenGL
 /// preview the user can rotate and zoom).
 /// </summary>
-#if HAS_CODEBRIX
 [Microsoft.UI.Xaml.Data.Bindable]
-#endif
 public class MainViewModel : SimpleViewModel
 {
     private const string SortMostPopular = "Most popular";
@@ -55,25 +51,12 @@ public class MainViewModel : SimpleViewModel
     private readonly ModelDownloadService _downloads;
 
     private IReadOnlyList<PolyHavenAsset> _allModels = [];
-    private ModelCellCollection _cells;
-    private string _searchText = string.Empty;
     private string _selectedSortOption = SortMostPopular;
     private CancellationTokenSource _searchDebounce;
-    private bool _isCatalogLoading = true;
-    private string _catalogStatusText = "Loading the Poly Haven model catalog…";
-    private string _resultCountText = string.Empty;
 
     private string _downloadFolder;
-    private bool _isDownloading;
-    private double _downloadProgress;
-    private string _downloadStatusText = string.Empty;
 
-    private bool _isModelViewActive;
     private LoadedModel _currentModel;
-    private string _modelTitle = string.Empty;
-    private string _modelAuthorLine = string.Empty;
-    private string _modelDescription = string.Empty;
-    private string _modelTagsText = string.Empty;
 
     /// <summary>Creates the view model and begins loading the model catalog.</summary>
     public MainViewModel()
@@ -91,20 +74,20 @@ public class MainViewModel : SimpleViewModel
     /// <summary>The lazily-loading catalog cells the grid displays.</summary>
     public ModelCellCollection Cells
     {
-        get => _cells;
-        private set => SetProperty(ref _cells, value);
+        get;
+        private set => SetProperty(ref field, value);
     }
 
     /// <summary>Whether the initial catalog fetch is still in flight.</summary>
     public bool IsCatalogLoading
     {
-        get => _isCatalogLoading;
+        get;
         private set
         {
-            SetProperty(ref _isCatalogLoading, value);
+            SetProperty(ref field, value);
             NotifyPropertyChanged(nameof(CatalogLoadingVisibility));
         }
-    }
+    } = true;
 
     /// <summary>The visibility of the initial catalog-loading indicator.</summary>
     public Visibility CatalogLoadingVisibility => IsCatalogLoading ? Visibility.Visible : Visibility.Collapsed;
@@ -112,30 +95,30 @@ public class MainViewModel : SimpleViewModel
     /// <summary>The status line shown while the catalog loads (or when it fails).</summary>
     public string CatalogStatusText
     {
-        get => _catalogStatusText;
-        private set => SetProperty(ref _catalogStatusText, value);
-    }
+        get;
+        private set => SetProperty(ref field, value);
+    } = "Loading the Poly Haven model catalog…";
 
     /// <summary>The result-count caption, e.g. <c>312 models</c>.</summary>
     public string ResultCountText
     {
-        get => _resultCountText;
-        private set => SetProperty(ref _resultCountText, value);
-    }
+        get;
+        private set => SetProperty(ref field, value);
+    } = string.Empty;
 
     /// <summary>The search text; matching cells re-populate shortly after each keystroke.</summary>
     public string SearchText
     {
-        get => _searchText;
+        get;
         set
         {
             var newValue = value ?? string.Empty;
-            if (newValue == _searchText) { return; }
+            if (newValue == field) { return; }
 
-            SetProperty(ref _searchText, newValue);
+            SetProperty(ref field, newValue);
             DebounceRebuild();
         }
-    }
+    } = string.Empty;
 
     /// <summary>The sort options shown in the sort selector.</summary>
     public List<string> SortOptions { get; } = [SortMostPopular, SortNewest, SortNameAscending];
@@ -212,10 +195,8 @@ public class MainViewModel : SimpleViewModel
     /// <summary>The folder-picker button's caption: an invitation, or the chosen path.</summary>
     public string DownloadFolderLabel => HasDownloadFolder ? _downloadFolder : "Choose download folder…";
 
-    private SimpleCommand _pickFolderCommand;
-
     /// <summary>Opens the folder picker to choose where models download to.</summary>
-    public SimpleCommand PickFolderCommand => _pickFolderCommand ??=
+    public SimpleCommand PickFolderCommand => field ??=
         new SimpleCommand((Func<object, Task>)(_ => PickFolderAsync()));
 
     private async Task PickFolderAsync()
@@ -241,10 +222,10 @@ public class MainViewModel : SimpleViewModel
     /// <summary>Whether a model download is in flight (drives the bottom progress bar).</summary>
     public bool IsDownloading
     {
-        get => _isDownloading;
+        get;
         private set
         {
-            SetProperty(ref _isDownloading, value);
+            SetProperty(ref field, value);
             NotifyPropertyChanged(nameof(DownloadBarVisibility));
 
             //The download gate lives on each cell's own command; tell every materialized
@@ -262,12 +243,12 @@ public class MainViewModel : SimpleViewModel
     /// <summary>The download progress in [0, 100].</summary>
     public double DownloadProgress
     {
-        get => _downloadProgress;
+        get;
         private set
         {
             //No SetProperty overload takes a double; compare-and-notify by hand.
-            if (_downloadProgress.Equals(value)) { return; }
-            _downloadProgress = value;
+            if (field.Equals(value)) { return; }
+            field = value;
             NotifyPropertyChanged(nameof(DownloadProgress));
         }
     }
@@ -275,9 +256,9 @@ public class MainViewModel : SimpleViewModel
     /// <summary>The caption beside the bottom progress bar, e.g. the downloading model's name.</summary>
     public string DownloadStatusText
     {
-        get => _downloadStatusText;
-        private set => SetProperty(ref _downloadStatusText, value);
-    }
+        get;
+        private set => SetProperty(ref field, value);
+    } = string.Empty;
 
     //Each cell owns its Download command; this is the shared implementation the cells'
     //commands delegate to (see the cell factory in RebuildCells). With no download folder
@@ -327,10 +308,10 @@ public class MainViewModel : SimpleViewModel
     /// <summary>Whether the Model View is active (otherwise the Browsing View shows).</summary>
     public bool IsModelViewActive
     {
-        get => _isModelViewActive;
+        get;
         private set
         {
-            SetProperty(ref _isModelViewActive, value);
+            SetProperty(ref field, value);
             NotifyPropertyChanged(nameof(BrowsingViewVisibility));
             NotifyPropertyChanged(nameof(ModelViewVisibility));
         }
@@ -348,30 +329,30 @@ public class MainViewModel : SimpleViewModel
     /// <summary>The Model View's title (the model's name).</summary>
     public string ModelTitle
     {
-        get => _modelTitle;
-        private set => SetProperty(ref _modelTitle, value);
-    }
+        get;
+        private set => SetProperty(ref field, value);
+    } = string.Empty;
 
     /// <summary>The creator credit line under the title.</summary>
     public string ModelAuthorLine
     {
-        get => _modelAuthorLine;
-        private set => SetProperty(ref _modelAuthorLine, value);
-    }
+        get;
+        private set => SetProperty(ref field, value);
+    } = string.Empty;
 
     /// <summary>The full (synthesized) description paragraph.</summary>
     public string ModelDescription
     {
-        get => _modelDescription;
-        private set => SetProperty(ref _modelDescription, value);
-    }
+        get;
+        private set => SetProperty(ref field, value);
+    } = string.Empty;
 
     /// <summary>The model's tags as one flowing line.</summary>
     public string ModelTagsText
     {
-        get => _modelTagsText;
-        private set => SetProperty(ref _modelTagsText, value);
-    }
+        get;
+        private set => SetProperty(ref field, value);
+    } = string.Empty;
 
     /// <summary>The label/value fact rows shown beside the 3D preview.</summary>
     public ObservableCollection<ModelFact> ModelFacts { get; } = new();
@@ -379,19 +360,15 @@ public class MainViewModel : SimpleViewModel
     /// <summary>How to drive the 3D preview, shown under the canvas.</summary>
     public string ViewerHint => "drag to rotate · scroll to zoom";
 
-    private SimpleCommand _backCommand;
-
     /// <summary>Returns from the Model View to the Browsing View.</summary>
-    public SimpleCommand BackCommand => _backCommand ??=
+    public SimpleCommand BackCommand => field ??=
         new SimpleCommand((Func<object, Task>)(_ => { CloseModelView(); return Task.CompletedTask; }));
-
-    private SimpleCommand _documentCommand;
 
     /// <summary>
     /// Reserved for a future release: creating a PDF document about the model. Inactive in 1.0
     /// (its can-execute is always false, so the button stays disabled).
     /// </summary>
-    public SimpleCommand DocumentCommand => _documentCommand ??=
+    public SimpleCommand DocumentCommand => field ??=
         new SimpleCommand(() => false, (Func<object, Task>)(_ => Task.CompletedTask));
 
     private async Task OpenModelViewAsync(PolyHavenAsset asset, DownloadedModel downloaded)

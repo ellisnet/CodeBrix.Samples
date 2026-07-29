@@ -11,7 +11,7 @@ public static class HostHelper
         public IHostBuilder CreateDefaultBuilder(string[] args) => Host.CreateDefaultBuilder(args);
     }
 
-    private static readonly HostBuilderProvider _hostBuilderProvider = new();
+    private static readonly HostBuilderProvider Instance = new();
 
-    public static IHostBuilderProvider GetHost() => _hostBuilderProvider;
+    public static IHostBuilderProvider GetHost() => Instance;
 }

@@ -77,7 +77,7 @@ public sealed partial class MainPage : Page
         };
         picker.FileTypeChoices.Add("JPEG image", new List<string> { ".jpg" });
 
-        StorageFile file = await picker.PickSaveFileAsync();
+        var file = await picker.PickSaveFileAsync();
         if (file == null) { return null; }
 
         FileDialogHelper.RemoveEmptyPlaceholder(file.Path);

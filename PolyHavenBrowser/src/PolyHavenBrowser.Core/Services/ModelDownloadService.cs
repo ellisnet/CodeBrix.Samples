@@ -1,10 +1,9 @@
+using PolyHavenBrowser.PolyHavenApiClient;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using PolyHavenBrowser.PolyHavenApiClient;
 
 namespace PolyHavenBrowser.Services;
 
@@ -112,7 +111,7 @@ public sealed class ModelDownloadService
             foreach (var (relativePath, sidecar) in gltf.Include)
             {
                 var sidecarPath = Path.Combine(modelFolder, relativePath.Replace('/', Path.DirectorySeparatorChar));
-                Directory.CreateDirectory(Path.GetDirectoryName(sidecarPath));
+                Directory.CreateDirectory(Path.GetDirectoryName(sidecarPath)!);
                 await DownloadOneAsync(client, sidecar, sidecarPath, totalBytes, completedBytes, progress, cancellationToken)
                     .ConfigureAwait(false);
                 completedBytes += sidecar.Size;

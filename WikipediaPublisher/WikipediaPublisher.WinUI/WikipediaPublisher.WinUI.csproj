@@ -33,8 +33,8 @@
 
   <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.WinUI.ApacheLicenseForever" Version="1.0.193.1013" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2270" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2526" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.3.1" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 

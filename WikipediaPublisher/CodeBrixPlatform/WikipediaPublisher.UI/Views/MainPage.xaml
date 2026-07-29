@@ -1,9 +1,10 @@
 <Page x:Class="WikipediaPublisher.Views.MainPage"
-      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns="clr-namespace:Microsoft.UI.Xaml.Controls;assembly=CodeBrix.Platform.UI"
+      xmlns:d="clr-namespace:Microsoft.UI.Xaml.Data;assembly=CodeBrix.Platform.UI"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:flex="using:CodeBrix.Platform.UI.FlexPanel"
       xmlns:local="using:WikipediaPublisher.Views"
-      xmlns:vm="using:WikipediaPublisher.ViewModels"
+      xmlns:vm="clr-namespace:WikipediaPublisher.ViewModels;assembly=WikipediaPublisher.Core"
       Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
       FontFamily="{StaticResource OpenSansFont}">
 
@@ -33,10 +34,10 @@
                      VerticalAlignment="Center" VerticalContentAlignment="Center"
                      PlaceholderText="e.g. cuneiform writing"
                      KeyDown="SearchBox_KeyDown"
-                     Text="{Binding SearchTerms, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                     Text="{d:Binding SearchTerms, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Button Grid.Column="2" Width="110" Height="36" Margin="12,0,0,0"
                     Content="Search"
-                    Command="{Binding SearchCommand}" />
+                    Command="{d:Binding SearchCommand}" />
         </Grid>
 
         <!-- Center: embedded browser. Every Skia head now has a WebView2 - the Windows,
@@ -52,10 +53,10 @@
             </Grid.ColumnDefinitions>
             <ProgressBar Grid.Column="0" Height="8" VerticalAlignment="Center"
                          Minimum="0" Maximum="100"
-                         Value="{Binding ProgressValue}" />
+                         Value="{d:Binding ProgressValue}" />
             <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center"
                        TextTrimming="CharacterEllipsis"
-                       Text="{Binding StatusText}" />
+                       Text="{d:Binding StatusText}" />
         </Grid>
 
         <!-- Bottom bar: output file path (+ Select dialog), page size, Publish.
@@ -77,10 +78,10 @@
                 <TextBox Grid.Column="1" Height="36"
                          VerticalAlignment="Center" VerticalContentAlignment="Center"
                          PlaceholderText="Click Select… (or type a full .pdf path)"
-                         Text="{Binding OutputFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                         Text="{d:Binding OutputFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Button Grid.Column="2" Height="36" Margin="8,0,0,0"
                         Content="Select…"
-                        Command="{Binding SelectOutputFileCommand}" />
+                        Command="{d:Binding SelectOutputFileCommand}" />
             </Grid>
 
             <!-- Page-size + Publish group -->
@@ -88,12 +89,12 @@
                 <TextBlock Text="Page size:"
                            VerticalAlignment="Center" Margin="0,0,12,0" />
                 <ComboBox Width="210" Height="36" VerticalAlignment="Center"
-                          ItemsSource="{Binding PageSizeNames}"
-                          SelectedItem="{Binding SelectedPageSizeName, Mode=TwoWay}" />
+                          ItemsSource="{d:Binding PageSizeNames}"
+                          SelectedItem="{d:Binding SelectedPageSizeName, Mode=TwoWay}" />
                 <Button Width="130" Height="40" Margin="16,0,0,0"
                         Style="{ThemeResource AccentButtonStyle}"
                         Content="Publish"
-                        Command="{Binding PublishCommand}" />
+                        Command="{d:Binding PublishCommand}" />
             </StackPanel>
         </flex:FlexPanel>
     </Grid>

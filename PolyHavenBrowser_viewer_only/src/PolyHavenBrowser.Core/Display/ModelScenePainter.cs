@@ -127,11 +127,9 @@ public sealed class ModelScenePainter : IScenePainter
         var left = (info.Width - drawWidth) / 2f;
         var top = (info.Height - drawHeight) / 2f;
 
-        using var paint = new SKPaint
-        {
-            // Multiply by a dark grey to darken the texture (Modulate = per-channel multiply).
-            ColorFilter = SKColorFilter.CreateBlendMode(new SKColor(0x4D, 0x4D, 0x4D), SKBlendMode.Modulate),
-        };
+        using var paint = new SKPaint();
+        // Multiply by a dark grey to darken the texture (Modulate = per-channel multiply).
+        paint.ColorFilter = SKColorFilter.CreateBlendMode(new SKColor(0x4D, 0x4D, 0x4D), SKBlendMode.Modulate);
         canvas.DrawBitmap(_backgroundBitmap, new SKRect(left, top, left + drawWidth, top + drawHeight), sampling, paint);
     }
 

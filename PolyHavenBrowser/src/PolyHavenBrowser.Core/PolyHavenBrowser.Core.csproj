@@ -4,10 +4,6 @@
 
     <!-- Match the namespace used by the app code -->
     <RootNamespace>PolyHavenBrowser</RootNamespace>
-
-    <!-- CodeBrix.Platform needs these for internal conditional compilation;
-         HAS_CODEBRIXPLATFORM selects the SKXamlCanvas base for the hosted Skia canvas -->
-    <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI;HAS_CODEBRIXPLATFORM</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

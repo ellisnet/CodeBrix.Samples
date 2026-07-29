@@ -17,7 +17,7 @@ public sealed partial class MainPage : Page
     {
         //Doing this before InitializeComponent() - in case InitializeComponent()
         //  is the thing that sets the data context.
-        DataContextChanged += (sender, args) =>
+        DataContextChanged += (_, _) =>
         {
             (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
 

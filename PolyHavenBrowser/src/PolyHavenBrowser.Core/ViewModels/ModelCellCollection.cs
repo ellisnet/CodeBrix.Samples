@@ -13,9 +13,7 @@ namespace PolyHavenBrowser.ViewModels;
 /// edge (the page watches the ScrollViewer and calls <see cref="RequestMore"/>) - so
 /// hundreds of cells and thumbnails are never created before they can be seen.
 /// </summary>
-#if HAS_CODEBRIX
 [Microsoft.UI.Xaml.Data.Bindable]
-#endif
 public class ModelCellCollection : ObservableCollection<ModelCellViewModel>
 {
     //Enough cells to overfill the first screen even on a wide monitor.

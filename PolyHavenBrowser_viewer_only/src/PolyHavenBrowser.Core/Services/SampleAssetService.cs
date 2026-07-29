@@ -1,11 +1,12 @@
+using PolyHavenBrowser.PolyHavenApiClient;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using PolyHavenBrowser.PolyHavenApiClient;
+
+// ReSharper disable InconsistentNaming
 
 namespace PolyHavenBrowser.Services;
 
@@ -187,7 +188,7 @@ public sealed class SampleAssetService
             foreach (var (relativePath, sidecar) in file.Include)
             {
                 var sidecarPath = Path.Combine(assetDir, relativePath.Replace('/', Path.DirectorySeparatorChar));
-                Directory.CreateDirectory(Path.GetDirectoryName(sidecarPath));
+                Directory.CreateDirectory(Path.GetDirectoryName(sidecarPath)!);
                 await client.DownloadFileAsync(sidecar, sidecarPath, cancellationToken: ct).ConfigureAwait(false);
             }
         }
@@ -227,7 +228,7 @@ public sealed class SampleAssetService
 
     private static void WriteMarker(string markerPath, SampleAsset asset)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(markerPath));
+        Directory.CreateDirectory(Path.GetDirectoryName(markerPath)!);
         File.WriteAllText(markerPath, JsonSerializer.Serialize(asset));
     }
 }

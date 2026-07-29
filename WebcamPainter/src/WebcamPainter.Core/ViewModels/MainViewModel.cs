@@ -73,7 +73,7 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
             InvokeOnMainThread(() =>
             {
                 Cameras.Clear();
-                foreach (CameraDevice camera in cameras)
+                foreach (var camera in cameras)
                 {
                     Cameras.Add(camera);
                 }
@@ -117,9 +117,9 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
         else
         {
             //Paint Mode: the live feed drives the hand tracker and the little self-view
-            HandTracker tracker = _tracker;
-            if (tracker != null && tracker.IsRunning
-                && _captureService.TryCopyLatestFrame(ref _visionFrame, out int width, out int height))
+            var tracker = _tracker;
+            if (tracker is { IsRunning: true }
+                && _captureService.TryCopyLatestFrame(ref _visionFrame, out var width, out var height))
             {
                 tracker.SubmitFrame(_visionFrame, width, height);
             }
@@ -130,10 +130,10 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
     private void OnTrackingUpdated(object sender, HandTrackingEventArgs e)
     {
         //Worker-thread context: marshal all painting decisions onto the UI thread
-        HandTrackingResult result = e.Result;
+        var result = e.Result;
         InvokeOnMainThread(() =>
         {
-            PaintingSession session = _paintSession;
+            var session = _paintSession;
             if (IsCaptureMode || session == null) { return; }
 
             if (result.HandDetected)
@@ -148,12 +148,12 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
                 CrosshairNormY = null;
             }
 
-            bool paintNow = result.HandDetected && result.IsOpenPalm;
+            var paintNow = result.HandDetected && result.IsOpenPalm;
             IsBrushPainting = paintNow;
 
             //Strokes are driven in normalized still-image coordinates, so no canvas size is
             //  needed - the drawing space is calibrated from the captured photo.
-            if (paintNow)
+            if (paintNow && CrosshairNormX != null && CrosshairNormY != null)
             {
                 if (session.IsStrokeActive)
                 {
@@ -180,74 +180,67 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
     /// <summary>The connected cameras shown in the dropdown.</summary>
     public ObservableCollection<CameraDevice> Cameras { get; } = new();
 
-    private CameraDevice _selectedCamera;
     public CameraDevice SelectedCamera
     {
-        get => _selectedCamera;
+        get;
         set
         {
-            if (_selectedCamera != value)
+            if (field != value)
             {
-                SetProperty(ref _selectedCamera, value);
+                SetProperty(ref field, value);
                 SwitchCamera(value);
             }
         }
     }
 
-    private bool _isCaptureMode = true;
     [AffectsCommands(nameof(TakePhotoCommand), nameof(BackCommand), nameof(ClearCommand),
         nameof(SaveCommand), nameof(SelectColorCommand))]
     public bool IsCaptureMode
     {
-        get => _isCaptureMode;
+        get;
         private set
         {
-            SetProperty(ref _isCaptureMode, value);
+            SetProperty(ref field, value);
             NotifyPropertyChanged(nameof(IsPaintMode));
         }
-    }
+    } = true;
 
     /// <summary>Paint Mode is simply not-Capture Mode.</summary>
     public bool IsPaintMode => !IsCaptureMode;
 
-    private bool _hasFrame;
     [AffectsCommands(nameof(TakePhotoCommand))]
     public bool HasFrame
     {
-        get => _hasFrame;
-        private set => SetProperty(ref _hasFrame, value);
+        get;
+        private set => SetProperty(ref field, value);
     }
 
-    private bool _hasDrawing;
     [AffectsCommands(nameof(SaveCommand), nameof(ClearCommand))]
     public bool HasDrawing
     {
-        get => _hasDrawing;
-        private set => SetProperty(ref _hasDrawing, value);
+        get;
+        private set => SetProperty(ref field, value);
     }
 
-    private bool _isBusy;
     [AffectsCommands(nameof(TakePhotoCommand), nameof(BackCommand), nameof(ClearCommand),
         nameof(SaveCommand), nameof(SelectColorCommand))]
     public bool IsBusy
     {
-        get => _isBusy;
-        set => SetProperty(ref _isBusy, value);
+        get;
+        set => SetProperty(ref field, value);
     }
 
-    private string _activeColorText = string.Empty;
     public string ActiveColorText
     {
-        get => _activeColorText;
-        private set => SetProperty(ref _activeColorText, value ?? string.Empty);
-    }
+        get;
+        private set => SetProperty(ref field, value ?? string.Empty);
+    } = string.Empty;
 
-    private string _statusText = string.Empty;
     public string StatusText
     {
-        get => _statusText;
-        set => SetProperty(ref _statusText, value ?? string.Empty);
-    }
+        get;
+        set => SetProperty(ref field, value ?? string.Empty);
+    } = string.Empty;
 
     /// <summary>The hand's horizontal position over the still, 0..1; null when no hand is tracked.
     /// Read by the main canvas's paint handler (not a XAML binding).</summary>
@@ -308,10 +301,10 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
         IsBusy = true;
         try
         {
-            CapturedPhoto photo = _captureService.CapturePhoto();
+            var photo = _captureService.CapturePhoto();
 
             //The preview the user was watching is mirrored, so mirror the still to match
-            PaintingSession session = await Task.Run(() =>
+            var session = await Task.Run(() =>
                 PaintingSession.Create(photo.PixelsBgra32, photo.Width, photo.Height, mirrorHorizontally: true));
 
             session.Session.RedrawRequested += (_, _) => InvalidateMainCanvas?.Invoke();
@@ -361,7 +354,7 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
 
         if (HasDrawing)
         {
-            bool discard = await ConfirmDialog(
+            var discard = await ConfirmDialog(
                 "Going back to the camera will discard your painting. Are you sure?",
                 "Discard painting?");
             if (!discard) { return; }
@@ -377,7 +370,7 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
     {
         _tracker?.Stop();
 
-        PaintingSession session = _paintSession;
+        var session = _paintSession;
         _paintSession = null;
         session?.Dispose();
 
@@ -435,7 +428,7 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
 
     private static string GetDefaultSavePath()
     {
-        string folder = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+        var folder = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
         if (String.IsNullOrWhiteSpace(folder))
         {
             folder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -470,7 +463,7 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
                 //  prompt is suppressed so this is the single confirmation)
                 if (File.Exists(outputPath))
                 {
-                    bool replace = await ConfirmDialog(
+                    var replace = await ConfirmDialog(
                         $"A file already exists at:\n{outputPath}\n\nDo you want to replace it?",
                         "Replace existing file?");
                     if (!replace)
@@ -483,12 +476,12 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
 
             IsBusy = true;
 
-            byte[] jpeg = _paintSession.ExportJpeg();
+            var jpeg = _paintSession.ExportJpeg();
             await File.WriteAllBytesAsync(outputPath, jpeg);
 
             StatusText = $"Saved: {outputPath}";
 
-            bool clearDrawing = await ConfirmDialog(
+            var clearDrawing = await ConfirmDialog(
                 $"The painted photo was saved to:\n{outputPath}\n\nDo you want to clear the painting?",
                 "Image saved");
             if (clearDrawing)
@@ -523,7 +516,7 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
 
     private void DoSelectColor(object parameter)
     {
-        PaintingSession session = _paintSession;
+        var session = _paintSession;
         if (session != null && parameter is string colorName && session.SelectColor(colorName))
         {
             ActiveColorText = $"Painting with: {session.ActiveColorName}";
@@ -560,7 +553,7 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
             _tracker = null;
         }
 
-        PaintingSession session = _paintSession;
+        var session = _paintSession;
         _paintSession = null;
         session?.Dispose();
 
