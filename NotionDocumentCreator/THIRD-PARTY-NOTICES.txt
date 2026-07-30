@@ -1,0 +1,72 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the NotionDocumentCreator sample application, together with the
+licenses under which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here.
+
+------------------------------------------------------------------------
+EB Garamond
+  (bundled: src/libs/NotionDocumentCreator.CreateDocument/Fonts/EBGaramond-*.ttf)
+------------------------------------------------------------------------
+Copyright 2017 The EB Garamond Project Authors
+(https://github.com/octaviopardo/EBGaramond12).
+
+Licensed under the SIL Open Font License, Version 1.1.
+Full license text: src/libs/NotionDocumentCreator.CreateDocument/Fonts/OFL-EBGaramond.txt
+
+------------------------------------------------------------------------
+Source Sans 3
+  (bundled: src/libs/NotionDocumentCreator.CreateDocument/Fonts/SourceSans3-*.ttf)
+------------------------------------------------------------------------
+Copyright 2010-2020 Adobe (http://www.adobe.com/), with Reserved Font Name
+'Source'.
+
+Licensed under the SIL Open Font License, Version 1.1.
+Full license text: src/libs/NotionDocumentCreator.CreateDocument/Fonts/OFL-SourceSans3.txt
+
+------------------------------------------------------------------------
+Source Code Pro
+  (bundled: src/libs/NotionDocumentCreator.CreateDocument/Fonts/SourceCodePro-Regular.ttf)
+------------------------------------------------------------------------
+Copyright 2023 Adobe (http://www.adobe.com/), with Reserved Font Name
+'Source'. Source is a trademark of Adobe in the United States and/or other
+countries. (https://github.com/adobe-fonts/source-code-pro)
+
+Licensed under the SIL Open Font License, Version 1.1.
+Full license text: src/libs/NotionDocumentCreator.CreateDocument/Fonts/OFL-SourceCodePro.txt
+
+------------------------------------------------------------------------
+Noto Emoji (monochrome)
+  (bundled: src/libs/NotionDocumentCreator.CreateDocument/Fonts/NotoEmoji-Regular.ttf)
+------------------------------------------------------------------------
+Copyright 2013 Google LLC (https://github.com/googlefonts/noto-emoji).
+
+Licensed under the SIL Open Font License, Version 1.1.
+Full license text: src/libs/NotionDocumentCreator.CreateDocument/Fonts/OFL-NotoEmoji.txt
+
+------------------------------------------------------------------------
+FFmpeg (used at run time, not bundled)
+------------------------------------------------------------------------
+When a selected Notion page contains video or audio, the application invokes
+the ffmpeg and ffprobe executables already installed on the host system (via
+the CodeBrix.VideoProcessing package) to extract a poster frame and probe the
+media duration. FFmpeg (https://ffmpeg.org) is licensed under the LGPL 2.1 or
+later, with optional components under the GPL; consult the license of the
+ffmpeg build installed on your system. No FFmpeg binaries are bundled with, or
+distributed by, this application, and the application degrades gracefully
+(rendering a media card instead of a poster frame) when ffmpeg is absent.
+
+------------------------------------------------------------------------
+Notion page content and media (downloaded at run time)
+------------------------------------------------------------------------
+This sample fetches page content and media files from the user's own Notion
+workspace (https://www.notion.so) through the Notion API, using the user's own
+integration token, and composes them into a PDF. The rights to that content
+remain with its owners; the person running the application is responsible for
+having the right to reproduce the content they select.
