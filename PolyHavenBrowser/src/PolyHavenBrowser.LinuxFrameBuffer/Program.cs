@@ -23,6 +23,14 @@ internal class Program
                    StartFolder = "/home/jeremy/Temp",
                    RestrictToFolder = "/home/jeremy",
                 })
+                //The FrameBuffer head has no OS chrome, so the "Save PDF as…" picker the
+                //  Document button pops is opt-in
+                .EnableFileSavePicker(new FilePickerOptions {
+                   AllowNewFolderCreate = true,
+                   StartFolder = "/home/jeremy/Temp",
+                   RestrictToFolder = "/home/jeremy",
+                   RequiredExtension = ".pdf",
+                })
                 .EnableSoftwareKeyboard(new SoftwareKeyboardOptions{
                     ShowDismissKey = true,  //default behavior = true
                     //ShowDismissKey = false,

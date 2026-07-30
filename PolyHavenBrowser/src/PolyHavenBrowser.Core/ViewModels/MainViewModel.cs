@@ -1,12 +1,15 @@
 using CodeBrix.Platform.Simple;
 using CodeBrix.Platform.WinUI.Graphics3DGL;
 using Microsoft.UI.Xaml;
+using PolyHavenBrowser.CreateDocument;
+using PolyHavenBrowser.Helpers;
 using PolyHavenBrowser.PolyHavenApiClient;
 using PolyHavenBrowser.Rendering;
 using PolyHavenBrowser.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,6 +52,7 @@ public class MainViewModel : SimpleViewModel
 
     private readonly ModelCatalogService _catalog;
     private readonly ModelDownloadService _downloads;
+    private readonly DocumentBackdropService _backdrops;
 
     private IReadOnlyList<PolyHavenAsset> _allModels = [];
     private string _selectedSortOption = SortMostPopular;
@@ -57,6 +61,8 @@ public class MainViewModel : SimpleViewModel
     private string _downloadFolder;
 
     private LoadedModel _currentModel;
+    private PolyHavenAsset _currentAsset;
+    private ModelFileStats _currentStats;
 
     /// <summary>Creates the view model and begins loading the model catalog.</summary>
     public MainViewModel()
@@ -65,6 +71,7 @@ public class MainViewModel : SimpleViewModel
 
         _catalog = GetService<ModelCatalogService>();
         _downloads = GetService<ModelDownloadService>();
+        _backdrops = GetService<DocumentBackdropService>();
 
         _ = LoadCatalogAsync();
     }
@@ -210,7 +217,9 @@ public class MainViewModel : SimpleViewModel
         var folder = await picker.PickSingleFolderAsync();
         if (folder == null) { return; }
 
-        _downloadFolder = folder.Path;
+        //Same encoding trap as the save picker: a folder called "My Models" would otherwise
+        //  come back as "My%20Models" and every download would go to the wrong place.
+        _downloadFolder = FileDialogHelper.ToFileSystemPath(folder.Path);
         NotifyPropertyChanged(nameof(HasDownloadFolder));
         NotifyPropertyChanged(nameof(DownloadFolderLabel));
     }
@@ -314,6 +323,7 @@ public class MainViewModel : SimpleViewModel
             SetProperty(ref field, value);
             NotifyPropertyChanged(nameof(BrowsingViewVisibility));
             NotifyPropertyChanged(nameof(ModelViewVisibility));
+            DocumentCommand.RaiseCanExecuteChanged();
         }
     }
 
@@ -365,11 +375,12 @@ public class MainViewModel : SimpleViewModel
         new SimpleCommand((Func<object, Task>)(_ => { CloseModelView(); return Task.CompletedTask; }));
 
     /// <summary>
-    /// Reserved for a future release: creating a PDF document about the model. Inactive in 1.0
-    /// (its can-execute is always false, so the button stays disabled).
+    /// Creates the glossy marketing one-sheet PDF for the model on display: a native
+    /// "Save PDF as…" picker chooses the destination, then the document generates and
+    /// saves in one go, with progress reported on <see cref="DocumentStatusText"/>.
     /// </summary>
     public SimpleCommand DocumentCommand => field ??=
-        new SimpleCommand(() => false, (Func<object, Task>)(_ => Task.CompletedTask));
+        new SimpleCommand(CanCreateDocument, (Func<object, Task>)(_ => CreateDocumentAsync()));
 
     private async Task OpenModelViewAsync(PolyHavenAsset asset, DownloadedModel downloaded)
     {
@@ -386,12 +397,15 @@ public class MainViewModel : SimpleViewModel
         // Hand the model to the preview control via its bound CurrentModel; the control frames
         // the camera and repaints itself. The GPU upload happens lazily at its first render.
         _currentModel = model;
+        _currentAsset = asset;
+        _currentStats = stats;
 
         ModelTitle = string.IsNullOrWhiteSpace(asset.Name) ? downloaded.Slug : asset.Name;
         ModelAuthorLine = BuildAuthorLine(asset);
         ModelDescription = ModelDescriptionBuilder.BuildFullDescription(asset, stats);
         ModelTagsText = string.Join("   ", (asset.Tags ?? []).Select(t => $"#{t}"));
         PopulateFacts(asset, stats);
+        DocumentStatusText = string.Empty;
 
         NotifyPropertyChanged(nameof(CurrentModel));
         IsModelViewActive = true;
@@ -402,6 +416,8 @@ public class MainViewModel : SimpleViewModel
         IsModelViewActive = false;
 
         _currentModel = null;
+        _currentAsset = null;
+        _currentStats = null;
         NotifyPropertyChanged(nameof(CurrentModel));
     }
 
@@ -461,6 +477,211 @@ public class MainViewModel : SimpleViewModel
     {
         var authors = asset.Authors?.Keys.Where(a => !string.IsNullOrWhiteSpace(a)).ToArray() ?? [];
         return authors.Length == 0 ? "from Poly Haven" : $"by {string.Join(", ", authors)}   ·   Poly Haven";
+    }
+
+    #endregion
+
+    #region | Document one-sheet |
+
+    //The product-shot render sizes: the hero at its layout box's aspect, the gallery
+    //  shots at theirs — both at 4x the box's point size, comfortably print-resolution.
+    private const uint HeroShotWidth = 1344;
+    private const uint HeroShotHeight = 1120;
+    private const uint GalleryShotWidth = 496;
+    private const uint GalleryShotHeight = 416;
+
+    private bool _isCreatingDocument;
+
+    /// <summary>The Model View footer's status line for document creation.</summary>
+    public string DocumentStatusText
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = string.Empty;
+
+    private bool CanCreateDocument() => IsModelViewActive && !_isCreatingDocument;
+
+    private async Task CreateDocumentAsync()
+    {
+        if (!CanCreateDocument()) { return; }
+
+        //Snapshot everything the document needs: the user can navigate Back (or open a
+        //  different model) while it builds, and the run continues from this snapshot.
+        var asset = _currentAsset;
+        var stats = _currentStats;
+        var model = _currentModel;
+        if (asset == null || stats == null || model == null) { return; }
+
+        var title = ModelTitle;
+        var authorLine = ModelAuthorLine;
+        var description = ModelDescription;
+        var facts = ModelFacts.Select(f => new MarketingSheetFact(f.Label, f.Value)).ToList();
+        var downloadFolder = _downloadFolder;
+
+        //The native "Save PDF as…" dialog decides the destination; cancelling is a no-op.
+        string outputPath;
+        try
+        {
+            outputPath = await PickSavePdfPathAsync(GetSuggestedFileName(title));
+            if (string.IsNullOrWhiteSpace(outputPath)) { return; }
+        }
+        catch (NotSupportedException)
+        {
+            //Some heads register no picker — there is no window to host a dialog.
+            await ShowInfo("File dialogs are not supported on this head, so there is nowhere " +
+                "to choose where the document should be saved.");
+            return;
+        }
+        catch (Exception e)
+        {
+            await ShowError(e, "Could not open the file dialog.");
+            return;
+        }
+
+        _isCreatingDocument = true;
+        DocumentCommand.RaiseCanExecuteChanged();
+        var saved = false;
+        try
+        {
+            //Stage 1: the CC0 backdrop textures (cached beside the downloaded models).
+            DocumentStatusText = "Setting the stage (downloading backdrop textures)…";
+            var backdropCache = Path.Combine(
+                string.IsNullOrWhiteSpace(downloadFolder) ? Path.GetTempPath() : downloadFolder,
+                "_document-backdrops");
+            var stages = await _backdrops.GetStagesAsync(backdropCache, CancellationToken.None);
+
+            //Stage 2: build the photography sets (pure CPU — off the UI thread).
+            var scenes = await Task.Run(() => (
+                Tabletop: ShotSceneBuilder.Build(model, stages.Tabletop),
+                Light: ShotSceneBuilder.Build(model, stages.Light),
+                Dark: ShotSceneBuilder.Build(model, stages.Dark)));
+
+            //Stage 3: the product shots, on this head's off-screen GL context. GL work must
+            //  stay on the UI thread; MakeCurrent saves/restores the head's own context.
+            //  With no GL available the sheet still composes, led by the catalog thumbnail.
+            DocumentStatusText = "Rendering product shots…";
+            byte[] heroShot = null;
+            var galleryShots = new List<MarketingSheetShot>();
+            if (OffscreenGLContext.TryCreate(GetXamlRoot(), out var glContext))
+            {
+                using (glContext)
+                using (glContext.MakeCurrent())
+                using (var shotRenderer = new ModelShotRenderer(glContext.Gl))
+                {
+                    heroShot = shotRenderer.RenderPng(
+                        scenes.Tabletop, stages.Tabletop, ShotAngle.Hero, HeroShotWidth, HeroShotHeight);
+                    galleryShots.Add(new MarketingSheetShot("Front", shotRenderer.RenderPng(
+                        scenes.Light, stages.Light, ShotAngle.Front, GalleryShotWidth, GalleryShotHeight)));
+                    galleryShots.Add(new MarketingSheetShot("Side", shotRenderer.RenderPng(
+                        scenes.Light, stages.Light, ShotAngle.Side, GalleryShotWidth, GalleryShotHeight)));
+                    galleryShots.Add(new MarketingSheetShot("Back", shotRenderer.RenderPng(
+                        scenes.Dark, stages.Dark, ShotAngle.Back, GalleryShotWidth, GalleryShotHeight)));
+                    galleryShots.Add(new MarketingSheetShot("Top", shotRenderer.RenderPng(
+                        scenes.Dark, stages.Dark, ShotAngle.Top, GalleryShotWidth, GalleryShotHeight)));
+                }
+            }
+
+            //Stage 4: the catalog thumbnail (in-memory cached), then compose and save.
+            DocumentStatusText = "Composing the one-sheet…";
+            byte[] thumbnail = null;
+            try
+            {
+                thumbnail = await _catalog.GetThumbnailAsync(asset, CancellationToken.None);
+            }
+            catch
+            {
+                //The sheet composes without it; the accent color falls back to its default.
+            }
+
+            var request = BuildMarketingSheetRequest(
+                asset, stats, title, authorLine, description, facts, thumbnail, heroShot, galleryShots);
+            await Task.Run(() => new MarketingSheetCreator().CreateToFile(request, outputPath));
+
+            DocumentStatusText = $"Saved: {outputPath}";
+            saved = true;
+        }
+        catch (Exception e)
+        {
+            DocumentStatusText = string.Empty;
+            await ShowError(e, $"Could not create the marketing one-sheet for “{title}”.");
+        }
+        finally
+        {
+            _isCreatingDocument = false;
+            DocumentCommand.RaiseCanExecuteChanged();
+        }
+
+        if (saved)
+        {
+            //Say so plainly: creating the sheet takes a while, and the footer status line is
+            //  easy to miss. Announced after the finally block so the Document button is live
+            //  again by the time the user dismisses this.
+            using var alert = CreateDialog(
+                $"The marketing one-sheet for “{title}” has been created.\n\n" +
+                $"It was saved to:\n{outputPath}",
+                "Document Created");
+            _ = await alert.ShowAsync();
+        }
+    }
+
+    private static async Task<string> PickSavePdfPathAsync(string suggestedFileName)
+    {
+        var picker = new FileSavePicker
+        {
+            SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+            SuggestedFileName = suggestedFileName,
+            DefaultFileExtension = ".pdf",
+        };
+        picker.FileTypeChoices.Add("PDF document", new List<string> { ".pdf" });
+
+        var file = await picker.PickSaveFileAsync();
+        if (file == null) { return null; }
+
+        //Some heads percent-encode the path they return, which would save "One Sheet.pdf" as
+        //  "One%20Sheet.pdf"; decode it before anything touches the disk.
+        var path = FileDialogHelper.ToFileSystemPath(file.Path);
+
+        //The picker leaves an empty placeholder file at a brand-new path; remove it so the
+        //  chosen path behaves like a pure destination.
+        FileDialogHelper.RemoveEmptyPlaceholder(path);
+        return path;
+    }
+
+    private static string GetSuggestedFileName(string title)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var cleaned = new string(title.Select(c => invalid.Contains(c) ? '_' : c).ToArray()).Trim();
+        return (cleaned.Length == 0 ? "Model" : cleaned) + " one-sheet.pdf";
+    }
+
+    private static MarketingSheetRequest BuildMarketingSheetRequest(
+        PolyHavenAsset asset, ModelFileStats stats, string title, string authorLine,
+        string description, List<MarketingSheetFact> facts, byte[] thumbnail,
+        byte[] heroShot, List<MarketingSheetShot> galleryShots)
+    {
+        var maxTextureLabel = asset.MaxResolution is { Length: > 0 }
+            ? $"{asset.MaxResolution.Max() / 1024}k"
+            : string.Empty;
+
+        return new MarketingSheetRequest
+        {
+            ModelName = title,
+            AuthorLine = authorLine,
+            Description = description,
+            Facts = facts,
+            Tags = asset.Tags ?? [],
+            AssetUrl = string.IsNullOrWhiteSpace(asset.Id) ? string.Empty : $"https://polyhaven.com/a/{asset.Id}",
+            Category = asset.Categories?.FirstOrDefault(c => !string.IsNullOrWhiteSpace(c)) ?? string.Empty,
+            CatalogThumbnailBytes = thumbnail,
+            HeroShotBytes = heroShot,
+            GalleryShots = galleryShots,
+            TriangleCount = stats.Triangles,
+            VertexCount = stats.Vertices,
+            MaterialCount = stats.Materials,
+            MaxTextureLabel = maxTextureLabel,
+            DownloadCount = asset.DownloadCount,
+            PublishedUtc = asset.DatePublishedUtc.UtcDateTime,
+        };
     }
 
     #endregion

@@ -11,10 +11,12 @@
   <Project Path="src/PolyHavenBrowser.Win32Skia/PolyHavenBrowser.Win32Skia.csproj" />
   <Project Path="src/PolyHavenBrowser.WinWpfSkia/PolyHavenBrowser.WinWpfSkia.csproj" />
   <Folder Name="/Libraries/">
+    <Project Path="src/libs/PolyHavenBrowser.CreateDocument/PolyHavenBrowser.CreateDocument.csproj" />
     <Project Path="src/libs/PolyHavenBrowser.PolyHavenApiClient/PolyHavenBrowser.PolyHavenApiClient.csproj" />
     <Project Path="src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.csproj" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/libs/PolyHavenBrowser.CreateDocument.Tests/PolyHavenBrowser.CreateDocument.Tests.csproj" />
     <Project Path="tests/libs/PolyHavenBrowser.PolyHavenApiClient.Tests/PolyHavenBrowser.PolyHavenApiClient.Tests.csproj" />
     <Project Path="tests/libs/PolyHavenBrowser.Rendering.Tests/PolyHavenBrowser.Rendering.Tests.csproj" />
   </Folder>

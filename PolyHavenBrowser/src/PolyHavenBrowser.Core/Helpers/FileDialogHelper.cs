@@ -1,17 +1,17 @@
 using System;
 using System.IO;
 
-namespace NotionDocumentCreator.Helpers;
+namespace PolyHavenBrowser.Helpers;
 
 /// <summary>
-/// Small helpers shared by the heads' native "Save PDF as…" dialogs.
+/// Small helpers for the native "Save PDF as…" file dialog.
 /// </summary>
 public static class FileDialogHelper
 {
     /// <summary>
     /// Turns the path a picker hands back into a real file-system path. The Linux Skia heads
     /// build theirs out of the desktop portal's <c>file://</c> URI and leave it
-    /// percent-encoded, so a name with a space in it arrives as <c>My%20Book.pdf</c> and
+    /// percent-encoded, so a name with a space in it arrives as <c>My%20Model.pdf</c> and
     /// would be written to disk under that literal name; accented names fare worse still
     /// (<c>Ölberg</c> arrives as <c>%C3%96lberg</c>). Nothing is decoded unless the text
     /// really does carry escapes, so paths from heads that already return a plain one — the
@@ -50,9 +50,8 @@ public static class FileDialogHelper
     /// <summary>
     /// The WinRT <c>FileSavePicker</c> (Skia heads and native WinUI) creates an empty
     /// placeholder file at the chosen path for a brand-new name. Remove it — but only when it
-    /// is genuinely empty — so a chosen path behaves like a pure destination and the app's own
-    /// "replace existing file?" prompt fires only for a real, non-empty file. A file that has
-    /// content is never deleted, so no user data is lost before the create-time confirmation.
+    /// is genuinely empty — so a chosen path behaves like a pure destination. A file that has
+    /// content is never deleted; the user explicitly chose to save over it.
     /// </summary>
     public static void RemoveEmptyPlaceholder(string path)
     {
@@ -68,8 +67,7 @@ public static class FileDialogHelper
         }
         catch
         {
-            //Leave the file in place if it cannot be removed; the create-time overwrite
-            //  prompt will simply ask about it.
+            //Leave the file in place if it cannot be removed; it will simply be overwritten.
         }
     }
 }

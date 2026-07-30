@@ -45,7 +45,11 @@ public sealed partial class MainPage : Page
         var file = await picker.PickSaveFileAsync();
         if (file == null) { return null; }
 
-        FileDialogHelper.RemoveEmptyPlaceholder(file.Path);
-        return file.Path;
+        //Some heads percent-encode the path they return, which would save "My Book.pdf" as
+        //  "My%20Book.pdf"; decode it before anything touches the disk.
+        var path = FileDialogHelper.ToFileSystemPath(file.Path);
+
+        FileDialogHelper.RemoveEmptyPlaceholder(path);
+        return path;
     }
 }

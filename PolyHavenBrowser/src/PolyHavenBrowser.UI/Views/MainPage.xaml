@@ -345,12 +345,20 @@
                 </Grid>
             </flex:FlexPanel>
 
-            <!-- Footer: the (future) document generator lives bottom-right -->
-            <Grid Grid.Row="2" Padding="24,4,24,16">
-                <Button HorizontalAlignment="Right"
+            <!-- Footer: the marketing one-sheet generator lives bottom-right, with its
+                 progress/result status line filling the space to its left -->
+            <Grid Grid.Row="2" Padding="24,4,24,16" ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{d:Binding DocumentStatusText}" FontSize="12"
+                           Foreground="{StaticResource TextTertiaryBrush}"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <Button Grid.Column="1" HorizontalAlignment="Right"
                         Style="{StaticResource PrimaryButtonStyle}"
                         Command="{d:Binding DocumentCommand}"
-                        ToolTipService.ToolTip="Creating a PDF document about this model is coming in a future version">
+                        ToolTipService.ToolTip="Create a glossy marketing one-sheet PDF about this model">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE8A5;" FontSize="14" VerticalAlignment="Center" />
                         <TextBlock Text="Document" VerticalAlignment="Center" />

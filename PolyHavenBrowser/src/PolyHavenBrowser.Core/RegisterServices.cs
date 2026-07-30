@@ -24,6 +24,7 @@ public static class RegisterServices
 
         services.AddSingleton<ModelCatalogService>();
         services.AddSingleton<ModelDownloadService>();
+        services.AddSingleton<DocumentBackdropService>();
 
         return services;
     }
