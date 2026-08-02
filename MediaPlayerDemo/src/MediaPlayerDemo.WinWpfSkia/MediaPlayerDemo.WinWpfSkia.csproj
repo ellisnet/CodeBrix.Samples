@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <!-- EXACTLY ONE platform head package; all other packages come from MediaPlayerDemo.Core -->
-    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.Wpf.ApacheLicenseForever" Version="1.0.210.770" />
+    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.Wpf.ApacheLicenseForever" Version="1.0.214.1259" />
     <!--The following package is required on Window heads for the CodeBrix.Platform.MediaPlayer add-in-->
     <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.23.1" />
   </ItemGroup>

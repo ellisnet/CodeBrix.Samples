@@ -9,16 +9,16 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.10" />
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.210.770" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.214.1259" />
     <PackageReference Include="CodeBrix.Platform.Fonts.Merriweather.OflLicenseForever" Version="1.0.209.309" />
     <!-- FlexPanel - the wrapping header layout in the Browsing View -->
-    <PackageReference Include="CodeBrix.Platform.FlexPanel.ApacheLicenseForever" Version="1.0.210.770" />
+    <PackageReference Include="CodeBrix.Platform.FlexPanel.ApacheLicenseForever" Version="1.0.214.1259" />
     <!-- SKXamlCanvas - the SkiaSharp drawing surface hosting the 2D image/spritesheet viewer -->
     <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.150.1" />
     <!-- GLCanvasElement - the OpenGL surface behind the Rendering library's 3D model preview -->
-    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.210.770" />
+    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.214.1259" />
     <!-- AudioPlayer element - plays the packs' audio clips (fed decoded WAV streams) -->
-    <PackageReference Include="CodeBrix.Platform.AudioPlayer.ApacheLicenseForever" Version="1.0.210.770" />
+    <PackageReference Include="CodeBrix.Platform.AudioPlayer.ApacheLicenseForever" Version="1.0.214.1259" />
   </ItemGroup>
 
   <ItemGroup>
