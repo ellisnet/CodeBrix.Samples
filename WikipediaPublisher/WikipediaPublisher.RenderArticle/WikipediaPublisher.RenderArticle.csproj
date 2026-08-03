@@ -16,8 +16,8 @@
 
   <ItemGroup>
     <PackageReference Include="CodeBrix.MarkupParse.MitLicenseForever" Version="1.0.164.1248" />
-    <PackageReference Include="CodeBrix.PdfDocCreate.MitLicenseForever" Version="1.0.174.112" />
-    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.164.1087" />
+    <PackageReference Include="CodeBrix.PdfDocCreate.MitLicenseForever" Version="1.0.213.531" />
+    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.213.41" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
   </ItemGroup>

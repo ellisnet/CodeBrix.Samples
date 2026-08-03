@@ -21,7 +21,6 @@
     <Project Path="CodeBrixPlatform/WikipediaPublisher.LinuxFrameBuffer/WikipediaPublisher.LinuxFrameBuffer.csproj" />
     <Project Path="CodeBrixPlatform/WikipediaPublisher.MacOS/WikipediaPublisher.MacOS.csproj" />
   </Folder>
-  <Project Path="WikipediaPublisher.RenderArticle/WikipediaPublisher.RenderArticle.csproj" />
   <Project Path="WikipediaPublisher.WinUI/WikipediaPublisher.WinUI.csproj">
     <Platform Solution="*|x86" Project="x86" />
     <Platform Solution="*|x64" Project="x64" />
@@ -29,6 +28,9 @@
     <Deploy Solution="Debug|x64" />
   </Project>
   <Project Path="WikipediaPublisher.Wpf/WikipediaPublisher.Wpf.csproj" />
+  <Folder Name="/Libraries/">
+    <Project Path="WikipediaPublisher.RenderArticle/WikipediaPublisher.RenderArticle.csproj" />
+  </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/WikipediaPublisher.RenderArticle.Tests/WikipediaPublisher.RenderArticle.Tests.csproj" />
   </Folder>

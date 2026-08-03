@@ -25,14 +25,14 @@
 
     <!-- Lottie/Skottie animation support -->
     <PackageReference Include="CodeBrix.Platform.Lottie.ApacheLicenseForever" Version="1.0.214.1259" />
-    <PackageReference Include="SkiaSharp.Skottie" Version="4.150.1" />
-    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.150.1" />
+    <PackageReference Include="SkiaSharp.Skottie" Version="4.151.0" />
+    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.151.0" />
 
     <!-- Bundled Open Sans font -->
     <PackageReference Include="CodeBrix.Platform.Fonts.OpenSans.ApacheLicenseForever" Version="1.0.209.261" />
 
     <!-- SVG rendering support for SvgImageSource on Skia targets -->
-    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.196.342" />
+    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.214.1201" />
     <PackageReference Include="CodeBrix.Platform.Svg.ApacheLicenseForever" Version="1.0.214.1259" />
   </ItemGroup>
 

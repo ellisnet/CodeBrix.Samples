@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.164.1087" />
+    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.213.41" />
 
     <!-- CodeBrix.Platform (base) supplies the FrameworkElement / DependencyProperty surface the
          GLCanvasElement subclass is built on. Graphics3DGL supplies GLCanvasElement itself and,
@@ -25,6 +25,6 @@
     <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.214.1259" />
 
     <PackageReference Include="SharpGLTF.Runtime" Version="1.0.6" />
-    <PackageReference Include="SkiaSharp" Version="4.150.1" />
+    <PackageReference Include="SkiaSharp" Version="4.151.0" />
   </ItemGroup>
 </Project>

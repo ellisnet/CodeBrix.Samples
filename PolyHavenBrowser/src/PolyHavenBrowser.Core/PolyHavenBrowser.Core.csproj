@@ -14,7 +14,7 @@
     <PackageReference Include="CodeBrix.Platform.Fonts.Roboto.OflLicenseForever" Version="1.0.209.315" />
 
     <!-- SKXamlCanvas - the SkiaSharp drawing surface hosted in CodeBrix.Platform XAML -->
-    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.150.1" />
+    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.151.0" />
 
     <!-- The 3D preview control (ModelSceneGlCanvas) lives in PolyHavenBrowser.Rendering and is
          built on Graphics3DGL's GLCanvasElement. The app codes to Graphics3DGL — never to

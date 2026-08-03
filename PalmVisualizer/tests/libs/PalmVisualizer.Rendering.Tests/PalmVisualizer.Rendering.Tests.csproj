@@ -27,9 +27,9 @@
 
     <!-- The shader tests compile and evaluate real SkSL on Skia raster surfaces - the
          native Skia library must be present -->
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.150.1" />
-    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="4.150.1" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="4.150.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.151.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="4.151.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="4.151.0" />
   </ItemGroup>
 
 </Project>

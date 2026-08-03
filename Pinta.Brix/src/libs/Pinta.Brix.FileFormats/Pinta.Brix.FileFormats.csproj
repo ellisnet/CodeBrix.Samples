@@ -6,6 +6,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Pinta.Brix.Engine\Pinta.Brix.Engine.csproj" />
     <!-- Codec coverage beyond SkiaSharp's encoders (BMP/GIF/TIFF/...) -->
-    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.164.1087" />
+    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.213.41" />
   </ItemGroup>
 </Project>

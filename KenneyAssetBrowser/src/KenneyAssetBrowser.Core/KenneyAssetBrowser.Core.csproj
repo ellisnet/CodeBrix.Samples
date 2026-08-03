@@ -14,7 +14,7 @@
     <!-- FlexPanel - the wrapping header layout in the Browsing View -->
     <PackageReference Include="CodeBrix.Platform.FlexPanel.ApacheLicenseForever" Version="1.0.214.1259" />
     <!-- SKXamlCanvas - the SkiaSharp drawing surface hosting the 2D image/spritesheet viewer -->
-    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.150.1" />
+    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.151.0" />
     <!-- GLCanvasElement - the OpenGL surface behind the Rendering library's 3D model preview -->
     <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.214.1259" />
     <!-- AudioPlayer element - plays the packs' audio clips (fed decoded WAV streams) -->

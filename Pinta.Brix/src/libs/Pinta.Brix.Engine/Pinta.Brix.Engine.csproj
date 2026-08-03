@@ -12,7 +12,7 @@
     <ProjectReference Include="..\Pinta.Brix.Settings\Pinta.Brix.Settings.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="SkiaSharp" Version="4.150.1" />
+    <PackageReference Include="SkiaSharp" Version="4.151.0" />
     <!-- The Pango replacement. Host-free and XAML-free, over the same engine
          that lays out every TextBlock in CodeBrix.Platform; see the plan's P12.
          MUST stay lock-stepped with the CodeBrix.Platform version the heads

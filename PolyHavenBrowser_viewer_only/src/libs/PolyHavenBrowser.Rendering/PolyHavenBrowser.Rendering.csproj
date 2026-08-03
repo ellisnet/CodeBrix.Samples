@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.164.1087" />
+    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.213.41" />
 
     <!-- Graphics3DGL supplies, transitively, the CodeBrix.Platform.OpenGL `GL` type the shader
          renderer (GlModelSceneRenderer) draws with. The app codes to Graphics3DGL and never
@@ -18,7 +18,7 @@
 
     <PackageReference Include="SharpGLTF.Runtime" Version="1.0.6" />
     <PackageReference Include="Silk.NET.Vulkan" Version="2.23.0" />
-    <PackageReference Include="SkiaSharp" Version="4.150.1" />
+    <PackageReference Include="SkiaSharp" Version="4.151.0" />
     <PackageReference Include="TinyEXR.NET" Version="1.1.0" />
   </ItemGroup>
 </Project>

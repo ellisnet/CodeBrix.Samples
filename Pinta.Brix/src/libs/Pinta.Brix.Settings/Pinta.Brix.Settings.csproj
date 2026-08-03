@@ -4,6 +4,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Sqlite.ApacheLicenseForever" Version="1.0.187.759" />
+    <PackageReference Include="CodeBrix.Sqlite.ApacheLicenseForever" Version="1.0.213.50" />
   </ItemGroup>
 </Project>

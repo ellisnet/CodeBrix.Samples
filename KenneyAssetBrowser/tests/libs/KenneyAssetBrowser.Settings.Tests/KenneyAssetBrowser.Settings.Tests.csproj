@@ -16,7 +16,7 @@
 
   <ItemGroup>
     <!-- The tests create SqliteDatabase instances directly (import validation cases) -->
-    <PackageReference Include="CodeBrix.Sqlite.ApacheLicenseForever" Version="1.0.187.759" />
+    <PackageReference Include="CodeBrix.Sqlite.ApacheLicenseForever" Version="1.0.213.50" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />

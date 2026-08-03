@@ -26,13 +26,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Imaging.Drawing.ApacheLicenseForever" Version="1.0.196.349" />
+    <PackageReference Include="CodeBrix.Imaging.Drawing.ApacheLicenseForever" Version="1.0.214.1305" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.WPF.ApacheLicenseForever" Version="1.0.193.1013" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
-    <PackageReference Include="SkiaSharp.Views.WPF" Version="4.150.1" />
+    <PackageReference Include="SkiaSharp.Views.WPF" Version="4.151.0" />
   </ItemGroup>
 
 </Project>
