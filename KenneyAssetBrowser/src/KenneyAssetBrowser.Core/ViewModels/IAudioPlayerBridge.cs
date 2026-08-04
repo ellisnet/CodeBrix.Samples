@@ -10,7 +10,10 @@ namespace KenneyAssetBrowser.ViewModels;
 /// </summary>
 public interface IAudioPlayerBridge
 {
-    /// <summary>Hands the player a seekable WAV/MP3 stream; the player takes ownership of it.</summary>
+    /// <summary>
+    /// Hands the player a seekable stream of an audio file it can decode (Ogg Vorbis, WAV, MP3
+    /// or FLAC); the player takes ownership of it.
+    /// </summary>
     Action<Stream> LoadAudioSource { get; set; }
 
     /// <summary>Starts (or resumes) playback.</summary>

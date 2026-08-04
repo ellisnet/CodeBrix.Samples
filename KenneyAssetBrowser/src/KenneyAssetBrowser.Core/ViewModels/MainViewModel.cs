@@ -893,11 +893,9 @@ public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBr
         var bytes = await ReadArchiveBytesAsync(entry.EntryPath)
             ?? throw new InvalidDataException($"The bundle has no entry “{entry.EntryPath}”.");
 
-        //Kenney audio is Ogg Vorbis, which the AudioPlayer add-in cannot decode itself —
-        //decode to an in-memory WAV first. WAV/MP3 entries pass straight through.
-        var wavStream = entry.Extension == "ogg"
-            ? await Task.Run(() => (Stream)OggWaveConverter.ToWavStream(bytes))
-            : new MemoryStream(bytes, writable: false);
+        //Kenney audio is Ogg Vorbis, which the AudioPlayer add-in decodes itself (as it does
+        //WAV, MP3 and FLAC) — the bytes go straight to the player, whatever the format.
+        var audioStream = new MemoryStream(bytes, writable: false);
 
         SetViewerHeader(entry.Name, EntrySubtitle(entry));
         PopulateFacts(
@@ -907,7 +905,7 @@ public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBr
 
         IsAudioLooping = false;
         SetAudioLooping?.Invoke(false);
-        LoadAudioSource?.Invoke(wavStream);
+        LoadAudioSource?.Invoke(audioStream);
         SetViewerMode(ViewerMode.Audio,
             LoadAudioSource == null ? "audio playback is not available on this head" : string.Empty);
     }

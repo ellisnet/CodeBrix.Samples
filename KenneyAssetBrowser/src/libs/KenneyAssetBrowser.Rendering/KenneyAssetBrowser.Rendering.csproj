@@ -31,9 +31,5 @@
 
     <!-- Rasterizes the packs' SVG vector art for the 2D viewer (pins SkiaSharp 4.151.0 itself) -->
     <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.214.1201" />
-
-    <!-- Managed Ogg Vorbis decoding - the AudioPlayer add-in plays WAV/MP3 only, while
-         Kenney audio packs ship .ogg, so audio is decoded to an in-memory WAV first -->
-    <PackageReference Include="NVorbis" Version="0.10.5" />
   </ItemGroup>
 </Project>

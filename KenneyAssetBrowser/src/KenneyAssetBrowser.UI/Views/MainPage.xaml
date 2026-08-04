@@ -58,6 +58,22 @@
         <m:SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#0E1114" />
         <m:SolidColorBrush x:Key="AccentButtonForegroundDisabled" Color="#6E7686" />
 
+        <!-- Re-key the theme's slider brushes to the dark palette, so the audio scrubber's
+             track, filled portion and thumb follow the app's blue accent -->
+        <m:SolidColorBrush x:Key="SliderTrackFill" Color="#2A2F39" />
+        <m:SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#333945" />
+        <m:SolidColorBrush x:Key="SliderTrackFillPressed" Color="#333945" />
+        <m:SolidColorBrush x:Key="SliderTrackValueFill" Color="#4FA6E8" />
+        <m:SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#66B4F0" />
+        <m:SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#3B8CC9" />
+        <m:SolidColorBrush x:Key="SliderThumbBackground" Color="#4FA6E8" />
+        <m:SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#66B4F0" />
+        <m:SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#3B8CC9" />
+
+        <!-- Formats the scrubber's elapsed/duration labels (m:ss.f — asset-pack clips are
+             usually well under a second, so the tenth carries the information) -->
+        <local:TimecodeConverter x:Key="TimecodeConverter" />
+
         <!-- The primary (accent) button: the theme's accent style plus app shaping -->
         <ui:Style x:Key="PrimaryButtonStyle" TargetType="c:Button" BasedOn="{StaticResource AccentButtonStyle}">
             <ui:Setter Property="CornerRadius" Value="8" />
@@ -461,9 +477,9 @@
                                            TextWrapping="Wrap" />
                             </ScrollViewer>
 
-                            <!-- Audio clips: an invisible AudioPlayer element (fed a decoded WAV
-                                 stream by the view model through the audio bridge) plus a
-                                 simple transport -->
+                            <!-- Audio clips: an invisible AudioPlayer element (fed the clip's raw
+                                 stream by the view model through the audio bridge — it decodes
+                                 Ogg Vorbis, WAV, MP3 and FLAC itself) plus a simple transport -->
                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
                                         Spacing="18" Visibility="{d:Binding AudioViewerVisibility}">
                                 <audio:AudioPlayer x:Name="AudioElement" />
@@ -473,6 +489,28 @@
                                 <TextBlock Text="{d:Binding ViewerTitle}" FontSize="15"
                                            Foreground="{StaticResource TextSecondaryBrush}"
                                            HorizontalAlignment="Center" />
+
+                                <!-- Position tracker: elapsed · scrubber · duration, bound
+                                     straight to the AudioPlayer element rather than through the
+                                     view model. The Slider follows playback via the two-way
+                                     PositionSeconds binding, and dragging it seeks the clip
+                                     (the add-in debounces to one seek on thumb release). -->
+                                <StackPanel Orientation="Horizontal" Spacing="10"
+                                            HorizontalAlignment="Center">
+                                    <TextBlock Width="52" VerticalAlignment="Center"
+                                               FontSize="12" TextAlignment="Right"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Text="{d:Binding Position, ElementName=AudioElement, Converter={StaticResource TimecodeConverter}}" />
+                                    <Slider Width="300" VerticalAlignment="Center"
+                                            StepFrequency="0.01"
+                                            Maximum="{d:Binding DurationSeconds, ElementName=AudioElement}"
+                                            Value="{d:Binding PositionSeconds, ElementName=AudioElement, Mode=TwoWay}" />
+                                    <TextBlock Width="52" VerticalAlignment="Center"
+                                               FontSize="12"
+                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               Text="{d:Binding Duration, ElementName=AudioElement, Converter={StaticResource TimecodeConverter}}" />
+                                </StackPanel>
+
                                 <StackPanel Orientation="Horizontal" Spacing="10"
                                             HorizontalAlignment="Center">
                                     <Button Style="{StaticResource PrimaryButtonStyle}"

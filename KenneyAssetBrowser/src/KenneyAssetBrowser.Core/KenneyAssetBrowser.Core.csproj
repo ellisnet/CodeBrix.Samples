@@ -17,7 +17,8 @@
     <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.151.0" />
     <!-- GLCanvasElement - the OpenGL surface behind the Rendering library's 3D model preview -->
     <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.214.1259" />
-    <!-- AudioPlayer element - plays the packs' audio clips (fed decoded WAV streams) -->
+    <!-- AudioPlayer element - plays the packs' audio clips straight from their bytes; it
+         decodes Ogg Vorbis (what Kenney ships), WAV, MP3 and FLAC itself -->
     <PackageReference Include="CodeBrix.Platform.AudioPlayer.ApacheLicenseForever" Version="1.0.214.1259" />
   </ItemGroup>
 
