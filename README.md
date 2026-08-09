@@ -45,7 +45,7 @@ The encryption work lives in a separate, DI-registered, unit-tested library
 (`JustBetweenUs.Encryption`) — the same "real work in its own reusable assembly" shape used
 by WikipediaPublisher's `RenderArticle`. The app was adapted from a sample by Paul Ainsworth.
 
-> **Note:** the encryption is real (BouncyCastle-backed) but is a demonstration, not a
+> **Note:** the encryption is real (CodeBrix.Cryptography-backed) but is a demonstration, not a
 > security-audited product — don't use it to protect anything truly sensitive.
 
 ### What it does / how to use it
@@ -137,7 +137,7 @@ JustBetweenUs/
 │   ├─ Testing/SimpleTestFixture.cs    DI-container-backed xUnit fixture base
 │   └─ Assets/                         SVG icons + star_icon.json (Lottie), embedded per head
 │
-├─ JustBetweenUs.Encryption/          Encryption service library (BouncyCastle)
+├─ JustBetweenUs.Encryption/          Encryption service library (CodeBrix.Cryptography)
 │   ├─ Services/IEncryptionService.cs + EncryptionService.cs
 │   ├─ RegisterServices.cs            AddEncryption DI extension
 │   └─ Embedded/DefaultKey.txt        Embedded default key
@@ -181,7 +181,7 @@ The native heads layer the CodeBrix toolkit packages on top of their platform's 
 | WPF | `CodeBrix.Platform.WPF.ApacheLicenseForever` | "Simple" MVVM toolkit for WPF |
 | MAUI (`Mobile`) | `CodeBrix.Platform.Mobile.ApacheLicenseForever` | "Simple" MVVM toolkit for .NET MAUI |
 
-The `JustBetweenUs.Encryption` library depends only on `BouncyCastle.Cryptography` plus
+The `JustBetweenUs.Encryption` library depends only on `CodeBrix.Cryptography.MitLicenseForever` plus
 `Microsoft.Extensions.Hosting` / `Microsoft.Extensions.Logging.Abstractions` — no
 CodeBrix packages at all, so the "real work" stays UI-framework-free. Its test project
 (`tests/JustBetweenUs.Encryption.Tests`) uses **xUnit v3** with
