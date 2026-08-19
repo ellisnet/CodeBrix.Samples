@@ -10,7 +10,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.10" />
 
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.214.1259" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.231.55" />
     <PackageReference Include="CodeBrix.Platform.Fonts.Roboto.OflLicenseForever" Version="1.0.209.315" />
 
     <!-- SKXamlCanvas - the SkiaSharp drawing surface hosted in CodeBrix.Platform XAML -->
@@ -20,11 +20,11 @@
          built on Graphics3DGL's GLCanvasElement. The app codes to Graphics3DGL — never to
          CodeBrix.Platform.OpenGL directly — so the OpenGL binding is only ever a transitive
          dependency (Graphics3DGL -> CodeBrix.Platform.OpenGL). -->
-    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.214.1259" />
+    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.231.55" />
 
     <!-- FlexPanel - a flexbox-style layout control for CodeBrix.Platform XAML; lays out the
          catalog view's wrapping toolbar. -->
-    <PackageReference Include="CodeBrix.Platform.FlexPanel.ApacheLicenseForever" Version="1.0.214.1259" />
+    <PackageReference Include="CodeBrix.Platform.FlexPanel.ApacheLicenseForever" Version="1.0.231.55" />
   </ItemGroup>
 
   <ItemGroup>
