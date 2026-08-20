@@ -22,7 +22,7 @@
          so it draws directly with CodeBrix.PdfDocuments' XGraphics rather than composing a
          flowing document through the CodeBrix.PdfDocCreate document object model the way
          NotionDocumentCreator's book pipeline does. -->
-    <PackageReference Include="CodeBrix.PdfDocuments.MitLicenseForever" Version="1.0.213.531" />
+    <PackageReference Include="CodeBrix.PdfDocuments.MitLicenseForever" Version="1.0.217.117" />
     <!-- Accent-color sampling from the catalog thumbnail, and the PDF image pipeline. -->
     <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.213.41" />
   </ItemGroup>

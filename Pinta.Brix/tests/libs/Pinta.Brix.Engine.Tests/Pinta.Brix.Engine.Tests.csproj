@@ -7,7 +7,6 @@
          matching the CodeBrix family test convention. -->
     <OutputType>Exe</OutputType>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
-    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
     <Nullable>enable</Nullable>
     <!-- The published CodeBrix.Platform nuget ships REFERENCE assemblies in
          lib/; every method body throws NotSupportedException("Ref assembly").
@@ -29,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <!-- The engine's SkiaSharp reference is managed-only; on Linux the native
          libSkiaSharp must be pulled in explicitly for the tests to run. -->
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.151.0" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
@@ -39,11 +38,11 @@
          matches the one CodeBrix.Platform.TextLayout depends on. -->
     <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.1" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
     <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.164.180" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.v3" Version="4.0.0" />
   </ItemGroup>
 
 </Project>
