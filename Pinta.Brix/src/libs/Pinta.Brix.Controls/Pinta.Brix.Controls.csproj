@@ -9,7 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Pinta.Brix.Engine\Pinta.Brix.Engine.csproj" />
     <ProjectReference Include="..\Pinta.Brix.Tools\Pinta.Brix.Tools.csproj" />
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.231.233" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.243.226" />
     <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.151.0" />
     <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.214.1201" />
   </ItemGroup>
