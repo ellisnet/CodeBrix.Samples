@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- This library hosts a SimpleViewModel-derived view model, so it references CodeBrix.Platform.
+         Keep this library's OWN RootNamespace (not the app's "CodeBrixVideoTool") so the per-head
+         generated GlobalStaticResources class does not collide across assemblies (CS0433). -->
+    <RootNamespace>CodeBrixVideoTool.Processing</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Writes the four supported formats: standard MKV and WebM, CodeBrix Mode 1 (WebM-profile
+         .cbv) and CodeBrix Mode 2 (bespoke CBVF .cbv). -->
+    <PackageReference Include="CodeBrix.VideoPlayback.Authoring.MitLicenseForever" Version="1.0.242.1044" />
+
+    <!-- The playback core's readers and writers: MediaContainers/CbvReader demultiplex a Mode 2
+         file, FfMetadataChapters and CaptionFiles carry its chapters and cues across, and
+         StreamableProfile validates what was written. Arrives transitively with .Authoring at the
+         same version; referenced explicitly because this library codes against it directly. -->
+    <PackageReference Include="CodeBrix.VideoPlayback.MitLicenseForever" Version="1.0.242.1044" />
+
+    <!-- ffmpeg and ffprobe: probing, the .mp4 export pass, the Mode 2 intermediate remux, and the
+         synthetic sample clips the tests and the smoke run use. The ONLY way this application is
+         allowed to run an external process. -->
+    <PackageReference Include="CodeBrix.VideoProcessing.MitLicenseForever" Version="1.0.241.68" />
+
+    <!-- SimpleViewModel and SimpleCommand for the operation view model -->
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.243.226" />
+  </ItemGroup>
+</Project>

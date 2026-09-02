@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- xUnit.net v3 test projects are self-executing binaries and
+         must build as Exe; run via Microsoft.Testing.Platform,
+         matching the CodeBrix family test convention. -->
+    <OutputType>Exe</OutputType>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+
+    <!-- The published CodeBrix.Platform package ships REFERENCE assemblies in lib/; every method
+         body in them throws "Ref assembly". Head projects get the real implementations swapped in
+         automatically, a test project does not - this is the lever that does it. Note that even
+         with the real assemblies present a SimpleViewModel cannot be constructed here, because its
+         dispatcher needs a running application host; the view models are exercised by the
+         application's own scripted run instead, and the rules under them live in plain classes
+         these tests can reach. -->
+    <CodeBrixRuntimeIdentifier>skia</CodeBrixRuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\libs\CodeBrixVideoTool.Playback\CodeBrixVideoTool.Playback.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.237.1200" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="xunit.v3" Version="4.0.0" />
+  </ItemGroup>
+
+</Project>

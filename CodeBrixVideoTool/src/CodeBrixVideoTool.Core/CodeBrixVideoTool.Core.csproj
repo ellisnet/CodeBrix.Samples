@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <!-- Match the namespace used by the app code -->
+    <RootNamespace>CodeBrixVideoTool</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.11" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.243.226" />
+    <PackageReference Include="CodeBrix.Platform.Fonts.Roboto.OflLicenseForever" Version="1.0.240.51" />
+
+    <!-- The VideoPlayer add-in - the VideoPlayer element the main page hosts. Referenced ONCE here:
+         every head inherits it transitively, and it is live on all four heads because the
+         containers, the demultiplexer and the clock are all managed code. The two codec packages it
+         plays through are the application's own and live in CodeBrixVideoTool.Playback. -->
+    <PackageReference Include="CodeBrix.Platform.VideoPlayer.ApacheLicenseForever" Version="1.0.243.226" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\libs\CodeBrixVideoTool.Processing\CodeBrixVideoTool.Processing.csproj" />
+    <ProjectReference Include="..\libs\CodeBrixVideoTool.Playback\CodeBrixVideoTool.Playback.csproj" />
+  </ItemGroup>
+</Project>
