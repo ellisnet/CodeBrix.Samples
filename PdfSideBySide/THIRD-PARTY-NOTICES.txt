@@ -1,0 +1,34 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the PdfSideBySide sample application, together with the licenses
+under which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here. That includes the PDF rasterizer library and the PDFium
+natives it bundles.
+
+------------------------------------------------------------------------
+Test fixture: Inanna.pdf
+  (bundled: tests/libs/PdfSideBySide.PdfRender.Tests/assets/Inanna.pdf)
+------------------------------------------------------------------------
+The rendering tests open a fixed PDF so page counts and rendered pages can be
+asserted. The fixture is the Wikipedia article "Inanna" (Ancient Mesopotamian
+goddess), by Wikipedia contributors, rendered to PDF by the CodeBrix document
+stack. It is used only by the test project and is not part of the
+application.
+
+Wikipedia article text is licensed under the Creative Commons
+Attribution-ShareAlike license (CC BY-SA;
+https://creativecommons.org/licenses/by-sa/4.0/). Article images carry their
+own individual licenses, as noted on their Wikimedia description pages.
+
+------------------------------------------------------------------------
+User documents (opened at run time)
+------------------------------------------------------------------------
+The application opens and displays PDF files the user selects. The rights to
+that content remain with its owners; nothing else is redistributed as part of
+this repository.

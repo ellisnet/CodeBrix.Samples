@@ -22,3 +22,24 @@ no attribution is required, though Poly Haven appreciates a credit.
 
 None of these assets are redistributed as part of this repository; they are
 fetched on demand and cached locally.
+
+------------------------------------------------------------------------
+Merriweather
+  (bundled: src/libs/PolyHavenBrowser.CreateDocument/Fonts/Merriweather-*.ttf)
+------------------------------------------------------------------------
+Copyright 2020 The Merriweather Project Authors
+(https://github.com/EbenSorkin/Merriweather4), with Reserved Font Name
+"Merriweather".
+
+Licensed under the SIL Open Font License, Version 1.1.
+Full license text: src/libs/PolyHavenBrowser.CreateDocument/Fonts/OFL-Merriweather.txt
+
+------------------------------------------------------------------------
+Roboto
+  (bundled: src/libs/PolyHavenBrowser.CreateDocument/Fonts/Roboto-*.ttf)
+------------------------------------------------------------------------
+Copyright 2011 The Roboto Project Authors
+(https://github.com/googlefonts/roboto-classic).
+
+Licensed under the SIL Open Font License, Version 1.1.
+Full license text: src/libs/PolyHavenBrowser.CreateDocument/Fonts/OFL-Roboto.txt

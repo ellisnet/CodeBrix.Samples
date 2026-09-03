@@ -168,7 +168,7 @@ cache.
 | `MetalModelRenderEngine.cs` | Metal engine adapter (+ its factory) | **yes** |
 
 (The off-screen GL context itself is `CodeBrix.Platform.WinUI.Graphics3DGL.OffscreenGLContext`,
-supplied by the `CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever` package — cross-platform,
+supplied by the CodeBrix.Platform.Graphics3DGL library — cross-platform,
 so there is no app-owned EGL/WGL/GLX class here.)
 
 (The heavy lifting lives in the Rendering library:

@@ -1,0 +1,38 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the KenneyAssetBrowser sample application, together with the licenses
+under which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here.
+
+------------------------------------------------------------------------
+Kenney asset bundles  (bundled: sample_asset_bundles/*.zip)
+------------------------------------------------------------------------
+The sample_asset_bundles folder carries four asset packs from Kenney
+(https://www.kenney.nl) so the application has something to browse without a
+download: Blocky Characters, Brick Kit, Puzzle Pack and Sci-Fi Sounds. Each
+zip contains Kenney's own License.txt, which is reproduced here in substance:
+
+  Created/distributed by Kenney (www.kenney.nl).
+
+  License: Creative Commons Zero (CC0)
+  http://creativecommons.org/publicdomain/zero/1.0/
+
+  This content is free to use in personal, educational and commercial
+  projects. Support Kenney by crediting 'Kenney' or 'www.kenney.nl' (this is
+  not a requirement).
+
+The bundles are unmodified copies of Kenney's downloads. Any other Kenney
+pack the user opens in the application is fetched and used under the same
+CC0 terms and is not redistributed here.
+
+------------------------------------------------------------------------
+Additional asset packs (opened at run time)
+------------------------------------------------------------------------
+The application reads any asset pack the user points it at. The rights to
+that content remain with its owners.

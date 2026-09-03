@@ -1,0 +1,31 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the CodeBrixVideoTool sample application, together with the licenses
+under which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here. That includes the AV1 and Opus decoder packages the
+application references for playback.
+
+------------------------------------------------------------------------
+FFmpeg (used at run time, not bundled)
+------------------------------------------------------------------------
+For media probing and conversion the application invokes the ffmpeg and
+ffprobe executables already installed on the host system (via the
+CodeBrix.VideoProcessing library). FFmpeg (https://ffmpeg.org) is licensed
+under the LGPL 2.1 or later, with optional components under the GPL; consult
+the license of the ffmpeg build installed on your system. No FFmpeg binaries
+are bundled with, or distributed by, this application.
+
+------------------------------------------------------------------------
+User media (opened at run time)
+------------------------------------------------------------------------
+The application opens, plays and converts media files the user selects. The
+rights to that content remain with its owners; nothing is redistributed as
+part of this repository.
+
+No further third-party attribution notices apply to this sample.
