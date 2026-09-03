@@ -146,4 +146,59 @@ public class MediaFormatsTests
         //Assert
         extension.Should().Be(expected);
     }
+
+    [Theory]
+    [InlineData(MediaFormatKind.Matroska, 6, 2)]
+    [InlineData(MediaFormatKind.WebM, 6, 2)]
+    [InlineData(MediaFormatKind.CodeBrixMode1, 6, 2)]
+    [InlineData(MediaFormatKind.CodeBrixMode2, 6, 2)]
+    [InlineData(MediaFormatKind.CodeBrixMode2, 2, 2)]
+    [InlineData(MediaFormatKind.CodeBrixMode1, 1, 1)]
+    [InlineData(MediaFormatKind.CodeBrixMode2, 0, 1)]
+    [InlineData(MediaFormatKind.Mp4, 6, 6)]
+    [InlineData(MediaFormatKind.Mp4, 8, 8)]
+    [InlineData(MediaFormatKind.Mp4, 10, 8)]
+    public void the_four_written_formats_cap_at_stereo_and_nothing_is_ever_upmixed(
+        MediaFormatKind destination, int sourceChannels, int expected)
+    {
+        //Act
+        var channels = MediaFormats.AudioChannelsFor(destination, sourceChannels);
+
+        //Assert
+        channels.Should().Be(expected);
+    }
+
+    [Fact]
+    public void every_format_this_application_writes_is_capped_at_stereo()
+    {
+        //Act
+        var ceilings = MediaFormats.SupportedFormats.Select(MediaFormats.MaxAudioChannels).ToList();
+
+        //Assert
+        ceilings.Should().AllBeEquivalentTo(2);
+    }
+
+    [Fact]
+    public void an_mp4_export_is_not_capped_at_stereo()
+    {
+        //Act
+        var ceiling = MediaFormats.MaxAudioChannels(MediaFormatKind.Mp4);
+
+        //Assert
+        ceiling.Should().Be(8);
+    }
+
+    [Fact]
+    public void the_four_quality_stops_run_from_fair_to_best()
+    {
+        //Act
+        var levels = MediaFormats.QualityLevels;
+
+        //Assert
+        levels.Should().HaveCount(4);
+        levels[0].Should().Be(QualityLevel.Fair);
+        levels[1].Should().Be(QualityLevel.Good);
+        levels[2].Should().Be(QualityLevel.Better);
+        levels[3].Should().Be(QualityLevel.Best);
+    }
 }

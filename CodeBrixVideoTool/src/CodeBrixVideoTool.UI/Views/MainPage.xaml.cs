@@ -5,7 +5,9 @@ using CodeBrix.Platform.UI.VideoPlayer.Skia;
 using CodeBrixVideoTool.Playback.Services;
 using CodeBrixVideoTool.Processing.Formats;
 using CodeBrixVideoTool.ViewModels;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -281,6 +283,20 @@ public sealed partial class MainPage : Page
             Fact("sourceChapters", info.ChapterCount);
             Check("mp4-is-not-playable-here", !info.IsPlayable, "the player decodes AV1 only");
 
+            //Quality is Good until a person says otherwise, which is what every conversion was
+            //written at before there was a choice.
+            Check("quality-defaults-to-good",
+                viewModel.Conversion.SelectedQuality == QualityLevel.Good,
+                viewModel.Conversion.SelectedQuality.ToString());
+
+            //A stop that is NOT the default, so what follows proves the knob reaches the encoder.
+            viewModel.Conversion.SelectedQuality = QualityLevel.Better;
+            Fact("quality", viewModel.Conversion.SelectedQuality);
+            Check("the-quality-drop-down-offers-the-four-stops",
+                QualityBox.Items.Count == MediaFormats.QualityLevels.Count &&
+                Equals(QualityBox.SelectedItem, QualityLevel.Better),
+                $"{QualityBox.Items.Count} stop(s), showing {QualityBox.SelectedItem}");
+
             var destination = viewModel.Conversion.Destinations.FirstOrDefault(d => d.Kind == options.Destination);
             Check("destination-offered", destination is not null, options.Destination.ToString());
             if (failures > 0)
@@ -315,7 +331,19 @@ public sealed partial class MainPage : Page
             Fact("outputBytes", outcome.SizeInBytes);
             Fact("profileVerdict", outcome.ProfileVerdict ?? "(not checked)");
             Fact("elapsedSeconds", outcome.Elapsed.TotalSeconds.ToString("F1"));
-            Check("streamable-profile-passes", outcome.PassesProfile, outcome.ProfileVerdict ?? "(not checked)");
+
+            //A standard MKV is written with its cues at the end, so it is EXPECTED not to pass. It is
+            //checked and reported on all the same, and that failure is not an error.
+            var profileShouldPass = options.Destination != MediaFormatKind.Matroska;
+            Check("streamable-profile-is-as-expected", outcome.PassesProfile == profileShouldPass,
+                (profileShouldPass ? "expected to pass: " : "a standard MKV is expected not to pass: ") +
+                (outcome.ProfileVerdict ?? "(not checked)"));
+
+            Check("quality-reached-the-encoder",
+                outcome.Commands.Any(command => command.Contains("-crf 24", StringComparison.Ordinal)),
+                "AV1 rate factor 24 is Better");
+
+            CheckLastRunNotes(viewModel, outcome, options.Destination, Check, Fact);
 
             //The library add and the player open both happen off the conversion-finished event, so
             //give them a moment to land before asking the player anything.
@@ -368,12 +396,20 @@ public sealed partial class MainPage : Page
 
             viewModel.Playback.StopCommand.Execute(null);
 
+            //An exported .mp4 joins the list like every other output: dimmed, refused by the player,
+            //and still a conversion source in its own right.
+            await RunMp4ExportAsync(viewModel, options, Check, Fact);
+
             //Leaves the window up with everything loaded, for a scripted run that wants to look at
             //it rather than only read what it printed.
             if (options.HoldSeconds > 0)
             {
                 Fact("holdingSeconds", options.HoldSeconds);
-                viewModel.Playback.PlayCommand.Execute(null);
+                if (viewModel.Playback.PlayCommand.CanExecute(null))
+                {
+                    viewModel.Playback.PlayCommand.Execute(null);
+                }
+
                 await Task.Delay(options.HoldSeconds * 1000);
             }
 
@@ -393,6 +429,160 @@ public sealed partial class MainPage : Page
             Environment.Exit(1);
         }
     }
+
+    /// <summary>
+    /// Exports whatever the run has just produced to an <c>.mp4</c> and proves that it joins the file
+    /// list as a dimmed, unplayable, still-selectable row.
+    /// </summary>
+    private async Task RunMp4ExportAsync(
+        MainViewModel viewModel, SmokeOptions options, Action<string, bool, string> check, Action<string, object> fact)
+    {
+        var export = viewModel.Conversion.Destinations.FirstOrDefault(d => d.Kind == MediaFormatKind.Mp4);
+        check("mp4-export-is-offered", export is not null, "Export to MP4");
+        if (export is null)
+        {
+            return;
+        }
+
+        var exportPath = Path.Combine(options.WorkFolder, "smoke-export.mp4");
+        viewModel.Conversion.SelectedDestination = export;
+        viewModel.Conversion.PickOutputPathAsync = (_, _) => Task.FromResult(exportPath);
+        fact("exportAction", viewModel.Conversion.ActionLabel);
+
+        var finished = new TaskCompletionSource<Processing.Operations.ConversionOutcome>();
+        void OnFinished(object _, Processing.Operations.ConversionOutcome result) => finished.TrySetResult(result);
+        viewModel.Conversion.ConversionFinished += OnFinished;
+        viewModel.Conversion.RunCommand.Execute(null);
+        var outcome = await finished.Task;
+        viewModel.Conversion.ConversionFinished -= OnFinished;
+
+        check("mp4-export-succeeded", outcome.Succeeded, outcome.Failure ?? outcome.ToString());
+        if (!outcome.Succeeded)
+        {
+            return;
+        }
+
+        fact("exportOutput", outcome.OutputPath);
+        fact("exportBytes", outcome.SizeInBytes);
+        check("export-quality-reached-the-encoder",
+            outcome.Commands.Any(command => command.Contains("-crf 17", StringComparison.Ordinal)),
+            "H.264 rate factor 17 is Better");
+
+        //The list add happens off the conversion-finished event, so give it a moment to land.
+        for (var attempt = 0; attempt < 100 &&
+             !string.Equals(viewModel.SelectedItem?.Path, exportPath, StringComparison.Ordinal); attempt++)
+        {
+            await Task.Delay(50);
+        }
+
+        var exported = viewModel.SelectedItem;
+        check("export-joins-the-file-list",
+            viewModel.Library.Any(item => string.Equals(item.Path, exportPath, StringComparison.Ordinal)),
+            $"{viewModel.Library.Count} file(s) listed");
+        check("export-is-the-selected-file",
+            exported is not null && string.Equals(exported.Path, exportPath, StringComparison.Ordinal),
+            exported?.FileName ?? "(nothing selected)");
+        check("export-is-listed-as-not-playable",
+            exported is { IsPlayable: false }, exported?.Format.ToString() ?? "(nothing selected)");
+        check("export-is-still-a-conversion-source",
+            viewModel.Conversion.Destinations.Count > 0,
+            $"{viewModel.Conversion.Destinations.Count} destination(s) offered");
+        check("the-player-refuses-the-export",
+            exported is not null &&
+            string.Equals(viewModel.Playback.StatusText, PlaybackSelection.DescribeUnplayable(exported), StringComparison.Ordinal),
+            viewModel.Playback.StatusText);
+        check("export-status-is-the-outcome-itself",
+            string.Equals(viewModel.StatusText, outcome.ToString(), StringComparison.Ordinal),
+            viewModel.StatusText);
+
+        //The dimming is a property of the row itself, not only of the converter behind it: the row the
+        //list built for the file it cannot play is shown fainter than the row beside it.
+        LibraryList.UpdateLayout();
+        var dimmedRow = ShownRowOpacity(exported);
+        var fullRow = ShownRowOpacity(viewModel.Library.FirstOrDefault(item => item.IsPlayable));
+        check("the-exported-row-is-shown-dimmed",
+            dimmedRow is { } dim && fullRow is { } full && dim > 0d && dim < full,
+            $"{Describe(dimmedRow)} against {Describe(fullRow)}");
+    }
+
+    /// <summary>
+    /// Proves the operation panel is showing the last run's own notes: the streamable-profile verdict
+    /// first when there was one, then whatever the run had to say, line for line.
+    /// </summary>
+    private void CheckLastRunNotes(
+        MainViewModel viewModel, Processing.Operations.ConversionOutcome outcome, MediaFormatKind destination,
+        Action<string, bool, string> check, Action<string, object> fact)
+    {
+        var shown = viewModel.Conversion.LastRunNotes;
+        fact("lastRunNoteCount", shown.Count);
+        foreach (var line in shown)
+        {
+            fact("lastRunNote", line);
+        }
+
+        check("the-last-run-left-notes-on-screen", shown.Count > 0, $"{shown.Count} line(s)");
+
+        var expected = Processing.ViewModels.ConversionViewModel.DescribeOutcome(outcome, destination);
+        check("the-notes-on-screen-match-the-outcome",
+            shown.Count == expected.Count && shown.SequenceEqual(expected, StringComparer.Ordinal),
+            $"{shown.Count} shown, {expected.Count} expected");
+
+        //A standard MKV is expected to fail the profile and says so in the same breath; everything
+        //else this application writes passes.
+        var head = destination == MediaFormatKind.Matroska
+            ? "Streamable profile: FAIL"
+            : "Streamable profile: PASS";
+        var mkvIsExcused = destination != MediaFormatKind.Matroska ||
+                           (shown.Count > 0 && shown[0].EndsWith("(expected for a standard MKV)", StringComparison.Ordinal));
+
+        check("the-profile-verdict-heads-the-notes",
+            shown.Count > 0 && shown[0].StartsWith(head, StringComparison.Ordinal) && mkvIsExcused,
+            shown.Count > 0 ? shown[0] : "(nothing shown)");
+
+        //And the panel under the status bar is really showing them, a line at a time.
+        check("the-notes-panel-under-the-status-bar-shows-them",
+            LastRunNotesList.Visibility == Visibility.Visible && LastRunNotesList.Items.Count == shown.Count,
+            $"{LastRunNotesList.Visibility}, {LastRunNotesList.Items.Count} line(s)");
+    }
+
+    /// <summary>
+    /// The opacity one file's row is really being shown at, read off the row the list built for it.
+    /// Null when the list has not built a row for that file.
+    /// </summary>
+    /// <param name="item">The file whose row to read.</param>
+    /// <returns>The row's opacity, or null.</returns>
+    private double? ShownRowOpacity(object item)
+    {
+        if (item is null || LibraryList.ContainerFromItem(item) is not DependencyObject container)
+        {
+            return null;
+        }
+
+        return FindLibraryRow(container)?.Opacity;
+    }
+
+    private static FrameworkElement FindLibraryRow(DependencyObject node)
+    {
+        var children = VisualTreeHelper.GetChildrenCount(node);
+        for (var index = 0; index < children; index++)
+        {
+            var child = VisualTreeHelper.GetChild(node, index);
+            if (child is FrameworkElement { Name: "LibraryRow" } row)
+            {
+                return row;
+            }
+
+            if (FindLibraryRow(child) is { } found)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    private static string Describe(double? opacity) =>
+        opacity?.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) ?? "(unreadable)";
 
     private static void TryDeleteFolder(string path)
     {

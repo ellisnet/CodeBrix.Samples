@@ -28,10 +28,6 @@ public sealed class SampleMediaFixture : IAsyncLifetime
 
     public string ChaptersPath => Path.Combine(Root, "sample.ffmetadata");
 
-    public string Av1IvfPath => Path.Combine(Root, "sample.ivf");
-
-    public string VorbisOggPath => Path.Combine(Root, "sample.ogg");
-
     /// <summary>The sample MP4 with a caption track and chapters muxed in, copied not re-encoded.</summary>
     public string RichMp4Path => Path.Combine(Root, "rich.mp4");
 
@@ -63,28 +59,6 @@ public sealed class SampleMediaFixture : IAsyncLifetime
         await SampleClipFactory.WriteMp4Async(Mp4Path, Width, Height, Duration).ConfigureAwait(false);
         SampleClipFactory.WriteWebVtt(CaptionsPath, Duration);
         SampleClipFactory.WriteChapterMetadata(ChaptersPath, Duration);
-
-        await FFMpegArguments
-            .FromFileInput(Mp4Path)
-            .OutputToFile(Av1IvfPath, true, options => options
-                .DisableChannel(Channel.Audio)
-                .WithVideoCodec("libsvtav1")
-                .WithSpeedPreset(12)
-                .WithConstantRateFactor(50)
-                .ForcePixelFormat("yuv420p")
-                .ForceFormat("ivf"))
-            .ProcessAsynchronously()
-            .ConfigureAwait(false);
-
-        await FFMpegArguments
-            .FromFileInput(Mp4Path)
-            .OutputToFile(VorbisOggPath, true, options => options
-                .DisableChannel(Channel.Video)
-                .WithAudioCodec("libvorbis")
-                .WithAudioBitrate(96)
-                .ForceFormat("ogg"))
-            .ProcessAsynchronously()
-            .ConfigureAwait(false);
 
         await FFMpegArguments
             .FromFileInput(Mp4Path)

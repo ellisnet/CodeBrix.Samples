@@ -6,6 +6,7 @@ using CodeBrixVideoTool.Processing.Probing;
 using CodeBrixVideoTool.Processing.Resolution;
 using Microsoft.UI.Xaml;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading;
@@ -74,6 +75,12 @@ public class ConversionViewModel : SimpleViewModel, IOutputPathBridge
     /// <summary>The sizes the result may be written at, from the source's own size downwards.</summary>
     public ObservableCollection<ResolutionOption> Resolutions { get; } = new();
 
+    /// <summary>
+    /// The four quality stops, in the order they are offered: Fair, Good, Better, Best. The list never
+    /// changes, so it is the one <see cref="MediaFormats.QualityLevels" /> holds.
+    /// </summary>
+    public IReadOnlyList<QualityLevel> QualityLevels => MediaFormats.QualityLevels;
+
     /// <summary>The size the result will be written at.</summary>
     public ResolutionOption SelectedResolution
     {
@@ -84,6 +91,35 @@ public class ConversionViewModel : SimpleViewModel, IOutputPathBridge
             NotifyPropertyChanged(nameof(RouteText));
         }
     }
+
+    /// <summary>
+    /// How hard the encoder tries. <see cref="QualityLevel.Good" /> until a person changes it, which
+    /// is what every conversion was written at before there was a choice.
+    /// </summary>
+    public QualityLevel SelectedQuality
+    {
+        get;
+        set
+        {
+            //SetProperty takes reference types only; compare-and-notify by hand, as ProgressPercent does.
+            if (field == value) { return; }
+            field = value;
+            NotifyPropertyChanged(nameof(SelectedQuality));
+        }
+    } = QualityLevel.Good;
+
+    /// <summary>
+    /// What the last conversion had to say for itself: the streamable-profile verdict first when a
+    /// profile was checked, then every note the run produced.
+    /// </summary>
+    /// <remarks>
+    /// Emptied the moment the next conversion starts, so what is on screen always belongs to the run
+    /// named in <see cref="StatusText" />. Empty after a conversion that had nothing to report.
+    /// </remarks>
+    public ObservableCollection<string> LastRunNotes { get; } = new();
+
+    /// <summary>Whether the last run left anything worth showing.</summary>
+    public Visibility LastRunNotesVisibility => GetVisibility(LastRunNotes.Count > 0);
 
     /// <summary>What the action button says: "Import", "Transcode" or "Export".</summary>
     public string ActionLabel
@@ -240,13 +276,17 @@ public class ConversionViewModel : SimpleViewModel, IOutputPathBridge
         ConversionPlan plan;
         try
         {
-            plan = ConversionPlanner.Create(Source, destination, outputPath, SelectedResolution);
+            plan = ConversionPlanner.Create(Source, destination, outputPath, SelectedResolution, SelectedQuality);
         }
         catch (VideoToolProcessingException exception)
         {
             StatusText = exception.Message;
             return;
         }
+
+        //The notes on screen belong to the run named in the status bar, so they go the moment a new
+        //run takes that line over.
+        SetLastRunNotes([]);
 
         IsRunning = true;
         IsCancelling = false;
@@ -280,6 +320,7 @@ public class ConversionViewModel : SimpleViewModel, IOutputPathBridge
         IsProgressIndeterminate = false;
         ProgressText = string.Empty;
         StatusText = outcome.ToString();
+        SetLastRunNotes(DescribeOutcome(outcome, destination));
 
         ConversionFinished?.Invoke(this, outcome);
     }
@@ -304,6 +345,55 @@ public class ConversionViewModel : SimpleViewModel, IOutputPathBridge
     public Func<string, string, Task<string>> PickOutputPathAsync { get; set; }
 
     #endregion
+
+    /// <summary>
+    /// The lines the operation panel shows under the status bar for one finished conversion: the
+    /// streamable-profile verdict when there was one, then the outcome's own notes in their order.
+    /// </summary>
+    /// <param name="outcome">What the conversion did.</param>
+    /// <param name="destination">The format that was written.</param>
+    /// <returns>The lines to show, which may be empty.</returns>
+    public static IReadOnlyList<string> DescribeOutcome(ConversionOutcome outcome, MediaFormatKind destination)
+    {
+        if (outcome is null)
+        {
+            return [];
+        }
+
+        var lines = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(outcome.ProfileVerdict))
+        {
+            //A standard MKV is written with its cues at the end and is EXPECTED to fail; it is checked
+            //and reported on all the same, and the failure is not an error.
+            var expected = destination == MediaFormatKind.Matroska
+                ? " (expected for a standard MKV)"
+                : string.Empty;
+
+            lines.Add(outcome.PassesProfile
+                ? "Streamable profile: PASS"
+                : $"Streamable profile: FAIL - {outcome.ProfileVerdict}{expected}");
+        }
+
+        lines.AddRange(outcome.Notes);
+        return lines;
+    }
+
+    private void SetLastRunNotes(IReadOnlyList<string> lines)
+    {
+        if (LastRunNotes.Count == 0 && lines.Count == 0)
+        {
+            return;
+        }
+
+        LastRunNotes.Clear();
+        foreach (var line in lines)
+        {
+            LastRunNotes.Add(line);
+        }
+
+        NotifyPropertyChanged(nameof(LastRunNotesVisibility));
+    }
 
     private void RefreshForSource()
     {

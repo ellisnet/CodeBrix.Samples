@@ -21,10 +21,18 @@ namespace CodeBrixVideoTool.Processing.Containers;
 /// authoring pass can be told to carry them across.
 /// </summary>
 /// <remarks>
+/// <para>
 /// The four supported formats are all read by the playback core's own container readers, which hand
 /// over chapters and cues as objects and need no external tool. Only the <c>.mp4</c> family goes
 /// through FFmpeg, and only for its text caption streams: an image-based caption track has no WebVTT
 /// form at all and is reported rather than silently lost.
+/// </para>
+/// <para>
+/// Every chapter written from here carries exactly ONE title, whichever path it came down: this
+/// application supports one chapter-title language. See
+/// <see cref="CollapseToOneTitlePerChapter" /> for the rule and for what is reported when a source
+/// carried more.
+/// </para>
 /// </remarks>
 public sealed class SidecarExtractor
 {
@@ -80,8 +88,68 @@ public sealed class SidecarExtractor
             captions.Add(new ExtractedCaption(path, language, track.Name ?? string.Empty, track.Flags, track.CueCount));
         }
 
-        var chaptersPath = WriteChapters(reader.Chapters, workingFolder);
+        var chapters = CollapseToOneTitlePerChapter(reader.Chapters, notes);
+        var chaptersPath = WriteChapters(chapters, workingFolder);
         return new MediaSidecars(chaptersPath, captions, notes);
+    }
+
+    /// <summary>
+    /// Reduces every chapter to a single, untagged title, because this application carries one
+    /// chapter-title language.
+    /// </summary>
+    /// <param name="chapters">The chapters a source declared, with whatever titles it declared.</param>
+    /// <param name="notes">
+    /// Collects one sentence when at least one language title was dropped. Nothing is added when every
+    /// chapter already carried a single title, which is what an <c>.mp4</c> source always produces.
+    /// </param>
+    /// <returns>The same chapters, each with at most one title, keyed by the empty language tag.</returns>
+    /// <remarks>
+    /// The title kept is the untagged one when the source has it, and otherwise the FIRST title the
+    /// source lists - the order the container reader hands them over in. The count reported is of
+    /// DISTINCT languages dropped across the whole file, so a two-language chapter list drops one
+    /// language however many chapters carry it.
+    /// </remarks>
+    public static IReadOnlyList<Chapter> CollapseToOneTitlePerChapter(
+        IReadOnlyList<Chapter> chapters, IList<string> notes)
+    {
+        if (chapters is not { Count: > 0 })
+        {
+            return [];
+        }
+
+        var dropped = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var collapsed = new List<Chapter>(chapters.Count);
+
+        foreach (var chapter in chapters)
+        {
+            var titles = chapter.Titles;
+            if (titles is not { Count: > 0 })
+            {
+                collapsed.Add(chapter);
+                continue;
+            }
+
+            var keptLanguage = titles.ContainsKey(string.Empty) ? string.Empty : titles.Keys.First();
+            foreach (var language in titles.Keys)
+            {
+                if (!string.Equals(language, keptLanguage, StringComparison.Ordinal) && !string.IsNullOrEmpty(language))
+                {
+                    dropped.Add(language);
+                }
+            }
+
+            collapsed.Add(titles.Count == 1 && keptLanguage.Length == 0
+                ? chapter
+                : new Chapter(chapter.Index, chapter.Start, chapter.End, chapter.IsHidden,
+                    new Dictionary<string, string> { [string.Empty] = titles[keptLanguage] }));
+        }
+
+        if (dropped.Count > 0 && notes is not null)
+        {
+            notes.Add($"{dropped.Count} chapter-title language(s) dropped: this application carries one title per chapter.");
+        }
+
+        return collapsed;
     }
 
     private static MediaSidecars ExtractFromContainerReader(SourceMediaInfo source, string workingFolder)
@@ -170,7 +238,7 @@ public sealed class SidecarExtractor
             captions.Add(new ExtractedCaption(path, language, string.Empty, CaptionTrackFlags.None, read.CueCount));
         }
 
-        var chapters = ChaptersFrom(analysis);
+        var chapters = CollapseToOneTitlePerChapter(ChaptersFrom(analysis), notes);
         var chaptersPath = WriteChapters(chapters, workingFolder);
         return new MediaSidecars(chaptersPath, captions, notes);
     }

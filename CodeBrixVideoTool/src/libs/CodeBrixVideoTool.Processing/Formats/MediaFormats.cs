@@ -103,6 +103,57 @@ public static class MediaFormats
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "There is no audio codec for an unrecognised format."),
     };
 
+    /// <summary>
+    /// The most audio channels a destination may carry. The four formats this application writes are
+    /// capped at stereo whichever codec they carry, because this application writes mono or stereo
+    /// audio only; an <c>.mp4</c> export is not capped and keeps the source's own layout, up to the
+    /// authoring ceiling of eight.
+    /// </summary>
+    /// <param name="destination">The destination format.</param>
+    /// <returns>The channel ceiling for that destination.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The format is not one this application writes.</exception>
+    /// <remarks>
+    /// The cap is an application policy rather than a codec limit: nothing in Opus, Vorbis or the
+    /// containers themselves stops a surround track being written. It is stated per DESTINATION and
+    /// not per codec so that the one uncapped destination - the <c>.mp4</c> export, which is AAC -
+    /// stays uncapped no matter what else is written with the same codec later.
+    /// </remarks>
+    public static int MaxAudioChannels(MediaFormatKind destination) => destination switch
+    {
+        MediaFormatKind.Mp4 => 8,
+        MediaFormatKind.Matroska => 2,
+        MediaFormatKind.WebM => 2,
+        MediaFormatKind.CodeBrixMode1 => 2,
+        MediaFormatKind.CodeBrixMode2 => 2,
+        _ => throw new ArgumentOutOfRangeException(nameof(destination), destination, "There is no channel ceiling for an unrecognised format."),
+    };
+
+    /// <summary>
+    /// The channel count a destination is written with: the source's own, clamped to at least one and
+    /// at most <see cref="MaxAudioChannels" /> for that destination. This is the whole of the
+    /// application's channel policy; nothing is ever upmixed.
+    /// </summary>
+    /// <param name="destination">The destination format.</param>
+    /// <param name="sourceChannels">How many channels the source carries.</param>
+    /// <returns>The channel count to encode.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The format is not one this application writes.</exception>
+    public static int AudioChannelsFor(MediaFormatKind destination, int sourceChannels) =>
+        Math.Clamp(sourceChannels, 1, MaxAudioChannels(destination));
+
+    /// <summary>The four quality stops a person may pick between, from smallest file to best picture.</summary>
+    /// <remarks>
+    /// The order is the order a drop-down lists them in. The knob moves the encoder's rate factor and
+    /// nothing else: the speed preset stays pinned so an encode takes about as long whichever stop is
+    /// chosen, and sound is never touched by it.
+    /// </remarks>
+    public static IReadOnlyList<QualityLevel> QualityLevels { get; } =
+    [
+        QualityLevel.Fair,
+        QualityLevel.Good,
+        QualityLevel.Better,
+        QualityLevel.Best,
+    ];
+
     /// <summary>The video codec a destination format is written with.</summary>
     /// <param name="kind">The destination format.</param>
     /// <returns>The codec that destination is written with.</returns>

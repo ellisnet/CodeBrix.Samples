@@ -9,7 +9,6 @@ using CodeBrixVideoTool.Services;
 using Microsoft.UI.Xaml;
 using System;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -191,15 +190,9 @@ public class MainViewModel : SimpleViewModel, IMediaFileBridge
             return;
         }
 
-        //An MP4 export is deliberately not added to the list: nothing in this application can play
-        //it, and offering it would only invite a person to try.
-        if (string.Equals(Path.GetExtension(outcome.OutputPath), ".mp4", StringComparison.OrdinalIgnoreCase))
-        {
-            StatusText = $"Exported {Path.GetFileName(outcome.OutputPath)}. " +
-                         "MP4 files are not played in this application.";
-            return;
-        }
-
+        //Every successful output joins the list, an exported .mp4 included: it can be re-imported, so
+        //it is a source like any other. Nothing here plays one, so its row is dimmed (see
+        //LibraryItemTemplate in MainPage.xaml) and selecting it makes the player say why.
         await AddAsync(outcome.OutputPath, CancellationToken.None);
         StatusText = outcome.ToString();
     }

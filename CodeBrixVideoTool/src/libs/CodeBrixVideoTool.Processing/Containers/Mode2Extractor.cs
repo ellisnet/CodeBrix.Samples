@@ -1,5 +1,8 @@
+using CodeBrix.VideoPlayback;
 using CodeBrix.VideoPlayback.Containers;
 using CodeBrix.VideoPlayback.Containers.Cbv;
+using CodeBrix.VideoPlayback.Containers.Ivf;
+using CodeBrix.VideoPlayback.Containers.Ogg;
 using CodeBrix.VideoPlayback.Decoding;
 using CodeBrix.VideoProcessing;
 using CodeBrix.VideoProcessing.Enums;
@@ -21,9 +24,10 @@ namespace CodeBrixVideoTool.Processing.Containers;
 /// FFmpeg cannot open the bespoke CBVF container, so a Mode 2 file cannot be handed straight to a
 /// conversion pass the way a Mode 1, WebM or Matroska file can. What it can do is read the streams
 /// inside it, which are perfectly ordinary AV1 and Vorbis. So this demultiplexes the file with the
-/// playback core's own reader, re-wraps the AV1 stream in IVF and the audio stream in Ogg - the two
-/// containers the authoring library itself writes when it builds a bespoke file, used here in the
-/// opposite direction - and muxes those two into one Matroska file with no re-encoding at all.
+/// playback core's own reader, re-wraps the AV1 stream in IVF and the audio stream in Ogg with the
+/// core's own <see cref="IvfWriter" /> and <see cref="OggAudioWriter" /> - the two containers the
+/// authoring library itself writes when it builds a bespoke file, used here in the opposite
+/// direction - and muxes those two into one Matroska file with no re-encoding at all.
 /// </para>
 /// <para>
 /// From that point on a Mode 2 conversion is an ordinary conversion. Nothing is decoded, nothing is
@@ -117,14 +121,25 @@ public sealed class Mode2Extractor
 
     private static OggAudioWriter CreateAudioWriter(MediaTrackInfo audio, string path, string fileName)
     {
-        if (string.Equals(audio.CodecId, VideoCodecIds.Vorbis, StringComparison.OrdinalIgnoreCase))
+        try
         {
-            return OggAudioWriter.CreateVorbis(path, audio.CodecPrivate.Span, audio.SampleRate);
-        }
+            if (string.Equals(audio.CodecId, VideoCodecIds.Vorbis, StringComparison.OrdinalIgnoreCase))
+            {
+                return OggAudioWriter.CreateVorbis(path, audio.CodecPrivate.Span, audio.SampleRate);
+            }
 
-        if (string.Equals(audio.CodecId, VideoCodecIds.Opus, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(audio.CodecId, VideoCodecIds.Opus, StringComparison.OrdinalIgnoreCase))
+            {
+                return OggAudioWriter.CreateOpus(path, audio.CodecPrivate.Span, audio.PreSkipSamples);
+            }
+        }
+        catch (VideoPlaybackException exception)
         {
-            return OggAudioWriter.CreateOpus(path, audio.CodecPrivate.Span, audio.PreSkipSamples);
+            //The core refuses codec-private data that is not the three Xiph-laced Vorbis headers or an
+            //OpusHead; that is this application's "could not be re-wrapped" case, in its own words.
+            throw new VideoToolProcessingException(
+                $"'{fileName}' carries '{audio.CodecId}' audio whose setup data could not be re-wrapped into an Ogg stream: {exception.Message}",
+                exception);
         }
 
         throw new VideoToolProcessingException(

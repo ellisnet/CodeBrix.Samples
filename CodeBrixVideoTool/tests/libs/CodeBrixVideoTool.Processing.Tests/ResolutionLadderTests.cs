@@ -77,12 +77,44 @@ public class ResolutionLadderTests
     [Fact]
     public void a_portrait_source_keeps_its_shape()
     {
+        //Arrange
+        //A rung names the SHORT side, so a portrait source is measured across its width: the rungs
+        //below are the ones strictly below 720, and each stays taller than it is wide.
+        var rungs = ResolutionLadder.Build(720, 1280);
+
+        //Act
+        var shapes = rungs.Skip(1).Select(r => (r.Width, r.Height)).ToList();
+
+        //Assert
+        shapes.Should().HaveCount(1);
+        shapes[0].Width.Should().Be(480);
+        shapes[0].Height.Should().Be(854);
+    }
+
+    [Fact]
+    public void a_portrait_source_is_keyed_on_its_short_side()
+    {
         //Act
         var rungs = ResolutionLadder.Build(1080, 1920);
 
         //Assert
-        rungs.Single(r => r.Height == 1080).Width.Should().Be(608);
-        rungs.Single(r => r.Height == 720).Width.Should().Be(406);
+        rungs.Should().HaveCount(3);
+        rungs[0].Label.Should().Be("Original (1080 x 1920)");
+        rungs[1].Label.Should().Be("720p (720 x 1280)");
+        rungs[2].Label.Should().Be("480p (480 x 854)");
+    }
+
+    [Fact]
+    public void a_square_source_is_keyed_on_the_one_side_it_has()
+    {
+        //Act
+        var rungs = ResolutionLadder.Build(1080, 1080);
+
+        //Assert
+        rungs.Should().HaveCount(3);
+        rungs[0].Label.Should().Be("Original (1080 x 1080)");
+        rungs[1].Label.Should().Be("720p (720 x 720)");
+        rungs[2].Label.Should().Be("480p (480 x 480)");
     }
 
     [Theory]
@@ -98,6 +130,18 @@ public class ResolutionLadderTests
 
         //Assert
         even.Should().Be(expected);
+    }
+
+    [Fact]
+    public void the_long_side_follows_the_short_side_proportionally()
+    {
+        //Act
+        var landscape = ResolutionLadder.ProportionalOtherSide(2160, 3840, 1080);
+        var portrait = ResolutionLadder.ProportionalOtherSide(1080, 1920, 480);
+
+        //Assert
+        landscape.Should().Be(1920);
+        portrait.Should().Be(854);
     }
 
     [Fact]

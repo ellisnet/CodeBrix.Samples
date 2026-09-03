@@ -158,4 +158,133 @@ public class ConversionPlannerTests
         //Assert
         name.Should().Be(expected);
     }
+
+    [Fact]
+    public void an_opus_destination_caps_the_sound_at_stereo()
+    {
+        //Arrange
+        var source = Source(MediaFormatKind.Mp4);
+        source.AudioChannels = 6;
+
+        //Act
+        var plan = ConversionPlanner.Create(source, MediaFormatKind.CodeBrixMode1, "/tmp/out.cbv", null);
+
+        //Assert
+        plan.AudioCodec.Should().Be(TargetAudioCodec.Opus);
+        plan.AudioChannels.Should().Be(2);
+        plan.DownmixesAudio.Should().BeTrue();
+        plan.Steps.Should().Contain(s => s.Contains("downmixed to stereo"));
+    }
+
+    [Fact]
+    public void a_vorbis_destination_caps_the_sound_at_stereo_too_and_says_so()
+    {
+        //Arrange
+        var source = Source(MediaFormatKind.Mp4);
+        source.AudioChannels = 6;
+
+        //Act
+        var plan = ConversionPlanner.Create(source, MediaFormatKind.CodeBrixMode2, "/tmp/out.cbv", null);
+
+        //Assert
+        plan.AudioCodec.Should().Be(TargetAudioCodec.Vorbis);
+        plan.AudioChannels.Should().Be(2);
+        plan.DownmixesAudio.Should().BeTrue();
+        plan.Steps.Should().Contain(s => s.Contains("downmixed to stereo"));
+        plan.Steps.Should().Contain(s => s.Contains("this application writes mono or stereo audio only"));
+    }
+
+    [Fact]
+    public void the_downmix_step_never_blames_a_codec()
+    {
+        //Arrange
+        var source = Source(MediaFormatKind.Mp4);
+        source.AudioChannels = 6;
+
+        //Act
+        var plan = ConversionPlanner.Create(source, MediaFormatKind.CodeBrixMode1, "/tmp/out.cbv", null);
+
+        //Assert
+        plan.Steps.Should().NotContain(s => s.Contains("mapping family"));
+        plan.Steps.Should().NotContain(s => s.Contains("decoder"));
+    }
+
+    [Fact]
+    public void an_mp4_export_keeps_every_channel_the_source_has()
+    {
+        //Arrange
+        var source = Source(MediaFormatKind.CodeBrixMode1);
+        source.AudioChannels = 6;
+
+        //Act
+        var plan = ConversionPlanner.Create(source, MediaFormatKind.Mp4, "/tmp/out.mp4", null);
+
+        //Assert
+        plan.AudioCodec.Should().Be(TargetAudioCodec.Aac);
+        plan.AudioChannels.Should().Be(6);
+        plan.DownmixesAudio.Should().BeFalse();
+        plan.Steps.Should().NotContain(s => s.Contains("downmixed"));
+    }
+
+    [Fact]
+    public void a_stereo_source_is_never_called_a_downmix()
+    {
+        //Arrange
+        var source = Source(MediaFormatKind.Mp4);
+
+        //Act
+        var plan = ConversionPlanner.Create(source, MediaFormatKind.WebM, "/tmp/out.webm", null);
+
+        //Assert
+        plan.AudioChannels.Should().Be(2);
+        plan.DownmixesAudio.Should().BeFalse();
+    }
+
+    [Fact]
+    public void a_plan_is_good_quality_until_something_says_otherwise()
+    {
+        //Arrange
+        var source = Source(MediaFormatKind.Mp4);
+
+        //Act
+        var plan = ConversionPlanner.Create(source, MediaFormatKind.WebM, "/tmp/out.webm", null);
+
+        //Assert
+        plan.Quality.Should().Be(QualityLevel.Good);
+        plan.Steps.Should().Contain(s => s.Contains("at Good quality"));
+    }
+
+    [Theory]
+    [InlineData(QualityLevel.Fair)]
+    [InlineData(QualityLevel.Good)]
+    [InlineData(QualityLevel.Better)]
+    [InlineData(QualityLevel.Best)]
+    public void the_chosen_quality_lands_on_the_plan_and_in_its_steps(QualityLevel quality)
+    {
+        //Arrange
+        var source = Source(MediaFormatKind.Mp4);
+
+        //Act
+        var plan = ConversionPlanner.Create(source, MediaFormatKind.CodeBrixMode2, "/tmp/out.cbv", null, quality);
+
+        //Assert
+        plan.Quality.Should().Be(quality);
+        plan.Steps.Should().Contain(s => s.Contains($"at {quality} quality"));
+    }
+
+    [Theory]
+    [InlineData(QualityLevel.Fair)]
+    [InlineData(QualityLevel.Best)]
+    public void the_quality_stop_also_names_itself_on_an_export(QualityLevel quality)
+    {
+        //Arrange
+        var source = Source(MediaFormatKind.CodeBrixMode1);
+
+        //Act
+        var plan = ConversionPlanner.Create(source, MediaFormatKind.Mp4, "/tmp/out.mp4", null, quality);
+
+        //Assert
+        plan.Quality.Should().Be(quality);
+        plan.Steps.Should().Contain(s => s.Contains($"at {quality} quality"));
+    }
 }

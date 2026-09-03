@@ -12,13 +12,14 @@
   <ItemGroup>
     <!-- Writes the four supported formats: standard MKV and WebM, CodeBrix Mode 1 (WebM-profile
          .cbv) and CodeBrix Mode 2 (bespoke CBVF .cbv). -->
-    <PackageReference Include="CodeBrix.VideoPlayback.Authoring.MitLicenseForever" Version="1.0.242.1044" />
+    <PackageReference Include="CodeBrix.VideoPlayback.Authoring.MitLicenseForever" Version="1.0.245.280" />
 
     <!-- The playback core's readers and writers: MediaContainers/CbvReader demultiplex a Mode 2
-         file, FfMetadataChapters and CaptionFiles carry its chapters and cues across, and
-         StreamableProfile validates what was written. Arrives transitively with .Authoring at the
-         same version; referenced explicitly because this library codes against it directly. -->
-    <PackageReference Include="CodeBrix.VideoPlayback.MitLicenseForever" Version="1.0.242.1044" />
+         file, IvfWriter and OggAudioWriter re-wrap its streams for FFmpeg, FfMetadataChapters and
+         CaptionFiles carry its chapters and cues across, and StreamableProfile validates what was
+         written. Arrives transitively with .Authoring at the same version; referenced explicitly
+         because this library codes against it directly. -->
+    <PackageReference Include="CodeBrix.VideoPlayback.MitLicenseForever" Version="1.0.245.280" />
 
     <!-- ffmpeg and ffprobe: probing, the .mp4 export pass, the Mode 2 intermediate remux, and the
          synthetic sample clips the tests and the smoke run use. The ONLY way this application is

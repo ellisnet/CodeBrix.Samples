@@ -8,6 +8,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="clr-namespace:CodeBrixVideoTool.ViewModels;assembly=CodeBrixVideoTool.Core"
     xmlns:conv="clr-namespace:CodeBrixVideoTool.Converters;assembly=CodeBrixVideoTool.Core"
+    xmlns:cv="clr-namespace:CodeBrix.Platform.UI.Converters;assembly=CodeBrix.Platform.UI.Toolkit"
     xmlns:video="clr-namespace:CodeBrix.Platform.UI.VideoPlayer.Skia;assembly=CodeBrix.Platform.UI.VideoPlayer.Skia"
     xmlns:local="using:CodeBrixVideoTool.Views"
     FontFamily="{StaticResource RobotoFont}"
@@ -19,6 +20,19 @@
 
     <Page.Resources>
         <conv:TimecodeConverter x:Key="Timecode" />
+
+        <!-- A file this application cannot play is still listed, still selectable and still a
+             conversion source - it is only shown dimmed, so the rows that can be played stand out.
+             The two stops are real doubles rather than strings so the row's Opacity takes them
+             without a conversion of its own. -->
+        <cv:BoolToObjectConverter x:Key="PlayableOpacity">
+            <cv:BoolToObjectConverter.TrueValue>
+                <x:Double>1.0</x:Double>
+            </cv:BoolToObjectConverter.TrueValue>
+            <cv:BoolToObjectConverter.FalseValue>
+                <x:Double>0.45</x:Double>
+            </cv:BoolToObjectConverter.FalseValue>
+        </cv:BoolToObjectConverter>
 
         <ui:Style x:Key="SectionHeading" TargetType="c:TextBlock">
             <ui:Setter Property="FontSize" Value="11" />
@@ -40,7 +54,11 @@
         </ui:Style>
 
         <ui:DataTemplate x:Key="LibraryItemTemplate">
-            <Grid Padding="2,6">
+            <!-- One Opacity on the row dims the badge, the name and the summary together. The name is
+                 how the scripted run finds a row and reads the opacity it is really shown at. -->
+            <Grid x:Name="LibraryRow"
+                  Padding="2,6"
+                  Opacity="{d:Binding IsPlayable, Converter={StaticResource PlayableOpacity}}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -75,12 +93,23 @@
         <ui:DataTemplate x:Key="LabelTemplate">
             <TextBlock Text="{d:Binding Label}" TextTrimming="CharacterEllipsis" />
         </ui:DataTemplate>
+
+        <!-- One line of what the last conversion had to say. The bound item IS the line, so this
+             template binds the string itself rather than a property of it. -->
+        <ui:DataTemplate x:Key="RunNoteTemplate">
+            <TextBlock Text="{d:Binding}"
+                       FontSize="11"
+                       TextWrapping="Wrap"
+                       Margin="0,2,0,0"
+                       Foreground="{StaticResource AppMutedTextBrush}" />
+        </ui:DataTemplate>
     </Page.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -140,7 +169,8 @@
                     <TextBlock Grid.Row="0" Text="FILES" Style="{StaticResource SectionHeading}" />
 
                     <Grid Grid.Row="1">
-                        <ListView ItemsSource="{d:Binding Library}"
+                        <ListView x:Name="LibraryList"
+                                  ItemsSource="{d:Binding Library}"
                                   SelectedItem="{d:Binding SelectedItem, Mode=TwoWay}"
                                   ItemTemplate="{StaticResource LibraryItemTemplate}"
                                   SelectionMode="Single"
@@ -319,6 +349,8 @@
                         <ColumnDefinition Width="16" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
@@ -340,7 +372,18 @@
                                   ItemTemplate="{StaticResource LabelTemplate}" />
                     </StackPanel>
 
-                    <StackPanel Grid.Column="4" VerticalAlignment="Bottom">
+                    <!-- The quality stop. Its rows are the QualityLevel values themselves, whose own
+                         names are the words to show, so this drop-down carries no item template. -->
+                    <StackPanel Grid.Column="4">
+                        <TextBlock Text="Quality" Style="{StaticResource FieldLabel}" />
+                        <ComboBox x:Name="QualityBox"
+                                  HorizontalAlignment="Stretch"
+                                  PlaceholderText="Choose a quality"
+                                  ItemsSource="{d:Binding Conversion.QualityLevels}"
+                                  SelectedItem="{d:Binding Conversion.SelectedQuality, Mode=TwoWay}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="6" VerticalAlignment="Bottom">
                         <Button Content="{d:Binding Conversion.ActionLabel}"
                                 MinWidth="140"
                                 Padding="20,9"
@@ -421,6 +464,20 @@
                            TextTrimming="CharacterEllipsis"
                            Foreground="{StaticResource AppMutedTextBrush}" />
             </Grid>
+        </Border>
+
+        <!-- What the last conversion had to say for itself: the streamable-profile verdict when
+             there was one, then every note the run produced. Collapsed, and taking no room at all,
+             until a run leaves something behind; emptied again the moment the next run starts. -->
+        <Border Grid.Row="4"
+                Background="{StaticResource AppRaisedPanelBrush}"
+                BorderBrush="{StaticResource AppDividerBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="20,6,20,10"
+                Visibility="{d:Binding Conversion.LastRunNotesVisibility}">
+            <ItemsControl x:Name="LastRunNotesList"
+                          ItemsSource="{d:Binding Conversion.LastRunNotes}"
+                          ItemTemplate="{StaticResource RunNoteTemplate}" />
         </Border>
     </Grid>
 </Page>

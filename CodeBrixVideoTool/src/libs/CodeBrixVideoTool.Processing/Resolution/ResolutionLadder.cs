@@ -5,22 +5,30 @@ namespace CodeBrixVideoTool.Processing.Resolution;
 
 /// <summary>
 /// Builds the preset resolution ladder a conversion offers: the source's own size, then the
-/// standard heights that are strictly smaller than it, each scaled proportionally to even
-/// dimensions.
+/// standard rungs that are strictly smaller than it, each scaled proportionally to even dimensions.
 /// </summary>
 /// <remarks>
+/// <para>
+/// A rung's number names the SHORT side of the picture, which is the industry convention: landscape
+/// 1440p is 2560 x 1440 and portrait 1440p is 1440 x 2560. A landscape source therefore behaves
+/// exactly as height keying did, and a portrait one reads the way a person expects - a 1080 x 1920
+/// phone clip is offered "720p (720 x 1280)", not a 720-tall rung 406 pixels wide.
+/// </para>
+/// <para>
 /// Dimensions are kept even because every one of the four supported formats carries AV1 in 4:2:0,
 /// whose chroma planes are half-size in each direction; an odd dimension has no 4:2:0 representation
 /// and the encoder refuses it.
+/// </para>
 /// </remarks>
 public static class ResolutionLadder
 {
-    /// <summary>The standard heights the ladder offers, tallest first.</summary>
-    public static IReadOnlyList<int> StandardHeights { get; } = [1440, 1080, 720, 480];
+    /// <summary>The standard short sides the ladder offers, largest first.</summary>
+    public static IReadOnlyList<int> StandardShortSides { get; } = [1440, 1080, 720, 480];
 
     /// <summary>
     /// Builds the ladder for one source size. The first rung is always "Original"; the rest are the
-    /// standard heights strictly below the source's height, in descending order.
+    /// standard short sides strictly below the source's own short side, in descending order, with the
+    /// long side following from the source's aspect ratio.
     /// </summary>
     /// <param name="sourceWidth">The source's coded width, in pixels.</param>
     /// <param name="sourceHeight">The source's coded height, in pixels.</param>
@@ -43,50 +51,64 @@ public static class ResolutionLadder
             ResolutionOption.Original(MakeEven(sourceWidth), MakeEven(sourceHeight)),
         };
 
-        foreach (var height in StandardHeights)
+        //The rung names the SHORT side, so a portrait source is measured across its width and a
+        //landscape one across its height - which is what height keying did for every landscape source,
+        //and is why landscape ladders are unchanged.
+        var sourceShortSide = Math.Min(sourceWidth, sourceHeight);
+        var sourceLongSide = Math.Max(sourceWidth, sourceHeight);
+        var isPortrait = sourceWidth < sourceHeight;
+
+        foreach (var shortSide in StandardShortSides)
         {
-            //Strictly below: a source that is already 1080 tall is not offered "1080p".
-            if (height >= sourceHeight)
+            //Strictly below: a source whose short side is already 1080 is not offered "1080p".
+            if (shortSide >= sourceShortSide)
             {
                 continue;
             }
 
+            var keyed = MakeEven(shortSide);
+            var other = ProportionalOtherSide(sourceShortSide, sourceLongSide, shortSide);
+
             rungs.Add(ResolutionOption.Reduced(
-                height + "p",
-                ProportionalWidth(sourceWidth, sourceHeight, height),
-                MakeEven(height)));
+                shortSide + "p",
+                isPortrait ? keyed : other,
+                isPortrait ? other : keyed));
         }
 
         return rungs;
     }
 
     /// <summary>
-    /// The width that keeps the source's aspect ratio at a given height, rounded to the nearest even
-    /// number of pixels.
+    /// The side that keeps the source's aspect ratio when the side a rung NAMES is scaled to it,
+    /// rounded to the nearest even number of pixels.
     /// </summary>
-    /// <param name="sourceWidth">The source's coded width, in pixels.</param>
-    /// <param name="sourceHeight">The source's coded height, in pixels.</param>
-    /// <param name="targetHeight">The height the rung asks for, in pixels.</param>
-    /// <returns>An even width, never smaller than 2.</returns>
+    /// <param name="sourceKeyedSide">The source's own length of the side the rung names, in pixels.</param>
+    /// <param name="sourceOtherSide">The source's own length of the side that follows, in pixels.</param>
+    /// <param name="targetKeyedSide">The length the rung asks the keyed side for, in pixels.</param>
+    /// <returns>An even length for the side that follows, never smaller than 2.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Any argument is not positive.</exception>
-    public static int ProportionalWidth(int sourceWidth, int sourceHeight, int targetHeight)
+    /// <remarks>
+    /// The ladder keys on the short side, so the keyed side is the source's height for a landscape
+    /// picture and its width for a portrait one, and the side that follows is the other of the two.
+    /// </remarks>
+    public static int ProportionalOtherSide(int sourceKeyedSide, int sourceOtherSide, int targetKeyedSide)
     {
-        if (sourceWidth <= 0)
+        if (sourceKeyedSide <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(sourceWidth), sourceWidth, "A source width must be positive.");
+            throw new ArgumentOutOfRangeException(nameof(sourceKeyedSide), sourceKeyedSide, "A source dimension must be positive.");
         }
 
-        if (sourceHeight <= 0)
+        if (sourceOtherSide <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(sourceHeight), sourceHeight, "A source height must be positive.");
+            throw new ArgumentOutOfRangeException(nameof(sourceOtherSide), sourceOtherSide, "A source dimension must be positive.");
         }
 
-        if (targetHeight <= 0)
+        if (targetKeyedSide <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(targetHeight), targetHeight, "A target height must be positive.");
+            throw new ArgumentOutOfRangeException(nameof(targetKeyedSide), targetKeyedSide, "A target dimension must be positive.");
         }
 
-        var exact = sourceWidth * (double)targetHeight / sourceHeight;
+        var exact = sourceOtherSide * (double)targetKeyedSide / sourceKeyedSide;
         return MakeEven((int)Math.Round(exact, MidpointRounding.AwayFromZero));
     }
 

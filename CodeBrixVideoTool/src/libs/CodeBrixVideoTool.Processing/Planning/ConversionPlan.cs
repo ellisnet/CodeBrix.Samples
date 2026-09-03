@@ -16,6 +16,7 @@ public sealed class ConversionPlan
     /// <param name="destination">The format being written.</param>
     /// <param name="outputPath">Where the result goes.</param>
     /// <param name="resolution">The rung of the resolution ladder that was chosen.</param>
+    /// <param name="quality">The quality stop that was chosen.</param>
     /// <param name="operation">What the conversion is called.</param>
     /// <param name="steps">The route, in a sentence per step.</param>
     public ConversionPlan(
@@ -23,6 +24,7 @@ public sealed class ConversionPlan
         MediaFormatKind destination,
         string outputPath,
         ResolutionOption resolution,
+        QualityLevel quality,
         ConversionOperationKind operation,
         IReadOnlyList<string> steps)
     {
@@ -30,6 +32,7 @@ public sealed class ConversionPlan
         Destination = destination;
         OutputPath = outputPath;
         Resolution = resolution;
+        Quality = quality;
         Operation = operation;
         Steps = steps ?? [];
     }
@@ -46,6 +49,12 @@ public sealed class ConversionPlan
     /// <summary>The rung of the resolution ladder that was chosen.</summary>
     public ResolutionOption Resolution { get; }
 
+    /// <summary>
+    /// The quality stop that was chosen. It settles the encoder's constant rate factor and nothing
+    /// else - see <see cref="Operations.ConversionRunner" />.
+    /// </summary>
+    public QualityLevel Quality { get; }
+
     /// <summary>What the conversion is called: Import, Transcode or Export.</summary>
     public ConversionOperationKind Operation { get; }
 
@@ -54,6 +63,15 @@ public sealed class ConversionPlan
 
     /// <summary>The audio codec the destination is written with, chosen from the destination alone.</summary>
     public TargetAudioCodec AudioCodec => MediaFormats.AudioCodecFor(Destination);
+
+    /// <summary>
+    /// How many audio channels the destination is written with: the source's own count, capped at what
+    /// this application writes to that destination. See <see cref="MediaFormats.AudioChannelsFor" />.
+    /// </summary>
+    public int AudioChannels => MediaFormats.AudioChannelsFor(Destination, Source.AudioChannels);
+
+    /// <summary>True when the destination carries fewer audio channels than the source does.</summary>
+    public bool DownmixesAudio => Source.HasAudio && AudioChannels < Source.AudioChannels;
 
     /// <summary>The video codec the destination is written with, chosen from the destination alone.</summary>
     public TargetVideoCodec VideoCodec => MediaFormats.VideoCodecFor(Destination);
