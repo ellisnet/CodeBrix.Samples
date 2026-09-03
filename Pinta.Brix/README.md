@@ -32,110 +32,110 @@ coverage drawn from CodeBrix libraries and add-ins.
 ## What this sample shows a CodeBrix.Platform developer
 
 - How to draw a document on an `SKXamlCanvas` subclass that composites layers,
-  scales for zoom and repaints fast: [Draw a zoomable document canvas on an SKXamlCanvas subclass](../BLUEPRINTS.md#draw-a-zoomable-document-canvas-on-an-skxamlcanvas-subclass).
+  scales for zoom and repaints fast: [Draw a zoomable document canvas on an SKXamlCanvas subclass](../BLUEPRINTS-GraphicsAndRendering.md#draw-a-zoomable-document-canvas-on-an-skxamlcanvas-subclass).
 - How to accumulate invalidated regions and re-composite only the dirty part of
-  a cached surface: [Repaint only the dirty rectangle of a cached composite](../BLUEPRINTS.md#repaint-only-the-dirty-rectangle-of-a-cached-composite).
+  a cached surface: [Repaint only the dirty rectangle of a cached composite](../BLUEPRINTS-GraphicsAndRendering.md#repaint-only-the-dirty-rectangle-of-a-cached-composite).
 - How to let the model, not the `ScrollViewer`, decide where the viewport goes
-  after a zoom: [Host a canvas in a scroll viewer and drive zoom and scroll from an interface](../BLUEPRINTS.md#host-a-canvas-in-a-scroll-viewer-and-drive-zoom-and-scroll-from-an-interface).
+  after a zoom: [Host a canvas in a scroll viewer and drive zoom and scroll from an interface](../BLUEPRINTS-GraphicsAndRendering.md#host-a-canvas-in-a-scroll-viewer-and-drive-zoom-and-scroll-from-an-interface).
 - How to turn pointer and key events into a framework-free input model so the
-  tools can be tested headless: [Translate platform pointer and key events into a headless input model](../BLUEPRINTS.md#translate-platform-pointer-and-key-events-into-a-headless-input-model).
+  tools can be tested headless: [Translate platform pointer and key events into a headless input model](../BLUEPRINTS-ViewsAndControls.md#translate-platform-pointer-and-key-events-into-a-headless-input-model).
 - How to build menus, toolbars and pad toolbars from a command model so a
-  command's label, icon, shortcut and enabled state are declared once: [Build menus and toolbars from a command model instead of XAML](../BLUEPRINTS.md#build-menus-and-toolbars-from-a-command-model-instead-of-xaml).
+  command's label, icon, shortcut and enabled state are declared once: [Build menus and toolbars from a command model instead of XAML](../BLUEPRINTS-ViewsAndControls.md#build-menus-and-toolbars-from-a-command-model-instead-of-xaml).
 - How to get keyboard shortcuts working on the Skia heads from a single page
-  `KeyDown` handler: [Dispatch keyboard shortcuts from one page KeyDown handler](../BLUEPRINTS.md#dispatch-keyboard-shortcuts-from-one-page-keydown-handler).
+  `KeyDown` handler: [Dispatch keyboard shortcuts from one page KeyDown handler](../BLUEPRINTS-ViewsAndControls.md#dispatch-keyboard-shortcuts-from-one-page-keydown-handler).
 - How to recompute the enabled state of dozens of commands in one pass from the
-  facts they all depend on: [Refresh command enablement in one pass from a headless command model](../BLUEPRINTS.md#refresh-command-enablement-in-one-pass-from-a-headless-command-model).
+  facts they all depend on: [Refresh command enablement in one pass from a headless command model](../BLUEPRINTS-MVVM.md#refresh-command-enablement-in-one-pass-from-a-headless-command-model).
 - How to render a per-tool options row from descriptors a UI-free library
-  appends to a list: [Render a tool options toolbar from a descriptor model](../BLUEPRINTS.md#render-a-tool-options-toolbar-from-a-descriptor-model).
+  appends to a list: [Render a tool options toolbar from a descriptor model](../BLUEPRINTS-ViewsAndControls.md#render-a-tool-options-toolbar-from-a-descriptor-model).
 - How to run an expensive transform on worker threads, show partial results as
-  they land, stay cancellable and end up in the undo history: [Run an effect on worker threads with a live preview](../BLUEPRINTS.md#run-an-effect-on-worker-threads-with-a-live-preview).
+  they land, stay cancellable and end up in the undo history: [Run an effect on worker threads with a live preview](../BLUEPRINTS-MVVM.md#run-an-effect-on-worker-threads-with-a-live-preview).
 - How to show a parameters panel that does not dim the window, so a live preview
-  stays visible and interactive: [Show a modeless floating options panel so a live preview stays visible](../BLUEPRINTS.md#show-a-modeless-floating-options-panel-so-a-live-preview-stays-visible).
+  stays visible and interactive: [Show a modeless floating options panel so a live preview stays visible](../BLUEPRINTS-ViewsAndControls.md#show-a-modeless-floating-options-panel-so-a-live-preview-stays-visible).
 - How to generate an options panel from a data object's properties instead of
-  hand-building one per effect: [Generate an options panel from object properties by reflection](../BLUEPRINTS.md#generate-an-options-panel-from-object-properties-by-reflection).
+  hand-building one per effect: [Generate an options panel from object properties by reflection](../BLUEPRINTS-ViewsAndControls.md#generate-an-options-panel-from-object-properties-by-reflection).
 - How to drive an undo history from a list the user can click into, travelling
-  one step at a time: [Drive an undo history from a list and travel to a clicked point](../BLUEPRINTS.md#drive-an-undo-history-from-a-list-and-travel-to-a-clicked-point).
+  one step at a time: [Drive an undo history from a list and travel to a clicked point](../BLUEPRINTS-MVVM.md#drive-an-undo-history-from-a-list-and-travel-to-a-clicked-point).
 - How to keep a `TabView` and a model-owned document list in sync in both
-  directions: [Bind a tab per open document and keep both directions in sync](../BLUEPRINTS.md#bind-a-tab-per-open-document-and-keep-both-directions-in-sync).
+  directions: [Bind a tab per open document and keep both directions in sync](../BLUEPRINTS-MVVM.md#bind-a-tab-per-open-document-and-keep-both-directions-in-sync).
 - How to stop a programmatic selection change from commanding the control back:
-  [Stop a two way bound selection from commanding the control back](../BLUEPRINTS.md#stop-a-two-way-bound-selection-from-commanding-the-control-back).
+  [Stop a two way bound selection from commanding the control back](../BLUEPRINTS-MVVM.md#stop-a-two-way-bound-selection-from-commanding-the-control-back).
 - How to funnel every close path through one save prompt so no document is lost
-  quietly: [Prompt before discarding unsaved work](../BLUEPRINTS.md#prompt-before-discarding-unsaved-work).
+  quietly: [Prompt before discarding unsaved work](../BLUEPRINTS-MVVM.md#prompt-before-discarding-unsaved-work).
 - How to veto the window's own close, run an async prompt and re-issue the close
-  when the answer arrives: [Veto a window close until unsaved work is handled](../BLUEPRINTS.md#veto-a-window-close-until-unsaved-work-is-handled).
+  when the answer arrives: [Veto a window close until unsaved work is handled](../BLUEPRINTS-PlatformServices.md#veto-a-window-close-until-unsaved-work-is-handled).
 - How to install UI dialogs into a UI-free library through handler delegates:
-  [Install UI dialogs into a headless model through handler delegates](../BLUEPRINTS.md#install-ui-dialogs-into-a-headless-model-through-handler-delegates).
+  [Install UI dialogs into a headless model through handler delegates](../BLUEPRINTS-PlatformServices.md#install-ui-dialogs-into-a-headless-model-through-handler-delegates).
 - How to put the clipboard behind an interface that starts as a no-op so callers
-  never have to test for it: [Put a platform service behind an interface with a no-op default](../BLUEPRINTS.md#put-a-platform-service-behind-an-interface-with-a-no-op-default).
+  never have to test for it: [Put a platform service behind an interface with a no-op default](../BLUEPRINTS-PlatformServices.md#put-a-platform-service-behind-an-interface-with-a-no-op-default).
 - How to give a UI-free library a periodic tick without letting it see the
-  dispatcher: [Marshal a repeating timer into a headless model](../BLUEPRINTS.md#marshal-a-repeating-timer-into-a-headless-model).
+  dispatcher: [Marshal a repeating timer into a headless model](../BLUEPRINTS-PlatformServices.md#marshal-a-repeating-timer-into-a-headless-model).
 - How to hand the view model a `XamlRoot` getter so its dialog helpers can
-  attach: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+  attach: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 - How to let the model choose the mouse cursor without holding a platform type:
-  [Set the mouse cursor from a model owned interface](../BLUEPRINTS.md#set-the-mouse-cursor-from-a-model-owned-interface).
+  [Set the mouse cursor from a model owned interface](../BLUEPRINTS-PlatformServices.md#set-the-mouse-cursor-from-a-model-owned-interface).
 - How to show progress and offer cancel from a synchronous loop that keeps
-  running while the dialog is up: [Show a cancellable progress dialog from synchronous code](../BLUEPRINTS.md#show-a-cancellable-progress-dialog-from-synchronous-code).
+  running while the dialog is up: [Show a cancellable progress dialog from synchronous code](../BLUEPRINTS-ViewsAndControls.md#show-a-cancellable-progress-dialog-from-synchronous-code).
 - How to build a small pixel-exact control that draws itself and hit-tests its
-  own geometry: [Build a drawn widget as an SKXamlCanvas subclass with hit testing](../BLUEPRINTS.md#build-a-drawn-widget-as-an-skxamlcanvas-subclass-with-hit-testing).
+  own geometry: [Build a drawn widget as an SKXamlCanvas subclass with hit testing](../BLUEPRINTS-ViewsAndControls.md#build-a-drawn-widget-as-an-skxamlcanvas-subclass-with-hit-testing).
 - How to draw in an element's logical coordinates on a surface that is in
-  physical pixels: [Scale a Skia drawn control from surface pixels to logical units](../BLUEPRINTS.md#scale-a-skia-drawn-control-from-surface-pixels-to-logical-units).
+  physical pixels: [Scale a Skia drawn control from surface pixels to logical units](../BLUEPRINTS-GraphicsAndRendering.md#scale-a-skia-drawn-control-from-surface-pixels-to-logical-units).
 - How to animate an overlay with a timer that stops as soon as its view leaves
-  the tree: [Animate an overlay with a timer that stops when unloaded](../BLUEPRINTS.md#animate-an-overlay-with-a-timer-that-stops-when-unloaded).
-- How to supply a draggable splitter bar where the platform ships none: [Supply a splitter bar where the platform has none](../BLUEPRINTS.md#supply-a-splitter-bar-where-the-platform-has-none).
+  the tree: [Animate an overlay with a timer that stops when unloaded](../BLUEPRINTS-GraphicsAndRendering.md#animate-an-overlay-with-a-timer-that-stops-when-unloaded).
+- How to supply a draggable splitter bar where the platform ships none: [Supply a splitter bar where the platform has none](../BLUEPRINTS-ViewsAndControls.md#supply-a-splitter-bar-where-the-platform-has-none).
 - How to lay out an editor shell of menus, toolbars, a toolbox, tabbed documents,
-  side pads and a status bar: [Lay out a document editor shell with tabs a toolbox and pads](../BLUEPRINTS.md#lay-out-a-document-editor-shell-with-tabs-a-toolbox-and-pads).
+  side pads and a status bar: [Lay out a document editor shell with tabs a toolbox and pads](../BLUEPRINTS-ViewsAndControls.md#lay-out-a-document-editor-shell-with-tabs-a-toolbox-and-pads).
 - How to turn raw premultiplied BGRA pixels into an `ImageSource` an `Image`
-  element can show: [Turn raw pixel surfaces into XAML image sources](../BLUEPRINTS.md#turn-raw-pixel-surfaces-into-xaml-image-sources).
+  element can show: [Turn raw pixel surfaces into XAML image sources](../BLUEPRINTS-GraphicsAndRendering.md#turn-raw-pixel-surfaces-into-xaml-image-sources).
 - How to carry an icon set as embedded resources and rasterize its scalable art
-  at any requested size: [Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS.md#rasterize-svg-art-with-the-codebrix-skiasvg-library).
+  at any requested size: [Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS-GraphicsAndRendering.md#rasterize-svg-art-with-the-codebrix-skiasvg-library).
 - How to give a large body of ported drawing code an immediate-mode facade so
-  only one namespace knows SkiaSharp: [Give a headless library a drawing facade over SkiaSharp](../BLUEPRINTS.md#give-a-headless-library-a-drawing-facade-over-skiasharp).
-- How to do boolean geometry on user-drawn regions: [Combine selection polygons with the CodeBrix PolygonTools library](../BLUEPRINTS.md#combine-selection-polygons-with-the-codebrix-polygontools-library).
+  only one namespace knows SkiaSharp: [Give a headless library a drawing facade over SkiaSharp](../BLUEPRINTS-GraphicsAndRendering.md#give-a-headless-library-a-drawing-facade-over-skiasharp).
+- How to do boolean geometry on user-drawn regions: [Combine selection polygons with the CodeBrix PolygonTools library](../BLUEPRINTS-GraphicsAndRendering.md#combine-selection-polygons-with-the-codebrix-polygontools-library).
 - How to register every importer and exporter from one entry point a library
-  owns: [Register import and export formats at startup through one entry point](../BLUEPRINTS.md#register-import-and-export-formats-at-startup-through-one-entry-point).
+  owns: [Register import and export formats at startup through one entry point](../BLUEPRINTS-DocumentsAndData.md#register-import-and-export-formats-at-startup-through-one-entry-point).
 - How to add the formats Skia cannot encode without changing anything above the
-  format registry: [Add codec coverage beyond SkiaSharp with the CodeBrix Imaging library](../BLUEPRINTS.md#add-codec-coverage-beyond-skiasharp-with-the-codebrix-imaging-library).
-- How to decode photographs upright: [Honor EXIF orientation when decoding with SkiaSharp codecs](../BLUEPRINTS.md#honor-exif-orientation-when-decoding-with-skiasharp-codecs).
+  format registry: [Add codec coverage beyond SkiaSharp with the CodeBrix Imaging library](../BLUEPRINTS-DocumentsAndData.md#add-codec-coverage-beyond-skiasharp-with-the-codebrix-imaging-library).
+- How to decode photographs upright: [Honor EXIF orientation when decoding with SkiaSharp codecs](../BLUEPRINTS-GraphicsAndRendering.md#honor-exif-orientation-when-decoding-with-skiasharp-codecs).
 - How to run a Save As through a native picker whose filters come from the format
-  registry, warning before a lossy conversion: [Save a document through a native picker with format filters](../BLUEPRINTS.md#save-a-document-through-a-native-picker-with-format-filters).
+  registry, warning before a lossy conversion: [Save a document through a native picker with format filters](../BLUEPRINTS-DocumentsAndData.md#save-a-document-through-a-native-picker-with-format-filters).
 - How to let a codec ask the UI one optional question without taking a UI
-  dependency: [Raise a UI hook from a codec through a static event](../BLUEPRINTS.md#raise-a-ui-hook-from-a-codec-through-a-static-event).
+  dependency: [Raise a UI hook from a codec through a static event](../BLUEPRINTS-DocumentsAndData.md#raise-a-ui-hook-from-a-codec-through-a-static-event).
 - How to put one application-named facade in front of the settings backend so
-  nothing else knows what the store is made of: [Wrap the AppSettings add-in in one application named facade](../BLUEPRINTS.md#wrap-the-appsettings-add-in-in-one-application-named-facade).
-- How to open that store before anything can read a setting: [Open the settings store before any other startup work](../BLUEPRINTS.md#open-the-settings-store-before-any-other-startup-work).
+  nothing else knows what the store is made of: [Wrap the AppSettings add-in in one application named facade](../BLUEPRINTS-SettingsAndPersistence.md#wrap-the-appsettings-add-in-in-one-application-named-facade).
+- How to open that store before anything can read a setting: [Open the settings store before any other startup work](../BLUEPRINTS-SettingsAndPersistence.md#open-the-settings-store-before-any-other-startup-work).
 - How to reopen at the size the user left, including the scale conversion that is
-  easy to get wrong: [Restore a remembered window size before any window exists](../BLUEPRINTS.md#restore-a-remembered-window-size-before-any-window-exists).
+  easy to get wrong: [Restore a remembered window size before any window exists](../BLUEPRINTS-SettingsAndPersistence.md#restore-a-remembered-window-size-before-any-window-exists).
 - How to keep a palette, a recent-colors list and per-tool options in the same
-  store as everything else: [Persist small pieces of application state through the same store](../BLUEPRINTS.md#persist-small-pieces-of-application-state-through-the-same-store).
+  store as everything else: [Persist small pieces of application state through the same store](../BLUEPRINTS-SettingsAndPersistence.md#persist-small-pieces-of-application-state-through-the-same-store).
 - How to flush state that used to be written at quit, in an application that has
-  no quit command: [Flush deferred settings at natural points instead of at quit](../BLUEPRINTS.md#flush-deferred-settings-at-natural-points-instead-of-at-quit).
+  no quit command: [Flush deferred settings at natural points instead of at quit](../BLUEPRINTS-SettingsAndPersistence.md#flush-deferred-settings-at-natural-points-instead-of-at-quit).
 - How to shape, measure, hit-test and outline re-editable text with no XAML text
-  control involved: [Lay out and draw text through the CodeBrix Platform TextLayout add-in](../BLUEPRINTS.md#lay-out-and-draw-text-through-the-codebrix-platform-textlayout-add-in).
+  control involved: [Lay out and draw text through the CodeBrix Platform TextLayout add-in](../BLUEPRINTS-TextEditing.md#lay-out-and-draw-text-through-the-codebrix-platform-textlayout-add-in).
 - How to boot each of the six desktop heads from a `Program.Main()` that differs
-  only in its head extension method: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
-- How to order the work in the `App` constructor: [Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
+  only in its head extension method: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+- How to order the work in the `App` constructor: [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
 - How to give `SimpleServiceResolver` a generic host builder from the Core
-  library: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+  library: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
 - How to tell `SimpleViewModel` it is not running in a designer, and how a view
-  model constructor guards for one: [Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer).
+  model constructor guards for one: [Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
 - How to make a bundled font the default for every text element on the Skia
-  heads: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
+  heads: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
 - How to wire framework logging in debug builds only, before the host is built:
-  [Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
+  [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 - How to select the render surface on the WinWpfSkia head without touching any
-  other head: [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head).
+  other head: [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head).
 - How to keep a library that references CodeBrix.Platform from breaking the head
-  build: [Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace).
-- How to keep one page's wiring navigable when it genuinely is large: [Split a page code-behind into named partial files](../BLUEPRINTS.md#split-a-page-code-behind-into-named-partial-files).
+  build: [Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace).
+- How to keep one page's wiring navigable when it genuinely is large: [Split a page code-behind into named partial files](../BLUEPRINTS-ViewsAndControls.md#split-a-page-code-behind-into-named-partial-files).
 - How to build a test project that runs real platform code headless instead of
-  reference assemblies: [Build a test project against real CodeBrix Platform assemblies](../BLUEPRINTS.md#build-a-test-project-against-real-codebrix-platform-assemblies).
+  reference assemblies: [Build a test project against real CodeBrix Platform assemblies](../BLUEPRINTS-Testing.md#build-a-test-project-against-real-codebrix-platform-assemblies).
 - How to add, by hand, the native libraries an application head would have got
-  from its runtime package: [Add the native assets a head would have supplied](../BLUEPRINTS.md#add-the-native-assets-a-head-would-have-supplied).
-- How to let a test project see a library's internal types: [Expose library internals to its test project](../BLUEPRINTS.md#expose-library-internals-to-its-test-project).
+  from its runtime package: [Add the native assets a head would have supplied](../BLUEPRINTS-Testing.md#add-the-native-assets-a-head-would-have-supplied).
+- How to let a test project see a library's internal types: [Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project).
 - How to write golden-image tests that are exact but tolerate one-bit rounding,
-  and report the first differences usefully: [Compare rendered images pixel by pixel](../BLUEPRINTS.md#compare-rendered-images-pixel-by-pixel).
+  and report the first differences usefully: [Compare rendered images pixel by pixel](../BLUEPRINTS-Testing.md#compare-rendered-images-pixel-by-pixel).
 - How to keep tests away from the user's real settings when the store is a
-  process-global singleton: [Point a process-global store at a throwaway folder in tests](../BLUEPRINTS.md#point-a-process-global-store-at-a-throwaway-folder-in-tests).
+  process-global singleton: [Point a process-global store at a throwaway folder in tests](../BLUEPRINTS-Testing.md#point-a-process-global-store-at-a-throwaway-folder-in-tests).
 
 ## Building, running and testing
 
@@ -304,9 +304,9 @@ zoom, status text) as bound properties and the shell operations as
 view model, hand it a `XamlRoot` getter, and install the bridge implementations
 the engine asked for. Read `Services/ICanvasView.cs` first, then
 `PlatformServices.cs`, then `Services/NullServices.cs` to see the degradation
-path. The blueprints are [Put a platform service behind an interface with a no-op default](../BLUEPRINTS.md#put-a-platform-service-behind-an-interface-with-a-no-op-default),
-[Marshal a repeating timer into a headless model](../BLUEPRINTS.md#marshal-a-repeating-timer-into-a-headless-model)
-and [Install UI dialogs into a headless model through handler delegates](../BLUEPRINTS.md#install-ui-dialogs-into-a-headless-model-through-handler-delegates).
+path. The blueprints are [Put a platform service behind an interface with a no-op default](../BLUEPRINTS-PlatformServices.md#put-a-platform-service-behind-an-interface-with-a-no-op-default),
+[Marshal a repeating timer into a headless model](../BLUEPRINTS-PlatformServices.md#marshal-a-repeating-timer-into-a-headless-model)
+and [Install UI dialogs into a headless model through handler delegates](../BLUEPRINTS-PlatformServices.md#install-ui-dialogs-into-a-headless-model-through-handler-delegates).
 
 ### The document canvas
 
@@ -329,10 +329,10 @@ computed by `DocumentWorkspace` in the engine and applied by the view through
 the scroll extents reflect the new element size before a new offset is set.
 
 Read `PintaCanvas.cs`, then `CanvasRenderer.cs`, then `PintaCanvasView.cs`, then
-`src/libs/Pinta.Brix.Engine/Classes/DocumentWorkspace.cs`. See [Draw a zoomable document canvas on an SKXamlCanvas subclass](../BLUEPRINTS.md#draw-a-zoomable-document-canvas-on-an-skxamlcanvas-subclass),
-[Repaint only the dirty rectangle of a cached composite](../BLUEPRINTS.md#repaint-only-the-dirty-rectangle-of-a-cached-composite),
-[Host a canvas in a scroll viewer and drive zoom and scroll from an interface](../BLUEPRINTS.md#host-a-canvas-in-a-scroll-viewer-and-drive-zoom-and-scroll-from-an-interface)
-and [Animate an overlay with a timer that stops when unloaded](../BLUEPRINTS.md#animate-an-overlay-with-a-timer-that-stops-when-unloaded).
+`src/libs/Pinta.Brix.Engine/Classes/DocumentWorkspace.cs`. See [Draw a zoomable document canvas on an SKXamlCanvas subclass](../BLUEPRINTS-GraphicsAndRendering.md#draw-a-zoomable-document-canvas-on-an-skxamlcanvas-subclass),
+[Repaint only the dirty rectangle of a cached composite](../BLUEPRINTS-GraphicsAndRendering.md#repaint-only-the-dirty-rectangle-of-a-cached-composite),
+[Host a canvas in a scroll viewer and drive zoom and scroll from an interface](../BLUEPRINTS-GraphicsAndRendering.md#host-a-canvas-in-a-scroll-viewer-and-drive-zoom-and-scroll-from-an-interface)
+and [Animate an overlay with a timer that stops when unloaded](../BLUEPRINTS-GraphicsAndRendering.md#animate-an-overlay-with-a-timer-that-stops-when-unloaded).
 
 ### Input translated into a model the tools can be tested against
 
@@ -348,8 +348,8 @@ button has to be recovered from the update kind.
 
 Read `PintaCanvas.cs` for the event handlers and `InputMapper.cs` for the
 mapping, then any tool in `src/libs/Pinta.Brix.Tools/Tools/` to see what the
-model side looks like. See [Translate platform pointer and key events into a headless input model](../BLUEPRINTS.md#translate-platform-pointer-and-key-events-into-a-headless-input-model)
-and [Set the mouse cursor from a model owned interface](../BLUEPRINTS.md#set-the-mouse-cursor-from-a-model-owned-interface).
+model side looks like. See [Translate platform pointer and key events into a headless input model](../BLUEPRINTS-ViewsAndControls.md#translate-platform-pointer-and-key-events-into-a-headless-input-model)
+and [Set the mouse cursor from a model owned interface](../BLUEPRINTS-PlatformServices.md#set-the-mouse-cursor-from-a-model-owned-interface).
 
 ### Menus, toolbars and shortcuts generated from the command model
 
@@ -375,9 +375,9 @@ from the same few facts - is a document open, is there a selection, how many
 layers, can the history undo - from one "something changed" funnel; that is
 exactly what `[AffectsCommands]` automates when the commands live on a view
 model. Read `Actions/Command.cs`, then `Menus/CommandMenuBuilder.cs`, then
-`MainPage.Menus.cs`, then `MainPage.Actions.cs`. See [Build menus and toolbars from a command model instead of XAML](../BLUEPRINTS.md#build-menus-and-toolbars-from-a-command-model-instead-of-xaml),
-[Dispatch keyboard shortcuts from one page KeyDown handler](../BLUEPRINTS.md#dispatch-keyboard-shortcuts-from-one-page-keydown-handler)
-and [Refresh command enablement in one pass from a headless command model](../BLUEPRINTS.md#refresh-command-enablement-in-one-pass-from-a-headless-command-model).
+`MainPage.Menus.cs`, then `MainPage.Actions.cs`. See [Build menus and toolbars from a command model instead of XAML](../BLUEPRINTS-ViewsAndControls.md#build-menus-and-toolbars-from-a-command-model-instead-of-xaml),
+[Dispatch keyboard shortcuts from one page KeyDown handler](../BLUEPRINTS-ViewsAndControls.md#dispatch-keyboard-shortcuts-from-one-page-keydown-handler)
+and [Refresh command enablement in one pass from a headless command model](../BLUEPRINTS-MVVM.md#refresh-command-enablement-in-one-pass-from-a-headless-command-model).
 
 ### Tool options and effect dialogs, generated rather than hand-built
 
@@ -401,9 +401,9 @@ lives at the single seam where the UI installs its dialog handler into the engin
 The panels are shown in a modeless `Popup` with its own title bar and OK/Cancel
 rather than a `ContentDialog`, because a dialog that dims the window defeats the
 live preview the user is adjusting. Read `ToolBarRenderer.cs`, then
-`EffectOptionsDialog.cs`, then `FloatingDialogHost.cs`. See [Render a tool options toolbar from a descriptor model](../BLUEPRINTS.md#render-a-tool-options-toolbar-from-a-descriptor-model),
-[Generate an options panel from object properties by reflection](../BLUEPRINTS.md#generate-an-options-panel-from-object-properties-by-reflection)
-and [Show a modeless floating options panel so a live preview stays visible](../BLUEPRINTS.md#show-a-modeless-floating-options-panel-so-a-live-preview-stays-visible).
+`EffectOptionsDialog.cs`, then `FloatingDialogHost.cs`. See [Render a tool options toolbar from a descriptor model](../BLUEPRINTS-ViewsAndControls.md#render-a-tool-options-toolbar-from-a-descriptor-model),
+[Generate an options panel from object properties by reflection](../BLUEPRINTS-ViewsAndControls.md#generate-an-options-panel-from-object-properties-by-reflection)
+and [Show a modeless floating options panel so a live preview stays visible](../BLUEPRINTS-ViewsAndControls.md#show-a-modeless-floating-options-panel-so-a-live-preview-stays-visible).
 
 ### The live preview
 
@@ -424,8 +424,8 @@ while the preview is live, so no separate compositing path is needed.
 Read `Managers/LivePreviewManager.cs`, then `Classes/AsyncEffectRenderer.cs`,
 then `Effects/BaseEffect.cs`. In a view-model version the command that launches
 an effect is a `SimpleCommand`, the busy flag is a bound property, and results
-marshal back with `InvokeOnMainThread`. See [Run an effect on worker threads with a live preview](../BLUEPRINTS.md#run-an-effect-on-worker-threads-with-a-live-preview)
-and [Show a cancellable progress dialog from synchronous code](../BLUEPRINTS.md#show-a-cancellable-progress-dialog-from-synchronous-code).
+marshal back with `InvokeOnMainThread`. See [Run an effect on worker threads with a live preview](../BLUEPRINTS-MVVM.md#run-an-effect-on-worker-threads-with-a-live-preview)
+and [Show a cancellable progress dialog from synchronous code](../BLUEPRINTS-ViewsAndControls.md#show-a-cancellable-progress-dialog-from-synchronous-code).
 
 ### Undo history the user can scrub
 
@@ -442,8 +442,8 @@ model, the selected index is a bound property whose setter travels, and the
 suppression flag lives on the view model in a `try`/`finally`. Read
 `Classes/DocumentHistory.cs`, then `Pads/HistoryRowFactory.cs`, then the history
 handlers in `MainPage.xaml.cs`, then `Tools/PencilTool.cs` for the push side. See
-[Drive an undo history from a list and travel to a clicked point](../BLUEPRINTS.md#drive-an-undo-history-from-a-list-and-travel-to-a-clicked-point)
-and [Stop a two way bound selection from commanding the control back](../BLUEPRINTS.md#stop-a-two-way-bound-selection-from-commanding-the-control-back).
+[Drive an undo history from a list and travel to a clicked point](../BLUEPRINTS-MVVM.md#drive-an-undo-history-from-a-list-and-travel-to-a-clicked-point)
+and [Stop a two way bound selection from commanding the control back](../BLUEPRINTS-MVVM.md#stop-a-two-way-bound-selection-from-commanding-the-control-back).
 
 ### The editor shell: tabs, toolbox, pads and status bar
 
@@ -466,9 +466,9 @@ way to lose a document. The platform ships no splitter, so `ThumbSplitter` - a
 the owner decides what the delta means and persists the result.
 
 Read `MainPage.xaml`, then the tab and splitter code in `MainPage.xaml.cs`. See
-[Lay out a document editor shell with tabs a toolbox and pads](../BLUEPRINTS.md#lay-out-a-document-editor-shell-with-tabs-a-toolbox-and-pads),
-[Bind a tab per open document and keep both directions in sync](../BLUEPRINTS.md#bind-a-tab-per-open-document-and-keep-both-directions-in-sync)
-and [Supply a splitter bar where the platform has none](../BLUEPRINTS.md#supply-a-splitter-bar-where-the-platform-has-none).
+[Lay out a document editor shell with tabs a toolbox and pads](../BLUEPRINTS-ViewsAndControls.md#lay-out-a-document-editor-shell-with-tabs-a-toolbox-and-pads),
+[Bind a tab per open document and keep both directions in sync](../BLUEPRINTS-MVVM.md#bind-a-tab-per-open-document-and-keep-both-directions-in-sync)
+and [Supply a splitter bar where the platform has none](../BLUEPRINTS-ViewsAndControls.md#supply-a-splitter-bar-where-the-platform-has-none).
 
 ### Closing without losing work
 
@@ -485,8 +485,8 @@ dropping the user's work.
 Because there is no quit path, nothing can be flushed at exit either. Read
 `MainPage.Dialogs.cs` and the `Closed` handler in `App.xaml.cs`. In the MVVM
 shape the prompt loop is a method on the view model that `App` resolves from
-`SimpleServiceResolver`. See [Prompt before discarding unsaved work](../BLUEPRINTS.md#prompt-before-discarding-unsaved-work)
-and [Veto a window close until unsaved work is handled](../BLUEPRINTS.md#veto-a-window-close-until-unsaved-work-is-handled).
+`SimpleServiceResolver`. See [Prompt before discarding unsaved work](../BLUEPRINTS-MVVM.md#prompt-before-discarding-unsaved-work)
+and [Veto a window close until unsaved work is handled](../BLUEPRINTS-PlatformServices.md#veto-a-window-close-until-unsaved-work-is-handled).
 
 ### File formats: one registry, several codec libraries
 
@@ -512,11 +512,11 @@ cases for matching; a cancelled picker must return false all the way out or a
 cancelled save would mark the document clean. Read
 `Registration/FileFormats.cs`, then `SkiaCodecFormat.cs`, then
 `CodeBrixImagingFormat.cs`, then the save handler in `MainPage.xaml.cs`. See
-[Register import and export formats at startup through one entry point](../BLUEPRINTS.md#register-import-and-export-formats-at-startup-through-one-entry-point),
-[Add codec coverage beyond SkiaSharp with the CodeBrix Imaging library](../BLUEPRINTS.md#add-codec-coverage-beyond-skiasharp-with-the-codebrix-imaging-library),
-[Honor EXIF orientation when decoding with SkiaSharp codecs](../BLUEPRINTS.md#honor-exif-orientation-when-decoding-with-skiasharp-codecs),
-[Save a document through a native picker with format filters](../BLUEPRINTS.md#save-a-document-through-a-native-picker-with-format-filters)
-and [Raise a UI hook from a codec through a static event](../BLUEPRINTS.md#raise-a-ui-hook-from-a-codec-through-a-static-event).
+[Register import and export formats at startup through one entry point](../BLUEPRINTS-DocumentsAndData.md#register-import-and-export-formats-at-startup-through-one-entry-point),
+[Add codec coverage beyond SkiaSharp with the CodeBrix Imaging library](../BLUEPRINTS-DocumentsAndData.md#add-codec-coverage-beyond-skiasharp-with-the-codebrix-imaging-library),
+[Honor EXIF orientation when decoding with SkiaSharp codecs](../BLUEPRINTS-GraphicsAndRendering.md#honor-exif-orientation-when-decoding-with-skiasharp-codecs),
+[Save a document through a native picker with format filters](../BLUEPRINTS-DocumentsAndData.md#save-a-document-through-a-native-picker-with-format-filters)
+and [Raise a UI hook from a codec through a static event](../BLUEPRINTS-DocumentsAndData.md#raise-a-ui-hook-from-a-codec-through-a-static-event).
 
 ### One settings store for everything remembered
 
@@ -544,11 +544,11 @@ is only cheap because the store does nothing when a value has not changed.
 Read `src/libs/Pinta.Brix.Settings/SettingsService.cs`, then the store calls at
 the top of `App.xaml.cs`, then `Managers/SettingsManager.cs` and
 `Managers/PaletteManager.cs`, then `SettingNames.cs` for the key convention. See
-[Wrap the AppSettings add-in in one application named facade](../BLUEPRINTS.md#wrap-the-appsettings-add-in-in-one-application-named-facade),
-[Open the settings store before any other startup work](../BLUEPRINTS.md#open-the-settings-store-before-any-other-startup-work),
-[Restore a remembered window size before any window exists](../BLUEPRINTS.md#restore-a-remembered-window-size-before-any-window-exists),
-[Persist small pieces of application state through the same store](../BLUEPRINTS.md#persist-small-pieces-of-application-state-through-the-same-store)
-and [Flush deferred settings at natural points instead of at quit](../BLUEPRINTS.md#flush-deferred-settings-at-natural-points-instead-of-at-quit).
+[Wrap the AppSettings add-in in one application named facade](../BLUEPRINTS-SettingsAndPersistence.md#wrap-the-appsettings-add-in-in-one-application-named-facade),
+[Open the settings store before any other startup work](../BLUEPRINTS-SettingsAndPersistence.md#open-the-settings-store-before-any-other-startup-work),
+[Restore a remembered window size before any window exists](../BLUEPRINTS-SettingsAndPersistence.md#restore-a-remembered-window-size-before-any-window-exists),
+[Persist small pieces of application state through the same store](../BLUEPRINTS-SettingsAndPersistence.md#persist-small-pieces-of-application-state-through-the-same-store)
+and [Flush deferred settings at natural points instead of at quit](../BLUEPRINTS-SettingsAndPersistence.md#flush-deferred-settings-at-natural-points-instead-of-at-quit).
 
 ### Drawing instead of composing: the palette, histogram and gradient widgets
 
@@ -567,8 +567,8 @@ an `SKXamlCanvas`: the histogram scales the canvas from surface pixels to the
 element's logical units once and then draws in logical coordinates, while the
 gradient computes everything from the element's own measured size. Read
 `Palette/PaletteWidget.cs`, then `Widgets/HistogramWidget.cs` and
-`Widgets/ColorGradientWidget.cs`. See [Build a drawn widget as an SKXamlCanvas subclass with hit testing](../BLUEPRINTS.md#build-a-drawn-widget-as-an-skxamlcanvas-subclass-with-hit-testing)
-and [Scale a Skia drawn control from surface pixels to logical units](../BLUEPRINTS.md#scale-a-skia-drawn-control-from-surface-pixels-to-logical-units).
+`Widgets/ColorGradientWidget.cs`. See [Build a drawn widget as an SKXamlCanvas subclass with hit testing](../BLUEPRINTS-ViewsAndControls.md#build-a-drawn-widget-as-an-skxamlcanvas-subclass-with-hit-testing)
+and [Scale a Skia drawn control from surface pixels to logical units](../BLUEPRINTS-GraphicsAndRendering.md#scale-a-skia-drawn-control-from-surface-pixels-to-logical-units).
 
 ### Text, icons and the drawing facade
 
@@ -599,11 +599,11 @@ immediate-mode semantics differ from a retained scene graph: paths are stored in
 device space, arcs are flattened before transforming, and stroke widths scale by
 the matrix's mean scale factor.
 
-See [Lay out and draw text through the CodeBrix Platform TextLayout add-in](../BLUEPRINTS.md#lay-out-and-draw-text-through-the-codebrix-platform-textlayout-add-in),
-[Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS.md#rasterize-svg-art-with-the-codebrix-skiasvg-library),
-[Turn raw pixel surfaces into XAML image sources](../BLUEPRINTS.md#turn-raw-pixel-surfaces-into-xaml-image-sources),
-[Give a headless library a drawing facade over SkiaSharp](../BLUEPRINTS.md#give-a-headless-library-a-drawing-facade-over-skiasharp)
-and [Combine selection polygons with the CodeBrix PolygonTools library](../BLUEPRINTS.md#combine-selection-polygons-with-the-codebrix-polygontools-library).
+See [Lay out and draw text through the CodeBrix Platform TextLayout add-in](../BLUEPRINTS-TextEditing.md#lay-out-and-draw-text-through-the-codebrix-platform-textlayout-add-in),
+[Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS-GraphicsAndRendering.md#rasterize-svg-art-with-the-codebrix-skiasvg-library),
+[Turn raw pixel surfaces into XAML image sources](../BLUEPRINTS-GraphicsAndRendering.md#turn-raw-pixel-surfaces-into-xaml-image-sources),
+[Give a headless library a drawing facade over SkiaSharp](../BLUEPRINTS-GraphicsAndRendering.md#give-a-headless-library-a-drawing-facade-over-skiasharp)
+and [Combine selection polygons with the CodeBrix PolygonTools library](../BLUEPRINTS-GraphicsAndRendering.md#combine-selection-polygons-with-the-codebrix-polygontools-library).
 
 ### Testing libraries that consume the platform
 
@@ -627,11 +627,11 @@ dependencies from a mock service provider so no real chrome, workspace or palett
 is needed.
 
 Read `Pinta.Brix.Engine.Tests.csproj`, then `TestSettingsStore.cs`, then
-`tests/libs/Pinta.Brix.Effects.Tests/Utilities.cs`. See [Build a test project against real CodeBrix Platform assemblies](../BLUEPRINTS.md#build-a-test-project-against-real-codebrix-platform-assemblies),
-[Add the native assets a head would have supplied](../BLUEPRINTS.md#add-the-native-assets-a-head-would-have-supplied),
-[Expose library internals to its test project](../BLUEPRINTS.md#expose-library-internals-to-its-test-project),
-[Point a process-global store at a throwaway folder in tests](../BLUEPRINTS.md#point-a-process-global-store-at-a-throwaway-folder-in-tests)
-and [Compare rendered images pixel by pixel](../BLUEPRINTS.md#compare-rendered-images-pixel-by-pixel).
+`tests/libs/Pinta.Brix.Effects.Tests/Utilities.cs`. See [Build a test project against real CodeBrix Platform assemblies](../BLUEPRINTS-Testing.md#build-a-test-project-against-real-codebrix-platform-assemblies),
+[Add the native assets a head would have supplied](../BLUEPRINTS-Testing.md#add-the-native-assets-a-head-would-have-supplied),
+[Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project),
+[Point a process-global store at a throwaway folder in tests](../BLUEPRINTS-Testing.md#point-a-process-global-store-at-a-throwaway-folder-in-tests)
+and [Compare rendered images pixel by pixel](../BLUEPRINTS-Testing.md#compare-rendered-images-pixel-by-pixel).
 
 ### Startup, in order
 
@@ -647,15 +647,15 @@ method, except WinWpfSkia, which type-tests the built host and selects a
 software render surface.
 
 Read `src/Pinta.Brix.UI/App.xaml.cs` top to bottom, then any head's
-`Program.cs`, then `src/Pinta.Brix.Core/Helpers/HostHelper.cs`. See [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
-[Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor),
-[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver),
-[Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer),
-[Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks),
-[Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds),
-[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head),
-[Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace)
-and [Split a page code-behind into named partial files](../BLUEPRINTS.md#split-a-page-code-behind-into-named-partial-files).
+`Program.cs`, then `src/Pinta.Brix.Core/Helpers/HostHelper.cs`. See [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
+[Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor),
+[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver),
+[Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer),
+[Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks),
+[Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds),
+[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head),
+[Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace)
+and [Split a page code-behind into named partial files](../BLUEPRINTS-ViewsAndControls.md#split-a-page-code-behind-into-named-partial-files).
 
 ## Third-party content
 

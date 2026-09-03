@@ -27,118 +27,118 @@ user choices through the CodeBrix.Platform.AppSettings add-in behind a one-file 
 ## What this sample shows a CodeBrix.Platform developer
 
 - Reading individual members of a zip archive on demand, without unpacking it to disk:
-  [Read a zip archive without extracting it with the CodeBrix Compression library](../BLUEPRINTS.md#read-a-zip-archive-without-extracting-it-with-the-codebrix-compression-library).
+  [Read a zip archive without extracting it with the CodeBrix Compression library](../BLUEPRINTS-DocumentsAndData.md#read-a-zip-archive-without-extracting-it-with-the-codebrix-compression-library).
 - Turning the many files in a container into fewer, more meaningful browsing items:
-  [Classify and group the contents of a container for browsing](../BLUEPRINTS.md#classify-and-group-the-contents-of-a-container-for-browsing).
+  [Classify and group the contents of a container for browsing](../BLUEPRINTS-DocumentsAndData.md#classify-and-group-the-contents-of-a-container-for-browsing).
 - Resolving a reference one archive member makes to a sibling (a model to its texture, a
   map to its tileset, a tileset to its image):
-  [Resolve a file that another archive entry references by relative path](../BLUEPRINTS.md#resolve-a-file-that-another-archive-entry-references-by-relative-path).
+  [Resolve a file that another archive entry references by relative path](../BLUEPRINTS-DocumentsAndData.md#resolve-a-file-that-another-archive-entry-references-by-relative-path).
 - Keeping every blocking read inside a registered service that only returns tasks:
-  [Do blocking work in a service behind Task Run](../BLUEPRINTS.md#do-blocking-work-in-a-service-behind-task-run).
+  [Do blocking work in a service behind Task Run](../BLUEPRINTS-MVVM.md#do-blocking-work-in-a-service-behind-task-run).
 - Parsing a model off the UI thread while its side files are resolved back into the same
   archive:
-  [Load an asset off the UI thread and resolve its side files from the same container](../BLUEPRINTS.md#load-an-asset-off-the-ui-thread-and-resolve-its-side-files-from-the-same-container).
+  [Load an asset off the UI thread and resolve its side files from the same container](../BLUEPRINTS-MVVM.md#load-an-asset-off-the-ui-thread-and-resolve-its-side-files-from-the-same-container).
 - Putting an interactive OpenGL scene in a page as a bindable control:
-  [Host an OpenGL scene in XAML with a GLCanvasElement subclass](../BLUEPRINTS.md#host-an-opengl-scene-in-xaml-with-a-glcanvaselement-subclass).
+  [Host an OpenGL scene in XAML with a GLCanvasElement subclass](../BLUEPRINTS-GraphicsAndRendering.md#host-an-opengl-scene-in-xaml-with-a-glcanvaselement-subclass).
 - Keeping the shader code testable and free of any XAML type:
-  [Keep the GL renderer framework-free behind an interface](../BLUEPRINTS.md#keep-the-gl-renderer-framework-free-behind-an-interface).
+  [Keep the GL renderer framework-free behind an interface](../BLUEPRINTS-GraphicsAndRendering.md#keep-the-gl-renderer-framework-free-behind-an-interface).
 - Compiling one shader body against both desktop OpenGL and OpenGL ES contexts:
-  [Pick the shader version header for desktop GL or GLES at runtime](../BLUEPRINTS.md#pick-the-shader-version-header-for-desktop-gl-or-gles-at-runtime).
+  [Pick the shader version header for desktop GL or GLES at runtime](../BLUEPRINTS-GraphicsAndRendering.md#pick-the-shader-version-header-for-desktop-gl-or-gles-at-runtime).
 - Playing a model's animation by baking it to vertex frames instead of teaching the
   renderer about skinning:
-  [Play a baked animation clip in a preview canvas](../BLUEPRINTS.md#play-a-baked-animation-clip-in-a-preview-canvas).
+  [Play a baked animation clip in a preview canvas](../BLUEPRINTS-GraphicsAndRendering.md#play-a-baked-animation-clip-in-a-preview-canvas).
 - Explaining an empty 3D pane on a machine with no usable driver, instead of looking
   broken:
-  [Tell the user when graphics initialization failed](../BLUEPRINTS.md#tell-the-user-when-graphics-initialization-failed).
+  [Tell the user when graphics initialization failed](../BLUEPRINTS-PlatformServices.md#tell-the-user-when-graphics-initialization-failed).
 - Driving a Skia drawing surface entirely from view-model state, including its zoom:
-  [Paint a zoomable image on an SKXamlCanvas from the view model](../BLUEPRINTS.md#paint-a-zoomable-image-on-an-skxamlcanvas-from-the-view-model).
+  [Paint a zoomable image on an SKXamlCanvas from the view model](../BLUEPRINTS-GraphicsAndRendering.md#paint-a-zoomable-image-on-an-skxamlcanvas-from-the-view-model).
 - Highlighting one named sub-rectangle of a spritesheet in place:
-  [Spotlight one region of an image on the canvas](../BLUEPRINTS.md#spotlight-one-region-of-an-image-on-the-canvas).
+  [Spotlight one region of an image on the canvas](../BLUEPRINTS-GraphicsAndRendering.md#spotlight-one-region-of-an-image-on-the-canvas).
 - Rasterizing vector art at both viewer size and thumbnail size:
-  [Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS.md#rasterize-svg-art-with-the-codebrix-skiasvg-library).
+  [Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS-GraphicsAndRendering.md#rasterize-svg-art-with-the-codebrix-skiasvg-library).
 - Decoding image bytes of an unknown format into a bitmap for display and into raw RGBA
   for a texture upload:
-  [Decode raster images with the CodeBrix Imaging library into a Skia bitmap](../BLUEPRINTS.md#decode-raster-images-with-the-codebrix-imaging-library-into-a-skia-bitmap).
+  [Decode raster images with the CodeBrix Imaging library into a Skia bitmap](../BLUEPRINTS-GraphicsAndRendering.md#decode-raster-images-with-the-codebrix-imaging-library-into-a-skia-bitmap).
 - Playing audio held in memory without writing a temporary file:
-  [Play an audio clip straight from bytes with the AudioPlayer add-in](../BLUEPRINTS.md#play-an-audio-clip-straight-from-bytes-with-the-audioplayer-add-in).
+  [Play an audio clip straight from bytes with the AudioPlayer add-in](../BLUEPRINTS-MediaAndVision.md#play-an-audio-clip-straight-from-bytes-with-the-audioplayer-add-in).
 - Making one Play button replay a clip that has already run to its end:
-  [Replay a finished audio clip with one button press](../BLUEPRINTS.md#replay-a-finished-audio-clip-with-one-button-press).
+  [Replay a finished audio clip with one button press](../BLUEPRINTS-PlatformServices.md#replay-a-finished-audio-clip-with-one-button-press).
 - Binding a position slider and timecode labels to the media element itself, the one place
   where that beats routing through the view model:
-  [Bind a scrubber and volume slider straight to the media element](../BLUEPRINTS.md#bind-a-scrubber-and-volume-slider-straight-to-the-media-element).
+  [Bind a scrubber and volume slider straight to the media element](../BLUEPRINTS-ViewsAndControls.md#bind-a-scrubber-and-volume-slider-straight-to-the-media-element).
 - Formatting a bound value for display with a one-way converter:
-  [Format a value for display with an IValueConverter](../BLUEPRINTS.md#format-a-value-for-display-with-an-ivalueconverter).
+  [Format a value for display with an IValueConverter](../BLUEPRINTS-ViewsAndControls.md#format-a-value-for-display-with-an-ivalueconverter).
 - Building a header row and a two-pane split that reflow with the window, with no
   breakpoints:
-  [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in).
+  [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS-ViewsAndControls.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in).
 - Re-keying the theme's brushes so stock controls follow the application's own palette:
-  [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette).
+  [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS-ViewsAndControls.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette).
 - Materializing a large grid a batch at a time as the user scrolls:
-  [Fill a grid lazily as it scrolls](../BLUEPRINTS.md#fill-a-grid-lazily-as-it-scrolls).
+  [Fill a grid lazily as it scrolls](../BLUEPRINTS-MVVM.md#fill-a-grid-lazily-as-it-scrolls).
 - Giving every grid cell its own command and its own lazily fetched thumbnail:
-  [Give each grid cell its own command and lazily loaded thumbnail](../BLUEPRINTS.md#give-each-grid-cell-its-own-command-and-lazily-loaded-thumbnail).
+  [Give each grid cell its own command and lazily loaded thumbnail](../BLUEPRINTS-MVVM.md#give-each-grid-cell-its-own-command-and-lazily-loaded-thumbnail).
 - Waiting for typing to settle before rebuilding a filtered list:
-  [Debounce a search box before rebuilding a filtered list](../BLUEPRINTS.md#debounce-a-search-box-before-rebuilding-a-filtered-list).
+  [Debounce a search box before rebuilding a filtered list](../BLUEPRINTS-MVVM.md#debounce-a-search-box-before-rebuilding-a-filtered-list).
 - Repopulating a filter list without the control commanding a rebuild back:
-  [Stop a two way bound selection from commanding the control back](../BLUEPRINTS.md#stop-a-two-way-bound-selection-from-commanding-the-control-back).
+  [Stop a two way bound selection from commanding the control back](../BLUEPRINTS-MVVM.md#stop-a-two-way-bound-selection-from-commanding-the-control-back).
 - Switching between two whole page modes, and between five viewer panes, with computed
   visibility properties instead of navigation:
-  [Show and hide panes with computed Visibility properties](../BLUEPRINTS.md#show-and-hide-panes-with-computed-visibility-properties).
+  [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties).
 - Letting the view model raise dialogs by taking a XamlRoot getter from the page once:
-  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 - Using one error surface for a whole dispatching open path:
-  [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
+  [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
 - Wrapping the settings add-in in one application-named facade nothing else bypasses:
-  [Wrap the AppSettings add-in in one application named facade](../BLUEPRINTS.md#wrap-the-appsettings-add-in-in-one-application-named-facade).
+  [Wrap the AppSettings add-in in one application named facade](../BLUEPRINTS-SettingsAndPersistence.md#wrap-the-appsettings-add-in-in-one-application-named-facade).
 - Opening the settings store before any UI renders, because a view model reads a setting
   in its constructor:
-  [Open the settings store before any other startup work](../BLUEPRINTS.md#open-the-settings-store-before-any-other-startup-work).
+  [Open the settings store before any other startup work](../BLUEPRINTS-SettingsAndPersistence.md#open-the-settings-store-before-any-other-startup-work).
 - Asking for a folder once and remembering it for every later run:
-  [Choose a folder with the picker and remember it across runs](../BLUEPRINTS.md#choose-a-folder-with-the-picker-and-remember-it-across-runs).
+  [Choose a folder with the picker and remember it across runs](../BLUEPRINTS-SettingsAndPersistence.md#choose-a-folder-with-the-picker-and-remember-it-across-runs).
 - Gating the whole catalog behind that chosen folder and swapping in a first-launch
   prompt until it exists:
-  [Gate an action behind a chosen folder and explain the gate with a dialog](../BLUEPRINTS.md#gate-an-action-behind-a-chosen-folder-and-explain-the-gate-with-a-dialog).
+  [Gate an action behind a chosen folder and explain the gate with a dialog](../BLUEPRINTS-MVVM.md#gate-an-action-behind-a-chosen-folder-and-explain-the-gate-with-a-dialog).
 - Guarding the view-model constructor so the XAML designer does not run the live path:
-  [Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer).
+  [Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
 - Starting the catalog load from the constructor without making it async:
-  [Kick off async startup loading from the view model constructor](../BLUEPRINTS.md#kick-off-async-startup-loading-from-the-view-model-constructor).
+  [Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor).
 - Writing the entry point of a head, where the platform call is the only line that
   changes:
-  [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+  [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
 - Ordering font configuration, container, design-mode flag, settings store and
   `InitializeComponent()` in the `App` constructor:
-  [Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
+  [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
 - Handing `SimpleServiceResolver` a host builder from a small provider class so the UI
   project needs no hosting reference:
-  [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+  [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
 - Declaring the application's services in one extension method instead of a growing
   lambda:
-  [Register library services with one AddXxx extension method](../BLUEPRINTS.md#register-library-services-with-one-addxxx-extension-method).
+  [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
 - Wiring a console logger that exists only in Debug builds and quiets the framework's own
   categories:
-  [Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
+  [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 - Setting a bundled serif face as the default text font with script fallbacks behind it:
-  [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
+  [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
 - Opting the LinuxFrameBuffer head into a folder picker and a software keyboard, since it
   has no desktop chrome to borrow them from:
-  [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
+  [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
 - Asking the WinWpfSkia head for a software render surface after the host is built:
-  [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head).
+  [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head).
 - Giving a library that hosts a XAML control its own root namespace, so the generated
   per-head resources class does not collide:
-  [Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace).
+  [Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace).
 - Referencing the graphics add-in and letting the low-level binding arrive transitively:
-  [Code to the higher-level graphics package and let the binding arrive transitively](../BLUEPRINTS.md#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively).
+  [Code to the higher-level graphics package and let the binding arrive transitively](../BLUEPRINTS-ProjectLayoutAndPackaging.md#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively).
 - Setting up a test project for a library the family way:
-  [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library).
+  [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library).
 - Adding the native library a running head would have supplied, so bitmap tests can draw
   with no application around them:
-  [Add the native assets a head would have supplied](../BLUEPRINTS.md#add-the-native-assets-a-head-would-have-supplied).
+  [Add the native assets a head would have supplied](../BLUEPRINTS-Testing.md#add-the-native-assets-a-head-would-have-supplied).
 - Building the zips, PNGs and GLB models the tests need in memory instead of committing
   binary fixtures:
-  [Build the binary inputs your tests need instead of committing them](../BLUEPRINTS.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them).
+  [Build the binary inputs your tests need instead of committing them](../BLUEPRINTS-Testing.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them).
 - Testing a store that owns its own files by giving every test its own throwaway folder:
-  [Point a process-global store at a throwaway folder in tests](../BLUEPRINTS.md#point-a-process-global-store-at-a-throwaway-folder-in-tests).
+  [Point a process-global store at a throwaway folder in tests](../BLUEPRINTS-Testing.md#point-a-process-global-store-at-a-throwaway-folder-in-tests).
 
 ## Building, running and testing
 
@@ -299,8 +299,8 @@ load, so one corrupt zip in the folder costs the user one line of caption, not t
 catalog. In the MVVM shape none of this is reachable from a view: `AssetCatalogService` in
 Core wraps each call in `Task.Run` and returns only tasks, and `MainViewModel` awaits them
 and owns the archive's lifetime.
-See [Read a zip archive without extracting it with the CodeBrix Compression library](../BLUEPRINTS.md#read-a-zip-archive-without-extracting-it-with-the-codebrix-compression-library)
-and [Do blocking work in a service behind Task Run](../BLUEPRINTS.md#do-blocking-work-in-a-service-behind-task-run).
+See [Read a zip archive without extracting it with the CodeBrix Compression library](../BLUEPRINTS-DocumentsAndData.md#read-a-zip-archive-without-extracting-it-with-the-codebrix-compression-library)
+and [Do blocking work in a service behind Task Run](../BLUEPRINTS-MVVM.md#do-blocking-work-in-a-service-behind-task-run).
 
 ### Turning a pack's files into browsable cards
 
@@ -328,7 +328,7 @@ public enum AssetCellKind
 The one gotcha is that the hide-what-is-grouped rule has to be applied twice - once when
 building the cells and once when building the category filter list - or a folder whose files
 are all hidden shows up as an empty category.
-See [Classify and group the contents of a container for browsing](../BLUEPRINTS.md#classify-and-group-the-contents-of-a-container-for-browsing).
+See [Classify and group the contents of a container for browsing](../BLUEPRINTS-DocumentsAndData.md#classify-and-group-the-contents-of-a-container-for-browsing).
 
 ### The Browsing View: a lazy grid, a debounced search and a filter
 
@@ -347,9 +347,9 @@ list next to it needs a suppression flag around repopulation, because assigning 
 resetting the selection would otherwise each trigger a rebuild. In the MVVM shape the batch
 size is policy and belongs beside the collection's own initial batch constant, while the
 scroll measurement is a view concern and stays in the page.
-See [Fill a grid lazily as it scrolls](../BLUEPRINTS.md#fill-a-grid-lazily-as-it-scrolls),
-[Debounce a search box before rebuilding a filtered list](../BLUEPRINTS.md#debounce-a-search-box-before-rebuilding-a-filtered-list)
-and [Stop a two way bound selection from commanding the control back](../BLUEPRINTS.md#stop-a-two-way-bound-selection-from-commanding-the-control-back).
+See [Fill a grid lazily as it scrolls](../BLUEPRINTS-MVVM.md#fill-a-grid-lazily-as-it-scrolls),
+[Debounce a search box before rebuilding a filtered list](../BLUEPRINTS-MVVM.md#debounce-a-search-box-before-rebuilding-a-filtered-list)
+and [Stop a two way bound selection from commanding the control back](../BLUEPRINTS-MVVM.md#stop-a-two-way-bound-selection-from-commanding-the-control-back).
 
 `ViewModels/AssetCellViewModel.cs` is where the grid's per-item shape lives, and it is
 worth reading on its own. Each cell holds its display text plus two delegates the owner
@@ -362,7 +362,7 @@ a button bound to the command, so keyboard and hover behavior come for free;
 sets a flag so it is never retried on rescroll and the placeholder glyph stays, and the
 bitmap must be created on the UI thread, which the code gets by relying on the awaiter
 restoring the dispatcher context - the comment in `LoadThumbnailAsync()` says so.
-See [Give each grid cell its own command and lazily loaded thumbnail](../BLUEPRINTS.md#give-each-grid-cell-its-own-command-and-lazily-loaded-thumbnail).
+See [Give each grid cell its own command and lazily loaded thumbnail](../BLUEPRINTS-MVVM.md#give-each-grid-cell-its-own-command-and-lazily-loaded-thumbnail).
 
 ### The 2D viewer: a painter the view model owns
 
@@ -383,10 +383,10 @@ project does exactly that. Selecting a sprite row in the facts pane sets the pai
 highlight rectangle in image pixels; the painter converts it with the same scale it used to
 place the image, so the spotlight tracks zoom with no extra work, and re-selecting the same
 row clears it.
-See [Paint a zoomable image on an SKXamlCanvas from the view model](../BLUEPRINTS.md#paint-a-zoomable-image-on-an-skxamlcanvas-from-the-view-model),
-[Spotlight one region of an image on the canvas](../BLUEPRINTS.md#spotlight-one-region-of-an-image-on-the-canvas),
-[Decode raster images with the CodeBrix Imaging library into a Skia bitmap](../BLUEPRINTS.md#decode-raster-images-with-the-codebrix-imaging-library-into-a-skia-bitmap)
-and [Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS.md#rasterize-svg-art-with-the-codebrix-skiasvg-library).
+See [Paint a zoomable image on an SKXamlCanvas from the view model](../BLUEPRINTS-GraphicsAndRendering.md#paint-a-zoomable-image-on-an-skxamlcanvas-from-the-view-model),
+[Spotlight one region of an image on the canvas](../BLUEPRINTS-GraphicsAndRendering.md#spotlight-one-region-of-an-image-on-the-canvas),
+[Decode raster images with the CodeBrix Imaging library into a Skia bitmap](../BLUEPRINTS-GraphicsAndRendering.md#decode-raster-images-with-the-codebrix-imaging-library-into-a-skia-bitmap)
+and [Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS-GraphicsAndRendering.md#rasterize-svg-art-with-the-codebrix-skiasvg-library).
 
 ### The 3D viewer: a GL control in a library, and getting a model to it
 
@@ -406,9 +406,9 @@ render callback, because a canvas that starts collapsed may render before it ini
 the head's own Skia renderer shares the GL context, so every state the render touches is
 saved and restored in a `finally`; and matrices are uploaded without transposing on purpose,
 since the row-major layout the numerics types use is already the transpose OpenGL wants.
-See [Host an OpenGL scene in XAML with a GLCanvasElement subclass](../BLUEPRINTS.md#host-an-opengl-scene-in-xaml-with-a-glcanvaselement-subclass),
-[Keep the GL renderer framework-free behind an interface](../BLUEPRINTS.md#keep-the-gl-renderer-framework-free-behind-an-interface)
-and [Pick the shader version header for desktop GL or GLES at runtime](../BLUEPRINTS.md#pick-the-shader-version-header-for-desktop-gl-or-gles-at-runtime).
+See [Host an OpenGL scene in XAML with a GLCanvasElement subclass](../BLUEPRINTS-GraphicsAndRendering.md#host-an-opengl-scene-in-xaml-with-a-glcanvaselement-subclass),
+[Keep the GL renderer framework-free behind an interface](../BLUEPRINTS-GraphicsAndRendering.md#keep-the-gl-renderer-framework-free-behind-an-interface)
+and [Pick the shader version header for desktop GL or GLES at runtime](../BLUEPRINTS-GraphicsAndRendering.md#pick-the-shader-version-header-for-desktop-gl-or-gles-at-runtime).
 
 Getting a model into that control is the application's heaviest path, and it is worth
 following end to end in `MainViewModel`. The archive field is captured into a local before
@@ -423,8 +423,8 @@ bake is only published if the selection and the model have not changed since it 
 control owns the playback timer at the clip's own frame rate; the view model owns the clip
 list, the selection and the play state, and opens on an animation named "idle" when the
 model has one.
-See [Load an asset off the UI thread and resolve its side files from the same container](../BLUEPRINTS.md#load-an-asset-off-the-ui-thread-and-resolve-its-side-files-from-the-same-container)
-and [Play a baked animation clip in a preview canvas](../BLUEPRINTS.md#play-a-baked-animation-clip-in-a-preview-canvas).
+See [Load an asset off the UI thread and resolve its side files from the same container](../BLUEPRINTS-MVVM.md#load-an-asset-off-the-ui-thread-and-resolve-its-side-files-from-the-same-container)
+and [Play a baked animation clip in a preview canvas](../BLUEPRINTS-GraphicsAndRendering.md#play-a-baked-animation-clip-in-a-preview-canvas).
 
 ### Playing a pack's audio clips
 
@@ -446,10 +446,10 @@ first, but not when the clip is looping and not when the user has scrubbed away 
 - is application policy: in the MVVM shape it belongs in `PlayAudioCommand`, with the bridge
 growing read-only accessors for position, duration and playing state plus a seek action, and
 the page forwarding the element's playback-ended event in one line.
-See [Play an audio clip straight from bytes with the AudioPlayer add-in](../BLUEPRINTS.md#play-an-audio-clip-straight-from-bytes-with-the-audioplayer-add-in),
-[Replay a finished audio clip with one button press](../BLUEPRINTS.md#replay-a-finished-audio-clip-with-one-button-press),
-[Bind a scrubber and volume slider straight to the media element](../BLUEPRINTS.md#bind-a-scrubber-and-volume-slider-straight-to-the-media-element)
-and [Format a value for display with an IValueConverter](../BLUEPRINTS.md#format-a-value-for-display-with-an-ivalueconverter).
+See [Play an audio clip straight from bytes with the AudioPlayer add-in](../BLUEPRINTS-MediaAndVision.md#play-an-audio-clip-straight-from-bytes-with-the-audioplayer-add-in),
+[Replay a finished audio clip with one button press](../BLUEPRINTS-PlatformServices.md#replay-a-finished-audio-clip-with-one-button-press),
+[Bind a scrubber and volume slider straight to the media element](../BLUEPRINTS-ViewsAndControls.md#bind-a-scrubber-and-volume-slider-straight-to-the-media-element)
+and [Format a value for display with an IValueConverter](../BLUEPRINTS-ViewsAndControls.md#format-a-value-for-display-with-an-ivalueconverter).
 
 ### Two views and five viewer panes, with no navigation at all
 
@@ -465,8 +465,8 @@ the whole switch in a single error handler, so any failure becomes one dialog th
 explanatory mode, so nothing in the grid is a dead card. The view model exposes `Visibility`
 properties throughout rather than booleans plus converters, and the XAML binds them
 directly.
-See [Show and hide panes with computed Visibility properties](../BLUEPRINTS.md#show-and-hide-panes-with-computed-visibility-properties)
-and [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
+See [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties)
+and [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
 
 ### Layout that follows the window, twice
 
@@ -484,8 +484,8 @@ recorded in the XAML: in landscape the pane needs an explicit width rather than 
 basis, because its content is measured against the width and would not otherwise wrap at the
 pane edge; in portrait the width is cleared and a relative basis takes over, and the margin
 moves with the axis.
-See [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in)
-and [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette).
+See [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS-ViewsAndControls.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in)
+and [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS-ViewsAndControls.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette).
 
 ### Degrading gracefully where a head cannot help
 
@@ -503,8 +503,8 @@ constant. The same instinct shows up in the LinuxFrameBuffer head, which opts in
 picker and a software keyboard because it has no desktop chrome to borrow either from; the
 start and restrict folders in that call are the author's own machine paths and should be
 treated as placeholders and computed from the environment in your own application.
-See [Tell the user when graphics initialization failed](../BLUEPRINTS.md#tell-the-user-when-graphics-initialization-failed)
-and [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
+See [Tell the user when graphics initialization failed](../BLUEPRINTS-PlatformServices.md#tell-the-user-when-graphics-initialization-failed)
+and [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
 
 ### Settings behind one facade, and the folder the whole application hangs on
 
@@ -524,10 +524,10 @@ the first pack in the folder. The folder itself gates the whole Browsing View th
 of visibility properties, and the same `PickFolderCommand` is bound twice - once on the
 first-launch prompt and once on the header button - so there is a single code path either
 way.
-See [Wrap the AppSettings add-in in one application named facade](../BLUEPRINTS.md#wrap-the-appsettings-add-in-in-one-application-named-facade),
-[Open the settings store before any other startup work](../BLUEPRINTS.md#open-the-settings-store-before-any-other-startup-work),
-[Choose a folder with the picker and remember it across runs](../BLUEPRINTS.md#choose-a-folder-with-the-picker-and-remember-it-across-runs)
-and [Gate an action behind a chosen folder and explain the gate with a dialog](../BLUEPRINTS.md#gate-an-action-behind-a-chosen-folder-and-explain-the-gate-with-a-dialog).
+See [Wrap the AppSettings add-in in one application named facade](../BLUEPRINTS-SettingsAndPersistence.md#wrap-the-appsettings-add-in-in-one-application-named-facade),
+[Open the settings store before any other startup work](../BLUEPRINTS-SettingsAndPersistence.md#open-the-settings-store-before-any-other-startup-work),
+[Choose a folder with the picker and remember it across runs](../BLUEPRINTS-SettingsAndPersistence.md#choose-a-folder-with-the-picker-and-remember-it-across-runs)
+and [Gate an action behind a chosen folder and explain the gate with a dialog](../BLUEPRINTS-MVVM.md#gate-an-action-behind-a-chosen-folder-and-explain-the-gate-with-a-dialog).
 
 ### Startup, and why every package lives where it does
 
@@ -547,11 +547,11 @@ namespace rather than the application's, or the generated per-head resources cla
 across assemblies and the build fails with a duplicate-type error rather than a namespace
 complaint. The same file records why it names both the base platform package and the
 graphics add-in, and that the application never references the low-level binding directly.
-See [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
-[Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor),
-[Register library services with one AddXxx extension method](../BLUEPRINTS.md#register-library-services-with-one-addxxx-extension-method),
-[Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace)
-and [Code to the higher-level graphics package and let the binding arrive transitively](../BLUEPRINTS.md#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively).
+See [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
+[Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor),
+[Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method),
+[Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace)
+and [Code to the higher-level graphics package and let the binding arrive transitively](../BLUEPRINTS-ProjectLayoutAndPackaging.md#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively).
 
 ### Three libraries, three mirrored test projects, no fixtures on disk
 
@@ -568,10 +568,10 @@ the process-wide facade, except for the one case that checks the facade itself; 
 own file-name constants are public, so the tests assert against the real naming scheme
 rather than a copy of it. `AssetRead` and `Rendering` each carry an `InternalsVisibleTo.cs`
 naming their test assembly; `Settings` does not, because its facade is public in full.
-See [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library),
-[Add the native assets a head would have supplied](../BLUEPRINTS.md#add-the-native-assets-a-head-would-have-supplied),
-[Build the binary inputs your tests need instead of committing them](../BLUEPRINTS.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them)
-and [Point a process-global store at a throwaway folder in tests](../BLUEPRINTS.md#point-a-process-global-store-at-a-throwaway-folder-in-tests).
+See [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library),
+[Add the native assets a head would have supplied](../BLUEPRINTS-Testing.md#add-the-native-assets-a-head-would-have-supplied),
+[Build the binary inputs your tests need instead of committing them](../BLUEPRINTS-Testing.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them)
+and [Point a process-global store at a throwaway folder in tests](../BLUEPRINTS-Testing.md#point-a-process-global-store-at-a-throwaway-folder-in-tests).
 
 ## Third-party content
 

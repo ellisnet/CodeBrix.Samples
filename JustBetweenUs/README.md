@@ -23,83 +23,83 @@ image assets can be pushed across completely different UI stacks.
 ## What this sample shows a CodeBrix.Platform developer
 
 - Compiling one `SimpleViewModel` into nine heads across four UI stacks by
-  linking the same source file into each project: [Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads).
+  linking the same source file into each project: [Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS-AppStructureAndStartup.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads).
 - Six almost identical `Program.cs` files, each selecting exactly one platform
-  backend and running the same shared `App`: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+  backend and running the same shared `App`: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
 - Keeping every framework and add-in package in one `net10.0` Core library so
-  each head adds only its own runtime package: [Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package).
+  each head adds only its own runtime package: [Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS-ProjectLayoutAndPackaging.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package).
 - Sharing `App.xaml` and the page across the six Skia heads through a shared
-  project that every head imports: [Share App xaml and the views across heads with a shared project](../BLUEPRINTS.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
+  project that every head imports: [Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
 - Doing the whole application bootstrap in the `App` constructor, in the right
-  order, before any view is constructed: [Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
+  order, before any view is constructed: [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
 - Handing `SimpleServiceResolver` a host builder through a tiny shared
-  `IHostBuilderProvider` that every head links in: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+  `IHostBuilderProvider` that every head links in: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
 - Letting the encryption library register itself with a single `AddEncryption()`
-  extension method so the application calls one line per library: [Register library services with one AddXxx extension method](../BLUEPRINTS.md#register-library-services-with-one-addxxx-extension-method).
+  extension method so the application calls one line per library: [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
 - The smallest correct `OnLaunched` override that creates the window, installs a
-  navigation frame and navigates to the first page: [Create the main window and navigate to the first page](../BLUEPRINTS.md#create-the-main-window-and-navigate-to-the-first-page).
+  navigation frame and navigates to the first page: [Create the main window and navigate to the first page](../BLUEPRINTS-AppStructureAndStartup.md#create-the-main-window-and-navigate-to-the-first-page).
 - Bound properties written with `SetProperty(ref field, value)` and lazily
-  created `SimpleCommand` instances whose buttons enable themselves: [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
+  created `SimpleCommand` instances whose buttons enable themselves: [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 - Guarding the whole view-model constructor with `IsDesignMode(true)` so the
-  designer never runs the real startup work: [Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer).
+  designer never runs the real startup work: [Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
 - Fetching the default key from the service asynchronously without blocking
-  construction of the page: [Kick off async startup loading from the view model constructor](../BLUEPRINTS.md#kick-off-async-startup-loading-from-the-view-model-constructor).
+  construction of the page: [Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor).
 - Wrapping every assignment to a bound property from a background thread in
-  `InvokeOnMainThread`, because Linux and macOS are strict about it: [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
+  `InvokeOnMainThread`, because Linux and macOS are strict about it: [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
 - Raising informational and error dialogs from a command with the view model's
-  own `ShowInfo` and `ShowError` helpers: [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
+  own `ShowInfo` and `ShowError` helpers: [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
 - Giving the view model a dialog anchor as a getter lambda supplied by the page,
-  so it never captures a stale reference: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+  so it never captures a stale reference: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 - A one-property bridge interface that four different clipboard APIs satisfy,
-  with a graceful message on a head that supplies none: [Copy text to the clipboard from a command through a bridge interface](../BLUEPRINTS.md#copy-text-to-the-clipboard-from-a-command-through-a-bridge-interface).
+  with a graceful message on a head that supplies none: [Copy text to the clipboard from a command through a bridge interface](../BLUEPRINTS-PlatformServices.md#copy-text-to-the-clipboard-from-a-command-through-a-bridge-interface).
 - Releasing the service reference, the commands and the head-supplied delegate in
-  the view model's `Dispose` override: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+  the view model's `Dispose` override: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 - Driving the algorithm dropdown from an enum with friendly labels through
-  `SimpleEnumInfo<TEnum>` and `[SimpleEnum<T>]`: [Bind a picker to enum values with or without friendly labels](../BLUEPRINTS.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
+  `SimpleEnumInfo<TEnum>` and `[SimpleEnum<T>]`: [Bind a picker to enum values with or without friendly labels](../BLUEPRINTS-MVVM.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
 - Building the information dialog's text from `SimpleOsInfo.GatherInfo()` with no
-  head-specific code at all: [Report the host operating system from the view model](../BLUEPRINTS.md#report-the-host-operating-system-from-the-view-model).
+  head-specific code at all: [Report the host operating system from the view model](../BLUEPRINTS-MVVM.md#report-the-host-operating-system-from-the-view-model).
 - Declaring the shared Skia page, its XML namespaces and its `{d:Binding}` markup
-  extension bindings: [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
+  extension bindings: [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
 - An `Image` subclass that resolves an `embedded://Assembly/Resource.Name` URI and
-  picks an SVG or bitmap source from the file extension: [Load an SVG or bitmap from an embedded resource with a custom URI scheme](../BLUEPRINTS.md#load-an-svg-or-bitmap-from-an-embedded-resource-with-a-custom-uri-scheme).
+  picks an SVG or bitmap source from the file extension: [Load an SVG or bitmap from an embedded resource with a custom URI scheme](../BLUEPRINTS-ViewsAndControls.md#load-an-svg-or-bitmap-from-an-embedded-resource-with-a-custom-uri-scheme).
 - A `Button` subclass that composes an embedded icon and a caption, with the icon
-  above, below, left or right of the text: [Build a button that combines an embedded image with text](../BLUEPRINTS.md#build-a-button-that-combines-an-embedded-image-with-text).
+  above, below, left or right of the text: [Build a button that combines an embedded image with text](../BLUEPRINTS-ViewsAndControls.md#build-a-button-that-combines-an-embedded-image-with-text).
 - Embedding the same asset files into two assemblies, once by link path and once
-  by an explicit logical name: [Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
+  by an explicit logical name: [Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS-ProjectLayoutAndPackaging.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
 - Rendering the same SVG icons through the same Skia SVG engine on the Skia heads
-  and on native WinUI: [Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS.md#rasterize-svg-art-with-the-codebrix-skiasvg-library).
+  and on native WinUI: [Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS-GraphicsAndRendering.md#rasterize-svg-art-with-the-codebrix-skiasvg-library).
 - Playing the same Lottie JSON on a Skia head and on native WinUI, with the two
-  XML namespace forms side by side: [Play a Lottie animation on a Skia head and on native WinUI](../BLUEPRINTS.md#play-a-lottie-animation-on-a-skia-head-and-on-native-winui).
+  XML namespace forms side by side: [Play a Lottie animation on a Skia head and on native WinUI](../BLUEPRINTS-GraphicsAndRendering.md#play-a-lottie-animation-on-a-skia-head-and-on-native-winui).
 - Setting a bundled Open Sans as the default text font for the whole application
-  and exposing the same face under a resource key: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
+  and exposing the same face under a resource key: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
 - Putting the real functionality in a UI-free `net10.0` library behind one
-  interface that the view model resolves: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface).
+  interface that the view model resolves: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS-DocumentsAndData.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface).
 - Implementing AES, Twofish and Triple DES inside that service, with the random
-  material carried alongside the ciphertext: [Encrypt text with the CodeBrix Cryptography library](../BLUEPRINTS.md#encrypt-text-with-the-codebrix-cryptography-library).
+  material carried alongside the ciphertext: [Encrypt text with the CodeBrix Cryptography library](../BLUEPRINTS-DocumentsAndData.md#encrypt-text-with-the-codebrix-cryptography-library).
 - Reading the default key from an embedded text resource once and caching it,
-  with the resource name derived from a type in the assembly: [Read an embedded default value at run time](../BLUEPRINTS.md#read-an-embedded-default-value-at-run-time).
+  with the resource name derived from a type in the assembly: [Read an embedded default value at run time](../BLUEPRINTS-DocumentsAndData.md#read-an-embedded-default-value-at-run-time).
 - Stripping non-Base64 characters in the service so an invisible control
-  character riding in on a paste cannot break decryption: [Guard Base64 input against invisible clipboard characters](../BLUEPRINTS.md#guard-base64-input-against-invisible-clipboard-characters).
+  character riding in on a paste cannot break decryption: [Guard Base64 input against invisible clipboard characters](../BLUEPRINTS-DocumentsAndData.md#guard-base64-input-against-invisible-clipboard-characters).
 - Setting the Core library's `RootNamespace` to the application namespace so the
-  linked source, the XAML and the embedded resource names all agree: [Set the Core library root namespace to the application namespace](../BLUEPRINTS.md#set-the-core-library-root-namespace-to-the-application-namespace).
+  linked source, the XAML and the embedded resource names all agree: [Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace).
 - Shipping one solution per operating system so every solution opens and builds
-  everything it contains: [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere).
+  everything it contains: [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere).
 - Declaring the architectures a WinUI head supports and mapping `Any CPU` onto a
-  real one in the solution: [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
+  real one in the solution: [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS-ProjectLayoutAndPackaging.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
 - Switching the WinWpfSkia head to the software render surface between `Build()`
-  and `Run()` so its window actually composites: [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head).
+  and `Run()` so its window actually composites: [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head).
 - Turning on the on-screen keyboard and the direct Skia canvas mode in the
-  LinuxFrameBuffer head, with no change to the shared UI: [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
+  LinuxFrameBuffer head, with no change to the shared UI: [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
 - One static `InitializeLogging()` on `App`, entirely inside `#if DEBUG`, called
-  from every head's `Main` before the host is built: [Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
+  from every head's `Main` before the host is built: [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 - An xUnit v3 test project for the encryption library, with SilverAssertions and
-  the shared fixture linked in as source: [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library).
+  the shared fixture linked in as source: [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library).
 - Resolving the service under test from a container built the same way the
-  application builds its own: [Test a service the way the container builds it](../BLUEPRINTS.md#test-a-service-the-way-the-container-builds-it).
+  application builds its own: [Test a service the way the container builds it](../BLUEPRINTS-Testing.md#test-a-service-the-way-the-container-builds-it).
 - Routing the `ILogger<EncryptionService>` output of the code under test into the
-  test report, with a console fallback on Linux: [Route logging from the code under test into test output](../BLUEPRINTS.md#route-logging-from-the-code-under-test-into-test-output).
+  test report, with a console fallback on Linux: [Route logging from the code under test into test output](../BLUEPRINTS-Testing.md#route-logging-from-the-code-under-test-into-test-output).
 - Pinning a head-specific clipboard defect with a regression test that reproduces
-  the corrupted input instead of the environment: [Pin a fixed bug with a regression test that says why it is shaped that way](../BLUEPRINTS.md#pin-a-fixed-bug-with-a-regression-test-that-says-why-it-is-shaped-that-way).
+  the corrupted input instead of the environment: [Pin a fixed bug with a regression test that says why it is shaped that way](../BLUEPRINTS-Testing.md#pin-a-fixed-bug-with-a-regression-test-that-says-why-it-is-shaped-that-way).
 
 ## Building, running and testing
 
@@ -297,8 +297,8 @@ can drift, which is the point: keep them countable.
 Read `Shared/ViewModels/MainViewModel.cs` first, then one head's csproj to see the
 three `<Compile Include="..\Shared\...">` lines, then a second head's csproj to
 confirm they are the same three lines. See
-[Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads)
-and [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
+[Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS-AppStructureAndStartup.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads)
+and [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 
 ### Six heads, one Core library, one runtime package each
 
@@ -316,8 +316,8 @@ makes six heads maintainable.
 
 Read the Core csproj, then any one head csproj, then diff two head csproj files
 against each other. See
-[Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package)
-and [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+[Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS-ProjectLayoutAndPackaging.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package)
+and [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
 
 ### The shared XAML, and where the four UI stacks genuinely differ
 
@@ -339,8 +339,8 @@ the same two properties. Four pages, one view model.
 
 Read `CodeBrixPlatform/JustBetweenUs.UI/JustBetweenUs.UI.projitems`, then the four
 pages side by side. See
-[Share App xaml and the views across heads with a shared project](../BLUEPRINTS.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project)
-and [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
+[Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project)
+and [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
 
 ### Startup: the container, the design-mode switch and the window
 
@@ -375,11 +375,11 @@ all and registers its own font files through `ConfigureFonts` in `MauiProgram.cs
 Read `CodeBrixPlatform/JustBetweenUs.UI/App.xaml.cs`, then `App.xaml`, then
 `Shared/Helpers/HostHelper.cs`, then `JustBetweenUs.Encryption/RegisterServices.cs`,
 then compare with `JustBetweenUs.WinUI/App.xaml.cs` and `Mobile/App.xaml.cs`. See
-[Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor),
-[Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks),
-[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver),
-[Register library services with one AddXxx extension method](../BLUEPRINTS.md#register-library-services-with-one-addxxx-extension-method)
-and [Create the main window and navigate to the first page](../BLUEPRINTS.md#create-the-main-window-and-navigate-to-the-first-page).
+[Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor),
+[Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks),
+[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver),
+[Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method)
+and [Create the main window and navigate to the first page](../BLUEPRINTS-AppStructureAndStartup.md#create-the-main-window-and-navigate-to-the-first-page).
 
 ### Commands that enable themselves, the algorithm picker and the information dialog
 
@@ -420,10 +420,10 @@ multi-line dialog bodies are not a portable choice.
 
 Read the `Bindable properties` and `Commands and their implementations` regions of
 `Shared/ViewModels/MainViewModel.cs`, then `Shared/ViewModels/EncryptionMode.cs`. See
-[Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way),
-[Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs),
-[Bind a picker to enum values with or without friendly labels](../BLUEPRINTS.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels)
-and [Report the host operating system from the view model](../BLUEPRINTS.md#report-the-host-operating-system-from-the-view-model).
+[Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way),
+[Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs),
+[Bind a picker to enum values with or without friendly labels](../BLUEPRINTS-MVVM.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels)
+and [Report the host operating system from the view model](../BLUEPRINTS-MVVM.md#report-the-host-operating-system-from-the-view-model).
 
 ### The clipboard bridge, and degrading gracefully without one
 
@@ -454,8 +454,8 @@ Read `Shared/ViewModels/MainViewModel.cs`, then the four code-behind files in th
 order `CodeBrixPlatform/JustBetweenUs.UI/Views/MainPage.xaml.cs`,
 `JustBetweenUs.WinUI/Views/MainPage.xaml.cs`,
 `JustBetweenUs.Wpf/Views/MainWindow.xaml.cs`, `Mobile/Views/MainPage.xaml.cs`. See
-[Copy text to the clipboard from a command through a bridge interface](../BLUEPRINTS.md#copy-text-to-the-clipboard-from-a-command-through-a-bridge-interface)
-and [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+[Copy text to the clipboard from a command through a bridge interface](../BLUEPRINTS-PlatformServices.md#copy-text-to-the-clipboard-from-a-command-through-a-bridge-interface)
+and [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 
 ### Async startup, the dialog anchor, and the timing pitfall
 
@@ -499,10 +499,10 @@ the line entirely because its dialogs need no anchor.
 
 Read the constructor of `Shared/ViewModels/MainViewModel.cs`, then
 `CodeBrixPlatform/JustBetweenUs.UI/Views/MainPage.xaml.cs`. See
-[Kick off async startup loading from the view model constructor](../BLUEPRINTS.md#kick-off-async-startup-loading-from-the-view-model-constructor),
-[Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread),
-[Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer)
-and [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+[Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor),
+[Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread),
+[Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer)
+and [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 
 ### The encryption library: the shape of a service the view model can trust
 
@@ -546,10 +546,10 @@ treatment.
 Read `JustBetweenUs.Encryption/Services/IEncryptionService.cs`, then
 `RegisterServices.cs`, then `Services/EncryptionService.cs`, ending with
 `CleanBase64` and `IsBase64Text` and the regression test that pins them. See
-[Put the real work in a UI free library behind a service interface](../BLUEPRINTS.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface),
-[Encrypt text with the CodeBrix Cryptography library](../BLUEPRINTS.md#encrypt-text-with-the-codebrix-cryptography-library),
-[Read an embedded default value at run time](../BLUEPRINTS.md#read-an-embedded-default-value-at-run-time)
-and [Guard Base64 input against invisible clipboard characters](../BLUEPRINTS.md#guard-base64-input-against-invisible-clipboard-characters).
+[Put the real work in a UI free library behind a service interface](../BLUEPRINTS-DocumentsAndData.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface),
+[Encrypt text with the CodeBrix Cryptography library](../BLUEPRINTS-DocumentsAndData.md#encrypt-text-with-the-codebrix-cryptography-library),
+[Read an embedded default value at run time](../BLUEPRINTS-DocumentsAndData.md#read-an-embedded-default-value-at-run-time)
+and [Guard Base64 input against invisible clipboard characters](../BLUEPRINTS-DocumentsAndData.md#guard-base64-input-against-invisible-clipboard-characters).
 
 ### Embedded assets, custom controls and the URI scheme that finds them
 
@@ -588,12 +588,12 @@ same markup works there under a different XML namespace.
 Read `Controls/EmbeddedImage.cs`, then `Controls/EmbeddedImageButton.cs`, then the
 Core csproj's `<EmbeddedResource>` items, then the WinUI csproj's `<LogicalName>`
 items. See
-[Load an SVG or bitmap from an embedded resource with a custom URI scheme](../BLUEPRINTS.md#load-an-svg-or-bitmap-from-an-embedded-resource-with-a-custom-uri-scheme),
-[Build a button that combines an embedded image with text](../BLUEPRINTS.md#build-a-button-that-combines-an-embedded-image-with-text),
-[Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection),
-[Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS.md#rasterize-svg-art-with-the-codebrix-skiasvg-library),
-[Play a Lottie animation on a Skia head and on native WinUI](../BLUEPRINTS.md#play-a-lottie-animation-on-a-skia-head-and-on-native-winui)
-and [Set the Core library root namespace to the application namespace](../BLUEPRINTS.md#set-the-core-library-root-namespace-to-the-application-namespace).
+[Load an SVG or bitmap from an embedded resource with a custom URI scheme](../BLUEPRINTS-ViewsAndControls.md#load-an-svg-or-bitmap-from-an-embedded-resource-with-a-custom-uri-scheme),
+[Build a button that combines an embedded image with text](../BLUEPRINTS-ViewsAndControls.md#build-a-button-that-combines-an-embedded-image-with-text),
+[Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS-ProjectLayoutAndPackaging.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection),
+[Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS-GraphicsAndRendering.md#rasterize-svg-art-with-the-codebrix-skiasvg-library),
+[Play a Lottie animation on a Skia head and on native WinUI](../BLUEPRINTS-GraphicsAndRendering.md#play-a-lottie-animation-on-a-skia-head-and-on-native-winui)
+and [Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace).
 
 ### Head-specific plumbing, all of it in Program.cs
 
@@ -633,10 +633,10 @@ use it everywhere unless a head genuinely needs the other. All six carry
 
 Read the six files under `CodeBrixPlatform/JustBetweenUs.*/Program.cs` in one
 sitting. See
-[Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
-[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head),
-[Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head)
-and [Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
+[Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
+[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head),
+[Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head)
+and [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 
 ### Three solutions, and the WinUI head's architectures
 
@@ -658,8 +658,8 @@ packaged and an unpackaged profile.
 
 Read `JustBetweenUs.WinUI/JustBetweenUs.WinUI.csproj`, then the configuration block
 of `JustBetweenUs.Windows.sln`, then compare the three solutions' project lists. See
-[Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere)
-and [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
+[Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere)
+and [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS-ProjectLayoutAndPackaging.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
 
 ### Testing a service the way the application builds it
 
@@ -691,10 +691,10 @@ round-trip instead.
 
 Read `Shared/Testing/SimpleTestFixture.cs`, then `EncryptionTestingFixture.cs`, then
 `Services/EncryptionServiceTests.cs`. See
-[Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library),
-[Test a service the way the container builds it](../BLUEPRINTS.md#test-a-service-the-way-the-container-builds-it),
-[Route logging from the code under test into test output](../BLUEPRINTS.md#route-logging-from-the-code-under-test-into-test-output)
-and [Pin a fixed bug with a regression test that says why it is shaped that way](../BLUEPRINTS.md#pin-a-fixed-bug-with-a-regression-test-that-says-why-it-is-shaped-that-way).
+[Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library),
+[Test a service the way the container builds it](../BLUEPRINTS-Testing.md#test-a-service-the-way-the-container-builds-it),
+[Route logging from the code under test into test output](../BLUEPRINTS-Testing.md#route-logging-from-the-code-under-test-into-test-output)
+and [Pin a fixed bug with a regression test that says why it is shaped that way](../BLUEPRINTS-Testing.md#pin-a-fixed-bug-with-a-regression-test-that-says-why-it-is-shaped-that-way).
 
 ## Third-party content
 

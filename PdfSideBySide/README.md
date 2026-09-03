@@ -24,78 +24,78 @@ layout arithmetic that it alone can do.
 ## What this sample shows a CodeBrix.Platform developer
 
 - Opening a user-chosen PDF and asking the rasterizer for its page count, with a clear error when
-  the file is missing or is not a PDF: [Open a PDF and read its page count with the CodeBrix PdfRasterizer library](../BLUEPRINTS.md#open-a-pdf-and-read-its-page-count-with-the-codebrix-pdfrasterizer-library).
+  the file is missing or is not a PDF: [Open a PDF and read its page count with the CodeBrix PdfRasterizer library](../BLUEPRINTS-DocumentsAndData.md#open-a-pdf-and-read-its-page-count-with-the-codebrix-pdfrasterizer-library).
 - Turning one PDF page into PNG bytes without blocking the UI thread, even though the underlying
-  rasterizer is synchronous: [Rasterize a PDF page to PNG off the UI thread](../BLUEPRINTS.md#rasterize-a-pdf-page-to-png-off-the-ui-thread).
+  rasterizer is synchronous: [Rasterize a PDF page to PNG off the UI thread](../BLUEPRINTS-DocumentsAndData.md#rasterize-a-pdf-page-to-png-off-the-ui-thread).
 - Deriving the render resolution from the zoom level so zooming sharpens text instead of scaling a
-  blurry bitmap, with a cap so the top of the ladder does not render a poster: [Choose the render resolution from the zoom level](../BLUEPRINTS.md#choose-the-render-resolution-from-the-zoom-level).
+  blurry bitmap, with a cap so the top of the ladder does not render a poster: [Choose the render resolution from the zoom level](../BLUEPRINTS-GraphicsAndRendering.md#choose-the-render-resolution-from-the-zoom-level).
 - Keeping recently rendered pages in a bounded most-recently-used cache keyed by file, page and
-  resolution: [Cache rendered results with a bounded most recently used cache](../BLUEPRINTS.md#cache-rendered-results-with-a-bounded-most-recently-used-cache).
+  resolution: [Cache rendered results with a bounded most recently used cache](../BLUEPRINTS-MVVM.md#cache-rendered-results-with-a-bounded-most-recently-used-cache).
 - Running one render per pane and letting a newer page request cancel the older one without
-  painting a stale image: [Run one render per pane with latest request wins cancellation](../BLUEPRINTS.md#run-one-render-per-pane-with-latest-request-wins-cancellation).
+  painting a stale image: [Run one render per pane with latest request wins cancellation](../BLUEPRINTS-MVVM.md#run-one-render-per-pane-with-latest-request-wins-cancellation).
 - Stepping two documents together while letting the reader offset one of them, with each cursor
-  clamping at its own last page: [Keep two documents in step while letting the user offset one](../BLUEPRINTS.md#keep-two-documents-in-step-while-letting-the-user-offset-one).
+  clamping at its own last page: [Keep two documents in step while letting the user offset one](../BLUEPRINTS-DocumentsAndData.md#keep-two-documents-in-step-while-letting-the-user-offset-one).
 - Splitting a two-region screen into a parent view model that owns the model and two child view
-  models that own only their bound state: [Compose a page from a parent view model and child view models](../BLUEPRINTS.md#compose-a-page-from-a-parent-view-model-and-child-view-models).
+  models that own only their bound state: [Compose a page from a parent view model and child view models](../BLUEPRINTS-MVVM.md#compose-a-page-from-a-parent-view-model-and-child-view-models).
 - Signaling a change in an object graph (zoom, two pan positions, two page cursors) with a single
-  incrementing property the page watches: [Signal a non property model change to the view with a version counter](../BLUEPRINTS.md#signal-a-non-property-model-change-to-the-view-with-a-version-counter).
+  incrementing property the page watches: [Signal a non property model change to the view with a version counter](../BLUEPRINTS-MVVM.md#signal-a-non-property-model-change-to-the-view-with-a-version-counter).
 - Refreshing `CanExecute` for buttons whose enablement lives in a model object rather than in a
-  bound property: [Refresh CanExecute when the gating state is not a bound property](../BLUEPRINTS.md#refresh-canexecute-when-the-gating-state-is-not-a-bound-property).
+  bound property: [Refresh CanExecute when the gating state is not a bound property](../BLUEPRINTS-MVVM.md#refresh-canexecute-when-the-gating-state-is-not-a-bound-property).
 - Combining a view-model zoom factor and pan fraction with the viewport size that only the page
-  knows: [Let the page do the layout arithmetic only it can do](../BLUEPRINTS.md#let-the-page-do-the-layout-arithmetic-only-it-can-do).
-- Decoding PNG bytes returned by a service into a `BitmapImage` that XAML binds to: [Turn image bytes into a bound BitmapImage](../BLUEPRINTS.md#turn-image-bytes-into-a-bound-bitmapimage).
+  knows: [Let the page do the layout arithmetic only it can do](../BLUEPRINTS-ViewsAndControls.md#let-the-page-do-the-layout-arithmetic-only-it-can-do).
+- Decoding PNG bytes returned by a service into a `BitmapImage` that XAML binds to: [Turn image bytes into a bound BitmapImage](../BLUEPRINTS-ViewsAndControls.md#turn-image-bytes-into-a-bound-bitmapimage).
 - Driving a placeholder and a busy bar from `Visibility`-typed derived properties instead of
-  registering a converter: [Show and hide panes with computed Visibility properties](../BLUEPRINTS.md#show-and-hide-panes-with-computed-visibility-properties).
+  registering a converter: [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties).
 - Throwing a typed exception for a domain rule ("you cannot compare a document with itself") that
-  the view model tells apart from a real failure: [Report a domain rule violation as a typed exception the view model can catch](../BLUEPRINTS.md#report-a-domain-rule-violation-as-a-typed-exception-the-view-model-can-catch).
+  the view model tells apart from a real failure: [Report a domain rule violation as a typed exception the view model can catch](../BLUEPRINTS-MVVM.md#report-a-domain-rule-violation-as-a-typed-exception-the-view-model-can-catch).
 - Deciding whether two differently spelled paths name the same file, on a case-sensitive or a
-  case-insensitive file system: [Treat two spellings of one path as the same file](../BLUEPRINTS.md#treat-two-spellings-of-one-path-as-the-same-file).
+  case-insensitive file system: [Treat two spellings of one path as the same file](../BLUEPRINTS-DocumentsAndData.md#treat-two-spellings-of-one-path-as-the-same-file).
 - Keeping the interesting logic in a library that has no XAML and no CodeBrix.Platform reference at
-  all, so it can be tested without a head: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface).
+  all, so it can be tested without a head: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS-DocumentsAndData.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface).
 - Reading file paths off the process command line so a comparison can be repeated from a script:
-  [Load documents named on the command line during startup](../BLUEPRINTS.md#load-documents-named-on-the-command-line-during-startup).
+  [Load documents named on the command line during startup](../BLUEPRINTS-MVVM.md#load-documents-named-on-the-command-line-during-startup).
 - Starting async loading from the view-model constructor and catching everything inside it:
-  [Kick off async startup loading from the view model constructor](../BLUEPRINTS.md#kick-off-async-startup-loading-from-the-view-model-constructor).
+  [Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor).
 - Opening the operating system's file picker for a single `.pdf` and handling the cancel case:
-  [Pick a file to open through a native dialog from the view model](../BLUEPRINTS.md#pick-a-file-to-open-through-a-native-dialog-from-the-view-model).
+  [Pick a file to open through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#pick-a-file-to-open-through-a-native-dialog-from-the-view-model).
 - Handing the view model a `XamlRoot` getter so its `ShowError` dialogs have somewhere to appear:
-  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 - Opting the Linux framebuffer head into a platform-drawn file picker, with a start folder, a
-  folder restriction and an extension filter: [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
+  folder restriction and an extension filter: [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
 - Declaring a page's XAML namespaces, instantiating a view model from XAML, and scoping a region to
-  a child view model with `DataContext`: [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
+  a child view model with `DataContext`: [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
 - Drawing every arrow and magnifier button from `FontIcon` glyphs so the icons survive on a device
-  with no system fonts: [Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts).
+  with no system fonts: [Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS-ViewsAndControls.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts).
 - Guarding both view-model constructors so the XAML designer never runs their bodies:
-  [Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer).
+  [Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
 - Writing a head's `Program.Main` so it holds no application logic and differs from its siblings by
-  one `Use…()` call: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+  one `Use…()` call: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
 - Setting fonts, the service resolver and design mode in the `App` constructor, in the order that
-  works: [Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
+  works: [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
 - Creating the main window and navigating a `Frame` to the first page in `OnLaunched`:
-  [Create the main window and navigate to the first page](../BLUEPRINTS.md#create-the-main-window-and-navigate-to-the-first-page).
+  [Create the main window and navigate to the first page](../BLUEPRINTS-AppStructureAndStartup.md#create-the-main-window-and-navigate-to-the-first-page).
 - Supplying a generic-host builder to `SimpleServiceResolver` from a small helper in the Core
-  library: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+  library: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
 - Wiring a console logger factory into the platform's ambient logging in Debug builds only:
-  [Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
+  [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 - Making a bundled font the application-wide default and registering fallback faces for scripts it
-  has no glyphs for: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
+  has no glyphs for: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
 - Forcing a software render surface after the host is built, on the one head that needs it:
-  [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head).
+  [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head).
 - Laying an application out as `src/libs` plus `tests/libs` around a shared UI project:
-  [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
+  [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
 - Compiling one copy of `App.xaml` and the views into every head through a shared project:
-  [Share App xaml and the views across heads with a shared project](../BLUEPRINTS.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
+  [Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
 - Declaring every shared package once in a Core library and exactly one runtime package per head:
-  [Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package).
+  [Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS-ProjectLayoutAndPackaging.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package).
 - Knowing which libraries arrive transitively (and deciding when to name them directly anyway):
-  [Know what a transitive package brings and name what you depend on](../BLUEPRINTS.md#know-what-a-transitive-package-brings-and-name-what-you-depend-on).
+  [Know what a transitive package brings and name what you depend on](../BLUEPRINTS-ProjectLayoutAndPackaging.md#know-what-a-transitive-package-brings-and-name-what-you-depend-on).
 - Setting up an xUnit v3 test project on the Microsoft.Testing.Platform runner the way the CodeBrix
-  family does: [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library).
+  family does: [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library).
 - Writing the multi-page PDFs the tests need at run time instead of committing a pile of binaries:
-  [Build the binary inputs your tests need instead of committing them](../BLUEPRINTS.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them).
+  [Build the binary inputs your tests need instead of committing them](../BLUEPRINTS-Testing.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them).
 - Locating one committed fixture beside the test binary with `AppContext.BaseDirectory`:
-  [Read a committed fixture from beside the test binary](../BLUEPRINTS.md#read-a-committed-fixture-from-beside-the-test-binary).
+  [Read a committed fixture from beside the test binary](../BLUEPRINTS-Testing.md#read-a-committed-fixture-from-beside-the-test-binary).
 
 ## Building, running and testing
 
@@ -257,7 +257,7 @@ cursor clamps at *its own* last page, which is exactly what preserves the offset
 with the adjustment buttons until one document runs out. And every move that actually changes a
 page resets the shared view to fit-the-page through one private `ResetViewIf()` helper — the
 comparison owns the `View`, so a caller cannot forget that rule.
-[Keep two documents in step while letting the user offset one](../BLUEPRINTS.md#keep-two-documents-in-step-while-letting-the-user-offset-one)
+[Keep two documents in step while letting the user offset one](../BLUEPRINTS-DocumentsAndData.md#keep-two-documents-in-step-while-letting-the-user-offset-one)
 
 ### Opening a document, and refusing the same file twice
 
@@ -277,9 +277,9 @@ against the other side's with `DocumentPath.AreSame()` and throws `DuplicateDocu
 `internal` and testable only through `InternalsVisibleTo.cs`; it picks its `StringComparison` from
 the operating system rather than hard-coding one, and trims the trailing separator that
 `Path.GetFullPath()` leaves behind.
-[Open a PDF and read its page count with the CodeBrix PdfRasterizer library](../BLUEPRINTS.md#open-a-pdf-and-read-its-page-count-with-the-codebrix-pdfrasterizer-library),
-[Treat two spellings of one path as the same file](../BLUEPRINTS.md#treat-two-spellings-of-one-path-as-the-same-file),
-[Report a domain rule violation as a typed exception the view model can catch](../BLUEPRINTS.md#report-a-domain-rule-violation-as-a-typed-exception-the-view-model-can-catch)
+[Open a PDF and read its page count with the CodeBrix PdfRasterizer library](../BLUEPRINTS-DocumentsAndData.md#open-a-pdf-and-read-its-page-count-with-the-codebrix-pdfrasterizer-library),
+[Treat two spellings of one path as the same file](../BLUEPRINTS-DocumentsAndData.md#treat-two-spellings-of-one-path-as-the-same-file),
+[Report a domain rule violation as a typed exception the view model can catch](../BLUEPRINTS-MVVM.md#report-a-domain-rule-violation-as-a-typed-exception-the-view-model-can-catch)
 
 ### Rendering a page: off the UI thread, cached, and at the zoom's resolution
 
@@ -298,8 +298,8 @@ are needed — the resolution is part of the key, so a low-resolution page is ne
 high-resolution request, and the `Dpi` setter clears the cache, so stale entries do not accumulate
 after a global resolution change. A capacity below 1 disables caching rather than throwing. Because
 a cache hit returns the *same* `RenderedPage` instance, nothing should mutate one.
-[Rasterize a PDF page to PNG off the UI thread](../BLUEPRINTS.md#rasterize-a-pdf-page-to-png-off-the-ui-thread),
-[Cache rendered results with a bounded most recently used cache](../BLUEPRINTS.md#cache-rendered-results-with-a-bounded-most-recently-used-cache)
+[Rasterize a PDF page to PNG off the UI thread](../BLUEPRINTS-DocumentsAndData.md#rasterize-a-pdf-page-to-png-off-the-ui-thread),
+[Cache rendered results with a bounded most recently used cache](../BLUEPRINTS-MVVM.md#cache-rendered-results-with-a-bounded-most-recently-used-cache)
 
 ### The zoom ladder and why 100% is the minimum
 
@@ -314,7 +314,7 @@ ladder is scaled up on screen a little instead of rendering an enormous image. T
 the per-call `RenderCurrentPageAsync(document, dpi, token)` overload deliberately: setting the
 renderer's own `Dpi` property instead would clear the cache on every zoom step and destroy the base
 value the multiplier needs.
-[Choose the render resolution from the zoom level](../BLUEPRINTS.md#choose-the-render-resolution-from-the-zoom-level)
+[Choose the render resolution from the zoom level](../BLUEPRINTS-GraphicsAndRendering.md#choose-the-render-resolution-from-the-zoom-level)
 
 ### One in-flight render per pane, latest request wins
 
@@ -335,7 +335,7 @@ the right pane is re-rendered; `StepAsync(move, renderLeft)` carries that flag.
 For a view model that is created and destroyed repeatedly, the shape to prefer is to implement
 `IDisposable` on it, canceling and disposing both token sources and the `PageRenderer` (which owns
 the `PageRasterizer` and the cache).
-[Run one render per pane with latest request wins cancellation](../BLUEPRINTS.md#run-one-render-per-pane-with-latest-request-wins-cancellation)
+[Run one render per pane with latest request wins cancellation](../BLUEPRINTS-MVVM.md#run-one-render-per-pane-with-latest-request-wins-cancellation)
 
 ### One version counter instead of a dozen notifications
 
@@ -349,7 +349,7 @@ command. `MainPage` watches that one property name with
 The value of the pattern is that adding a new kind of change means calling `ViewChanged()` and
 nothing else. A counter rather than a `bool` or an event means any increment reads as a change and
 it survives being read late.
-[Signal a non property model change to the view with a version counter](../BLUEPRINTS.md#signal-a-non-property-model-change-to-the-view-with-a-version-counter)
+[Signal a non property model change to the view with a version counter](../BLUEPRINTS-MVVM.md#signal-a-non-property-model-change-to-the-view-with-a-version-counter)
 
 ### Commands whose enablement lives in the model
 
@@ -368,8 +368,8 @@ while the work runs unobserved. The pan buttons take the pattern one step furthe
 `PanCommand` and pass a plain XAML string such as `CommandParameter="Left:Up"`, parsed with two
 `Enum.TryParse` calls whose failure path returns `false` from `CanExecute`, so a typo disables the
 button instead of throwing.
-[Refresh CanExecute when the gating state is not a bound property](../BLUEPRINTS.md#refresh-canexecute-when-the-gating-state-is-not-a-bound-property),
-[Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension)
+[Refresh CanExecute when the gating state is not a bound property](../BLUEPRINTS-MVVM.md#refresh-canexecute-when-the-gating-state-is-not-a-bound-property),
+[Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension)
 
 ### Two panes, one parent, and the state pushed between them
 
@@ -388,8 +388,8 @@ pane and the two panes are literally the same markup twice. Read `MainViewModel.
 `DocumentPaneViewModel.cs`, then the page. Note that `if (IsDesignMode(true)) { return; }` must be
 the first line of *both* constructors, and that the child therefore leaves `Title` and
 `BrowseCommand` null at design time.
-[Compose a page from a parent view model and child view models](../BLUEPRINTS.md#compose-a-page-from-a-parent-view-model-and-child-view-models),
-[Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer)
+[Compose a page from a parent view model and child view models](../BLUEPRINTS-MVVM.md#compose-a-page-from-a-parent-view-model-and-child-view-models),
+[Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer)
 
 ### Getting PNG bytes onto the screen, and showing pane state without converters
 
@@ -406,8 +406,8 @@ it is given, so the fan-out has to be written out. Both underlying setters are n
 (`value ?? string.Empty`), so a cleared pane binds to an empty string rather than to null. This is
 also why the Core library references `Microsoft.UI.Xaml`, and why the domain library, which has no
 XAML reference at all, has no `Visibility` in it.
-[Turn image bytes into a bound BitmapImage](../BLUEPRINTS.md#turn-image-bytes-into-a-bound-bitmapimage),
-[Show and hide panes with computed Visibility properties](../BLUEPRINTS.md#show-and-hide-panes-with-computed-visibility-properties)
+[Turn image bytes into a bound BitmapImage](../BLUEPRINTS-ViewsAndControls.md#turn-image-bytes-into-a-bound-bitmapimage),
+[Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties)
 
 ### Where the layout arithmetic lives
 
@@ -434,7 +434,7 @@ For a new application, the shape to prefer keeps the arithmetic in the view mode
 its viewport size through a small bridge method whenever it changes (a one-line `SizeChanged`
 handler per pane), and the view model exposes computed image size and scroll offsets per pane. That
 keeps the formula testable alongside `ComparisonViewTests` and `PanPositionTests`.
-[Let the page do the layout arithmetic only it can do](../BLUEPRINTS.md#let-the-page-do-the-layout-arithmetic-only-it-can-do)
+[Let the page do the layout arithmetic only it can do](../BLUEPRINTS-ViewsAndControls.md#let-the-page-do-the-layout-arithmetic-only-it-can-do)
 
 ### Choosing files: the picker, the XamlRoot, and the framebuffer head
 
@@ -459,9 +459,9 @@ itself. `RestrictToFolder` and `RequiredExtension` are the only guard rails a ki
 has. Because a head can lack a picker, the shape to prefer moves the picker call behind a one-method
 bridge interface that the page or head implements, so the view model can show a clear message
 ("pass the two PDF paths on the command line") instead of the absence being an exception it catches.
-[Pick a file to open through a native dialog from the view model](../BLUEPRINTS.md#pick-a-file-to-open-through-a-native-dialog-from-the-view-model),
-[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show),
-[Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head)
+[Pick a file to open through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#pick-a-file-to-open-through-a-native-dialog-from-the-view-model),
+[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show),
+[Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head)
 
 ### Startup: six heads, one App, and two paths off the command line
 
@@ -491,15 +491,15 @@ nowhere to attach; deferring the load until the page signals it is ready is the 
 Registering the renderer behind an interface with `SimpleServiceResolver` at startup, and resolving
 it in the view model, is the shape to prefer over the `new` in the field initializers here: it is
 also what would make `MainViewModel` itself testable.
-[Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
-[Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor),
-[Create the main window and navigate to the first page](../BLUEPRINTS.md#create-the-main-window-and-navigate-to-the-first-page),
-[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver),
-[Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds),
-[Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks),
-[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head),
-[Load documents named on the command line during startup](../BLUEPRINTS.md#load-documents-named-on-the-command-line-during-startup),
-[Kick off async startup loading from the view model constructor](../BLUEPRINTS.md#kick-off-async-startup-loading-from-the-view-model-constructor)
+[Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
+[Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor),
+[Create the main window and navigate to the first page](../BLUEPRINTS-AppStructureAndStartup.md#create-the-main-window-and-navigate-to-the-first-page),
+[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver),
+[Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds),
+[Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks),
+[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head),
+[Load documents named on the command line during startup](../BLUEPRINTS-MVVM.md#load-documents-named-on-the-command-line-during-startup),
+[Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor)
 
 ### A UI-free library, and the tests it makes possible
 
@@ -527,12 +527,12 @@ fractional page size would force a tolerance. And the synthetic writer's PDF lib
 transitively through CodeBrix.PdfRasterizer, as does the imaging library `PageRenderer` encodes
 with — convenient, but it means an upgrade of the rasterizer moves those libraries too, so a project
 that genuinely depends on them should say so directly.
-[Put the real work in a UI free library behind a service interface](../BLUEPRINTS.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface),
-[Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project),
-[Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library),
-[Build the binary inputs your tests need instead of committing them](../BLUEPRINTS.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them),
-[Read a committed fixture from beside the test binary](../BLUEPRINTS.md#read-a-committed-fixture-from-beside-the-test-binary),
-[Know what a transitive package brings and name what you depend on](../BLUEPRINTS.md#know-what-a-transitive-package-brings-and-name-what-you-depend-on)
+[Put the real work in a UI free library behind a service interface](../BLUEPRINTS-DocumentsAndData.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface),
+[Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project),
+[Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library),
+[Build the binary inputs your tests need instead of committing them](../BLUEPRINTS-Testing.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them),
+[Read a committed fixture from beside the test binary](../BLUEPRINTS-Testing.md#read-a-committed-fixture-from-beside-the-test-binary),
+[Know what a transitive package brings and name what you depend on](../BLUEPRINTS-ProjectLayoutAndPackaging.md#know-what-a-transitive-package-brings-and-name-what-you-depend-on)
 
 ### Sharing one page across six heads
 
@@ -552,9 +552,9 @@ despite being a Windows head, targets plain `net10.0`.
 
 Finally, every icon in the middle column is a `FontIcon` glyph rather than an image asset, which is
 what keeps the arrows and the magnifiers visible on a device with no system fonts installed.
-[Share App xaml and the views across heads with a shared project](../BLUEPRINTS.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project),
-[Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package),
-[Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts)
+[Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project),
+[Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS-ProjectLayoutAndPackaging.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package),
+[Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS-ViewsAndControls.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts)
 
 ## Third-party content
 

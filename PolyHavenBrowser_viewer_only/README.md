@@ -29,126 +29,126 @@ whole Poly Haven library instead of three curated samples.
 
 - Putting one interface between the application and the graphics API, so a dropdown can change
   the backend at run time while the painter, camera, loaders and XAML above it stay unchanged:
-  [Swap the 3D graphics backend at run time from a dropdown](../BLUEPRINTS.md#swap-the-3d-graphics-backend-at-run-time-from-a-dropdown).
+  [Swap the 3D graphics backend at run time from a dropdown](../BLUEPRINTS-GraphicsAndRendering.md#swap-the-3d-graphics-backend-at-run-time-from-a-dropdown).
 - Rendering a GPU scene into an off-screen framebuffer and drawing the pixels onto an
   `SKXamlCanvas` that sits in a normal XAML page:
-  [Render an OpenGL scene off screen and composite it onto an SKXamlCanvas](../BLUEPRINTS.md#render-an-opengl-scene-off-screen-and-composite-it-onto-an-skxamlcanvas).
+  [Render an OpenGL scene off screen and composite it onto an SKXamlCanvas](../BLUEPRINTS-GraphicsAndRendering.md#render-an-opengl-scene-off-screen-and-composite-it-onto-an-skxamlcanvas).
 - Letting each backend declare the vertical orientation of its readback so one compositing path
   is correct for all of them:
-  [Composite engine pixels onto Skia with the right vertical orientation](../BLUEPRINTS.md#composite-engine-pixels-onto-skia-with-the-right-vertical-orientation).
+  [Composite engine pixels onto Skia with the right vertical orientation](../BLUEPRINTS-GraphicsAndRendering.md#composite-engine-pixels-onto-skia-with-the-right-vertical-orientation).
 - Adding a Vulkan backend that owns its whole stack and embeds pre-compiled SPIR-V, so no shader
   compiler is a build or run-time prerequisite:
-  [Add a self contained Vulkan renderer that needs no shader toolchain](../BLUEPRINTS.md#add-a-self-contained-vulkan-renderer-that-needs-no-shader-toolchain).
+  [Add a self contained Vulkan renderer that needs no shader toolchain](../BLUEPRINTS-GraphicsAndRendering.md#add-a-self-contained-vulkan-renderer-that-needs-no-shader-toolchain).
 - Adding a macOS backend by P/Invoking the Objective-C runtime directly, with no managed Apple
   bindings and no package of any kind:
-  [Add a direct to Metal renderer with no NuGet package or Apple bindings](../BLUEPRINTS.md#add-a-direct-to-metal-renderer-with-no-nuget-package-or-apple-bindings).
+  [Add a direct to Metal renderer with no NuGet package or Apple bindings](../BLUEPRINTS-GraphicsAndRendering.md#add-a-direct-to-metal-renderer-with-no-nuget-package-or-apple-bindings).
 - Deciding which heads an optional capability is offered on with a hard-coded, testable policy
   list instead of a driver probe:
-  [Gate an optional graphics backend to specific heads with an allow list](../BLUEPRINTS.md#gate-an-optional-graphics-backend-to-specific-heads-with-an-allow-list).
+  [Gate an optional graphics backend to specific heads with an allow list](../BLUEPRINTS-GraphicsAndRendering.md#gate-an-optional-graphics-backend-to-specific-heads-with-an-allow-list).
 - Letting a headless library work out which of the six heads is hosting it without referencing
   any of them:
-  [Detect which platform head is running without referencing it](../BLUEPRINTS.md#detect-which-platform-head-is-running-without-referencing-it).
+  [Detect which platform head is running without referencing it](../BLUEPRINTS-AppStructureAndStartup.md#detect-which-platform-head-is-running-without-referencing-it).
 - Writing the camera math once, in `System.Numerics`, and feeding the same matrices to GLSL,
   SPIR-V and MSL without an extra transpose:
-  [Share one camera and one matrix convention across graphics APIs](../BLUEPRINTS.md#share-one-camera-and-one-matrix-convention-across-graphics-apis).
+  [Share one camera and one matrix convention across graphics APIs](../BLUEPRINTS-GraphicsAndRendering.md#share-one-camera-and-one-matrix-convention-across-graphics-apis).
 - Producing an interactive view entirely on the CPU, for a head with no GPU or as a fallback
   path:
-  [Paint a CPU ray traced panorama into an SKBitmap](../BLUEPRINTS.md#paint-a-cpu-ray-traced-panorama-into-an-skbitmap).
+  [Paint a CPU ray traced panorama into an SKBitmap](../BLUEPRINTS-GraphicsAndRendering.md#paint-a-cpu-ray-traced-panorama-into-an-skbitmap).
 - Turning a flat texture into a lit, orbitable solid so it reads as a material rather than a
   swatch:
-  [Build a textured cube mesh from a bitmap for previewing a flat material](../BLUEPRINTS.md#build-a-textured-cube-mesh-from-a-bitmap-for-previewing-a-flat-material).
+  [Build a textured cube mesh from a bitmap for previewing a flat material](../BLUEPRINTS-GraphicsAndRendering.md#build-a-textured-cube-mesh-from-a-bitmap-for-previewing-a-flat-material).
 - Previewing glass in a glTF model with a second, depth-write-off pass instead of implementing
   real transmission:
-  [Draw translucent surfaces in a second pass with depth writes off](../BLUEPRINTS.md#draw-translucent-surfaces-in-a-second-pass-with-depth-writes-off).
+  [Draw translucent surfaces in a second pass with depth writes off](../BLUEPRINTS-GraphicsAndRendering.md#draw-translucent-surfaces-in-a-second-pass-with-depth-writes-off).
 - Decoding OpenEXR and Radiance HDR content and tone mapping it into something a canvas can
   show:
-  [Decode HDR images and tone map them for display](../BLUEPRINTS.md#decode-hdr-images-and-tone-map-them-for-display).
+  [Decode HDR images and tone map them for display](../BLUEPRINTS-GraphicsAndRendering.md#decode-hdr-images-and-tone-map-them-for-display).
 - Decoding downloaded JPEG, PNG and WebP maps into Skia bitmaps or raw RGBA through
   CodeBrix.Imaging:
-  [Decode raster images with the CodeBrix Imaging library into a Skia bitmap](../BLUEPRINTS.md#decode-raster-images-with-the-codebrix-imaging-library-into-a-skia-bitmap).
+  [Decode raster images with the CodeBrix Imaging library into a Skia bitmap](../BLUEPRINTS-GraphicsAndRendering.md#decode-raster-images-with-the-codebrix-imaging-library-into-a-skia-bitmap).
 - Offering every option in a picker and explaining, with a dialog, why one of them cannot run
   here, then putting the selection back:
-  [Alert and revert when the user picks an unsupported option](../BLUEPRINTS.md#alert-and-revert-when-the-user-picks-an-unsupported-option).
+  [Alert and revert when the user picks an unsupported option](../BLUEPRINTS-MVVM.md#alert-and-revert-when-the-user-picks-an-unsupported-option).
 - Proving a new GPU backend works on a worker thread before it is ever handed to a paint
   callback:
-  [Pre warm a rendering backend off the UI thread](../BLUEPRINTS.md#pre-warm-a-rendering-backend-off-the-ui-thread).
+  [Pre warm a rendering backend off the UI thread](../BLUEPRINTS-MVVM.md#pre-warm-a-rendering-backend-off-the-ui-thread).
 - Keeping at most one repaint queued and discarding pointer frames that have fallen behind, so
   an expensive canvas stays responsive:
-  [Coalesce repaints and drop backlogged pointer frames](../BLUEPRINTS.md#coalesce-repaints-and-drop-backlogged-pointer-frames).
+  [Coalesce repaints and drop backlogged pointer frames](../BLUEPRINTS-MVVM.md#coalesce-repaints-and-drop-backlogged-pointer-frames).
 - Converting pointer positions from view units into canvas pixels and forwarding them to the
   object being drawn:
-  [Forward pointer input from a canvas into a model](../BLUEPRINTS.md#forward-pointer-input-from-a-canvas-into-a-model).
+  [Forward pointer input from a canvas into a model](../BLUEPRINTS-ViewsAndControls.md#forward-pointer-input-from-a-canvas-into-a-model).
 - Giving the view model a way to repaint the canvas without holding a reference to the page or
   to any control:
-  [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
+  [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
 - Handing the view model a `XamlRoot` accessor so it can show a `SimpleDialog` alert and so a
   native context can be created from it later, on the right thread:
-  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 - Awaiting a network call and then decoding or mesh-building inside `Task.Run()` so the UI
   thread never blocks:
-  [Do blocking work in a service behind Task Run](../BLUEPRINTS.md#do-blocking-work-in-a-service-behind-task-run).
+  [Do blocking work in a service behind Task Run](../BLUEPRINTS-MVVM.md#do-blocking-work-in-a-service-behind-task-run).
 - Driving a progress bar and a status line from bound state while a command downloads an asset:
-  [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
+  [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS-MVVM.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
 - Writing bound properties with the C# `field` keyword, `SimpleCommand` commands with a
   `CanExecute` lambda, and `[AffectsCommands]` to refresh them:
-  [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
+  [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 - Showing and hiding the progress bar and the engine dropdown from computed properties the view
   model raises by hand:
-  [Show and hide panes with computed Visibility properties](../BLUEPRINTS.md#show-and-hide-panes-with-computed-visibility-properties).
+  [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties).
 - Catching a failed download, decode or engine switch and writing it to the bound status line
   instead of letting it escape:
-  [Report a failure as status text instead of throwing](../BLUEPRINTS.md#report-a-failure-as-status-text-instead-of-throwing).
+  [Report a failure as status text instead of throwing](../BLUEPRINTS-MVVM.md#report-a-failure-as-status-text-instead-of-throwing).
 - Making a row of buttons behave like a radio group by binding `Style` through an
   `IValueConverter`:
-  [Highlight the selected button with a value converter](../BLUEPRINTS.md#highlight-the-selected-button-with-a-value-converter).
+  [Highlight the selected button with a value converter](../BLUEPRINTS-ViewsAndControls.md#highlight-the-selected-button-with-a-value-converter).
 - Caching a downloaded asset under `LocalApplicationData` with a marker that records the key, so
   re-curating the sample invalidates it:
-  [Cache downloaded assets with a key you can invalidate](../BLUEPRINTS.md#cache-downloaded-assets-with-a-key-you-can-invalidate).
+  [Cache downloaded assets with a key you can invalidate](../BLUEPRINTS-DocumentsAndData.md#cache-downloaded-assets-with-a-key-you-can-invalidate).
 - Downloading a glTF together with the side-car files it references by relative path:
-  [Report true byte progress across a multi file download with side car files](../BLUEPRINTS.md#report-true-byte-progress-across-a-multi-file-download-with-side-car-files).
+  [Report true byte progress across a multi file download with side car files](../BLUEPRINTS-DocumentsAndData.md#report-true-byte-progress-across-a-multi-file-download-with-side-car-files).
 - Building a typed REST client with source-generated JSON, its own exception hierarchy and an
   `AddXxx` registration that configures `HttpClient` correctly:
-  [Build a typed REST client with source generated JSON and its own exceptions](../BLUEPRINTS.md#build-a-typed-rest-client-with-source-generated-json-and-its-own-exceptions).
+  [Build a typed REST client with source generated JSON and its own exceptions](../BLUEPRINTS-DocumentsAndData.md#build-a-typed-rest-client-with-source-generated-json-and-its-own-exceptions).
 - Registering the application's services in one extension method on `IServiceCollection`:
-  [Register library services with one AddXxx extension method](../BLUEPRINTS.md#register-library-services-with-one-addxxx-extension-method).
+  [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
 - Supplying the generic host builder that `SimpleServiceResolver` builds the container from:
-  [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+  [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
 - Ordering the `App` constructor: default font, container, `SetIsDesignMode(false)`, then
   `InitializeComponent()`:
-  [Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
+  [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
 - Writing the one-screen `Program.Main` each head needs, differing only in its `Use…()` call:
-  [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+  [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
 - Setting the software render surface on the WinWpfSkia head after `Build()`:
-  [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head).
+  [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head).
 - Making the bundled Roboto font the application's default text font in code and a `FontFamily`
   resource in XAML:
-  [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
+  [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
 - Laying an application out as a shared UI project, a Core library, six heads, and reusable
   assemblies under `src/libs` with mirrored tests under `tests/libs`:
-  [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
+  [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
 - Setting `RootNamespace` on the Core library so XAML can reach its types with a namespace that
   differs from the assembly name:
-  [Set the Core library root namespace to the application namespace](../BLUEPRINTS.md#set-the-core-library-root-namespace-to-the-application-namespace).
+  [Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace).
 - Referencing Graphics3DGL and letting the `GL` binding arrive transitively, rather than
   referencing the binding package directly:
-  [Code to the higher-level graphics package and let the binding arrive transitively](../BLUEPRINTS.md#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively).
+  [Code to the higher-level graphics package and let the binding arrive transitively](../BLUEPRINTS-ProjectLayoutAndPackaging.md#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively).
 - Writing one test suite per backend, mirrored test for test, so all three prove the same
   behaviors:
-  [Prove every graphics backend with the same mirrored suite](../BLUEPRINTS.md#prove-every-graphics-backend-with-the-same-mirrored-suite).
+  [Prove every graphics backend with the same mirrored suite](../BLUEPRINTS-Testing.md#prove-every-graphics-backend-with-the-same-mirrored-suite).
 - Creating a real GL context with no window system so GPU code can be exercised on a build
   machine:
-  [Test GL code headlessly with a surfaceless EGL context](../BLUEPRINTS.md#test-gl-code-headlessly-with-a-surfaceless-egl-context).
+  [Test GL code headlessly with a surfaceless EGL context](../BLUEPRINTS-Testing.md#test-gl-code-headlessly-with-a-surfaceless-egl-context).
 - Standing in for a renderer or an API client with CodeBrix.TestMocks, using the interfaces the
   production code already has:
-  [Mock a rendering or API seam with CodeBrix TestMocks](../BLUEPRINTS.md#mock-a-rendering-or-api-seam-with-codebrix-testmocks).
+  [Mock a rendering or API seam with CodeBrix TestMocks](../BLUEPRINTS-Testing.md#mock-a-rendering-or-api-seam-with-codebrix-testmocks).
 - Testing an HTTP client offline against a stub message handler that records requests and 404s
   anything unrouted:
-  [Test an HTTP client offline with a stub handler](../BLUEPRINTS.md#test-an-http-client-offline-with-a-stub-handler).
+  [Test an HTTP client offline with a stub handler](../BLUEPRINTS-Testing.md#test-an-http-client-offline-with-a-stub-handler).
 - Keeping the tests that really hit the API out of the default run with a trait and a shared
   fixture:
-  [Make live tests opt in and keep them out of the default run](../BLUEPRINTS.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run).
+  [Make live tests opt in and keep them out of the default run](../BLUEPRINTS-Testing.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run).
 - Generating the binary fixtures the tests need in memory instead of committing them:
-  [Build the binary inputs your tests need instead of committing them](../BLUEPRINTS.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them).
+  [Build the binary inputs your tests need instead of committing them](../BLUEPRINTS-Testing.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them).
 
 ## Building, running and testing
 
@@ -340,7 +340,7 @@ dropdown never sees an engine, a factory or a platform check. `Create()` hands b
 and the caller owns it, so the view model disposes the old painter (which disposes its engine)
 only after the new one is built. Read `IModelRenderEngine.cs`, then `IModelRenderEngineSelector.cs`,
 then `RENDERING-PIPELINE.md` for the diagram.
-[Swap the 3D graphics backend at run time from a dropdown](../BLUEPRINTS.md#swap-the-3d-graphics-backend-at-run-time-from-a-dropdown)
+[Swap the 3D graphics backend at run time from a dropdown](../BLUEPRINTS-GraphicsAndRendering.md#swap-the-3d-graphics-backend-at-run-time-from-a-dropdown)
 
 ### Off-screen OpenGL that never disturbs the head's own renderer
 
@@ -359,7 +359,7 @@ recreated on every size change and is checked with `CheckFramebufferStatus`; wit
 attachment geometry does not occlude correctly. The per-frame cost is dominated by the
 `glReadPixels()` GPU-to-CPU sync, which is why the application drops frames under load rather than
 lowering resolution.
-[Render an OpenGL scene off screen and composite it onto an SKXamlCanvas](../BLUEPRINTS.md#render-an-opengl-scene-off-screen-and-composite-it-onto-an-skxamlcanvas)
+[Render an OpenGL scene off screen and composite it onto an SKXamlCanvas](../BLUEPRINTS-GraphicsAndRendering.md#render-an-opengl-scene-off-screen-and-composite-it-onto-an-skxamlcanvas)
 
 ### The Vulkan and Metal backends own their whole stack, and take almost nothing with them
 
@@ -381,8 +381,8 @@ otherwise need `objc_msgSend_stret`). Every message here returns a pointer or `v
 struct only as an argument, so a single entry point serves both architectures. For the same
 reason, every transfer goes through a shared-storage staging buffer blitted to and from a private
 texture, with rows padded to the 256-byte alignment buffer-to-texture blits require.
-[Add a self contained Vulkan renderer that needs no shader toolchain](../BLUEPRINTS.md#add-a-self-contained-vulkan-renderer-that-needs-no-shader-toolchain) ·
-[Add a direct to Metal renderer with no NuGet package or Apple bindings](../BLUEPRINTS.md#add-a-direct-to-metal-renderer-with-no-nuget-package-or-apple-bindings)
+[Add a self contained Vulkan renderer that needs no shader toolchain](../BLUEPRINTS-GraphicsAndRendering.md#add-a-self-contained-vulkan-renderer-that-needs-no-shader-toolchain) ·
+[Add a direct to Metal renderer with no NuGet package or Apple bindings](../BLUEPRINTS-GraphicsAndRendering.md#add-a-direct-to-metal-renderer-with-no-nuget-package-or-apple-bindings)
 
 ### The platform gate, and how a headless library knows which head it is in
 
@@ -402,8 +402,8 @@ what a unit-test host is; there is a test asserting exactly that. `MetalPlatform
 to the same detection rather than duplicating it. The one caveat is that the scan relies on the
 runtime assembly already being loaded, which holds by the time any UI runs but not in a static
 initializer that runs before the host is built.
-[Gate an optional graphics backend to specific heads with an allow list](../BLUEPRINTS.md#gate-an-optional-graphics-backend-to-specific-heads-with-an-allow-list) ·
-[Detect which platform head is running without referencing it](../BLUEPRINTS.md#detect-which-platform-head-is-running-without-referencing-it)
+[Gate an optional graphics backend to specific heads with an allow list](../BLUEPRINTS-GraphicsAndRendering.md#gate-an-optional-graphics-backend-to-specific-heads-with-an-allow-list) ·
+[Detect which platform head is running without referencing it](../BLUEPRINTS-AppStructureAndStartup.md#detect-which-platform-head-is-running-without-referencing-it)
 
 ### Pixel orientation and the matrix that must not be transposed
 
@@ -424,8 +424,8 @@ silently flattens the depth axis, and only for rotated cameras, so an axis-align
 the bug entirely. The regression test that pins it,
 `nearer_geometry_occludes_farther_geometry_regardless_of_draw_order`, uses a rotated camera on
 purpose, tries both draw orders, and exists once per renderer.
-[Composite engine pixels onto Skia with the right vertical orientation](../BLUEPRINTS.md#composite-engine-pixels-onto-skia-with-the-right-vertical-orientation) ·
-[Share one camera and one matrix convention across graphics APIs](../BLUEPRINTS.md#share-one-camera-and-one-matrix-convention-across-graphics-apis)
+[Composite engine pixels onto Skia with the right vertical orientation](../BLUEPRINTS-GraphicsAndRendering.md#composite-engine-pixels-onto-skia-with-the-right-vertical-orientation) ·
+[Share one camera and one matrix convention across graphics APIs](../BLUEPRINTS-GraphicsAndRendering.md#share-one-camera-and-one-matrix-convention-across-graphics-apis)
 
 ### Switching engines safely: alert, revert, pre-warm
 
@@ -447,8 +447,8 @@ thread affinity and must be created on the render thread at first paint. The swa
 too: `_currentPainter` is cleared before the old painter is disposed, so the page's paint handler
 cannot reach a disposed painter in between. After a successful switch the current sample is
 re-displayed from the local cache, so changing engines never touches the network.
-[Alert and revert when the user picks an unsupported option](../BLUEPRINTS.md#alert-and-revert-when-the-user-picks-an-unsupported-option) ·
-[Pre warm a rendering backend off the UI thread](../BLUEPRINTS.md#pre-warm-a-rendering-backend-off-the-ui-thread)
+[Alert and revert when the user picks an unsupported option](../BLUEPRINTS-MVVM.md#alert-and-revert-when-the-user-picks-an-unsupported-option) ·
+[Pre warm a rendering backend off the UI thread](../BLUEPRINTS-MVVM.md#pre-warm-a-rendering-backend-off-the-ui-thread)
 
 ### Three sample kinds, one canvas, two painters
 
@@ -472,8 +472,8 @@ cube read as ambiguous because every face gets the same brightness. Camera frami
 The model mode clears the fixed light and the backdrop and reframes closer with a vertical bias so
 the model sits lower in view; `OrbitCamera.FitToModel` orbits around the vertex centroid when the
 model has one, so a model with one sparse extremity rotates in place.
-[Paint a CPU ray traced panorama into an SKBitmap](../BLUEPRINTS.md#paint-a-cpu-ray-traced-panorama-into-an-skbitmap) ·
-[Build a textured cube mesh from a bitmap for previewing a flat material](../BLUEPRINTS.md#build-a-textured-cube-mesh-from-a-bitmap-for-previewing-a-flat-material)
+[Paint a CPU ray traced panorama into an SKBitmap](../BLUEPRINTS-GraphicsAndRendering.md#paint-a-cpu-ray-traced-panorama-into-an-skbitmap) ·
+[Build a textured cube mesh from a bitmap for previewing a flat material](../BLUEPRINTS-GraphicsAndRendering.md#build-a-textured-cube-mesh-from-a-bitmap-for-previewing-a-flat-material)
 
 ### Loading assets without blocking the UI, and repainting without a page reference
 
@@ -496,9 +496,9 @@ through `IXamlRootGetter`, which is what lets `CreateDialog(...)` attach an aler
 model passes on to the engine selector as a `Func<XamlRoot>` for the OpenGL context. Both are wired
 in `DataContextChanged` rather than the constructor, because with `<Page.DataContext>` declared in
 XAML the `DataContext` is not yet set when the constructor body runs.
-[Do blocking work in a service behind Task Run](../BLUEPRINTS.md#do-blocking-work-in-a-service-behind-task-run) ·
-[Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface) ·
-[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show)
+[Do blocking work in a service behind Task Run](../BLUEPRINTS-MVVM.md#do-blocking-work-in-a-service-behind-task-run) ·
+[Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface) ·
+[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show)
 
 ### Pointer input, coalesced repaints and backlog frames
 
@@ -523,8 +523,8 @@ camera, so dropping a frame keeps the camera in sync with the cursor instead of 
 jump. `PointerSkip` exists on `IScenePainter` for exactly this purpose, which is where the policy
 belongs when you build this yourself: the view model owns the painter, and the page's handlers
 stay one-line forwards.
-[Forward pointer input from a canvas into a model](../BLUEPRINTS.md#forward-pointer-input-from-a-canvas-into-a-model) ·
-[Coalesce repaints and drop backlogged pointer frames](../BLUEPRINTS.md#coalesce-repaints-and-drop-backlogged-pointer-frames)
+[Forward pointer input from a canvas into a model](../BLUEPRINTS-ViewsAndControls.md#forward-pointer-input-from-a-canvas-into-a-model) ·
+[Coalesce repaints and drop backlogged pointer frames](../BLUEPRINTS-MVVM.md#coalesce-repaints-and-drop-backlogged-pointer-frames)
 
 ### The sample-asset service and the typed REST client
 
@@ -554,9 +554,9 @@ because a client-wide timeout would abort a long file download. JSON goes throug
 source-generated `JsonSerializerContext` with snake_case naming, HTTP 404 maps to a dedicated
 `PolyHavenNotFoundException`, optional MD5 verification throws `PolyHavenIntegrityException` and
 the path overload deletes a partially written file on failure.
-[Cache downloaded assets with a key you can invalidate](../BLUEPRINTS.md#cache-downloaded-assets-with-a-key-you-can-invalidate) ·
-[Report true byte progress across a multi file download with side car files](../BLUEPRINTS.md#report-true-byte-progress-across-a-multi-file-download-with-side-car-files) ·
-[Build a typed REST client with source generated JSON and its own exceptions](../BLUEPRINTS.md#build-a-typed-rest-client-with-source-generated-json-and-its-own-exceptions)
+[Cache downloaded assets with a key you can invalidate](../BLUEPRINTS-DocumentsAndData.md#cache-downloaded-assets-with-a-key-you-can-invalidate) ·
+[Report true byte progress across a multi file download with side car files](../BLUEPRINTS-DocumentsAndData.md#report-true-byte-progress-across-a-multi-file-download-with-side-car-files) ·
+[Build a typed REST client with source generated JSON and its own exceptions](../BLUEPRINTS-DocumentsAndData.md#build-a-typed-rest-client-with-source-generated-json-and-its-own-exceptions)
 
 ### Image decoding, tone mapping and glTF glass
 
@@ -583,9 +583,9 @@ accumulate coverage that way or a region already opaque behind the glass loses i
 Skia composites the frame; Vulkan expresses the same thing as a second pipeline with blending
 enabled and depth writes disabled. Translucent primitives are deliberately not depth-sorted, which
 is acceptable for the small amount of transparent geometry in preview models.
-[Decode HDR images and tone map them for display](../BLUEPRINTS.md#decode-hdr-images-and-tone-map-them-for-display) ·
-[Decode raster images with the CodeBrix Imaging library into a Skia bitmap](../BLUEPRINTS.md#decode-raster-images-with-the-codebrix-imaging-library-into-a-skia-bitmap) ·
-[Draw translucent surfaces in a second pass with depth writes off](../BLUEPRINTS.md#draw-translucent-surfaces-in-a-second-pass-with-depth-writes-off)
+[Decode HDR images and tone map them for display](../BLUEPRINTS-GraphicsAndRendering.md#decode-hdr-images-and-tone-map-them-for-display) ·
+[Decode raster images with the CodeBrix Imaging library into a Skia bitmap](../BLUEPRINTS-GraphicsAndRendering.md#decode-raster-images-with-the-codebrix-imaging-library-into-a-skia-bitmap) ·
+[Draw translucent surfaces in a second pass with depth writes off](../BLUEPRINTS-GraphicsAndRendering.md#draw-translucent-surfaces-in-a-second-pass-with-depth-writes-off)
 
 ### Testing GPU code, and an HTTP client, without a window or a network
 
@@ -610,11 +610,11 @@ request-shape tests assert on exact URLs. The handful of tests that really hit t
 default run. Both projects use CodeBrix.TestMocks with `MockBehavior.Strict`, and a mocked renderer
 can still hand out a real `OrbitCamera`, which is how the pointer-input wiring is tested with no
 GPU at all.
-[Prove every graphics backend with the same mirrored suite](../BLUEPRINTS.md#prove-every-graphics-backend-with-the-same-mirrored-suite) ·
-[Test GL code headlessly with a surfaceless EGL context](../BLUEPRINTS.md#test-gl-code-headlessly-with-a-surfaceless-egl-context) ·
-[Test an HTTP client offline with a stub handler](../BLUEPRINTS.md#test-an-http-client-offline-with-a-stub-handler) ·
-[Make live tests opt in and keep them out of the default run](../BLUEPRINTS.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run) ·
-[Build the binary inputs your tests need instead of committing them](../BLUEPRINTS.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them)
+[Prove every graphics backend with the same mirrored suite](../BLUEPRINTS-Testing.md#prove-every-graphics-backend-with-the-same-mirrored-suite) ·
+[Test GL code headlessly with a surfaceless EGL context](../BLUEPRINTS-Testing.md#test-gl-code-headlessly-with-a-surfaceless-egl-context) ·
+[Test an HTTP client offline with a stub handler](../BLUEPRINTS-Testing.md#test-an-http-client-offline-with-a-stub-handler) ·
+[Make live tests opt in and keep them out of the default run](../BLUEPRINTS-Testing.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run) ·
+[Build the binary inputs your tests need instead of committing them](../BLUEPRINTS-Testing.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them)
 
 ### Two project-file rules the csproj comments spell out
 
@@ -630,8 +630,8 @@ but no project declares a reference to that package, and the comment in both csp
 coding to Graphics3DGL a hard rule. The pay-off is that the off-screen context resolves the head's
 own native GL wrapper, so the application ships no platform GL loader of its own and works on all
 six heads.
-[Set the Core library root namespace to the application namespace](../BLUEPRINTS.md#set-the-core-library-root-namespace-to-the-application-namespace) ·
-[Code to the higher-level graphics package and let the binding arrive transitively](../BLUEPRINTS.md#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively)
+[Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace) ·
+[Code to the higher-level graphics package and let the binding arrive transitively](../BLUEPRINTS-ProjectLayoutAndPackaging.md#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively)
 
 ## Third-party content
 

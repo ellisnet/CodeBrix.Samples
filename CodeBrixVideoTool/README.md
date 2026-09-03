@@ -27,138 +27,138 @@ work with progress and cancellation from a SimpleViewModel.
 
 - Put the VideoPlayer add-in on a page and let a view model own what is open,
   what the transport may do and which chapter and caption track are showing:
-  [Host the VideoPlayer add-in in a page and drive it from the view model](../BLUEPRINTS.md#host-the-videoplayer-add-in-in-a-page-and-drive-it-from-the-view-model).
+  [Host the VideoPlayer add-in in a page and drive it from the view model](../BLUEPRINTS-MediaAndVision.md#host-the-videoplayer-add-in-in-a-page-and-drive-it-from-the-view-model).
 - Turn on the AV1 and Opus decoders once at start-up, because they are the
   application's dependencies and never the add-in's:
-  [Turn on extra media codecs once at startup](../BLUEPRINTS.md#turn-on-extra-media-codecs-once-at-startup).
+  [Turn on extra media codecs once at startup](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-extra-media-codecs-once-at-startup).
 - Find out what is inside a media file through an interface the view model
   resolves, with two routes behind it:
-  [Probe a media file behind an interface the view model resolves](../BLUEPRINTS.md#probe-a-media-file-behind-an-interface-the-view-model-resolves).
+  [Probe a media file behind an interface the view model resolves](../BLUEPRINTS-MediaAndVision.md#probe-a-media-file-behind-an-interface-the-view-model-resolves).
 - Write CodeBrix `.cbv` video in either container mode from a plan the view
   model settled first:
-  [Author a cbv file in either container mode from a settled plan](../BLUEPRINTS.md#author-a-cbv-file-in-either-container-mode-from-a-settled-plan).
+  [Author a cbv file in either container mode from a settled plan](../BLUEPRINTS-MediaAndVision.md#author-a-cbv-file-in-either-container-mode-from-a-settled-plan).
 - Build an FFmpeg command line - inputs, stream selection, codecs, filters,
   progress and cancellation - from a service a view model drives:
-  [Export an mp4 with FFmpeg through the CodeBrix VideoProcessing library](../BLUEPRINTS.md#export-an-mp4-with-ffmpeg-through-the-codebrix-videoprocessing-library).
+  [Export an mp4 with FFmpeg through the CodeBrix VideoProcessing library](../BLUEPRINTS-MediaAndVision.md#export-an-mp4-with-ffmpeg-through-the-codebrix-videoprocessing-library).
 - Take a bespoke container apart into elementary streams and re-wrap them so an
   external tool that cannot open it can still read the media:
-  [Demultiplex a bespoke container and remux it so an external tool can read it](../BLUEPRINTS.md#demultiplex-a-bespoke-container-and-remux-it-so-an-external-tool-can-read-it).
+  [Demultiplex a bespoke container and remux it so an external tool can read it](../BLUEPRINTS-MediaAndVision.md#demultiplex-a-bespoke-container-and-remux-it-so-an-external-tool-can-read-it).
 - Lift embedded chapters and captions out of a source into the separate input
   files an encoder insists on:
-  [Lift chapters and captions out of a source into sidecar files](../BLUEPRINTS.md#lift-chapters-and-captions-out-of-a-source-into-sidecar-files).
+  [Lift chapters and captions out of a source into sidecar files](../BLUEPRINTS-MediaAndVision.md#lift-chapters-and-captions-out-of-a-source-into-sidecar-files).
 - Tell two formats that share an extension apart by reading the first bytes of
   the file, the way the reader will:
-  [Detect a container from its first bytes](../BLUEPRINTS.md#detect-a-container-from-its-first-bytes).
+  [Detect a container from its first bytes](../BLUEPRINTS-MediaAndVision.md#detect-a-container-from-its-first-bytes).
 - Offer downscale choices that read correctly for portrait video as well as
   landscape, with every dimension even:
-  [Build a resolution ladder keyed on the short side with even dimensions](../BLUEPRINTS.md#build-a-resolution-ladder-keyed-on-the-short-side-with-even-dimensions).
+  [Build a resolution ladder keyed on the short side with even dimensions](../BLUEPRINTS-MediaAndVision.md#build-a-resolution-ladder-keyed-on-the-short-side-with-even-dimensions).
 - Make a quality choice mean one thing across two different encoders by moving
   one knob and pinning the rest:
-  [Move one encoder knob and pin everything else](../BLUEPRINTS.md#move-one-encoder-knob-and-pin-everything-else).
+  [Move one encoder knob and pin everything else](../BLUEPRINTS-MediaAndVision.md#move-one-encoder-knob-and-pin-everything-else).
 - Run a long job from a command with a progress bar, a live Cancel and every
   other command disabled:
-  [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
+  [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS-MVVM.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
 - Report honest progress when one stage of an operation knows its percentage and
   another cannot:
-  [Report progress across stages when only some of them know a percentage](../BLUEPRINTS.md#report-progress-across-stages-when-only-some-of-them-know-a-percentage).
+  [Report progress across stages when only some of them know a percentage](../BLUEPRINTS-MVVM.md#report-progress-across-stages-when-only-some-of-them-know-a-percentage).
 - Answer "can this be done, and what exactly will happen" in one testable place
   before any of it runs:
-  [Settle an operation in a plan before running any of it](../BLUEPRINTS.md#settle-an-operation-in-a-plan-before-running-any-of-it).
+  [Settle an operation in a plan before running any of it](../BLUEPRINTS-MVVM.md#settle-an-operation-in-a-plan-before-running-any-of-it).
 - Turn a dozen library-specific failures into one exception type whose message
   the status bar can show as it stands:
-  [Report a domain rule violation as a typed exception the view model can catch](../BLUEPRINTS.md#report-a-domain-rule-violation-as-a-typed-exception-the-view-model-can-catch).
+  [Report a domain rule violation as a typed exception the view model can catch](../BLUEPRINTS-MVVM.md#report-a-domain-rule-violation-as-a-typed-exception-the-view-model-can-catch).
 - Split a window into halves that each own real state, with a parent view model
   holding the one thing they share:
-  [Compose a page from a parent view model and child view models](../BLUEPRINTS.md#compose-a-page-from-a-parent-view-model-and-child-view-models).
+  [Compose a page from a parent view model and child view models](../BLUEPRINTS-MVVM.md#compose-a-page-from-a-parent-view-model-and-child-view-models).
 - Rebuild two dependent drop-downs from static rules whenever the selection
   changes, so only sensible choices are offered:
-  [Offer only the choices that make sense for the current selection](../BLUEPRINTS.md#offer-only-the-choices-that-make-sense-for-the-current-selection).
+  [Offer only the choices that make sense for the current selection](../BLUEPRINTS-MVVM.md#offer-only-the-choices-that-make-sense-for-the-current-selection).
 - Let a drop-down follow a control it also drives, without commanding the
   control back:
-  [Stop a two way bound selection from commanding the control back](../BLUEPRINTS.md#stop-a-two-way-bound-selection-from-commanding-the-control-back).
+  [Stop a two way bound selection from commanding the control back](../BLUEPRINTS-MVVM.md#stop-a-two-way-bound-selection-from-commanding-the-control-back).
 - Write bound properties, `SimpleCommand` commands and `[AffectsCommands]`
   attributes the way the family does:
-  [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
+  [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 - Notify a `double` or `enum` bindable property by hand where `SetProperty` has
   no overload for it:
-  [Notify a value typed bindable property by hand](../BLUEPRINTS.md#notify-a-value-typed-bindable-property-by-hand).
+  [Notify a value typed bindable property by hand](../BLUEPRINTS-MVVM.md#notify-a-value-typed-bindable-property-by-hand).
 - Keep a view-model constructor safe for the XAML designer with one guard line:
-  [Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer).
+  [Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
 - Ask a person which file to open from a command, through a bridge the head
   fills in and the view model degrades without:
-  [Pick a file to open through a native dialog from the view model](../BLUEPRINTS.md#pick-a-file-to-open-through-a-native-dialog-from-the-view-model).
+  [Pick a file to open through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#pick-a-file-to-open-through-a-native-dialog-from-the-view-model).
 - Choose where a long operation writes its result, and write beside the source
   when the head has no save dialog:
-  [Save a file through a native dialog from the view model](../BLUEPRINTS.md#save-a-file-through-a-native-dialog-from-the-view-model).
+  [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model).
 - Hand a view model a `XamlRoot` getter so its dialogs have somewhere to attach:
-  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 - Bind a scrubber, timecodes and a volume slider straight to a media element's
   dependency properties, and know why that is the right exception:
-  [Bind a scrubber and volume slider straight to the media element](../BLUEPRINTS.md#bind-a-scrubber-and-volume-slider-straight-to-the-media-element).
+  [Bind a scrubber and volume slider straight to the media element](../BLUEPRINTS-ViewsAndControls.md#bind-a-scrubber-and-volume-slider-straight-to-the-media-element).
 - Give an output panel no room at all until the last operation has something to
   say:
-  [Show a panel only when the last operation left something to say](../BLUEPRINTS.md#show-a-panel-only-when-the-last-operation-left-something-to-say).
+  [Show a panel only when the last operation left something to say](../BLUEPRINTS-ViewsAndControls.md#show-a-panel-only-when-the-last-operation-left-something-to-say).
 - Dim a list row for something the application cannot act on, without hiding it
   or making it unselectable:
-  [Dim a list row for an item the application cannot act on](../BLUEPRINTS.md#dim-a-list-row-for-an-item-the-application-cannot-act-on).
+  [Dim a list row for an item the application cannot act on](../BLUEPRINTS-ViewsAndControls.md#dim-a-list-row-for-an-item-the-application-cannot-act-on).
 - Format a `TimeSpan` for display with an `IValueConverter` declared once in
   `Page.Resources`:
-  [Format a value for display with an IValueConverter](../BLUEPRINTS.md#format-a-value-for-display-with-an-ivalueconverter).
+  [Format a value for display with an IValueConverter](../BLUEPRINTS-ViewsAndControls.md#format-a-value-for-display-with-an-ivalueconverter).
 - Re-key the theme's own selection brushes so light text in a dark list stays
   readable when a row is selected:
-  [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette).
+  [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS-ViewsAndControls.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette).
 - Start each head from a tiny `Program.Main` that differs only in which platform
   backend it selects:
-  [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+  [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
 - Do the whole of start-up in the `App` constructor, in the order the platform
   needs it:
-  [Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
+  [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
 - Give `SimpleServiceResolver` a generic host builder through a one-class
   `IHostBuilderProvider`:
-  [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+  [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
 - Register an application's services straight in the resolver callback when
   there is no library boundary to respect:
-  [Register library services with one AddXxx extension method](../BLUEPRINTS.md#register-library-services-with-one-addxxx-extension-method).
+  [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
 - Turn on filtered console logging in Debug builds only, from each head's `Main`
   before the host is built:
-  [Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
+  [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 - Set a bundled font as the default and list the fallback faces consulted for
   glyphs it does not have:
-  [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
+  [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
 - Keep the rules a view model applies in plain static classes, because a
   SimpleViewModel cannot be constructed in a test process:
-  [Keep view model rules in a plain class so they can be tested](../BLUEPRINTS.md#keep-view-model-rules-in-a-plain-class-so-they-can-be-tested).
+  [Keep view model rules in a plain class so they can be tested](../BLUEPRINTS-Testing.md#keep-view-model-rules-in-a-plain-class-so-they-can-be-tested).
 - Set the one csproj property that swaps reference assemblies for real ones in a
   test project:
-  [Build a test project against real CodeBrix Platform assemblies](../BLUEPRINTS.md#build-a-test-project-against-real-codebrix-platform-assemblies).
+  [Build a test project against real CodeBrix Platform assemblies](../BLUEPRINTS-Testing.md#build-a-test-project-against-real-codebrix-platform-assemblies).
 - Share one expensive `IAsyncLifetime` fixture across every test class that
   needs it:
-  [Share one expensive fixture across every test class that needs it](../BLUEPRINTS.md#share-one-expensive-fixture-across-every-test-class-that-needs-it).
+  [Share one expensive fixture across every test class that needs it](../BLUEPRINTS-Testing.md#share-one-expensive-fixture-across-every-test-class-that-needs-it).
 - Generate the real media a test suite needs from synthetic sources instead of
   committing binary files:
-  [Generate real media clips from a synthetic source](../BLUEPRINTS.md#generate-real-media-clips-from-a-synthetic-source).
+  [Generate real media clips from a synthetic source](../BLUEPRINTS-Testing.md#generate-real-media-clips-from-a-synthetic-source).
 - Drive the whole application end to end on a real head, from environment
   variables, through the view model's own commands:
-  [Drive a scripted end-to-end run of the whole application](../BLUEPRINTS.md#drive-a-scripted-end-to-end-run-of-the-whole-application).
+  [Drive a scripted end-to-end run of the whole application](../BLUEPRINTS-Testing.md#drive-a-scripted-end-to-end-run-of-the-whole-application).
 - Set up an xUnit v3 test project the way the family does, and know how to run
   it when a plain `dotnet test` finds nothing:
-  [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library).
+  [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library).
 - Give each library an `InternalsVisibleTo.cs` naming its own test assembly:
-  [Expose library internals to its test project](../BLUEPRINTS.md#expose-library-internals-to-its-test-project).
+  [Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project).
 - Organize an application as `src/libs` plus `tests/libs` around a shared UI
   project:
-  [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
+  [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
 - Carry every package in the Core library and give each head exactly one runtime
   package:
-  [Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package).
+  [Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS-ProjectLayoutAndPackaging.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package).
 - File-link `App.xaml` and the views into every head with a shared project:
-  [Share App xaml and the views across heads with a shared project](../BLUEPRINTS.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
+  [Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
 - Keep a library's own `RootNamespace` when it references CodeBrix.Platform, so
   the generated per-head resources class does not collide:
-  [Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace).
+  [Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace).
 - Set the Core library's `RootNamespace` to the application namespace so its
   types need no extra using:
-  [Set the Core library root namespace to the application namespace](../BLUEPRINTS.md#set-the-core-library-root-namespace-to-the-application-namespace).
+  [Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace).
 
 ## Building, running and testing
 
@@ -381,7 +381,7 @@ last; `IsPlaying` is a dependency property with no event, so the surface
 subscribes with `RegisterPropertyChangedCallback()` and raises its own
 `PlayStateChanged`; and the wiring runs from `DataContextChanged`, not from the
 constructor. See
-[Host the VideoPlayer add-in in a page and drive it from the view model](../BLUEPRINTS.md#host-the-videoplayer-add-in-in-a-page-and-drive-it-from-the-view-model).
+[Host the VideoPlayer add-in in a page and drive it from the view model](../BLUEPRINTS-MediaAndVision.md#host-the-videoplayer-add-in-in-a-page-and-drive-it-from-the-view-model).
 
 Position, duration, volume and mute are deliberately **not** on the interface.
 Those are dependency properties on the element, and the scrubber, the timecodes
@@ -390,7 +390,7 @@ remarks say why: what the view model owns is everything that is a decision
 rather than a value, and routing a value that ticks many times a second through
 a view model buys nothing. The transport bar's own visibility still comes from
 the view model, so the rule about when a transport exists stays testable. See
-[Bind a scrubber and volume slider straight to the media element](../BLUEPRINTS.md#bind-a-scrubber-and-volume-slider-straight-to-the-media-element).
+[Bind a scrubber and volume slider straight to the media element](../BLUEPRINTS-ViewsAndControls.md#bind-a-scrubber-and-volume-slider-straight-to-the-media-element).
 
 The chapter and caption drop-downs are two-way bound to view-model properties
 whose setters act on the surface. That would loop the moment playback moved into
@@ -401,7 +401,7 @@ following a chapter change, refreshing the lists after a file opens, and
 clearing them on close. `Close()` needs it as much as the rest: clearing an
 `ObservableCollection` and then nulling the selection would otherwise command
 the control on the way down. See
-[Stop a two way bound selection from commanding the control back](../BLUEPRINTS.md#stop-a-two-way-bound-selection-from-commanding-the-control-back).
+[Stop a two way bound selection from commanding the control back](../BLUEPRINTS-MVVM.md#stop-a-two-way-bound-selection-from-commanding-the-control-back).
 
 ### Decoders the application owns, not the add-in
 
@@ -420,7 +420,7 @@ silently not run in a trimmed publish - and which decoder is needed where: AV1
 is not optional, since all four supported formats carry it, while Opus is needed
 for WebM, Matroska and Mode 1, Mode 2 carrying Vorbis, which the playback core
 decodes itself. See
-[Turn on extra media codecs once at startup](../BLUEPRINTS.md#turn-on-extra-media-codecs-once-at-startup).
+[Turn on extra media codecs once at startup](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-extra-media-codecs-once-at-startup).
 
 ### One page, one data context, two child view models
 
@@ -434,7 +434,7 @@ isolation, and they talk back upward through an event rather than a reference:
 output to the library and re-selects it. The XAML binds through the parent with
 dotted paths (`Playback.PlayCommand`, `Conversion.Destinations`), and the status
 bar shows both `StatusText` properties in two columns. See
-[Compose a page from a parent view model and child view models](../BLUEPRINTS.md#compose-a-page-from-a-parent-view-model-and-child-view-models).
+[Compose a page from a parent view model and child view models](../BLUEPRINTS-MVVM.md#compose-a-page-from-a-parent-view-model-and-child-view-models).
 
 ### Two probing routes behind one interface
 
@@ -454,9 +454,9 @@ that is the progress design refusing an input it could not report honestly on.
 `SourceMediaInfo` doubles as the list-item model, with the format badge, the
 one-line summary, the size text and `IsPlayable` as bindable derived properties.
 See
-[Probe a media file behind an interface the view model resolves](../BLUEPRINTS.md#probe-a-media-file-behind-an-interface-the-view-model-resolves)
+[Probe a media file behind an interface the view model resolves](../BLUEPRINTS-MediaAndVision.md#probe-a-media-file-behind-an-interface-the-view-model-resolves)
 and
-[Detect a container from its first bytes](../BLUEPRINTS.md#detect-a-container-from-its-first-bytes).
+[Detect a container from its first bytes](../BLUEPRINTS-MediaAndVision.md#detect-a-container-from-its-first-bytes).
 
 ### Settle the conversion in a plan, then run it
 
@@ -477,7 +477,7 @@ matter what else is written with the same codec later; and nothing is ever
 upmixed, so a mono source stays mono and a stereo one is never called a downmix.
 `DescribeSteps()` produces the same sentences the run notes and the route line
 show, so the explanation and the behavior come from one place. See
-[Settle an operation in a plan before running any of it](../BLUEPRINTS.md#settle-an-operation-in-a-plan-before-running-any-of-it).
+[Settle an operation in a plan before running any of it](../BLUEPRINTS-MVVM.md#settle-an-operation-in-a-plan-before-running-any-of-it).
 
 ### The long operation: progress, cancellation, and a bar that never lies
 
@@ -499,9 +499,9 @@ no percentage of its own counts as half-done, so the bar moves forward when one
 finishes rather than sitting still. One sharp edge to carry away: a
 `SimpleCommand` whose implementation is asynchronous needs an explicit cast,
 `(Func<object, Task>)(_ => RunAsync())`, and both async commands here do it. See
-[Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag)
+[Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS-MVVM.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag)
 and
-[Report progress across stages when only some of them know a percentage](../BLUEPRINTS.md#report-progress-across-stages-when-only-some-of-them-know-a-percentage).
+[Report progress across stages when only some of them know a percentage](../BLUEPRINTS-MVVM.md#report-progress-across-stages-when-only-some-of-them-know-a-percentage).
 
 ### Stage one: preparing a source before anything is encoded
 
@@ -521,7 +521,7 @@ reader and is gone on the next read, so a packet held for lookahead has to be
 copied. The lookahead exists at all because an Ogg granule position states where
 a packet *ends*, and the next packet's timestamp is the most reliable statement
 of that. See
-[Demultiplex a bespoke container and remux it so an external tool can read it](../BLUEPRINTS.md#demultiplex-a-bespoke-container-and-remux-it-so-an-external-tool-can-read-it).
+[Demultiplex a bespoke container and remux it so an external tool can read it](../BLUEPRINTS-MediaAndVision.md#demultiplex-a-bespoke-container-and-remux-it-so-an-external-tool-can-read-it).
 
 The authoring library takes captions and chapters only as separate input files,
 which is the whole reason `Containers/SidecarExtractor.cs` exists. It has two
@@ -535,7 +535,7 @@ container keeps every cue in its header and is complete the instant it is open.
 An image-based caption track has no text form, so it is reported in a note rather
 than silently lost, and the playback core reads WebVTT but publishes no writer,
 so this application brings a small one. See
-[Lift chapters and captions out of a source into sidecar files](../BLUEPRINTS.md#lift-chapters-and-captions-out-of-a-source-into-sidecar-files).
+[Lift chapters and captions out of a source into sidecar files](../BLUEPRINTS-MediaAndVision.md#lift-chapters-and-captions-out-of-a-source-into-sidecar-files).
 
 ### What the drop-downs are allowed to offer
 
@@ -555,9 +555,9 @@ whose chroma planes are half-size in each direction and which has no
 representation for an odd dimension. Rungs are offered strictly below the
 source's short side, so a source already at a standard size is not offered its
 own size again. See
-[Offer only the choices that make sense for the current selection](../BLUEPRINTS.md#offer-only-the-choices-that-make-sense-for-the-current-selection)
+[Offer only the choices that make sense for the current selection](../BLUEPRINTS-MVVM.md#offer-only-the-choices-that-make-sense-for-the-current-selection)
 and
-[Build a resolution ladder keyed on the short side with even dimensions](../BLUEPRINTS.md#build-a-resolution-ladder-keyed-on-the-short-side-with-even-dimensions).
+[Build a resolution ladder keyed on the short side with even dimensions](../BLUEPRINTS-MediaAndVision.md#build-a-resolution-ladder-keyed-on-the-short-side-with-even-dimensions).
 
 ### One knob moves; everything else is pinned
 
@@ -571,7 +571,7 @@ other stop for stop rather than to look tidy on either encoder's own scale, and
 the comment above them records how they were arrived at, including the detail
 that the comparison inputs had to be re-timestamped by frame index first because
 a one-frame slip swamps everything a rate factor does. See
-[Move one encoder knob and pin everything else](../BLUEPRINTS.md#move-one-encoder-knob-and-pin-everything-else).
+[Move one encoder knob and pin everything else](../BLUEPRINTS-MediaAndVision.md#move-one-encoder-knob-and-pin-everything-else).
 
 The authoring side of the same file is where the two `.cbv` modes are defined in
 code: Mode 1 is the WebM-profile flavor writing a `.cbv` that is a WebM
@@ -581,9 +581,9 @@ that Vorbis choice the hard invariant: a bespoke CBVF file this application
 writes carries Vorbis, never Opus. Only the two `.cbv` modes are meant to satisfy
 the streamable profile; a standard MKV is checked and reported on, and its
 failure is expected rather than an error. See
-[Author a cbv file in either container mode from a settled plan](../BLUEPRINTS.md#author-a-cbv-file-in-either-container-mode-from-a-settled-plan)
+[Author a cbv file in either container mode from a settled plan](../BLUEPRINTS-MediaAndVision.md#author-a-cbv-file-in-either-container-mode-from-a-settled-plan)
 and
-[Export an mp4 with FFmpeg through the CodeBrix VideoProcessing library](../BLUEPRINTS.md#export-an-mp4-with-ffmpeg-through-the-codebrix-videoprocessing-library).
+[Export an mp4 with FFmpeg through the CodeBrix VideoProcessing library](../BLUEPRINTS-MediaAndVision.md#export-an-mp4-with-ffmpeg-through-the-codebrix-videoprocessing-library).
 
 ### Two bridges, and what the view model does when a head cannot supply one
 
@@ -605,10 +605,10 @@ context a `XamlRoot` **getter** - not the root itself, since the root is read
 each time a dialog is shown - in the same `DataContextChanged` handler that
 wires the bridges, with `InitializeComponent()` left last in the constructor so
 the handler is subscribed before the XAML sets the data context. See
-[Pick a file to open through a native dialog from the view model](../BLUEPRINTS.md#pick-a-file-to-open-through-a-native-dialog-from-the-view-model),
-[Save a file through a native dialog from the view model](../BLUEPRINTS.md#save-a-file-through-a-native-dialog-from-the-view-model)
+[Pick a file to open through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#pick-a-file-to-open-through-a-native-dialog-from-the-view-model),
+[Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model)
 and
-[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 
 The bridges being delegate properties is also what makes the application
 scriptable: replacing the output-path delegate with one that returns a fixed
@@ -639,11 +639,11 @@ those lines is a public static method, which is the only reason it can be
 tested. The file list uses the platform toolkit's `BoolToObjectConverter` with
 two real `Double` values to dim a row the player cannot open, on the row's
 outermost element so the badge, the name and the summary dim together. See
-[Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette),
-[Show a panel only when the last operation left something to say](../BLUEPRINTS.md#show-a-panel-only-when-the-last-operation-left-something-to-say),
-[Dim a list row for an item the application cannot act on](../BLUEPRINTS.md#dim-a-list-row-for-an-item-the-application-cannot-act-on)
+[Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS-ViewsAndControls.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette),
+[Show a panel only when the last operation left something to say](../BLUEPRINTS-ViewsAndControls.md#show-a-panel-only-when-the-last-operation-left-something-to-say),
+[Dim a list row for an item the application cannot act on](../BLUEPRINTS-ViewsAndControls.md#dim-a-list-row-for-an-item-the-application-cannot-act-on)
 and
-[Format a value for display with an IValueConverter](../BLUEPRINTS.md#format-a-value-for-display-with-an-ivalueconverter).
+[Format a value for display with an IValueConverter](../BLUEPRINTS-ViewsAndControls.md#format-a-value-for-display-with-an-ivalueconverter).
 
 ### One exception, one sentence
 
@@ -657,7 +657,7 @@ unknown one into three outcome values so its caller has a single exit path.
 `OperationCanceledException` is always caught before the general handlers,
 everywhere, so a cancel is never reported as a failure - and every message says
 what to do about the problem rather than only what went wrong. See
-[Report a domain rule violation as a typed exception the view model can catch](../BLUEPRINTS.md#report-a-domain-rule-violation-as-a-typed-exception-the-view-model-can-catch).
+[Report a domain rule violation as a typed exception the view model can catch](../BLUEPRINTS-MVVM.md#report-a-domain-rule-violation-as-a-typed-exception-the-view-model-can-catch).
 
 ### What is unit-tested, and what the scripted run covers instead
 
@@ -680,11 +680,11 @@ than merely configured, it lays out the list, gets the container for an item,
 walks the tree to the named row and compares the opacity of a dimmed row against
 a playable one. It also asserts that a standard MKV *fails* the streamable
 profile, because that is the expected result. See
-[Keep view model rules in a plain class so they can be tested](../BLUEPRINTS.md#keep-view-model-rules-in-a-plain-class-so-they-can-be-tested),
-[Drive a scripted end-to-end run of the whole application](../BLUEPRINTS.md#drive-a-scripted-end-to-end-run-of-the-whole-application),
-[Share one expensive fixture across every test class that needs it](../BLUEPRINTS.md#share-one-expensive-fixture-across-every-test-class-that-needs-it)
+[Keep view model rules in a plain class so they can be tested](../BLUEPRINTS-Testing.md#keep-view-model-rules-in-a-plain-class-so-they-can-be-tested),
+[Drive a scripted end-to-end run of the whole application](../BLUEPRINTS-Testing.md#drive-a-scripted-end-to-end-run-of-the-whole-application),
+[Share one expensive fixture across every test class that needs it](../BLUEPRINTS-Testing.md#share-one-expensive-fixture-across-every-test-class-that-needs-it)
 and
-[Generate real media clips from a synthetic source](../BLUEPRINTS.md#generate-real-media-clips-from-a-synthetic-source).
+[Generate real media clips from a synthetic source](../BLUEPRINTS-Testing.md#generate-real-media-clips-from-a-synthetic-source).
 
 ## Third-party content
 

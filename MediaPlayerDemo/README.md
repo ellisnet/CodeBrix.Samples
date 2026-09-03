@@ -22,58 +22,58 @@ cleanest available skeleton of the six-head CodeBrix.Platform project layout.
 
 - How to put a `MediaPlayerElement` on a page and let the view model choose what
   plays by exposing an `IMediaPlaybackSource`:
-  [Play a video from a URL with the MediaPlayer add-in](../BLUEPRINTS.md#play-a-video-from-a-url-with-the-mediaplayer-add-in).
+  [Play a video from a URL with the MediaPlayer add-in](../BLUEPRINTS-MediaAndVision.md#play-a-video-from-a-url-with-the-mediaplayer-add-in).
 - Which project each package reference belongs on: the framework, the add-in and
   the font on the Core library, exactly one runtime package on each head:
-  [Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package).
+  [Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS-ProjectLayoutAndPackaging.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package).
 - How a native dependency that only some heads need is declared on just those
   heads, with a comment saying why:
-  [Fan native packages out across the heads](../BLUEPRINTS.md#fan-native-packages-out-across-the-heads).
+  [Fan native packages out across the heads](../BLUEPRINTS-ProjectLayoutAndPackaging.md#fan-native-packages-out-across-the-heads).
 - What a head's `Program.Main` contains and how the backend is selected:
-  [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+  [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
 - The four things the `App` constructor does, in the order they have to happen:
-  [Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
+  [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
 - How `OnLaunched` creates the window, puts a `Frame` in it and navigates to the
   first page:
-  [Create the main window and navigate to the first page](../BLUEPRINTS.md#create-the-main-window-and-navigate-to-the-first-page).
+  [Create the main window and navigate to the first page](../BLUEPRINTS-AppStructureAndStartup.md#create-the-main-window-and-navigate-to-the-first-page).
 - How to give `SimpleServiceResolver` a generic-host builder from the shared Core
   library instead of duplicating it in six heads:
-  [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+  [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
 - The family's property and command idiom - `SetProperty()`, semi-auto properties,
   a lazily built `SimpleCommand`, and `[AffectsCommands]` to keep a button's
   enablement current:
-  [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
+  [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 - Why a view model constructed by the XAML designer needs a guard, and what it is
   paired with at startup:
-  [Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer).
+  [Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
 - How to bind a `ComboBox` directly to enum values with no converter and no label
   list, using `SetEnumProperty()`:
-  [Bind a picker to enum values with or without friendly labels](../BLUEPRINTS.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
+  [Bind a picker to enum values with or without friendly labels](../BLUEPRINTS-MVVM.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
 - How a view model turns a bad user-entered value into a bound status string
   rather than an exception or a dialog:
-  [Report a failure as status text instead of throwing](../BLUEPRINTS.md#report-a-failure-as-status-text-instead-of-throwing).
+  [Report a failure as status text instead of throwing](../BLUEPRINTS-MVVM.md#report-a-failure-as-status-text-instead-of-throwing).
 - How a `SimpleViewModel` releases its lazily created commands:
-  [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+  [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 - The one-handler code-behind that hands the view model a `XamlRoot` getter
   through `IXamlRootGetter`, so dialogs can be opened from the view model:
-  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 - How `App.xaml` and the `Views` folder are file-linked into all six executables
   through a shared items project:
-  [Share App xaml and the views across heads with a shared project](../BLUEPRINTS.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
+  [Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
 - Why the Core library's `RootNamespace` is set to the application name, and what
   the shared XAML then has to write to reach the view models:
-  [Set the Core library root namespace to the application namespace](../BLUEPRINTS.md#set-the-core-library-root-namespace-to-the-application-namespace).
+  [Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace).
 - How one Windows-targeting head stays inside a solution that restores on Linux
   and macOS:
-  [Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution).
+  [Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS-ProjectLayoutAndPackaging.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution).
 - The one per-head behavioral difference in the whole application, applied after
   `Build()` and before `Run()`:
-  [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head).
+  [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head).
 - How a font that ships inside a package becomes the application-wide default and
   a page-level `StaticResource`:
-  [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
+  [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
 - How to get console diagnostics while developing and a silent Release build:
-  [Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
+  [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 
 ## Building, running and testing
 
@@ -214,9 +214,9 @@ arrive with the MediaPlayer add-in rather than the base framework, so without th
 package reference none of them resolve. And assigning a new source replaces the
 old one without disposing it - if your own view model owns a disposable source,
 release it in `Dispose()`. See
-[Play a video from a URL with the MediaPlayer add-in](../BLUEPRINTS.md#play-a-video-from-a-url-with-the-mediaplayer-add-in)
+[Play a video from a URL with the MediaPlayer add-in](../BLUEPRINTS-MediaAndVision.md#play-a-video-from-a-url-with-the-mediaplayer-add-in)
 and
-[Dispose a view model its commands and its bridge delegates](../BLUEPRINTS.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+[Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 
 ### The address box, the Load command, and reporting failure as text
 
@@ -236,9 +236,9 @@ the property, the command and the try/catch, then
 `src/MediaPlayerDemo.UI/Views/MainPage.xaml` for the three bindings. Note that the
 status only covers URI construction and source creation; it says nothing about
 whether the media actually plays. See
-[Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way)
+[Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way)
 and
-[Report a failure as status text instead of throwing](../BLUEPRINTS.md#report-a-failure-as-status-text-instead-of-throwing).
+[Report a failure as status text instead of throwing](../BLUEPRINTS-MVVM.md#report-a-failure-as-status-text-instead-of-throwing).
 
 ### The stretch picker, bound straight to enum values
 
@@ -253,7 +253,7 @@ element's `Stretch`. Writing the list by hand is what keeps unwanted members out
 of the picker and fixes the display order; when member names do not read well, a
 `SimpleEnum`-backed picker or an item template is the better shape, and this
 application does not show either. See
-[Bind a picker to enum values with or without friendly labels](../BLUEPRINTS.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
+[Bind a picker to enum values with or without friendly labels](../BLUEPRINTS-MVVM.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
 
 ### The six-head skeleton, start to finish
 
@@ -281,20 +281,20 @@ same files are both content and pages. And `SetIsDesignMode(false)` is not
 optional: without it every view model still believes it is in the designer at run
 time, its design-mode guard returns from the constructor early, and the
 application starts and does nothing. See
-[Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
-[Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor),
-[Create the main window and navigate to the first page](../BLUEPRINTS.md#create-the-main-window-and-navigate-to-the-first-page),
-[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver),
-[Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer),
-[Share App xaml and the views across heads with a shared project](../BLUEPRINTS.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project),
-[Set the Core library root namespace to the application namespace](../BLUEPRINTS.md#set-the-core-library-root-namespace-to-the-application-namespace),
-[Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package),
-[Fan native packages out across the heads](../BLUEPRINTS.md#fan-native-packages-out-across-the-heads),
-[Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution),
-[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head),
-[Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks)
+[Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
+[Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor),
+[Create the main window and navigate to the first page](../BLUEPRINTS-AppStructureAndStartup.md#create-the-main-window-and-navigate-to-the-first-page),
+[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver),
+[Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer),
+[Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project),
+[Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace),
+[Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS-ProjectLayoutAndPackaging.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package),
+[Fan native packages out across the heads](../BLUEPRINTS-ProjectLayoutAndPackaging.md#fan-native-packages-out-across-the-heads),
+[Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS-ProjectLayoutAndPackaging.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution),
+[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head),
+[Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks)
 and
-[Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
+[Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 
 ### What this application does not show
 
@@ -325,7 +325,7 @@ and go elsewhere for the rest. It has:
   `?.` costs nothing when the view model does not implement the interface, and the
   getter is a lambda because `XamlRoot` is null until the page is in the visual
   tree - but this view model never opens one. See
-  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 - No converters, custom controls, `SKXamlCanvas`, styles, templates, embedded
   resources, SVG, Lottie or icons; no second page and no navigation beyond the
   initial one; and no settings or persistence, so the address is not remembered

@@ -21,76 +21,76 @@ composed by a single view model that the six heads share.
 ## What this sample shows a CodeBrix.Platform developer
 
 - Enumerating the connected cameras and running a live capture session from a plain
-  service, with no camera-library type reaching the view model: [Enumerate cameras and start a live capture session](../BLUEPRINTS.md#enumerate-cameras-and-start-a-live-capture-session).
-- Wrapping the device object so a `ComboBox` can bind straight to the collection: [Wrap a device library type so the view model never sees it](../BLUEPRINTS.md#wrap-a-device-library-type-so-the-view-model-never-sees-it).
+  service, with no camera-library type reaching the view model: [Enumerate cameras and start a live capture session](../BLUEPRINTS-MediaAndVision.md#enumerate-cameras-and-start-a-live-capture-session).
+- Wrapping the device object so a `ComboBox` can bind straight to the collection: [Wrap a device library type so the view model never sees it](../BLUEPRINTS-MediaAndVision.md#wrap-a-device-library-type-so-the-view-model-never-sees-it).
 - Blitting live BGRA frames onto an `SKXamlCanvas` subclass, aspect-fit, letterboxed
-  and selfie-mirrored: [Show live video on an SKXamlCanvas subclass](../BLUEPRINTS.md#show-live-video-on-an-skxamlcanvas-subclass).
+  and selfie-mirrored: [Show live video on an SKXamlCanvas subclass](../BLUEPRINTS-ViewsAndControls.md#show-live-video-on-an-skxamlcanvas-subclass).
 - Grabbing a still from one command and standing up a whole second pipeline behind
-  it before the mode flag flips: [Capture a still and start a second pipeline from a command](../BLUEPRINTS.md#capture-a-still-and-start-a-second-pipeline-from-a-command).
+  it before the mode flag flips: [Capture a still and start a second pipeline from a command](../BLUEPRINTS-MVVM.md#capture-a-still-and-start-a-second-pipeline-from-a-command).
 - Running inference on a worker thread that drops stale frames instead of ever
-  blocking the camera: [Run a sensor pipeline on a worker thread with latest frame wins](../BLUEPRINTS.md#run-a-sensor-pipeline-on-a-worker-thread-with-latest-frame-wins).
+  blocking the camera: [Run a sensor pipeline on a worker thread with latest frame wins](../BLUEPRINTS-MVVM.md#run-a-sensor-pipeline-on-a-worker-thread-with-latest-frame-wins).
 - Getting results from a capture thread, through a processing worker, onto the UI
-  thread with only the view model deciding what the UI sees: [Hand results from a capture thread through a worker to the UI thread](../BLUEPRINTS.md#hand-results-from-a-capture-thread-through-a-worker-to-the-ui-thread).
+  thread with only the view model deciding what the UI sees: [Hand results from a capture thread through a worker to the UI thread](../BLUEPRINTS-MVVM.md#hand-results-from-a-capture-thread-through-a-worker-to-the-ui-thread).
 - Running a TFLite detector through the OpenCV DNN module and decoding its raw
-  per-anchor tensors yourself: [Run a TFLite model through the OpenCV DNN module](../BLUEPRINTS.md#run-a-tflite-model-through-the-opencv-dnn-module).
+  per-anchor tensors yourself: [Run a TFLite model through the OpenCV DNN module](../BLUEPRINTS-MediaAndVision.md#run-a-tflite-model-through-the-opencv-dnn-module).
 - Warping a rotated region of interest into an upright square crop for a
-  second-stage model, and projecting its output back: [Warp a rotated region of interest into a model input](../BLUEPRINTS.md#warp-a-rotated-region-of-interest-into-a-model-input).
+  second-stage model, and projecting its output back: [Warp a rotated region of interest into a model input](../BLUEPRINTS-MediaAndVision.md#warp-a-rotated-region-of-interest-into-a-model-input).
 - Deciding a gesture from landmark geometry when the classifier model in your bundle
-  will not import: [Recognize a gesture from landmark geometry instead of a model](../BLUEPRINTS.md#recognize-a-gesture-from-landmark-geometry-instead-of-a-model).
+  will not import: [Recognize a gesture from landmark geometry instead of a model](../BLUEPRINTS-MediaAndVision.md#recognize-a-gesture-from-landmark-geometry-instead-of-a-model).
 - Smoothing a jittery sensor position at the producer, so every consumer gets the
-  same steadied value: [Smooth a noisy sensor position before it drives the UI](../BLUEPRINTS.md#smooth-a-noisy-sensor-position-before-it-drives-the-ui).
+  same steadied value: [Smooth a noisy sensor position before it drives the UI](../BLUEPRINTS-MediaAndVision.md#smooth-a-noisy-sensor-position-before-it-drives-the-ui).
 - Publishing an immutable result object from a background pipeline that fires at
-  frame rate: [Publish a small immutable result type from a background pipeline](../BLUEPRINTS.md#publish-a-small-immutable-result-type-from-a-background-pipeline).
+  frame rate: [Publish a small immutable result type from a background pipeline](../BLUEPRINTS-MVVM.md#publish-a-small-immutable-result-type-from-a-background-pipeline).
 - Telling "we are shutting down" apart from "that frame was bad" when a worker calls
-  into a native runtime: [Survive a native runtime tearing down while a frame is in flight](../BLUEPRINTS.md#survive-a-native-runtime-tearing-down-while-a-frame-is-in-flight).
+  into a native runtime: [Survive a native runtime tearing down while a frame is in flight](../BLUEPRINTS-MVVM.md#survive-a-native-runtime-tearing-down-while-a-frame-is-in-flight).
 - Building a drawing session over a captured image with one named, translucent layer
-  per ink color: [Create a drawing session with named color layers](../BLUEPRINTS.md#create-a-drawing-session-with-named-color-layers).
+  per ink color: [Create a drawing session with named color layers](../BLUEPRINTS-GraphicsAndRendering.md#create-a-drawing-session-with-named-color-layers).
 - Driving begin/continue/end stroke calls in 0..1 image coordinates from something
-  that is not a pointer: [Drive strokes in normalized image coordinates from a sensor](../BLUEPRINTS.md#drive-strokes-in-normalized-image-coordinates-from-a-sensor).
+  that is not a pointer: [Drive strokes in normalized image coordinates from a sensor](../BLUEPRINTS-GraphicsAndRendering.md#drive-strokes-in-normalized-image-coordinates-from-a-sensor).
 - Keeping a mirrored preview, a mirrored still and a tracker that reports unmirrored
-  coordinates all agreeing about which way is left: [Keep a mirrored preview and a mirrored drawing consistent](../BLUEPRINTS.md#keep-a-mirrored-preview-and-a-mirrored-drawing-consistent).
+  coordinates all agreeing about which way is left: [Keep a mirrored preview and a mirrored drawing consistent](../BLUEPRINTS-GraphicsAndRendering.md#keep-a-mirrored-preview-and-a-mirrored-drawing-consistent).
 - Drawing a brush-sized cursor over the rendered drawing, sized by the drawing
-  session's own view scaling: [Draw a brush sized cursor over a rendered drawing session](../BLUEPRINTS.md#draw-a-brush-sized-cursor-over-a-rendered-drawing-session).
+  session's own view scaling: [Draw a brush sized cursor over a rendered drawing session](../BLUEPRINTS-GraphicsAndRendering.md#draw-a-brush-sized-cursor-over-a-rendered-drawing-session).
 - Exporting the finished painting at the source image's pixel size rather than the
-  canvas size: [Export a drawing at a chosen pixel size](../BLUEPRINTS.md#export-a-drawing-at-a-chosen-pixel-size).
+  canvas size: [Export a drawing at a chosen pixel size](../BLUEPRINTS-GraphicsAndRendering.md#export-a-drawing-at-a-chosen-pixel-size).
 - Letting the view model repaint two Skia canvases from background threads without
-  ever holding a control reference: [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
+  ever holding a control reference: [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
 - Getting a save path from a native picker into a view model that references no
-  windowing API: [Save a file through a native dialog from the view model](../BLUEPRINTS.md#save-a-file-through-a-native-dialog-from-the-view-model).
+  windowing API: [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model).
 - Removing the empty placeholder file a save picker leaves behind, so your own
-  overwrite prompt only fires for real content: [Clean up the path a file picker returns](../BLUEPRINTS.md#clean-up-the-path-a-file-picker-returns).
-- Handing the view model a `XamlRoot` getter so it can raise its own dialogs: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+  overwrite prompt only fires for real content: [Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns).
+- Handing the view model a `XamlRoot` getter so it can raise its own dialogs: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 - Asking for confirmation and reporting errors from inside a command, with the
-  prompt conditional rather than unconditional: [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
+  prompt conditional rather than unconditional: [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
 - Switching one page between two complete UI states with a single bool, a computed
-  inverse and one converter registered twice: [Switch a page between two modes with one bool and a converter](../BLUEPRINTS.md#switch-a-page-between-two-modes-with-one-bool-and-a-converter).
+  inverse and one converter registered twice: [Switch a page between two modes with one bool and a converter](../BLUEPRINTS-ViewsAndControls.md#switch-a-page-between-two-modes-with-one-bool-and-a-converter).
 - Writing `SimpleViewModel` properties, `[AffectsCommands]` and lazily created
-  `SimpleCommand` pairs the family way, including a parameterized command: [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
-- Setting bound state from a background thread with `InvokeOnMainThread`: [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
+  `SimpleCommand` pairs the family way, including a parameterized command: [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
+- Setting bound state from a background thread with `InvokeOnMainThread`: [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
 - Disposing a view model that owns a camera, a worker thread, a native drawing
-  session and delegates the page handed it: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+  session and delegates the page handed it: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 - Declaring a Skia page, mapping the platform namespaces, and binding with the
-  platform's `Binding` markup extension: [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
+  platform's `Binding` markup extension: [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
 - Laying out an application as a shared UI project plus a Core library plus tested
-  side libraries: [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
-- Compiling `App.xaml` and the pages into every head from one shared project: [Share App xaml and the views across heads with a shared project](../BLUEPRINTS.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
+  side libraries: [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
+- Compiling `App.xaml` and the pages into every head from one shared project: [Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
 - Giving the Core library the application's root namespace so head-compiled XAML and
-  library view models sit under one root: [Set the Core library root namespace to the application namespace](../BLUEPRINTS.md#set-the-core-library-root-namespace-to-the-application-namespace).
+  library view models sit under one root: [Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace).
 - Keeping the managed binding in the library and fanning the per-RID native packages
-  out across the heads: [Fan native packages out across the heads](../BLUEPRINTS.md#fan-native-packages-out-across-the-heads).
+  out across the heads: [Fan native packages out across the heads](../BLUEPRINTS-ProjectLayoutAndPackaging.md#fan-native-packages-out-across-the-heads).
 - Embedding a machine learning model with an explicit logical name and loading it by
-  reflection: [Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
-- Writing a head's `Program.Main` so it contains nothing but hosting: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+  reflection: [Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS-ProjectLayoutAndPackaging.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
+- Writing a head's `Program.Main` so it contains nothing but hosting: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
 - Ordering the `App` constructor correctly, including the service-resolver seam kept
-  even with nothing to register: [Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
-- Supplying the generic host builder that `SimpleServiceResolver` is created with: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+  even with nothing to register: [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
+- Supplying the generic host builder that `SimpleServiceResolver` is created with: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
 - Setting a bundled font as the default for all text and exposing it as a resource
-  key: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
-- Wiring console logging that only exists in Debug builds, before the host is built: [Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
-- Forcing the software render surface after `Build()` on the WinWpfSkia head: [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head).
-- Keeping implementation types internal while still testing them directly: [Expose library internals to its test project](../BLUEPRINTS.md#expose-library-internals-to-its-test-project).
-- Adding, in a test project, the native assets a head would normally have supplied: [Add the native assets a head would have supplied](../BLUEPRINTS.md#add-the-native-assets-a-head-would-have-supplied).
-- Reading a committed fixture image from beside the test binary: [Read a committed fixture from beside the test binary](../BLUEPRINTS.md#read-a-committed-fixture-from-beside-the-test-binary).
+  key: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
+- Wiring console logging that only exists in Debug builds, before the host is built: [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
+- Forcing the software render surface after `Build()` on the WinWpfSkia head: [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head).
+- Keeping implementation types internal while still testing them directly: [Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project).
+- Adding, in a test project, the native assets a head would normally have supplied: [Add the native assets a head would have supplied](../BLUEPRINTS-Testing.md#add-the-native-assets-a-head-would-have-supplied).
+- Reading a committed fixture image from beside the test binary: [Read a committed fixture from beside the test binary](../BLUEPRINTS-Testing.md#read-a-committed-fixture-from-beside-the-test-binary).
 
 ## Building, running and testing
 
@@ -263,8 +263,8 @@ whole toolbar in one assignment. Read `src/WebcamPainter.Core/ViewModels/MainVie
 (the bindable-properties region) and then `src/WebcamPainter.UI/Views/MainPage.xaml`.
 The gotcha is that a computed inverse property needs an explicit
 `NotifyPropertyChanged` from the setter it derives from, because `SetProperty` only
-raises for its own name. See [Switch a page between two modes with one bool and a converter](../BLUEPRINTS.md#switch-a-page-between-two-modes-with-one-bool-and-a-converter)
-and [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
+raises for its own name. See [Switch a page between two modes with one bool and a converter](../BLUEPRINTS-ViewsAndControls.md#switch-a-page-between-two-modes-with-one-bool-and-a-converter)
+and [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 
 ### The capture library: enumeration, a live session, an in-memory still
 
@@ -279,8 +279,8 @@ whose XML documentation states plainly that it is raised on the capture thread.
 with no item template. Read `WebcamCaptureService.cs` then `CameraDevice.cs`, and
 note that the service does not cache pixels itself. The sharp edge is the threading
 contract: every handler in the application is written to get out fast and marshal its
-own UI work. See [Enumerate cameras and start a live capture session](../BLUEPRINTS.md#enumerate-cameras-and-start-a-live-capture-session)
-and [Wrap a device library type so the view model never sees it](../BLUEPRINTS.md#wrap-a-device-library-type-so-the-view-model-never-sees-it).
+own UI work. See [Enumerate cameras and start a live capture session](../BLUEPRINTS-MediaAndVision.md#enumerate-cameras-and-start-a-live-capture-session)
+and [Wrap a device library type so the view model never sees it](../BLUEPRINTS-MediaAndVision.md#wrap-a-device-library-type-so-the-view-model-never-sees-it).
 
 ### The vision pipeline: three stages behind one class
 
@@ -300,8 +300,8 @@ back into original frame pixels using the same rotation in reverse.
 them in that order. The sharp edges are documented at their source: the presence
 output is already a probability and must not be passed through a sigmoid a second
 time, the letterbox padding has to be undone to get back to frame pixels, and the
-regressor tensor's stride is fixed by the model. See [Run a TFLite model through the OpenCV DNN module](../BLUEPRINTS.md#run-a-tflite-model-through-the-opencv-dnn-module)
-and [Warp a rotated region of interest into a model input](../BLUEPRINTS.md#warp-a-rotated-region-of-interest-into-a-model-input).
+regressor tensor's stride is fixed by the model. See [Run a TFLite model through the OpenCV DNN module](../BLUEPRINTS-MediaAndVision.md#run-a-tflite-model-through-the-opencv-dnn-module)
+and [Warp a rotated region of interest into a model input](../BLUEPRINTS-MediaAndVision.md#warp-a-rotated-region-of-interest-into-a-model-input).
 
 The third stage is where this pipeline departs from the bundle its models came from.
 That bundle also contains gesture-classifier stages, and they are deliberately not
@@ -314,7 +314,7 @@ with four knuckles for the palm center. It is a pure static class over an array 
 points: no net, no state, no allocation, and therefore trivially unit tested with
 synthetic hands, which is exactly what `tests/libs/WebcamPainter.Vision.Tests/OpenPalmClassifierTests.cs`
 does. The rule is scale- and rotation-free because it compares two distances from the
-same wrist point. See [Recognize a gesture from landmark geometry instead of a model](../BLUEPRINTS.md#recognize-a-gesture-from-landmark-geometry-instead-of-a-model).
+same wrist point. See [Recognize a gesture from landmark geometry instead of a model](../BLUEPRINTS-MediaAndVision.md#recognize-a-gesture-from-landmark-geometry-instead-of-a-model).
 
 ### Latest-frame-wins, and the shutdown race
 
@@ -329,9 +329,9 @@ and there is a test for that. The other half of this class worth copying is its 
 catch clauses: an exception filter on the shutdown flag exits the loop quietly when a
 frame was in flight while the native runtime was tearing down at process exit, and a
 general catch drops one bad frame and keeps tracking. The flag is `volatile`
-precisely so the filter observes it the instant `Stop()` clears it. See [Run a sensor pipeline on a worker thread with latest frame wins](../BLUEPRINTS.md#run-a-sensor-pipeline-on-a-worker-thread-with-latest-frame-wins),
-[Survive a native runtime tearing down while a frame is in flight](../BLUEPRINTS.md#survive-a-native-runtime-tearing-down-while-a-frame-is-in-flight)
-and [Smooth a noisy sensor position before it drives the UI](../BLUEPRINTS.md#smooth-a-noisy-sensor-position-before-it-drives-the-ui).
+precisely so the filter observes it the instant `Stop()` clears it. See [Run a sensor pipeline on a worker thread with latest frame wins](../BLUEPRINTS-MVVM.md#run-a-sensor-pipeline-on-a-worker-thread-with-latest-frame-wins),
+[Survive a native runtime tearing down while a frame is in flight](../BLUEPRINTS-MVVM.md#survive-a-native-runtime-tearing-down-while-a-frame-is-in-flight)
+and [Smooth a noisy sensor position before it drives the UI](../BLUEPRINTS-MediaAndVision.md#smooth-a-noisy-sensor-position-before-it-drives-the-ui).
 
 ### Three threads, one view model
 
@@ -348,9 +348,9 @@ whose XML documentation carries the coordinate contract. Two habits in these han
 are worth adopting: each copies a field into a local before testing it, because
 another thread can null it between the test and the use, and the mode check is
 repeated inside the marshalled callback, because by the time it runs the user may
-already have pressed **Back**. See [Hand results from a capture thread through a worker to the UI thread](../BLUEPRINTS.md#hand-results-from-a-capture-thread-through-a-worker-to-the-ui-thread),
-[Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread)
-and [Publish a small immutable result type from a background pipeline](../BLUEPRINTS.md#publish-a-small-immutable-result-type-from-a-background-pipeline).
+already have pressed **Back**. See [Hand results from a capture thread through a worker to the UI thread](../BLUEPRINTS-MVVM.md#hand-results-from-a-capture-thread-through-a-worker-to-the-ui-thread),
+[Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread)
+and [Publish a small immutable result type from a background pipeline](../BLUEPRINTS-MVVM.md#publish-a-small-immutable-result-type-from-a-background-pipeline).
 
 ### One translucent layer per ink color
 
@@ -367,8 +367,8 @@ button backgrounds in `MainPage.xaml` in sync with it, which is the one duplicat
 in the application; a developer copying this would do better to expose the palette
 from the view model and template the buttons. The background fill is opaque white
 because JPEG has no alpha, and the surface clear color is the letterbox color around
-the still. See [Create a drawing session with named color layers](../BLUEPRINTS.md#create-a-drawing-session-with-named-color-layers)
-and [Export a drawing at a chosen pixel size](../BLUEPRINTS.md#export-a-drawing-at-a-chosen-pixel-size).
+the still. See [Create a drawing session with named color layers](../BLUEPRINTS-GraphicsAndRendering.md#create-a-drawing-session-with-named-color-layers)
+and [Export a drawing at a chosen pixel size](../BLUEPRINTS-GraphicsAndRendering.md#export-a-drawing-at-a-chosen-pixel-size).
 
 ### Strokes in normalized coordinates, and mirroring in three places
 
@@ -380,7 +380,7 @@ active stroke or begins a new one, and anything else ends it. Because the drawin
 space is calibrated from the background image rather than from a view size, this
 works before the first render, and the painting tests exercise exactly that. It is
 also why export produces the photo's native resolution regardless of how large the
-canvas happens to be on screen. See [Drive strokes in normalized image coordinates from a sensor](../BLUEPRINTS.md#drive-strokes-in-normalized-image-coordinates-from-a-sensor).
+canvas happens to be on screen. See [Drive strokes in normalized image coordinates from a sensor](../BLUEPRINTS-GraphicsAndRendering.md#drive-strokes-in-normalized-image-coordinates-from-a-sensor).
 
 What that input path does have to get right is handedness. The preview is a selfie
 view, so it is mirrored, and everything downstream has to agree about which way is
@@ -391,7 +391,7 @@ painting session's factory. The tracker reports the palm position across the
 unmirrored camera frame, so the view model flips the X coordinate, and only X, before
 it drives a stroke. Each of the three is one line, each documented where it happens,
 and the mirroring test uses an asymmetric fixture so the flip is actually observable
-in the exported image. See [Keep a mirrored preview and a mirrored drawing consistent](../BLUEPRINTS.md#keep-a-mirrored-preview-and-a-mirrored-drawing-consistent).
+in the exported image. See [Keep a mirrored preview and a mirrored drawing consistent](../BLUEPRINTS-GraphicsAndRendering.md#keep-a-mirrored-preview-and-a-mirrored-drawing-consistent).
 
 ### Two canvases, two renderers, and the invalidate bridge
 
@@ -410,9 +410,9 @@ then `MainPage.xaml.cs`, then the two renderer classes. Three sharp edges: creat
 renderer per canvas, because each caches its own pixel buffer and bitmap; invalidate
 on `SizeChanged` or the frame keeps its old letterbox after a resize; and subscribe
 `DataContextChanged` before `InitializeComponent()`, because that call may be what
-sets the data context. See [Show live video on an SKXamlCanvas subclass](../BLUEPRINTS.md#show-live-video-on-an-skxamlcanvas-subclass),
-[Draw a brush sized cursor over a rendered drawing session](../BLUEPRINTS.md#draw-a-brush-sized-cursor-over-a-rendered-drawing-session)
-and [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
+sets the data context. See [Show live video on an SKXamlCanvas subclass](../BLUEPRINTS-ViewsAndControls.md#show-live-video-on-an-skxamlcanvas-subclass),
+[Draw a brush sized cursor over a rendered drawing session](../BLUEPRINTS-GraphicsAndRendering.md#draw-a-brush-sized-cursor-over-a-rendered-drawing-session)
+and [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
 
 ### Saving, confirming, and degrading gracefully
 
@@ -433,10 +433,10 @@ the busy flag is set after the dialog closes, not before, so the UI is not disab
 while a modal picker is open. Confirmation elsewhere is deliberately conditional
 rather than blanket: **Back** asks only when a painting would be lost, **Clear** asks
 only when the stroke count is above two, and a successful save offers to clear the
-painting so the next one starts fresh. See [Save a file through a native dialog from the view model](../BLUEPRINTS.md#save-a-file-through-a-native-dialog-from-the-view-model),
-[Clean up the path a file picker returns](../BLUEPRINTS.md#clean-up-the-path-a-file-picker-returns),
-[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show)
-and [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
+painting so the next one starts fresh. See [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model),
+[Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns),
+[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show)
+and [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
 
 ### Tearing down a camera, a worker thread and a native drawing session
 
@@ -451,7 +451,7 @@ than a disposed object. Both library classes cooperate by nulling their own even
 before stopping, which guarantees no handler runs during teardown. Note that this
 careful implementation is not currently invoked by anything, because the page
 declares its view model inline in XAML; an application copying this shape should
-resolve or own the view model in the page and dispose it on unload. See [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+resolve or own the view model in the page and dispose it on unload. See [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 
 ### An application that ships three tested libraries
 
@@ -466,11 +466,11 @@ three, even where the tests only touch public members, because the convention is
 applied uniformly. `WebcamPainter.Vision` additionally embeds its two model files
 with explicit logical names, which is necessary because the source files live outside
 the project directory and the default resource name would otherwise be unpredictable;
-the loader throws a clear exception when a name does not resolve. See [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project),
-[Share App xaml and the views across heads with a shared project](../BLUEPRINTS.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project),
-[Set the Core library root namespace to the application namespace](../BLUEPRINTS.md#set-the-core-library-root-namespace-to-the-application-namespace),
-[Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection)
-and [Expose library internals to its test project](../BLUEPRINTS.md#expose-library-internals-to-its-test-project).
+the loader throws a clear exception when a name does not resolve. See [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project),
+[Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project),
+[Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace),
+[Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS-ProjectLayoutAndPackaging.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection)
+and [Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project).
 
 The test projects that mirror those libraries are worth reading as examples of
 testing code that binds to native libraries. `WebcamPainter.Vision.Tests` runs
@@ -486,8 +486,8 @@ scaling, mirroring and export. `WebcamPainter.Webcam.Tests` covers the capture
 service on a machine with no camera at all. One pitfall to note if you copy the
 Vision test project: the operating system conditions pull in only the host
 architecture's native package, so a Linux arm64 build machine would need that
-reference added. See [Add the native assets a head would have supplied](../BLUEPRINTS.md#add-the-native-assets-a-head-would-have-supplied)
-and [Read a committed fixture from beside the test binary](../BLUEPRINTS.md#read-a-committed-fixture-from-beside-the-test-binary).
+reference added. See [Add the native assets a head would have supplied](../BLUEPRINTS-Testing.md#add-the-native-assets-a-head-would-have-supplied)
+and [Read a committed fixture from beside the test binary](../BLUEPRINTS-Testing.md#read-a-committed-fixture-from-beside-the-test-binary).
 
 ### Per-head differences you should not copy blindly
 
@@ -503,14 +503,14 @@ manageable: exactly one platform head package, with all other packages coming fr
 they are fanned out per platform, both architectures at a time, so a head builds for
 either without editing; putting them in the Vision library instead would drag one
 platform's binaries into every head. Read one Linux head, then
-`src/WebcamPainter.WinWpfSkia/Program.cs`, then any head csproj. See [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
-[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head),
-[Fan native packages out across the heads](../BLUEPRINTS.md#fan-native-packages-out-across-the-heads),
-[Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor),
-[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver),
-[Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds),
-[Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks)
-and [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
+`src/WebcamPainter.WinWpfSkia/Program.cs`, then any head csproj. See [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
+[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head),
+[Fan native packages out across the heads](../BLUEPRINTS-ProjectLayoutAndPackaging.md#fan-native-packages-out-across-the-heads),
+[Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor),
+[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver),
+[Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds),
+[Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks)
+and [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
 
 ## Third-party content
 

@@ -18,34 +18,34 @@ model source without the CodeBrix.Platform UI stack.
 
 ## What this sample shows a CodeBrix.Platform developer
 
-- Compiling one `SimpleViewModel` into the Skia heads and into native WinUI 3 and WPF shells, with no second copy of the logic: [Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads).
-- Creating a drawing session in the view model with three named, colored highlighter layers and switching the active one from a command: [Create a drawing session with named color layers](../BLUEPRINTS.md#create-a-drawing-session-with-named-color-layers).
-- Forwarding mouse, pen and touch input from a canvas into a model that owns the stroke state, including capture-lost handling: [Forward pointer input from a canvas into a model](../BLUEPRINTS.md#forward-pointer-input-from-a-canvas-into-a-model).
-- Exporting the finished artwork as a PNG at a fixed pixel size, independent of the on-screen canvas: [Export a drawing at a chosen pixel size](../BLUEPRINTS.md#export-a-drawing-at-a-chosen-pixel-size).
-- Letting the view model repaint the canvas through a one-property bridge interface instead of touching a control: [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
-- Getting a save path from whatever picker the head has, through a delegate the page assigns: [Save a file through a native dialog from the view model](../BLUEPRINTS.md#save-a-file-through-a-native-dialog-from-the-view-model).
-- Making one XAML element name resolve to a different Skia canvas base class per head: [Select a canvas base class per head with conditional compilation](../BLUEPRINTS.md#select-a-canvas-base-class-per-head-with-conditional-compilation).
-- Embedding one asset under the same logical resource name in every assembly that compiles the shared source, and loading it by reflection: [Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
-- Showing which mode is active in the button captions themselves, with computed properties and no converter: [Show selection state in button captions from computed properties](../BLUEPRINTS.md#show-selection-state-in-button-captions-from-computed-properties).
-- Turning off each head's own overwrite prompt so the view model asks the replace question exactly once: [Suppress a native save dialog overwrite prompt so the view model owns confirmation](../BLUEPRINTS.md#suppress-a-native-save-dialog-overwrite-prompt-so-the-view-model-owns-confirmation).
-- Cleaning up the empty placeholder file a WinRT save picker leaves at the chosen path: [Clean up the path a file picker returns](../BLUEPRINTS.md#clean-up-the-path-a-file-picker-returns).
-- Asking the user a yes/no question from inside a command without referencing a dialog control: [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
-- Marshalling a library callback onto the UI thread before writing a bound property: [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
-- Writing bound properties and lazily created `SimpleCommand` commands the way the family does, with `[AffectsCommands]` keeping `CanExecute` in step: [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
-- Disposing the commands, the bridge delegates and the library object the view model owns: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
-- Handing the view model a lazy getter for the XAML root so its dialogs have somewhere to show: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
-- Declaring the shared Skia page and binding it with the platform's `Binding` markup extension: [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
-- Keeping one `App.xaml` and one page for all six Skia heads in a shared project: [Share App xaml and the views across heads with a shared project](../BLUEPRINTS.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
-- Giving the Core library the application's root namespace so linked source and XAML agree: [Set the Core library root namespace to the application namespace](../BLUEPRINTS.md#set-the-core-library-root-namespace-to-the-application-namespace).
-- Starting a head from a `Program.Main()` that differs from its siblings only by the backend call: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
-- Doing the whole application bootstrap in the `App` constructor, including `SetIsDesignMode(false)`: [Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
-- Supplying a generic host builder to `SimpleServiceResolver` from a tiny linked helper: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
-- Making a bundled font the default for all text on the Skia heads: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
-- Wiring console logging that exists only in Debug builds: [Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
-- Switching the WinWpfSkia head to the software render surface to avoid composition artifacts: [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head).
-- Letting the Windows-targeting heads compile inside the cross-platform solution on a Linux or macOS build host: [Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution).
-- Restricting the Windows solution's platforms to the ones a WinUI 3 head declares: [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
-- Shipping a second solution for the heads that cannot build everywhere: [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere).
+- Compiling one `SimpleViewModel` into the Skia heads and into native WinUI 3 and WPF shells, with no second copy of the logic: [Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS-AppStructureAndStartup.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads).
+- Creating a drawing session in the view model with three named, colored highlighter layers and switching the active one from a command: [Create a drawing session with named color layers](../BLUEPRINTS-GraphicsAndRendering.md#create-a-drawing-session-with-named-color-layers).
+- Forwarding mouse, pen and touch input from a canvas into a model that owns the stroke state, including capture-lost handling: [Forward pointer input from a canvas into a model](../BLUEPRINTS-ViewsAndControls.md#forward-pointer-input-from-a-canvas-into-a-model).
+- Exporting the finished artwork as a PNG at a fixed pixel size, independent of the on-screen canvas: [Export a drawing at a chosen pixel size](../BLUEPRINTS-GraphicsAndRendering.md#export-a-drawing-at-a-chosen-pixel-size).
+- Letting the view model repaint the canvas through a one-property bridge interface instead of touching a control: [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
+- Getting a save path from whatever picker the head has, through a delegate the page assigns: [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model).
+- Making one XAML element name resolve to a different Skia canvas base class per head: [Select a canvas base class per head with conditional compilation](../BLUEPRINTS-ViewsAndControls.md#select-a-canvas-base-class-per-head-with-conditional-compilation).
+- Embedding one asset under the same logical resource name in every assembly that compiles the shared source, and loading it by reflection: [Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS-ProjectLayoutAndPackaging.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
+- Showing which mode is active in the button captions themselves, with computed properties and no converter: [Show selection state in button captions from computed properties](../BLUEPRINTS-MVVM.md#show-selection-state-in-button-captions-from-computed-properties).
+- Turning off each head's own overwrite prompt so the view model asks the replace question exactly once: [Suppress a native save dialog overwrite prompt so the view model owns confirmation](../BLUEPRINTS-PlatformServices.md#suppress-a-native-save-dialog-overwrite-prompt-so-the-view-model-owns-confirmation).
+- Cleaning up the empty placeholder file a WinRT save picker leaves at the chosen path: [Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns).
+- Asking the user a yes/no question from inside a command without referencing a dialog control: [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
+- Marshalling a library callback onto the UI thread before writing a bound property: [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
+- Writing bound properties and lazily created `SimpleCommand` commands the way the family does, with `[AffectsCommands]` keeping `CanExecute` in step: [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
+- Disposing the commands, the bridge delegates and the library object the view model owns: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+- Handing the view model a lazy getter for the XAML root so its dialogs have somewhere to show: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+- Declaring the shared Skia page and binding it with the platform's `Binding` markup extension: [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
+- Keeping one `App.xaml` and one page for all six Skia heads in a shared project: [Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
+- Giving the Core library the application's root namespace so linked source and XAML agree: [Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace).
+- Starting a head from a `Program.Main()` that differs from its siblings only by the backend call: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+- Doing the whole application bootstrap in the `App` constructor, including `SetIsDesignMode(false)`: [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
+- Supplying a generic host builder to `SimpleServiceResolver` from a tiny linked helper: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+- Making a bundled font the default for all text on the Skia heads: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
+- Wiring console logging that exists only in Debug builds: [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
+- Switching the WinWpfSkia head to the software render surface to avoid composition artifacts: [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head).
+- Letting the Windows-targeting heads compile inside the cross-platform solution on a Linux or macOS build host: [Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS-ProjectLayoutAndPackaging.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution).
+- Restricting the Windows solution's platforms to the ones a WinUI 3 head declares: [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS-ProjectLayoutAndPackaging.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
+- Shipping a second solution for the heads that cannot build everywhere: [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere).
 
 ## Building, running and testing
 
@@ -202,7 +202,7 @@ Read `Shared/ViewModels/MainViewModel.cs` first, then the `<Compile Include>` bl
 `PainDiagram.Wpf/PainDiagram.Wpf.csproj`. The sharp edge is that file-linked source
 obliges every consuming assembly to supply what the source expects at run time - here, the
 embedded body-map resource. See
-[Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads).
+[Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS-AppStructureAndStartup.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads).
 
 ### The drawing session and its three highlighter layers
 
@@ -218,7 +218,7 @@ Selecting a symptom is therefore just a command that looks a layer up by name. T
 tints each button with the same hue at 40 percent alpha and says in a comment that this is
 to match the on-canvas ink; the ink itself is drawn by the library from the opaque color
 the view model passed. See
-[Create a drawing session with named color layers](../BLUEPRINTS.md#create-a-drawing-session-with-named-color-layers).
+[Create a drawing session with named color layers](../BLUEPRINTS-GraphicsAndRendering.md#create-a-drawing-session-with-named-color-layers).
 
 ### Pointer input in, repaint requests out
 
@@ -235,7 +235,7 @@ a stroke would stay half open when the window deactivates mid-drag. The WPF head
 same thing with `MouseDown`/`MouseMove`/`MouseUp`/`LostMouseCapture` and `CaptureMouse()`.
 Read `CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs` and then
 `PainDiagram.Wpf/Views/MainWindow.xaml.cs`. See
-[Forward pointer input from a canvas into a model](../BLUEPRINTS.md#forward-pointer-input-from-a-canvas-into-a-model).
+[Forward pointer input from a canvas into a model](../BLUEPRINTS-ViewsAndControls.md#forward-pointer-input-from-a-canvas-into-a-model).
 
 Repaint requests travel the other way. The session raises `RedrawRequested` as strokes
 arrive; the view model subscribes once, in its constructor, and forwards it to the
@@ -252,9 +252,9 @@ simply call `InvalidateVisual()` from wherever the event arrives - it checks
 `Dispatcher.CheckAccess()` and marshals with `BeginInvoke()` - while the Skia and WinUI
 pages assign the invalidate call directly. `InvalidateCanvas` is null until a page wires it
 up, so the view model always calls it with `?.Invoke()`. See
-[Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface)
+[Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface)
 and
-[Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
+[Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
 
 ### Saving: one bridge delegate, three dialogs, one confirmation
 
@@ -280,9 +280,9 @@ always sets it.
 
 Read `Shared/ViewModels/MainViewModel.cs` (`DoSave()`), then
 `CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs`. See
-[Save a file through a native dialog from the view model](../BLUEPRINTS.md#save-a-file-through-a-native-dialog-from-the-view-model)
+[Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model)
 and
-[Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
+[Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
 
 ### Making the application own the replace question
 
@@ -302,9 +302,9 @@ file - but only when it is genuinely zero length, so a real file with content is
 removed before the user has confirmed - and a failure to delete is deliberately ignored,
 since the application's own prompt covers it. Read the class comment in
 `Win32SaveFileDialog.cs` first; it records the whole reason. See
-[Suppress a native save dialog overwrite prompt so the view model owns confirmation](../BLUEPRINTS.md#suppress-a-native-save-dialog-overwrite-prompt-so-the-view-model-owns-confirmation)
+[Suppress a native save dialog overwrite prompt so the view model owns confirmation](../BLUEPRINTS-PlatformServices.md#suppress-a-native-save-dialog-overwrite-prompt-so-the-view-model-owns-confirmation)
 and
-[Clean up the path a file picker returns](../BLUEPRINTS.md#clean-up-the-path-a-file-picker-returns).
+[Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns).
 
 ### The body-map image, embedded once per assembly under one name
 
@@ -318,7 +318,7 @@ and only one head would find the image. The load failure path is non-fatal: it w
 debug line and returns, leaving the session with no background rather than throwing during
 construction, and the image reaches the session as a `byte[]`, so the same code works on a
 head with no file system access to the asset. See
-[Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
+[Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS-ProjectLayoutAndPackaging.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
 
 ### One canvas element name, two base classes
 
@@ -335,7 +335,7 @@ Skia heads, the head's own assembly on WPF. `PainDiagram.Core` is the only proje
 defines `HAS_CODEBRIXPLATFORM`, and the native WPF head defines neither symbol, which is
 the `#else` path; if you add a head, decide which symbol it defines before anything else.
 See
-[Select a canvas base class per head with conditional compilation](../BLUEPRINTS.md#select-a-canvas-base-class-per-head-with-conditional-compilation).
+[Select a canvas base class per head with conditional compilation](../BLUEPRINTS-ViewsAndControls.md#select-a-canvas-base-class-per-head-with-conditional-compilation).
 
 ### The shared XAML project, the Core library and the page markup
 
@@ -354,9 +354,9 @@ value and does not change it; and the shared XAML declares `x:Class="PainDiagram
 `x:Class="PainDiagram.Views.MainPage"` - the application namespace, not the shared
 project's name. Read `PainDiagram.UI.projitems`, then `PainDiagram.Core.csproj`, then any
 head csproj. See
-[Share App xaml and the views across heads with a shared project](../BLUEPRINTS.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project)
+[Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project)
 and
-[Set the Core library root namespace to the application namespace](../BLUEPRINTS.md#set-the-core-library-root-namespace-to-the-application-namespace).
+[Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace).
 
 `CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml` declares the CodeBrix.Platform
 namespaces explicitly with `clr-namespace:...;assembly=...` and binds with `{d:Binding ...}`,
@@ -368,7 +368,7 @@ The WinUI and WPF pages are near-identical markup using their own stack's plain 
 `Style="{ThemeResource AccentButtonStyle}"` on the Save button works on the Skia and WinUI
 heads; the WPF window uses a plain button instead. Only the shared page is compiled by more
 than one project - the other two belong to their own UI stack. See
-[Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
+[Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
 
 ### Startup: host builder, service resolver, design mode, font, logging
 
@@ -393,12 +393,12 @@ its own `FontFamily` to, and its comment records the gotcha: merging the font pa
 native heads - which have their own `App.xaml` - do not get it. `InitializeLogging()` is
 entirely inside `#if DEBUG`, and its adapter call is separately guarded by `HAS_CODEBRIX`
 so the same method body can be linked into a project that does not define it. See
-[Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
-[Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor),
-[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver),
-[Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks)
+[Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
+[Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor),
+[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver),
+[Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks)
 and
-[Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
+[Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 
 ### Commands, enablement and the check-mark captions
 
@@ -418,9 +418,9 @@ private-set property whose setter notifies three computed caption properties, an
 binds each button's `Content` to one of them. All of these properties use the C# `field`
 keyword with `SetProperty(ref field, value)`, so there are no backing fields to declare, and
 `ActiveLayerName`'s initializer sets the first caption without running the setter body. See
-[Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way)
+[Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way)
 and
-[Show selection state in button captions from computed properties](../BLUEPRINTS.md#show-selection-state-in-button-captions-from-computed-properties).
+[Show selection state in button captions from computed properties](../BLUEPRINTS-MVVM.md#show-selection-state-in-button-captions-from-computed-properties).
 
 ### Dialogs, the XAML root, and disposal
 
@@ -439,9 +439,9 @@ the view model no longer references the page, disposes the session and calls
 `base.Dispose()` last. `_session` is a field rather than a get-only property precisely so it
 can be nulled there; the public `Session` property returns it, so every consumer's
 null-conditional access keeps working after disposal. See
-[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show)
+[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show)
 and
-[Dispose a view model its commands and its bridge delegates](../BLUEPRINTS.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+[Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 
 ### Build details that only bite once
 
@@ -458,11 +458,11 @@ only ships assets for that platform. Both set `EnableWindowsTargeting` so the cr
 solution still builds on a Linux or macOS host. The native WPF head also rewrites its own
 `RootNamespace` by stripping `.Wpf` from the project name, so its linked shared source lands
 in the namespace the XAML expects. See
-[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head),
-[Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution),
-[Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS.md#restrict-the-solution-platforms-to-what-a-winui-head-declares)
+[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head),
+[Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS-ProjectLayoutAndPackaging.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution),
+[Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS-ProjectLayoutAndPackaging.md#restrict-the-solution-platforms-to-what-a-winui-head-declares)
 and
-[Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere).
+[Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere).
 
 ## Third-party content
 

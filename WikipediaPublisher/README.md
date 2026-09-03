@@ -20,55 +20,55 @@ the embedded-WebView bridge running on all eight heads.
 
 ## What this sample shows a CodeBrix.Platform developer
 
-- The whole fetch-parse-images-compose-render pipeline lives in `WikipediaPublisher.RenderArticle`, a library with no UI types in it, reached only through `IArticleRenderService`: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface).
-- One service method runs five ordered stages, reports progress between them, honors a cancellation token and returns a result record the UI can display: [Run a multi stage pipeline behind one service method](../BLUEPRINTS.md#run-a-multi-stage-pipeline-behind-one-service-method).
-- The Publish command drives that long network-bound call with `IProgress<T>`, a busy flag and a `try`/`finally` that resets the bar: [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
-- Every head embeds a browser the view model steers through an `IWebViewBridge` delegate, never through a WebView type: [Show a WebView on every head and drive it from a command](../BLUEPRINTS.md#show-a-webview-on-every-head-and-drive-it-from-a-command).
-- The destination path comes from a native save dialog through an `IFileSaveBridge` delegate, with a typed-path fallback when a head has no dialog: [Save a file through a native dialog from the view model](../BLUEPRINTS.md#save-a-file-through-a-native-dialog-from-the-view-model).
-- The single "replace this file?" prompt is a `SimpleDialog` call inside the Publish command, so it behaves the same on every head: [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
-- The Skia and WinUI pages hand the view model a `XamlRoot` getter through `IXamlRootGetter` so those dialogs have something to attach to: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
-- `FileDialogHelper` decodes the percent-encoded path a Linux desktop portal hands back, so the view model only ever sees real file system paths: [Clean up the path a file picker returns](../BLUEPRINTS.md#clean-up-the-path-a-file-picker-returns).
-- The WPF and WinUI heads silence their dialogs' own overwrite prompts so the application's single confirmation is the only one: [Suppress a native save dialog overwrite prompt so the view model owns confirmation](../BLUEPRINTS.md#suppress-a-native-save-dialog-overwrite-prompt-so-the-view-model-owns-confirmation).
-- `MainViewModel` is written the family way: bound properties with `SetProperty`, lazily created `SimpleCommand` instances, and `[AffectsCommands]` on the properties that gate them: [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
-- Progress callbacks and browser-navigation callbacks arrive off the UI thread and are marshalled back with `InvokeOnMainThread`: [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
-- `Dispose()` disposes and nulls each command, nulls both bridge delegates so they stop holding the page alive, and releases the service reference without disposing it: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
-- The whole view model constructor sits inside `if (!IsDesignMode(true))`, so the XAML designer never resolves a service or touches the network: [Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer).
-- The trim-size picker is filled from a typed option list owned by the library, so no library type is named in XAML: [Bind a picker to enum values with or without friendly labels](../BLUEPRINTS.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
-- The pipeline library exposes one `AddRenderArticle()` extension method, which is the only thing `App` knows about it: [Register library services with one AddXxx extension method](../BLUEPRINTS.md#register-library-services-with-one-addxxx-extension-method).
-- `HostHelper` supplies the `IHostBuilderProvider` that `SimpleServiceResolver` builds its container from: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
-- The `App` constructor does the same four things every application in the family does: default font, service registration, design mode off, `InitializeComponent()`: [Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
-- The same `Shared/ViewModels/MainViewModel.cs` is compiled into the six Skia heads and file-linked into the native WinUI 3 and WPF heads: [Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads).
-- Each Skia head is a tiny `Program.cs` whose only distinguishing line is the backend call on the host builder: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
-- The Win32Skia head's `Main` is deliberately synchronous and `[STAThread]`, with a comment saying what breaks in the WebView if it is not: [Keep Main synchronous and STA so an embedded WebView can start](../BLUEPRINTS.md#keep-main-synchronous-and-sta-so-an-embedded-webview-can-start).
-- The WinWpfSkia head casts its host after `Build()` to force the software render surface, and says why in a comment: [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head).
-- The LinuxFrameBuffer head opts into orientation handling, a file save picker and a software keyboard through the host builder: [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
-- The bundled Open Sans face is set as the application's default text font and also exposed as a `FontFamily` resource, referenced by `.ttf` URI rather than by a merged dictionary: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
-- `App.InitializeLogging()` wires a console logger factory into the platform's ambient logger inside `#if DEBUG`, and is called before the host is built: [Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
-- The Skia page declares the platform's own control and data namespaces and binds with `{d:Binding ...}`, reaching its view model through an `assembly=WikipediaPublisher.Core` namespace: [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
-- The bottom bar is a wrapping `FlexPanel` whose two control groups split onto two rows in portrait: [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in).
-- Enter in the search box runs the Search command; the WPF head does it declaratively with a `KeyBinding`, which is the form to copy: [Run a command when the user presses Enter in a text box](../BLUEPRINTS.md#run-a-command-when-the-user-presses-enter-in-a-text-box).
-- `ArticleParser` walks a CodeBrix.MarkupParse DOM into an ordered list of typed blocks, picking the real content container out of several candidates: [Parse messy HTML into structured blocks with the CodeBrix MarkupParse library](../BLUEPRINTS.md#parse-messy-html-into-structured-blocks-with-the-codebrix-markupparse-library).
-- The same walk removes citation markers, edit links, navigation boxes and whole trailing sections, counting what it dropped: [Strip web only chrome while walking the DOM](../BLUEPRINTS.md#strip-web-only-chrome-while-walking-the-dom).
-- `GlyphFilter` removes characters the embedded book fonts cannot render, then tidies the holes it leaves behind, rather than printing empty boxes: [Drop characters your embedded fonts cannot render](../BLUEPRINTS.md#drop-characters-your-embedded-fonts-cannot-render).
-- A pure, unit-tested helper rewrites screen-sized thumbnail URLs into print-resolution renditions without upscaling a raster source past its true width: [Upgrade thumbnail URLs to print resolution](../BLUEPRINTS.md#upgrade-thumbnail-urls-to-print-resolution).
-- `ImagePipeline` loads, resizes and re-encodes downloaded images with CodeBrix.Imaging, and passes already-suitable bytes straight through: [Normalize a downloaded image before embedding it in a document](../BLUEPRINTS.md#normalize-a-downloaded-image-before-embedding-it-in-a-document).
-- `WikipediaClient` owns one `HttpClient` with an identifying user agent, a timeout and a semaphore-guarded minimum gap between media downloads: [Be a polite HTTP client to a public API](../BLUEPRINTS.md#be-a-polite-http-client-to-a-public-api).
-- Image credits come from a batched MediaWiki metadata query that is best effort: a failed batch leaves the credit blank and never fails the render: [Batch a metadata API and treat the result as best effort](../BLUEPRINTS.md#batch-a-metadata-api-and-treat-the-result-as-best-effort).
-- `BookFonts.EnsureRegistered()` registers the embedded EB Garamond and Source Sans 3 faces with the PDF font system once, under a lock: [Register embedded OFL fonts with the PDF font system](../BLUEPRINTS.md#register-embedded-ofl-fonts-with-the-pdf-font-system).
-- `BookTheme` turns one trim-size choice into every margin, type size and rule weight in the book, with everything else computed from the body size: [Derive a whole document theme from one page size choice](../BLUEPRINTS.md#derive-a-whole-document-theme-from-one-page-size-choice).
-- `BookComposer` builds a real book: a cover section, a body section with mirrored margins, named styles, running heads and folios: [Compose a book with sections styles running heads and folios](../BLUEPRINTS.md#compose-a-book-with-sections-styles-running-heads-and-folios).
-- Contents entries are a bookmark hyperlink, a tab and a page-reference field, with the dots coming from a right-aligned tab stop on the entry style: [Build a table of contents with real page numbers and dot leaders](../BLUEPRINTS.md#build-a-table-of-contents-with-real-page-numbers-and-dot-leaders).
-- Figures are sized from their aspect ratio, clamped against the text block, keylined only where a frame flatters them, and captioned with a running figure number: [Place numbered framed figures with credit lines](../BLUEPRINTS.md#place-numbered-framed-figures-with-credit-lines).
-- Article tables become booktabs-style tables with horizontal rules only, and the parser refuses any table it cannot lay out: [Render booktabs style tables from parsed rows](../BLUEPRINTS.md#render-booktabs-style-tables-from-parsed-rows).
-- The first body paragraph gets its opening letter split into its own large accent-colored run: [Open a document with a raised initial](../BLUEPRINTS.md#open-a-document-with-a-raised-initial).
-- `InternalsVisibleTo.cs` in the pipeline library is what lets the tests drive the parser, theme and composer directly: [Expose library internals to its test project](../BLUEPRINTS.md#expose-library-internals-to-its-test-project).
-- The offline tests parse an article fixture embedded in the test assembly, read out through a shared helper: [Read a committed fixture from beside the test binary](../BLUEPRINTS.md#read-a-committed-fixture-from-beside-the-test-binary).
-- Generated PDFs are verified by their `%PDF-` signature and a page count rather than by a golden file: [Assert on a generated document without a golden file](../BLUEPRINTS.md#assert-on-a-generated-document-without-a-golden-file).
-- Live network tests sit in the same class as the offline ones, with the fast fetch-and-parse test split from the slow end-to-end render: [Make live tests opt in and keep them out of the default run](../BLUEPRINTS.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run).
-- The family's DI-backed test fixture file is linked into the test project, ready to resolve `IArticleRenderService` the way the container builds it: [Test a service the way the container builds it](../BLUEPRINTS.md#test-a-service-the-way-the-container-builds-it).
-- The WinWpfSkia head sets `EnableWindowsTargeting` so a Windows-targeting head still compiles on Linux and macOS inside the cross-platform solution: [Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution).
-- `WikipediaPublisher.Windows.slnx` restricts its solution platforms to x86, x64 and ARM64 to match what the WinUI head declares: [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
-- Two solutions exist because the native heads need Windows-host-only build tooling, and both files carry a comment saying so: [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere).
+- The whole fetch-parse-images-compose-render pipeline lives in `WikipediaPublisher.RenderArticle`, a library with no UI types in it, reached only through `IArticleRenderService`: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS-DocumentsAndData.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface).
+- One service method runs five ordered stages, reports progress between them, honors a cancellation token and returns a result record the UI can display: [Run a multi stage pipeline behind one service method](../BLUEPRINTS-DocumentsAndData.md#run-a-multi-stage-pipeline-behind-one-service-method).
+- The Publish command drives that long network-bound call with `IProgress<T>`, a busy flag and a `try`/`finally` that resets the bar: [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS-MVVM.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
+- Every head embeds a browser the view model steers through an `IWebViewBridge` delegate, never through a WebView type: [Show a WebView on every head and drive it from a command](../BLUEPRINTS-PlatformServices.md#show-a-webview-on-every-head-and-drive-it-from-a-command).
+- The destination path comes from a native save dialog through an `IFileSaveBridge` delegate, with a typed-path fallback when a head has no dialog: [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model).
+- The single "replace this file?" prompt is a `SimpleDialog` call inside the Publish command, so it behaves the same on every head: [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
+- The Skia and WinUI pages hand the view model a `XamlRoot` getter through `IXamlRootGetter` so those dialogs have something to attach to: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+- `FileDialogHelper` decodes the percent-encoded path a Linux desktop portal hands back, so the view model only ever sees real file system paths: [Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns).
+- The WPF and WinUI heads silence their dialogs' own overwrite prompts so the application's single confirmation is the only one: [Suppress a native save dialog overwrite prompt so the view model owns confirmation](../BLUEPRINTS-PlatformServices.md#suppress-a-native-save-dialog-overwrite-prompt-so-the-view-model-owns-confirmation).
+- `MainViewModel` is written the family way: bound properties with `SetProperty`, lazily created `SimpleCommand` instances, and `[AffectsCommands]` on the properties that gate them: [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
+- Progress callbacks and browser-navigation callbacks arrive off the UI thread and are marshalled back with `InvokeOnMainThread`: [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
+- `Dispose()` disposes and nulls each command, nulls both bridge delegates so they stop holding the page alive, and releases the service reference without disposing it: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+- The whole view model constructor sits inside `if (!IsDesignMode(true))`, so the XAML designer never resolves a service or touches the network: [Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
+- The trim-size picker is filled from a typed option list owned by the library, so no library type is named in XAML: [Bind a picker to enum values with or without friendly labels](../BLUEPRINTS-MVVM.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
+- The pipeline library exposes one `AddRenderArticle()` extension method, which is the only thing `App` knows about it: [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
+- `HostHelper` supplies the `IHostBuilderProvider` that `SimpleServiceResolver` builds its container from: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+- The `App` constructor does the same four things every application in the family does: default font, service registration, design mode off, `InitializeComponent()`: [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
+- The same `Shared/ViewModels/MainViewModel.cs` is compiled into the six Skia heads and file-linked into the native WinUI 3 and WPF heads: [Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS-AppStructureAndStartup.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads).
+- Each Skia head is a tiny `Program.cs` whose only distinguishing line is the backend call on the host builder: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+- The Win32Skia head's `Main` is deliberately synchronous and `[STAThread]`, with a comment saying what breaks in the WebView if it is not: [Keep Main synchronous and STA so an embedded WebView can start](../BLUEPRINTS-AppStructureAndStartup.md#keep-main-synchronous-and-sta-so-an-embedded-webview-can-start).
+- The WinWpfSkia head casts its host after `Build()` to force the software render surface, and says why in a comment: [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head).
+- The LinuxFrameBuffer head opts into orientation handling, a file save picker and a software keyboard through the host builder: [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
+- The bundled Open Sans face is set as the application's default text font and also exposed as a `FontFamily` resource, referenced by `.ttf` URI rather than by a merged dictionary: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
+- `App.InitializeLogging()` wires a console logger factory into the platform's ambient logger inside `#if DEBUG`, and is called before the host is built: [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
+- The Skia page declares the platform's own control and data namespaces and binds with `{d:Binding ...}`, reaching its view model through an `assembly=WikipediaPublisher.Core` namespace: [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
+- The bottom bar is a wrapping `FlexPanel` whose two control groups split onto two rows in portrait: [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS-ViewsAndControls.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in).
+- Enter in the search box runs the Search command; the WPF head does it declaratively with a `KeyBinding`, which is the form to copy: [Run a command when the user presses Enter in a text box](../BLUEPRINTS-ViewsAndControls.md#run-a-command-when-the-user-presses-enter-in-a-text-box).
+- `ArticleParser` walks a CodeBrix.MarkupParse DOM into an ordered list of typed blocks, picking the real content container out of several candidates: [Parse messy HTML into structured blocks with the CodeBrix MarkupParse library](../BLUEPRINTS-DocumentsAndData.md#parse-messy-html-into-structured-blocks-with-the-codebrix-markupparse-library).
+- The same walk removes citation markers, edit links, navigation boxes and whole trailing sections, counting what it dropped: [Strip web only chrome while walking the DOM](../BLUEPRINTS-DocumentsAndData.md#strip-web-only-chrome-while-walking-the-dom).
+- `GlyphFilter` removes characters the embedded book fonts cannot render, then tidies the holes it leaves behind, rather than printing empty boxes: [Drop characters your embedded fonts cannot render](../BLUEPRINTS-DocumentsAndData.md#drop-characters-your-embedded-fonts-cannot-render).
+- A pure, unit-tested helper rewrites screen-sized thumbnail URLs into print-resolution renditions without upscaling a raster source past its true width: [Upgrade thumbnail URLs to print resolution](../BLUEPRINTS-DocumentsAndData.md#upgrade-thumbnail-urls-to-print-resolution).
+- `ImagePipeline` loads, resizes and re-encodes downloaded images with CodeBrix.Imaging, and passes already-suitable bytes straight through: [Normalize a downloaded image before embedding it in a document](../BLUEPRINTS-GraphicsAndRendering.md#normalize-a-downloaded-image-before-embedding-it-in-a-document).
+- `WikipediaClient` owns one `HttpClient` with an identifying user agent, a timeout and a semaphore-guarded minimum gap between media downloads: [Be a polite HTTP client to a public API](../BLUEPRINTS-DocumentsAndData.md#be-a-polite-http-client-to-a-public-api).
+- Image credits come from a batched MediaWiki metadata query that is best effort: a failed batch leaves the credit blank and never fails the render: [Batch a metadata API and treat the result as best effort](../BLUEPRINTS-DocumentsAndData.md#batch-a-metadata-api-and-treat-the-result-as-best-effort).
+- `BookFonts.EnsureRegistered()` registers the embedded EB Garamond and Source Sans 3 faces with the PDF font system once, under a lock: [Register embedded OFL fonts with the PDF font system](../BLUEPRINTS-DocumentsAndData.md#register-embedded-ofl-fonts-with-the-pdf-font-system).
+- `BookTheme` turns one trim-size choice into every margin, type size and rule weight in the book, with everything else computed from the body size: [Derive a whole document theme from one page size choice](../BLUEPRINTS-DocumentsAndData.md#derive-a-whole-document-theme-from-one-page-size-choice).
+- `BookComposer` builds a real book: a cover section, a body section with mirrored margins, named styles, running heads and folios: [Compose a book with sections styles running heads and folios](../BLUEPRINTS-DocumentsAndData.md#compose-a-book-with-sections-styles-running-heads-and-folios).
+- Contents entries are a bookmark hyperlink, a tab and a page-reference field, with the dots coming from a right-aligned tab stop on the entry style: [Build a table of contents with real page numbers and dot leaders](../BLUEPRINTS-DocumentsAndData.md#build-a-table-of-contents-with-real-page-numbers-and-dot-leaders).
+- Figures are sized from their aspect ratio, clamped against the text block, keylined only where a frame flatters them, and captioned with a running figure number: [Place numbered framed figures with credit lines](../BLUEPRINTS-DocumentsAndData.md#place-numbered-framed-figures-with-credit-lines).
+- Article tables become booktabs-style tables with horizontal rules only, and the parser refuses any table it cannot lay out: [Render booktabs style tables from parsed rows](../BLUEPRINTS-DocumentsAndData.md#render-booktabs-style-tables-from-parsed-rows).
+- The first body paragraph gets its opening letter split into its own large accent-colored run: [Open a document with a raised initial](../BLUEPRINTS-DocumentsAndData.md#open-a-document-with-a-raised-initial).
+- `InternalsVisibleTo.cs` in the pipeline library is what lets the tests drive the parser, theme and composer directly: [Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project).
+- The offline tests parse an article fixture embedded in the test assembly, read out through a shared helper: [Read a committed fixture from beside the test binary](../BLUEPRINTS-Testing.md#read-a-committed-fixture-from-beside-the-test-binary).
+- Generated PDFs are verified by their `%PDF-` signature and a page count rather than by a golden file: [Assert on a generated document without a golden file](../BLUEPRINTS-Testing.md#assert-on-a-generated-document-without-a-golden-file).
+- Live network tests sit in the same class as the offline ones, with the fast fetch-and-parse test split from the slow end-to-end render: [Make live tests opt in and keep them out of the default run](../BLUEPRINTS-Testing.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run).
+- The family's DI-backed test fixture file is linked into the test project, ready to resolve `IArticleRenderService` the way the container builds it: [Test a service the way the container builds it](../BLUEPRINTS-Testing.md#test-a-service-the-way-the-container-builds-it).
+- The WinWpfSkia head sets `EnableWindowsTargeting` so a Windows-targeting head still compiles on Linux and macOS inside the cross-platform solution: [Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS-ProjectLayoutAndPackaging.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution).
+- `WikipediaPublisher.Windows.slnx` restricts its solution platforms to x86, x64 and ARM64 to match what the WinUI head declares: [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS-ProjectLayoutAndPackaging.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
+- Two solutions exist because the native heads need Windows-host-only build tooling, and both files carry a comment saying so: [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere).
 
 ## Building, running and testing
 
@@ -289,9 +289,9 @@ other way: a failed image download, a table it cannot lay out, a character it ca
 a metadata batch that did not return, all become warnings collected on the article and
 surfaced in the result.
 
-See [Put the real work in a UI free library behind a service interface](../BLUEPRINTS.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface),
-[Run a multi stage pipeline behind one service method](../BLUEPRINTS.md#run-a-multi-stage-pipeline-behind-one-service-method)
-and [Register library services with one AddXxx extension method](../BLUEPRINTS.md#register-library-services-with-one-addxxx-extension-method).
+See [Put the real work in a UI free library behind a service interface](../BLUEPRINTS-DocumentsAndData.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface),
+[Run a multi stage pipeline behind one service method](../BLUEPRINTS-DocumentsAndData.md#run-a-multi-stage-pipeline-behind-one-service-method)
+and [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
 
 ### One view model, eight heads, two bridge interfaces
 
@@ -318,8 +318,8 @@ the view model uses `#if HAS_CODEBRIX` to apply the `[Bindable]` attribute only 
 platform supplies it. Link view-model source into a native head and you have to check which
 symbols that project defines.
 
-See [Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads)
-and [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
+See [Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS-AppStructureAndStartup.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads)
+and [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 
 ### The embedded WebView on every head
 
@@ -355,8 +355,8 @@ The Win32Skia head's `Program.cs` carries the matching Windows-side pitfall in a
 on an `async Task Main` and the WebView then fails much later with an RPC error about
 changing the thread mode.
 
-See [Show a WebView on every head and drive it from a command](../BLUEPRINTS.md#show-a-webview-on-every-head-and-drive-it-from-a-command)
-and [Keep Main synchronous and STA so an embedded WebView can start](../BLUEPRINTS.md#keep-main-synchronous-and-sta-so-an-embedded-webview-can-start).
+See [Show a WebView on every head and drive it from a command](../BLUEPRINTS-PlatformServices.md#show-a-webview-on-every-head-and-drive-it-from-a-command)
+and [Keep Main synchronous and STA so an embedded WebView can start](../BLUEPRINTS-AppStructureAndStartup.md#keep-main-synchronous-and-sta-so-an-embedded-webview-can-start).
 
 ### Choosing where the PDF goes, on heads that disagree about dialogs
 
@@ -401,11 +401,11 @@ Read `Shared/ViewModels/MainViewModel.cs` (the `SelectOutputFileCommand` and
 `PublishCommand` regions), then `Shared/Helpers/FileDialogHelper.cs`, then the three page
 implementations.
 
-See [Save a file through a native dialog from the view model](../BLUEPRINTS.md#save-a-file-through-a-native-dialog-from-the-view-model),
-[Clean up the path a file picker returns](../BLUEPRINTS.md#clean-up-the-path-a-file-picker-returns),
-[Suppress a native save dialog overwrite prompt so the view model owns confirmation](../BLUEPRINTS.md#suppress-a-native-save-dialog-overwrite-prompt-so-the-view-model-owns-confirmation),
-[Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs)
-and [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+See [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model),
+[Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns),
+[Suppress a native save dialog overwrite prompt so the view model owns confirmation](../BLUEPRINTS-PlatformServices.md#suppress-a-native-save-dialog-overwrite-prompt-so-the-view-model-owns-confirmation),
+[Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs)
+and [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 
 ### Publishing as a long-running command
 
@@ -429,9 +429,9 @@ method with no progress sink at all.
 Read `Shared/ViewModels/MainViewModel.cs` and then
 `WikipediaPublisher.RenderArticle/Models/RenderModels.cs`.
 
-See [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag),
-[Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread)
-and [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+See [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS-MVVM.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag),
+[Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread)
+and [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 
 ### Parsing real-world article HTML
 
@@ -466,9 +466,9 @@ told rather than silently shortchanged.
 Read `Internal/ArticleParser.cs` alongside `Models/ArticleContent.cs`, then
 `Internal/GlyphFilter.cs`.
 
-See [Parse messy HTML into structured blocks with the CodeBrix MarkupParse library](../BLUEPRINTS.md#parse-messy-html-into-structured-blocks-with-the-codebrix-markupparse-library),
-[Strip web only chrome while walking the DOM](../BLUEPRINTS.md#strip-web-only-chrome-while-walking-the-dom)
-and [Drop characters your embedded fonts cannot render](../BLUEPRINTS.md#drop-characters-your-embedded-fonts-cannot-render).
+See [Parse messy HTML into structured blocks with the CodeBrix MarkupParse library](../BLUEPRINTS-DocumentsAndData.md#parse-messy-html-into-structured-blocks-with-the-codebrix-markupparse-library),
+[Strip web only chrome while walking the DOM](../BLUEPRINTS-DocumentsAndData.md#strip-web-only-chrome-while-walking-the-dom)
+and [Drop characters your embedded fonts cannot render](../BLUEPRINTS-DocumentsAndData.md#drop-characters-your-embedded-fonts-cannot-render).
 
 ### From screen images to print images, and the credits beneath them
 
@@ -512,10 +512,10 @@ license codes that mean nothing to a reader. Each of those is a named private me
 comment saying which case it exists for. It is the one part of the pipeline with a
 dedicated unit-test class of its own.
 
-See [Upgrade thumbnail URLs to print resolution](../BLUEPRINTS.md#upgrade-thumbnail-urls-to-print-resolution),
-[Normalize a downloaded image before embedding it in a document](../BLUEPRINTS.md#normalize-a-downloaded-image-before-embedding-it-in-a-document),
-[Be a polite HTTP client to a public API](../BLUEPRINTS.md#be-a-polite-http-client-to-a-public-api)
-and [Batch a metadata API and treat the result as best effort](../BLUEPRINTS.md#batch-a-metadata-api-and-treat-the-result-as-best-effort).
+See [Upgrade thumbnail URLs to print resolution](../BLUEPRINTS-DocumentsAndData.md#upgrade-thumbnail-urls-to-print-resolution),
+[Normalize a downloaded image before embedding it in a document](../BLUEPRINTS-GraphicsAndRendering.md#normalize-a-downloaded-image-before-embedding-it-in-a-document),
+[Be a polite HTTP client to a public API](../BLUEPRINTS-DocumentsAndData.md#be-a-polite-http-client-to-a-public-api)
+and [Batch a metadata API and treat the result as best effort](../BLUEPRINTS-DocumentsAndData.md#batch-a-metadata-api-and-treat-the-result-as-best-effort).
 
 ### Designing the book: one theme, many styles
 
@@ -558,12 +558,12 @@ Several rules only become visible when you read the comments:
 - The theme's `Letterspace()` helper uses non-breaking spaces, because the layout engine
   collapses runs of ordinary blanks.
 
-See [Derive a whole document theme from one page size choice](../BLUEPRINTS.md#derive-a-whole-document-theme-from-one-page-size-choice),
-[Compose a book with sections styles running heads and folios](../BLUEPRINTS.md#compose-a-book-with-sections-styles-running-heads-and-folios),
-[Build a table of contents with real page numbers and dot leaders](../BLUEPRINTS.md#build-a-table-of-contents-with-real-page-numbers-and-dot-leaders),
-[Place numbered framed figures with credit lines](../BLUEPRINTS.md#place-numbered-framed-figures-with-credit-lines),
-[Render booktabs style tables from parsed rows](../BLUEPRINTS.md#render-booktabs-style-tables-from-parsed-rows)
-and [Open a document with a raised initial](../BLUEPRINTS.md#open-a-document-with-a-raised-initial).
+See [Derive a whole document theme from one page size choice](../BLUEPRINTS-DocumentsAndData.md#derive-a-whole-document-theme-from-one-page-size-choice),
+[Compose a book with sections styles running heads and folios](../BLUEPRINTS-DocumentsAndData.md#compose-a-book-with-sections-styles-running-heads-and-folios),
+[Build a table of contents with real page numbers and dot leaders](../BLUEPRINTS-DocumentsAndData.md#build-a-table-of-contents-with-real-page-numbers-and-dot-leaders),
+[Place numbered framed figures with credit lines](../BLUEPRINTS-DocumentsAndData.md#place-numbered-framed-figures-with-credit-lines),
+[Render booktabs style tables from parsed rows](../BLUEPRINTS-DocumentsAndData.md#render-booktabs-style-tables-from-parsed-rows)
+and [Open a document with a raised initial](../BLUEPRINTS-DocumentsAndData.md#open-a-document-with-a-raised-initial).
 
 ### Fonts that make the output identical everywhere
 
@@ -585,7 +585,7 @@ reads better than a heavy bold at caption sizes.
 The `.ttf` files and their OFL license texts are both `EmbeddedResource` items in the
 library's csproj, so the license travels with the binary.
 
-See [Register embedded OFL fonts with the PDF font system](../BLUEPRINTS.md#register-embedded-ofl-fonts-with-the-pdf-font-system).
+See [Register embedded OFL fonts with the PDF font system](../BLUEPRINTS-DocumentsAndData.md#register-embedded-ofl-fonts-with-the-pdf-font-system).
 
 ### The Skia page and its reflowing bottom bar
 
@@ -611,10 +611,10 @@ The WPF head does the same job declaratively with `TextBox.InputBindings` and a 
 pointed at `SearchCommand`, which is the form to prefer; where a key handler is unavoidable
 it should stay a one-line forward to the command.
 
-See [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension),
-[Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in),
-[Run a command when the user presses Enter in a text box](../BLUEPRINTS.md#run-a-command-when-the-user-presses-enter-in-a-text-box)
-and [Bind a picker to enum values with or without friendly labels](../BLUEPRINTS.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
+See [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension),
+[Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS-ViewsAndControls.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in),
+[Run a command when the user presses Enter in a text box](../BLUEPRINTS-ViewsAndControls.md#run-a-command-when-the-user-presses-enter-in-a-text-box)
+and [Bind a picker to enum values with or without friendly labels](../BLUEPRINTS-MVVM.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
 
 ### Head plumbing, and the two solution files
 
@@ -650,13 +650,13 @@ worth knowing:
   a `.shproj` whose `SharedGUID` has to match the `ProjectGuid` in the corresponding
   `.projitems`.
 
-See [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
-[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head),
-[Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head),
-[Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor),
-[Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere),
-[Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution)
-and [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
+See [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
+[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head),
+[Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head),
+[Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor),
+[Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere),
+[Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS-ProjectLayoutAndPackaging.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution)
+and [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS-ProjectLayoutAndPackaging.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
 
 ### Testing a pipeline that talks to the internet
 
@@ -685,11 +685,11 @@ family's `SimpleTestFixture.cs` is file-linked into the project as well, ready t
 `IArticleRenderService` through the container; note that it is feature-gated by compilation
 constants, and the test csproj defines `SIMPLE_OUTPUT_LOGGING` for the Debug configuration.
 
-See [Read a committed fixture from beside the test binary](../BLUEPRINTS.md#read-a-committed-fixture-from-beside-the-test-binary),
-[Assert on a generated document without a golden file](../BLUEPRINTS.md#assert-on-a-generated-document-without-a-golden-file),
-[Make live tests opt in and keep them out of the default run](../BLUEPRINTS.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run),
-[Expose library internals to its test project](../BLUEPRINTS.md#expose-library-internals-to-its-test-project)
-and [Test a service the way the container builds it](../BLUEPRINTS.md#test-a-service-the-way-the-container-builds-it).
+See [Read a committed fixture from beside the test binary](../BLUEPRINTS-Testing.md#read-a-committed-fixture-from-beside-the-test-binary),
+[Assert on a generated document without a golden file](../BLUEPRINTS-Testing.md#assert-on-a-generated-document-without-a-golden-file),
+[Make live tests opt in and keep them out of the default run](../BLUEPRINTS-Testing.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run),
+[Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project)
+and [Test a service the way the container builds it](../BLUEPRINTS-Testing.md#test-a-service-the-way-the-container-builds-it).
 
 ## Third-party content
 

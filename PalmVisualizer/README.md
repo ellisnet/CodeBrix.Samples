@@ -25,105 +25,105 @@ pipeline for a different purpose.
 
 - Start the game engine loop against a canvas that begins hidden, by having the page forward
   the canvas's first real layout size to the view model through a one-method interface:
-  [Hand the view model a game canvas at its first real layout size](../BLUEPRINTS.md#hand-the-view-model-a-game-canvas-at-its-first-real-layout-size).
+  [Hand the view model a game canvas at its first real layout size](../BLUEPRINTS-GameEngine.md#hand-the-view-model-a-game-canvas-at-its-first-real-layout-size).
 - Keep the engine session behind a class with `Start()`, `Pause()`, `Resume()` and `Stop()`
   so leaving and re-entering a mode costs a pause rather than a rebuild:
-  [Run and pause a game engine session inside a page](../BLUEPRINTS.md#run-and-pause-a-game-engine-session-inside-a-page).
+  [Run and pause a game engine session inside a page](../BLUEPRINTS-GameEngine.md#run-and-pause-a-game-engine-session-inside-a-page).
 - Write a full-surface animated SkSL shader as an engine direct drawing that compiles once
   and allocates nothing per frame:
-  [Draw an animated SkSL shader as a game engine direct drawing](../BLUEPRINTS.md#draw-an-animated-sksl-shader-as-a-game-engine-direct-drawing).
+  [Draw an animated SkSL shader as a game engine direct drawing](../BLUEPRINTS-GraphicsAndRendering.md#draw-an-animated-sksl-shader-as-a-game-engine-direct-drawing).
 - Run the identical scene on the GPU or on Skia's raster backend, chosen by one environment
   variable read before the surface is touched:
-  [Offer a CPU fallback for a GPU rendering path behind one switch](../BLUEPRINTS.md#offer-a-cpu-fallback-for-a-gpu-rendering-path-behind-one-switch).
+  [Offer a CPU fallback for a GPU rendering path behind one switch](../BLUEPRINTS-GraphicsAndRendering.md#offer-a-cpu-fallback-for-a-gpu-rendering-path-behind-one-switch).
 - Turn irregular worker-rate values into smooth frame-rate animation with a thread-safe field
   that eases position and strength independently:
-  [Smooth worker rate data into frame rate animation](../BLUEPRINTS.md#smooth-worker-rate-data-into-frame-rate-animation).
+  [Smooth worker rate data into frame rate animation](../BLUEPRINTS-GraphicsAndRendering.md#smooth-worker-rate-data-into-frame-rate-animation).
 - Keep a vision library and a rendering library ignorant of each other by defining the
   narrowest possible normalized value type as their only seam:
-  [Keep a pipeline and a renderer decoupled by a normalized seam](../BLUEPRINTS.md#keep-a-pipeline-and-a-renderer-decoupled-by-a-normalized-seam).
+  [Keep a pipeline and a renderer decoupled by a normalized seam](../BLUEPRINTS-GraphicsAndRendering.md#keep-a-pipeline-and-a-renderer-decoupled-by-a-normalized-seam).
 - Populate a camera dropdown asynchronously at startup, auto-start the first device, and
   switch devices without leaving two sessions running:
-  [Enumerate cameras and start a live capture session](../BLUEPRINTS.md#enumerate-cameras-and-start-a-live-capture-session).
+  [Enumerate cameras and start a live capture session](../BLUEPRINTS-MediaAndVision.md#enumerate-cameras-and-start-a-live-capture-session).
 - Put live video inside a XAML layout with an `SKXamlCanvas` subclass and a renderer that
   aspect-fits, mirrors and reuses its buffers:
-  [Show live video on an SKXamlCanvas subclass](../BLUEPRINTS.md#show-live-video-on-an-skxamlcanvas-subclass).
+  [Show live video on an SKXamlCanvas subclass](../BLUEPRINTS-ViewsAndControls.md#show-live-video-on-an-skxamlcanvas-subclass).
 - Wrap a device library's type in a small sealed class with an internal constructor so the
   view model and the XAML never name it:
-  [Wrap a device library type so the view model never sees it](../BLUEPRINTS.md#wrap-a-device-library-type-so-the-view-model-never-sees-it).
+  [Wrap a device library type so the view model never sees it](../BLUEPRINTS-MediaAndVision.md#wrap-a-device-library-type-so-the-view-model-never-sees-it).
 - Run inference on a dedicated worker thread with a single-slot pending buffer, so a slow
   model never blocks the camera and never works on a stale frame:
-  [Run a sensor pipeline on a worker thread with latest frame wins](../BLUEPRINTS.md#run-a-sensor-pipeline-on-a-worker-thread-with-latest-frame-wins).
+  [Run a sensor pipeline on a worker thread with latest frame wins](../BLUEPRINTS-MVVM.md#run-a-sensor-pipeline-on-a-worker-thread-with-latest-frame-wins).
 - Load a `.tflite` model through the OpenCV DNN module, address its outputs by name, and do
   the anchor decoding and non-maximum suppression yourself:
-  [Run a TFLite model through the OpenCV DNN module](../BLUEPRINTS.md#run-a-tflite-model-through-the-opencv-dnn-module).
+  [Run a TFLite model through the OpenCV DNN module](../BLUEPRINTS-MediaAndVision.md#run-a-tflite-model-through-the-opencv-dnn-module).
 - Match this frame's detections to last frame's tracks by nearest neighbor so each physical
   hand keeps one id:
-  [Track multiple detections across frames with stable ids](../BLUEPRINTS.md#track-multiple-detections-across-frames-with-stable-ids).
+  [Track multiple detections across frames with stable ids](../BLUEPRINTS-MediaAndVision.md#track-multiple-detections-across-frames-with-stable-ids).
 - Compute a gesture from landmark geometry when the model that would have classified it
   cannot be imported:
-  [Recognize a gesture from landmark geometry instead of a model](../BLUEPRINTS.md#recognize-a-gesture-from-landmark-geometry-instead-of-a-model).
+  [Recognize a gesture from landmark geometry instead of a model](../BLUEPRINTS-MediaAndVision.md#recognize-a-gesture-from-landmark-geometry-instead-of-a-model).
 - Reconcile a mirrored preview with an unmirrored tracker in exactly one place, so left stays
   left everywhere downstream:
-  [Keep a mirrored preview and a mirrored drawing consistent](../BLUEPRINTS.md#keep-a-mirrored-preview-and-a-mirrored-drawing-consistent).
+  [Keep a mirrored preview and a mirrored drawing consistent](../BLUEPRINTS-GraphicsAndRendering.md#keep-a-mirrored-preview-and-a-mirrored-drawing-consistent).
 - Take a capture-thread event, route the frame to a worker, and dispatch only the bound
   properties that actually changed:
-  [Hand results from a capture thread through a worker to the UI thread](../BLUEPRINTS.md#hand-results-from-a-capture-thread-through-a-worker-to-the-ui-thread).
+  [Hand results from a capture thread through a worker to the UI thread](../BLUEPRINTS-MVVM.md#hand-results-from-a-capture-thread-through-a-worker-to-the-ui-thread).
 - Set bound state from a background thread with `InvokeOnMainThread` while feeding
   thread-safe consumers directly:
-  [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
+  [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
 - Let the page hand the view model an invalidate delegate through a bridge interface, so the
   view model repaints a canvas it knows nothing about:
-  [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
+  [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
 - Swap two main visuals and two button groups from a single bound bool by declaring one
   converter twice, the second time inverted:
-  [Switch a page between two modes with one bool and a converter](../BLUEPRINTS.md#switch-a-page-between-two-modes-with-one-bool-and-a-converter).
+  [Switch a page between two modes with one bool and a converter](../BLUEPRINTS-ViewsAndControls.md#switch-a-page-between-two-modes-with-one-bool-and-a-converter).
 - Declare bound properties and lazily created `SimpleCommand` commands the family way, with
   `[AffectsCommands]` refreshing `CanExecute`:
-  [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
+  [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 - Start slow discovery work from the constructor without making the constructor async or
   letting a failure escape it:
-  [Kick off async startup loading from the view model constructor](../BLUEPRINTS.md#kick-off-async-startup-loading-from-the-view-model-constructor).
+  [Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor).
 - Hand the view model a `XamlRoot` getter in the same handler that wires the bridges, so
   dialogs work the day they are added:
-  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 - Embed a binary asset in exactly the library that needs it, with an explicit logical name
   that the C# constant matches:
-  [Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
+  [Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS-ProjectLayoutAndPackaging.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
 - Keep a native-binding library runtime-independent by declaring its per-runtime native
   packages in the head projects instead:
-  [Fan native packages out across the heads](../BLUEPRINTS.md#fan-native-packages-out-across-the-heads).
+  [Fan native packages out across the heads](../BLUEPRINTS-ProjectLayoutAndPackaging.md#fan-native-packages-out-across-the-heads).
 - Carry every shared package in one Core library and give each head exactly one platform
   runtime package:
-  [Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package).
+  [Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS-ProjectLayoutAndPackaging.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package).
 - Organize an application as a shared UI project, a Core project, libraries under `src/libs`
   and mirrored test projects under `tests/libs`:
-  [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
+  [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
 - Record bundled third-party content in a notices file that says what is bundled and what
   merely arrives as a package:
-  [Record bundled third-party content in a notices file](../BLUEPRINTS.md#record-bundled-third-party-content-in-a-notices-file).
+  [Record bundled third-party content in a notices file](../BLUEPRINTS-ProjectLayoutAndPackaging.md#record-bundled-third-party-content-in-a-notices-file).
 - Set up an xUnit v3 test project that the family's runner actually discovers:
-  [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library).
+  [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library).
 - Give each library an `InternalsVisibleTo.cs` naming only its own test assembly, and add
   documented internal test accessors rather than widening fields:
-  [Expose library internals to its test project](../BLUEPRINTS.md#expose-library-internals-to-its-test-project).
+  [Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project).
 - Keep every head's `Program.Main` to the same handful of lines, differing only in the call
   that names the platform:
-  [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+  [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
 - Cast the built host on the WinWpfSkia head to force its software render surface, guarded so
   the code survives a host type change:
-  [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head).
+  [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head).
 - Do the four startup jobs in the App constructor in the order that matters, including
   `SetIsDesignMode(false)` before any view model is built:
-  [Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
+  [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
 - Give `SimpleServiceResolver` a generic host builder from a single helper compiled once in
   the Core library:
-  [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+  [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
 - Make a bundled font the default for every head by pointing at the `.ttf` through an
   `ms-appx:///` URI:
-  [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
+  [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
 - Install a console logger factory only in Debug builds, from a static method each head calls
   before building its host:
-  [Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
+  [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 
 ## Building, running and testing
 
@@ -282,9 +282,9 @@ Mode so the layout does not shift, and a single `StatusText` `TextBlock` at the 
 narrates every state, which is why the view model can report errors without any dialog. Read
 `PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml` first, then the bindable-properties
 region of `PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`. See
-[Switch a page between two modes with one bool and a converter](../BLUEPRINTS.md#switch-a-page-between-two-modes-with-one-bool-and-a-converter)
+[Switch a page between two modes with one bool and a converter](../BLUEPRINTS-ViewsAndControls.md#switch-a-page-between-two-modes-with-one-bool-and-a-converter)
 and
-[Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
+[Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 
 ### Camera discovery, selection and the mirrored preview
 
@@ -303,10 +303,10 @@ a sealed wrapper with an internal constructor whose `ToString()` returns the fri
 so no item template is needed and the view model never handles a capture-library type. Read
 `PalmVisualizer/src/libs/PalmVisualizer.Camera/WebcamCaptureService.cs`, then
 `PalmVisualizer/src/libs/PalmVisualizer.Camera/CameraDevice.cs`. See
-[Enumerate cameras and start a live capture session](../BLUEPRINTS.md#enumerate-cameras-and-start-a-live-capture-session),
-[Wrap a device library type so the view model never sees it](../BLUEPRINTS.md#wrap-a-device-library-type-so-the-view-model-never-sees-it)
+[Enumerate cameras and start a live capture session](../BLUEPRINTS-MediaAndVision.md#enumerate-cameras-and-start-a-live-capture-session),
+[Wrap a device library type so the view model never sees it](../BLUEPRINTS-MediaAndVision.md#wrap-a-device-library-type-so-the-view-model-never-sees-it)
 and
-[Kick off async startup loading from the view model constructor](../BLUEPRINTS.md#kick-off-async-startup-loading-from-the-view-model-constructor).
+[Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor).
 
 Displaying the video is deliberately split. `CameraCanvas` is a one-line `SKXamlCanvas`
 subclass that exists purely so the shared UI project's XAML can name the type from the
@@ -316,7 +316,7 @@ frame yet" is a black panel rather than garbage; caches its pixel buffer and its
 and only recreates the bitmap when the frame size changes; and mirrors by a canvas transform
 between a save and a restore rather than by flipping pixels. Its doc comment states the
 ownership rule: one renderer per canvas, touched only on the UI thread. See
-[Show live video on an SKXamlCanvas subclass](../BLUEPRINTS.md#show-live-video-on-an-skxamlcanvas-subclass).
+[Show live video on an SKXamlCanvas subclass](../BLUEPRINTS-ViewsAndControls.md#show-live-video-on-an-skxamlcanvas-subclass).
 
 ### The bridge interfaces the page fills in
 
@@ -335,9 +335,9 @@ instead of a crash. Read
 `PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs` beside the interface
 declarations at the top of
 `PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`. See
-[Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface)
+[Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface)
 and
-[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 
 ### One frame handler, two consumers, one mirror
 
@@ -352,10 +352,10 @@ preview is mirrored by a canvas transform, so the view model is the single place
 coordinate conventions are reconciled, with one subtraction on the horizontal axis. Read the
 "Live frames and palm tracking" region of
 `PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`. See
-[Hand results from a capture thread through a worker to the UI thread](../BLUEPRINTS.md#hand-results-from-a-capture-thread-through-a-worker-to-the-ui-thread),
-[Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread)
+[Hand results from a capture thread through a worker to the UI thread](../BLUEPRINTS-MVVM.md#hand-results-from-a-capture-thread-through-a-worker-to-the-ui-thread),
+[Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread)
 and
-[Keep a mirrored preview and a mirrored drawing consistent](../BLUEPRINTS.md#keep-a-mirrored-preview-and-a-mirrored-drawing-consistent).
+[Keep a mirrored preview and a mirrored drawing consistent](../BLUEPRINTS-GraphicsAndRendering.md#keep-a-mirrored-preview-and-a-mirrored-drawing-consistent).
 
 The results handler, `OnTrackingUpdated`, is the mirror image of the same discipline. It runs
 on the tracker's worker thread, filters to open palms, feeds them straight into the
@@ -378,7 +378,7 @@ one for the shutdown race, which exits the loop quietly when a frame is in fligh
 tracker or the native runtime is tearing down, and a plain one below it that drops a single
 bad frame and keeps tracking. `Stop()` clears the running flag, signals the event, joins the
 worker and only then disposes the signal, so disposal is genuinely synchronous. See
-[Run a sensor pipeline on a worker thread with latest frame wins](../BLUEPRINTS.md#run-a-sensor-pipeline-on-a-worker-thread-with-latest-frame-wins).
+[Run a sensor pipeline on a worker thread with latest frame wins](../BLUEPRINTS-MVVM.md#run-a-sensor-pipeline-on-a-worker-thread-with-latest-frame-wins).
 
 The same class also solves the identity problem. A per-frame detector returns unordered
 results, but the animation needs to know that this frame's second hand is last frame's first
@@ -395,7 +395,7 @@ too: when nothing survives the presence threshold the track list is cleared and 
 result is returned, so the "hands all gone" event still fires and subscribers release their
 state, which is exactly what lets the visual melt back. Read
 `PalmVisualizer/src/libs/PalmVisualizer.Vision/PalmTracker.cs` top to bottom. See
-[Track multiple detections across frames with stable ids](../BLUEPRINTS.md#track-multiple-detections-across-frames-with-stable-ids).
+[Track multiple detections across frames with stable ids](../BLUEPRINTS-MediaAndVision.md#track-multiple-detections-across-frames-with-stable-ids).
 
 ### Two models through the OpenCV DNN module, and the gesture neither one classifies
 
@@ -417,9 +417,9 @@ binding's: the detector regenerates the model's fixed anchor grid, applies a sig
 score logits, runs its own greedy non-maximum suppression, and converts survivors back out of
 letterboxed space. Doing that arithmetic in small `internal static` methods is what makes it
 unit-testable with no model and no image. See
-[Run a TFLite model through the OpenCV DNN module](../BLUEPRINTS.md#run-a-tflite-model-through-the-opencv-dnn-module)
+[Run a TFLite model through the OpenCV DNN module](../BLUEPRINTS-MediaAndVision.md#run-a-tflite-model-through-the-opencv-dnn-module)
 and
-[Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
+[Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS-ProjectLayoutAndPackaging.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
 
 The upstream bundle these models come from also contains gesture-classifier stages, and those
 are deliberately not embedded: OpenCV's TFLite importer cannot load them, because they use an
@@ -433,7 +433,7 @@ functions work in any consistent coordinate space, the tests build synthetic han
 plain points and assert on ratios with no model and no image at all. Read
 `PalmVisualizer/src/libs/PalmVisualizer.Vision/Internal/OpenPalmClassifier.cs` and then its
 test file. See
-[Recognize a gesture from landmark geometry instead of a model](../BLUEPRINTS.md#recognize-a-gesture-from-landmark-geometry-instead-of-a-model).
+[Recognize a gesture from landmark geometry instead of a model](../BLUEPRINTS-MediaAndVision.md#recognize-a-gesture-from-landmark-geometry-instead-of-a-model).
 
 ### Starting the engine loop inside an ordinary page
 
@@ -450,7 +450,7 @@ pass the session does not exist yet. Read the command implementations in
 `PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs` alongside the three
 canvas-related lines at the end of
 `PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs`. See
-[Hand the view model a game canvas at its first real layout size](../BLUEPRINTS.md#hand-the-view-model-a-game-canvas-at-its-first-real-layout-size).
+[Hand the view model a game canvas at its first real layout size](../BLUEPRINTS-GameEngine.md#hand-the-view-model-a-game-canvas-at-its-first-real-layout-size).
 
 `VisualizerSession` owns everything else about the engine lifecycle and exposes `Start()`,
 `Pause()`, `Resume()`, `Stop()` and a thread-safe data-in method; nothing else in the
@@ -462,9 +462,9 @@ attractor field first, so a resumed scene starts undisturbed rather than with a 
 still pulling at it. The session subscribes to the render adapter's resize event and updates
 the drawing's bounds, because the render resolution deliberately tracks the window, and
 `Stop()` unsubscribes before stopping the engine. See
-[Run and pause a game engine session inside a page](../BLUEPRINTS.md#run-and-pause-a-game-engine-session-inside-a-page)
+[Run and pause a game engine session inside a page](../BLUEPRINTS-GameEngine.md#run-and-pause-a-game-engine-session-inside-a-page)
 and
-[Offer a CPU fallback for a GPU rendering path behind one switch](../BLUEPRINTS.md#offer-a-cpu-fallback-for-a-gpu-rendering-path-behind-one-switch).
+[Offer a CPU fallback for a GPU rendering path behind one switch](../BLUEPRINTS-GraphicsAndRendering.md#offer-a-cpu-fallback-for-a-gpu-rendering-path-behind-one-switch).
 
 ### The shader backdrop and what it reads each frame
 
@@ -486,7 +486,7 @@ guarantee by setting every uniform the backdrop sets, so a renamed uniform fails
 rather than rendering black. Read
 `PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealBackdrop.cs` and then
 `PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/EtherealBackdropTests.cs`. See
-[Draw an animated SkSL shader as a game engine direct drawing](../BLUEPRINTS.md#draw-an-animated-sksl-shader-as-a-game-engine-direct-drawing).
+[Draw an animated SkSL shader as a game engine direct drawing](../BLUEPRINTS-GraphicsAndRendering.md#draw-an-animated-sksl-shader-as-a-game-engine-direct-drawing).
 
 ### The attractor field, and the seam between vision and rendering
 
@@ -516,9 +516,9 @@ from the vision worker thread with no marshaling. Read
 `PalmVisualizer/src/libs/PalmVisualizer.Rendering/PalmAttractor.cs`, then
 `PalmVisualizer/src/libs/PalmVisualizer.Rendering/PalmAttractorField.cs`, then its test file,
 which locks each of those behaviors in by name. See
-[Keep a pipeline and a renderer decoupled by a normalized seam](../BLUEPRINTS.md#keep-a-pipeline-and-a-renderer-decoupled-by-a-normalized-seam)
+[Keep a pipeline and a renderer decoupled by a normalized seam](../BLUEPRINTS-GraphicsAndRendering.md#keep-a-pipeline-and-a-renderer-decoupled-by-a-normalized-seam)
 and
-[Smooth worker rate data into frame rate animation](../BLUEPRINTS.md#smooth-worker-rate-data-into-frame-rate-animation).
+[Smooth worker rate data into frame rate animation](../BLUEPRINTS-GraphicsAndRendering.md#smooth-worker-rate-data-into-frame-rate-animation).
 
 ### Disposing a view model that owns a thread, a session and native handles
 
@@ -530,7 +530,7 @@ concurrent worker-thread handler sees null and returns instead of touching a sto
 the capture service is unsubscribed and disposed; and the base call comes last. The
 unsubscription is symmetric in both directions, because the tracker and the capture service
 each clear their own event before stopping in their own `Dispose()`. See
-[Dispose a view model its commands and its bridge delegates](../BLUEPRINTS.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+[Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 
 ### What each project owns: packages, native assets and models
 
@@ -553,11 +553,11 @@ explicit `RootNamespace` distinct from the application's, with a comment explain
 library which also sees CodeBrix.Platform would otherwise generate a duplicate of the same
 generated resources type as the Core project, and the head that references both would fail to
 compile. See
-[Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package),
-[Fan native packages out across the heads](../BLUEPRINTS.md#fan-native-packages-out-across-the-heads),
-[Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace)
+[Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS-ProjectLayoutAndPackaging.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package),
+[Fan native packages out across the heads](../BLUEPRINTS-ProjectLayoutAndPackaging.md#fan-native-packages-out-across-the-heads),
+[Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace)
 and
-[Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
+[Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
 
 ### Tests that need neither a window nor a camera
 
@@ -574,11 +574,11 @@ comments, and a test that waits on a background thread passes the framework's ca
 token. The one fixture that has to be a real file, a photograph of two open hands, needs both
 halves of the rule: a copy item in the project file and a base-directory lookup in the test.
 See
-[Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library),
-[Expose library internals to its test project](../BLUEPRINTS.md#expose-library-internals-to-its-test-project),
-[Add the native assets a head would have supplied](../BLUEPRINTS.md#add-the-native-assets-a-head-would-have-supplied)
+[Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library),
+[Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project),
+[Add the native assets a head would have supplied](../BLUEPRINTS-Testing.md#add-the-native-assets-a-head-would-have-supplied)
 and
-[Read a committed fixture from beside the test binary](../BLUEPRINTS.md#read-a-committed-fixture-from-beside-the-test-binary).
+[Read a committed fixture from beside the test binary](../BLUEPRINTS-Testing.md#read-a-committed-fixture-from-beside-the-test-binary).
 
 ## Third-party content
 

@@ -31,7 +31,8 @@ The documentation is organized in one predictable way. Every application folder
 has a `README.md`, the detailed guide to that application - what it does, how it
 is laid out, what it uses, and what is worth studying in it - and a
 `THIRD-PARTY-NOTICES.txt`, its attribution record. At the root,
-[BLUEPRINTS.md](BLUEPRINTS.md) collects how-tos mined from all of them.
+[BLUEPRINTS-Index.md](BLUEPRINTS-Index.md) indexes the blueprint files, which
+collect how-tos mined from all of them.
 
 ## The applications
 
@@ -53,8 +54,9 @@ is laid out, what it uses, and what is worth studying in it - and a
 
 ## Blueprints
 
-[BLUEPRINTS.md](BLUEPRINTS.md) is a set of how-tos for building
-CodeBrix.Platform applications, mined from the applications in this repository.
+[BLUEPRINTS-Index.md](BLUEPRINTS-Index.md) is the entry point to a set of
+how-tos for building CodeBrix.Platform applications, mined from the
+applications in this repository and split into one file per topic.
 Each blueprint says when you want it, gives the code, and names the application
 and the files it came from, so you can open the real thing and read the rest of
 it. The blueprints teach the shape the applications use: a view model derived

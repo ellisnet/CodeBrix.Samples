@@ -25,60 +25,60 @@ this repository with its own README.)
 
 ## What this sample shows a CodeBrix.Platform developer
 
-- Put hardware-accelerated 3D in an ordinary page by subclassing the `GLCanvasElement` that the CodeBrix.Platform.Graphics3DGL library supplies, and binding a model to it: [Host an OpenGL scene in XAML with a GLCanvasElement subclass](../BLUEPRINTS.md#host-an-opengl-scene-in-xaml-with-a-glcanvaselement-subclass).
-- Keep the drawing itself behind an interface that names no framework types, so it is testable headlessly and reusable off-screen: [Keep the GL renderer framework-free behind an interface](../BLUEPRINTS.md#keep-the-gl-renderer-framework-free-behind-an-interface).
-- Reference only the higher-level graphics library and let the OpenGL binding arrive transitively, a rule this application spells out in both csproj files that touch GL: [Code to the higher-level graphics package and let the binding arrive transitively](../BLUEPRINTS.md#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively).
-- Give a library that hosts a XAML `FrameworkElement` its own `RootNamespace`, so the per-head generated resources class does not collide across assemblies: [Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace).
-- Turn pointer drag and wheel into orbit-camera motion inside the element, with pointer capture that survives leaving it: [Forward pointer input from a canvas into a model](../BLUEPRINTS.md#forward-pointer-input-from-a-canvas-into-a-model).
-- Re-frame the camera on every newly bound model so each one appears well composed at a consistent angle: [Frame the camera automatically on each newly bound model](../BLUEPRINTS.md#frame-the-camera-automatically-on-each-newly-bound-model).
-- Upload a `System.Numerics` matrix to a GL uniform without transposing it twice, and keep one camera convention across the on-screen and off-screen renderers: [Share one camera and one matrix convention across graphics APIs](../BLUEPRINTS.md#share-one-camera-and-one-matrix-convention-across-graphics-apis).
-- Run one set of shaders on heads that give you desktop OpenGL and heads that give you OpenGL ES, by probing the live context and prepending the right version header: [Pick the shader version header for desktop GL or GLES at runtime](../BLUEPRINTS.md#pick-the-shader-version-header-for-desktop-gl-or-gles-at-runtime).
-- Draw glass and other translucent surfaces in a second pass with depth writes off, and classify transmissive materials as translucent at load time: [Draw translucent surfaces in a second pass with depth writes off](../BLUEPRINTS.md#draw-translucent-surfaces-in-a-second-pass-with-depth-writes-off).
-- Render high-resolution stills of the same scene on the head's own off-screen GL context, for a document or an export: [Render off screen product shots on the head own GL context](../BLUEPRINTS.md#render-off-screen-product-shots-on-the-head-own-gl-context).
-- Build a studio floor, backdrop and contact shadow out of the same primitive and material types the loader produces, instead of adding a second rendering path: [Generate scene set dressing as ordinary geometry](../BLUEPRINTS.md#generate-scene-set-dressing-as-ordinary-geometry).
-- Explain an empty 3D pane instead of leaving it blank, with the view model owning the message and the OS-specific hint: [Tell the user when graphics initialization failed](../BLUEPRINTS.md#tell-the-user-when-graphics-initialization-failed).
-- Decode downloaded textures to RGBA for GPU upload with the CodeBrix.Imaging library: [Decode raster images with the CodeBrix Imaging library into a Skia bitmap](../BLUEPRINTS.md#decode-raster-images-with-the-codebrix-imaging-library-into-a-skia-bitmap).
-- Lay an application out as a shared UI project, an application library, thin heads, `src/libs` libraries and mirrored `tests/libs` test projects in one solution: [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
-- Materialize a card grid in batches as it scrolls, so a large remote catalog never builds all its cells up front: [Fill a grid lazily as it scrolls](../BLUEPRINTS.md#fill-a-grid-lazily-as-it-scrolls).
-- Give every cell its own command and its own asynchronously loaded thumbnail, with an application-wide gate injected as a delegate: [Give each grid cell its own command and lazily loaded thumbnail](../BLUEPRINTS.md#give-each-grid-cell-its-own-command-and-lazily-loaded-thumbnail).
-- Debounce a search box in the property setter so typing stays smooth while a large collection is refiltered: [Debounce a search box before rebuilding a filtered list](../BLUEPRINTS.md#debounce-a-search-box-before-rebuilding-a-filtered-list).
-- Switch a page between two modes with one bool and computed `Visibility` properties, keeping converters out of the common case: [Show and hide panes with computed Visibility properties](../BLUEPRINTS.md#show-and-hide-panes-with-computed-visibility-properties).
-- Write bound properties and `SimpleCommand` commands the way the family expects, including the `field` keyword form of an auto-property whose setter does work: [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
-- Refresh a command's enabled state when its gate is a private flag rather than a bound property: [Refresh CanExecute when the gating state is not a bound property](../BLUEPRINTS.md#refresh-canexecute-when-the-gating-state-is-not-a-bound-property).
-- Start the catalog fetch from the view-model constructor without awaiting it, and turn a failed load into readable text on screen: [Kick off async startup loading from the view model constructor](../BLUEPRINTS.md#kick-off-async-startup-loading-from-the-view-model-constructor).
-- Copy everything a multi-second command needs into locals before it starts, so the user can navigate away while it runs: [Snapshot view model state before a long running command](../BLUEPRINTS.md#snapshot-view-model-state-before-a-long-running-command).
-- Drive a long job from a command with a busy flag, a bound progress value and a per-stage status line: [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
-- Guard the view-model constructor so the XAML designer never resolves services or starts network calls: [Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer).
-- Gate downloading behind a chosen folder and explain the gate in a dialog rather than showing a dead button: [Gate an action behind a chosen folder and explain the gate with a dialog](../BLUEPRINTS.md#gate-an-action-behind-a-chosen-folder-and-explain-the-gate-with-a-dialog).
-- Hand the view model a `XamlRoot` getter through an interface as soon as the DataContext is set, so its dialogs and its off-screen GL context have somewhere to attach: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
-- Choose a save destination through the native picker from the view model, and degrade with an explanation on a head that registers none: [Save a file through a native dialog from the view model](../BLUEPRINTS.md#save-a-file-through-a-native-dialog-from-the-view-model).
-- Decode a percent-encoded picker path and remove the empty placeholder file the save picker leaves behind, before anything touches the disk: [Clean up the path a file picker returns](../BLUEPRINTS.md#clean-up-the-path-a-file-picker-returns).
-- Put the real work in libraries that have no UI dependency at all and are consumed only through their interfaces: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface).
-- Build a typed REST client with source-generated JSON, its own timeout policy and its own exception types: [Build a typed REST client with source generated JSON and its own exceptions](../BLUEPRINTS.md#build-a-typed-rest-client-with-source-generated-json-and-its-own-exceptions).
-- Identify yourself in a `User-Agent` and keep concurrent requests modest when you consume a free public API: [Be a polite HTTP client to a public API](../BLUEPRINTS.md#be-a-polite-http-client-to-a-public-api).
-- Fetch a whole catalog once behind double-checked locking, and cache per-item images behind a small concurrency gate: [Fetch a whole remote catalog once and cache images behind a concurrency gate](../BLUEPRINTS.md#fetch-a-whole-remote-catalog-once-and-cache-images-behind-a-concurrency-gate).
-- Report one progress fraction across a download that is really several files, using the sizes the API advertises up front: [Report true byte progress across a multi file download with side car files](../BLUEPRINTS.md#report-true-byte-progress-across-a-multi-file-download-with-side-car-files).
-- Compose a fixed-layout, absolutely placed page by drawing directly on a PDF page with the CodeBrix.PdfDocuments library: [Compose a fixed layout poster with the CodeBrix PdfDocuments library](../BLUEPRINTS.md#compose-a-fixed-layout-poster-with-the-codebrix-pdfdocuments-library).
-- Embed OFL fonts as resources and register them with the PDF font system, so the generated document looks the same on every machine: [Register embedded OFL fonts with the PDF font system](../BLUEPRINTS.md#register-embedded-ofl-fonts-with-the-pdf-font-system).
-- Record both bundled content and content downloaded at run time in a notices file next to the application: [Record bundled third-party content in a notices file](../BLUEPRINTS.md#record-bundled-third-party-content-in-a-notices-file).
-- Wrap a toolbar onto extra rows and flip a two-pane split between landscape and portrait with the CodeBrix.Platform.FlexPanel add-in: [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in).
-- Re-key the theme's brushes so accent buttons, dialogs and the framebuffer head's built-in picker chrome all follow your palette: [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette).
-- Draw icons with `FontIcon` glyphs rather than literal symbol characters, so they survive on a device with no system fonts: [Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts).
-- Write an `IValueConverter` for the cases a computed property cannot cover, such as showing a placeholder only while a bound image is null: [Format a value for display with an IValueConverter](../BLUEPRINTS.md#format-a-value-for-display-with-an-ivalueconverter).
-- Start every head from a `Program.Main` that differs from the others only in its platform call: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
-- Do the whole application bootstrap in the `App` constructor: fonts, container, design-mode flag, then `InitializeComponent()`: [Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
-- Supply `SimpleServiceResolver` with a generic host builder through a tiny provider class: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
-- Register everything the application needs in one `AddXxx()` extension method that calls each library's own registration extension: [Register library services with one AddXxx extension method](../BLUEPRINTS.md#register-library-services-with-one-addxxx-extension-method).
-- Set a bundled font as the default text font and register script fallbacks, rather than trusting whatever the host has installed: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
-- Wire console logging into the platform's ambient logger factory before the host is built, and only in Debug builds: [Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
-- Force the software render surface on the WinWpfSkia head by casting the built host: [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head).
-- Opt the LinuxFrameBuffer head into a folder picker, a file save picker and a software keyboard, since that head has no OS chrome: [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
-- Cover a real GL renderer with real tests on a machine with no window system, using a surfaceless EGL context that skips cleanly when there is none: [Test GL code headlessly with a surfaceless EGL context](../BLUEPRINTS.md#test-gl-code-headlessly-with-a-surfaceless-egl-context).
-- Pin a fixed transform bug with a rotated-camera regression test whose comment says exactly why it is shaped that way: [Pin a fixed bug with a regression test that says why it is shaped that way](../BLUEPRINTS.md#pin-a-fixed-bug-with-a-regression-test-that-says-why-it-is-shaped-that-way).
-- Test an HTTP client offline with a stub message handler that routes canned responses and records every request: [Test an HTTP client offline with a stub handler](../BLUEPRINTS.md#test-an-http-client-offline-with-a-stub-handler).
-- Keep the small suite that talks to the real endpoints trait-gated and sharing one fixture, so the default run stays offline: [Make live tests opt in and keep them out of the default run](../BLUEPRINTS.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run).
-- Mock a rendering or API seam with CodeBrix.TestMocks to cover an application flow without a GPU or a file on disk: [Mock a rendering or API seam with CodeBrix TestMocks](../BLUEPRINTS.md#mock-a-rendering-or-api-seam-with-codebrix-testmocks).
-- Build the binary inputs your tests need in code instead of committing them, so the loader-to-pixels path is exercised without shipping a binary fixture: [Build the binary inputs your tests need instead of committing them](../BLUEPRINTS.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them).
+- Put hardware-accelerated 3D in an ordinary page by subclassing the `GLCanvasElement` that the CodeBrix.Platform.Graphics3DGL library supplies, and binding a model to it: [Host an OpenGL scene in XAML with a GLCanvasElement subclass](../BLUEPRINTS-GraphicsAndRendering.md#host-an-opengl-scene-in-xaml-with-a-glcanvaselement-subclass).
+- Keep the drawing itself behind an interface that names no framework types, so it is testable headlessly and reusable off-screen: [Keep the GL renderer framework-free behind an interface](../BLUEPRINTS-GraphicsAndRendering.md#keep-the-gl-renderer-framework-free-behind-an-interface).
+- Reference only the higher-level graphics library and let the OpenGL binding arrive transitively, a rule this application spells out in both csproj files that touch GL: [Code to the higher-level graphics package and let the binding arrive transitively](../BLUEPRINTS-ProjectLayoutAndPackaging.md#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively).
+- Give a library that hosts a XAML `FrameworkElement` its own `RootNamespace`, so the per-head generated resources class does not collide across assemblies: [Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace).
+- Turn pointer drag and wheel into orbit-camera motion inside the element, with pointer capture that survives leaving it: [Forward pointer input from a canvas into a model](../BLUEPRINTS-ViewsAndControls.md#forward-pointer-input-from-a-canvas-into-a-model).
+- Re-frame the camera on every newly bound model so each one appears well composed at a consistent angle: [Frame the camera automatically on each newly bound model](../BLUEPRINTS-GraphicsAndRendering.md#frame-the-camera-automatically-on-each-newly-bound-model).
+- Upload a `System.Numerics` matrix to a GL uniform without transposing it twice, and keep one camera convention across the on-screen and off-screen renderers: [Share one camera and one matrix convention across graphics APIs](../BLUEPRINTS-GraphicsAndRendering.md#share-one-camera-and-one-matrix-convention-across-graphics-apis).
+- Run one set of shaders on heads that give you desktop OpenGL and heads that give you OpenGL ES, by probing the live context and prepending the right version header: [Pick the shader version header for desktop GL or GLES at runtime](../BLUEPRINTS-GraphicsAndRendering.md#pick-the-shader-version-header-for-desktop-gl-or-gles-at-runtime).
+- Draw glass and other translucent surfaces in a second pass with depth writes off, and classify transmissive materials as translucent at load time: [Draw translucent surfaces in a second pass with depth writes off](../BLUEPRINTS-GraphicsAndRendering.md#draw-translucent-surfaces-in-a-second-pass-with-depth-writes-off).
+- Render high-resolution stills of the same scene on the head's own off-screen GL context, for a document or an export: [Render off screen product shots on the head own GL context](../BLUEPRINTS-GraphicsAndRendering.md#render-off-screen-product-shots-on-the-head-own-gl-context).
+- Build a studio floor, backdrop and contact shadow out of the same primitive and material types the loader produces, instead of adding a second rendering path: [Generate scene set dressing as ordinary geometry](../BLUEPRINTS-GraphicsAndRendering.md#generate-scene-set-dressing-as-ordinary-geometry).
+- Explain an empty 3D pane instead of leaving it blank, with the view model owning the message and the OS-specific hint: [Tell the user when graphics initialization failed](../BLUEPRINTS-PlatformServices.md#tell-the-user-when-graphics-initialization-failed).
+- Decode downloaded textures to RGBA for GPU upload with the CodeBrix.Imaging library: [Decode raster images with the CodeBrix Imaging library into a Skia bitmap](../BLUEPRINTS-GraphicsAndRendering.md#decode-raster-images-with-the-codebrix-imaging-library-into-a-skia-bitmap).
+- Lay an application out as a shared UI project, an application library, thin heads, `src/libs` libraries and mirrored `tests/libs` test projects in one solution: [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
+- Materialize a card grid in batches as it scrolls, so a large remote catalog never builds all its cells up front: [Fill a grid lazily as it scrolls](../BLUEPRINTS-MVVM.md#fill-a-grid-lazily-as-it-scrolls).
+- Give every cell its own command and its own asynchronously loaded thumbnail, with an application-wide gate injected as a delegate: [Give each grid cell its own command and lazily loaded thumbnail](../BLUEPRINTS-MVVM.md#give-each-grid-cell-its-own-command-and-lazily-loaded-thumbnail).
+- Debounce a search box in the property setter so typing stays smooth while a large collection is refiltered: [Debounce a search box before rebuilding a filtered list](../BLUEPRINTS-MVVM.md#debounce-a-search-box-before-rebuilding-a-filtered-list).
+- Switch a page between two modes with one bool and computed `Visibility` properties, keeping converters out of the common case: [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties).
+- Write bound properties and `SimpleCommand` commands the way the family expects, including the `field` keyword form of an auto-property whose setter does work: [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
+- Refresh a command's enabled state when its gate is a private flag rather than a bound property: [Refresh CanExecute when the gating state is not a bound property](../BLUEPRINTS-MVVM.md#refresh-canexecute-when-the-gating-state-is-not-a-bound-property).
+- Start the catalog fetch from the view-model constructor without awaiting it, and turn a failed load into readable text on screen: [Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor).
+- Copy everything a multi-second command needs into locals before it starts, so the user can navigate away while it runs: [Snapshot view model state before a long running command](../BLUEPRINTS-MVVM.md#snapshot-view-model-state-before-a-long-running-command).
+- Drive a long job from a command with a busy flag, a bound progress value and a per-stage status line: [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS-MVVM.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
+- Guard the view-model constructor so the XAML designer never resolves services or starts network calls: [Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
+- Gate downloading behind a chosen folder and explain the gate in a dialog rather than showing a dead button: [Gate an action behind a chosen folder and explain the gate with a dialog](../BLUEPRINTS-MVVM.md#gate-an-action-behind-a-chosen-folder-and-explain-the-gate-with-a-dialog).
+- Hand the view model a `XamlRoot` getter through an interface as soon as the DataContext is set, so its dialogs and its off-screen GL context have somewhere to attach: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+- Choose a save destination through the native picker from the view model, and degrade with an explanation on a head that registers none: [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model).
+- Decode a percent-encoded picker path and remove the empty placeholder file the save picker leaves behind, before anything touches the disk: [Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns).
+- Put the real work in libraries that have no UI dependency at all and are consumed only through their interfaces: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS-DocumentsAndData.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface).
+- Build a typed REST client with source-generated JSON, its own timeout policy and its own exception types: [Build a typed REST client with source generated JSON and its own exceptions](../BLUEPRINTS-DocumentsAndData.md#build-a-typed-rest-client-with-source-generated-json-and-its-own-exceptions).
+- Identify yourself in a `User-Agent` and keep concurrent requests modest when you consume a free public API: [Be a polite HTTP client to a public API](../BLUEPRINTS-DocumentsAndData.md#be-a-polite-http-client-to-a-public-api).
+- Fetch a whole catalog once behind double-checked locking, and cache per-item images behind a small concurrency gate: [Fetch a whole remote catalog once and cache images behind a concurrency gate](../BLUEPRINTS-DocumentsAndData.md#fetch-a-whole-remote-catalog-once-and-cache-images-behind-a-concurrency-gate).
+- Report one progress fraction across a download that is really several files, using the sizes the API advertises up front: [Report true byte progress across a multi file download with side car files](../BLUEPRINTS-DocumentsAndData.md#report-true-byte-progress-across-a-multi-file-download-with-side-car-files).
+- Compose a fixed-layout, absolutely placed page by drawing directly on a PDF page with the CodeBrix.PdfDocuments library: [Compose a fixed layout poster with the CodeBrix PdfDocuments library](../BLUEPRINTS-DocumentsAndData.md#compose-a-fixed-layout-poster-with-the-codebrix-pdfdocuments-library).
+- Embed OFL fonts as resources and register them with the PDF font system, so the generated document looks the same on every machine: [Register embedded OFL fonts with the PDF font system](../BLUEPRINTS-DocumentsAndData.md#register-embedded-ofl-fonts-with-the-pdf-font-system).
+- Record both bundled content and content downloaded at run time in a notices file next to the application: [Record bundled third-party content in a notices file](../BLUEPRINTS-ProjectLayoutAndPackaging.md#record-bundled-third-party-content-in-a-notices-file).
+- Wrap a toolbar onto extra rows and flip a two-pane split between landscape and portrait with the CodeBrix.Platform.FlexPanel add-in: [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS-ViewsAndControls.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in).
+- Re-key the theme's brushes so accent buttons, dialogs and the framebuffer head's built-in picker chrome all follow your palette: [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS-ViewsAndControls.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette).
+- Draw icons with `FontIcon` glyphs rather than literal symbol characters, so they survive on a device with no system fonts: [Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS-ViewsAndControls.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts).
+- Write an `IValueConverter` for the cases a computed property cannot cover, such as showing a placeholder only while a bound image is null: [Format a value for display with an IValueConverter](../BLUEPRINTS-ViewsAndControls.md#format-a-value-for-display-with-an-ivalueconverter).
+- Start every head from a `Program.Main` that differs from the others only in its platform call: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+- Do the whole application bootstrap in the `App` constructor: fonts, container, design-mode flag, then `InitializeComponent()`: [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
+- Supply `SimpleServiceResolver` with a generic host builder through a tiny provider class: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+- Register everything the application needs in one `AddXxx()` extension method that calls each library's own registration extension: [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
+- Set a bundled font as the default text font and register script fallbacks, rather than trusting whatever the host has installed: [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
+- Wire console logging into the platform's ambient logger factory before the host is built, and only in Debug builds: [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
+- Force the software render surface on the WinWpfSkia head by casting the built host: [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head).
+- Opt the LinuxFrameBuffer head into a folder picker, a file save picker and a software keyboard, since that head has no OS chrome: [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
+- Cover a real GL renderer with real tests on a machine with no window system, using a surfaceless EGL context that skips cleanly when there is none: [Test GL code headlessly with a surfaceless EGL context](../BLUEPRINTS-Testing.md#test-gl-code-headlessly-with-a-surfaceless-egl-context).
+- Pin a fixed transform bug with a rotated-camera regression test whose comment says exactly why it is shaped that way: [Pin a fixed bug with a regression test that says why it is shaped that way](../BLUEPRINTS-Testing.md#pin-a-fixed-bug-with-a-regression-test-that-says-why-it-is-shaped-that-way).
+- Test an HTTP client offline with a stub message handler that routes canned responses and records every request: [Test an HTTP client offline with a stub handler](../BLUEPRINTS-Testing.md#test-an-http-client-offline-with-a-stub-handler).
+- Keep the small suite that talks to the real endpoints trait-gated and sharing one fixture, so the default run stays offline: [Make live tests opt in and keep them out of the default run](../BLUEPRINTS-Testing.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run).
+- Mock a rendering or API seam with CodeBrix.TestMocks to cover an application flow without a GPU or a file on disk: [Mock a rendering or API seam with CodeBrix TestMocks](../BLUEPRINTS-Testing.md#mock-a-rendering-or-api-seam-with-codebrix-testmocks).
+- Build the binary inputs your tests need in code instead of committing them, so the loader-to-pixels path is exercised without shipping a binary fixture: [Build the binary inputs your tests need instead of committing them](../BLUEPRINTS-Testing.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them).
 
 ## Building, running and testing
 
@@ -271,9 +271,9 @@ saves and restores the depth-test and cull-face state in a `finally`, because th
 Skia renderer shares the same GL context. And the base constructor's `getWindowFunc`
 parameter only matters on WinUI; on CodeBrix.Platform heads you pass `null`.
 
-See [Host an OpenGL scene in XAML with a GLCanvasElement subclass](../BLUEPRINTS.md#host-an-opengl-scene-in-xaml-with-a-glcanvaselement-subclass),
-[Keep the GL renderer framework-free behind an interface](../BLUEPRINTS.md#keep-the-gl-renderer-framework-free-behind-an-interface)
-and [Forward pointer input from a canvas into a model](../BLUEPRINTS.md#forward-pointer-input-from-a-canvas-into-a-model).
+See [Host an OpenGL scene in XAML with a GLCanvasElement subclass](../BLUEPRINTS-GraphicsAndRendering.md#host-an-opengl-scene-in-xaml-with-a-glcanvaselement-subclass),
+[Keep the GL renderer framework-free behind an interface](../BLUEPRINTS-GraphicsAndRendering.md#keep-the-gl-renderer-framework-free-behind-an-interface)
+and [Forward pointer input from a canvas into a model](../BLUEPRINTS-ViewsAndControls.md#forward-pointer-input-from-a-canvas-into-a-model).
 
 ### The renderer runs on every head because it asks the context what it is
 
@@ -294,9 +294,9 @@ glass. And the model-view-projection matrix is uploaded with `transpose: false` 
 column-major layout is exactly the transpose it needs, and transposing again would flatten
 the depth axis for any camera that is not axis-aligned.
 
-See [Pick the shader version header for desktop GL or GLES at runtime](../BLUEPRINTS.md#pick-the-shader-version-header-for-desktop-gl-or-gles-at-runtime),
-[Draw translucent surfaces in a second pass with depth writes off](../BLUEPRINTS.md#draw-translucent-surfaces-in-a-second-pass-with-depth-writes-off)
-and [Share one camera and one matrix convention across graphics APIs](../BLUEPRINTS.md#share-one-camera-and-one-matrix-convention-across-graphics-apis).
+See [Pick the shader version header for desktop GL or GLES at runtime](../BLUEPRINTS-GraphicsAndRendering.md#pick-the-shader-version-header-for-desktop-gl-or-gles-at-runtime),
+[Draw translucent surfaces in a second pass with depth writes off](../BLUEPRINTS-GraphicsAndRendering.md#draw-translucent-surfaces-in-a-second-pass-with-depth-writes-off)
+and [Share one camera and one matrix convention across graphics APIs](../BLUEPRINTS-GraphicsAndRendering.md#share-one-camera-and-one-matrix-convention-across-graphics-apis).
 
 ### The Browsing View: a catalog grid that never builds what it cannot show
 
@@ -321,9 +321,9 @@ and no-ops once every item has a cell, which matters because the scroll event fi
 
 Read `ViewModels/ModelCellCollection.cs`, then `ViewModels/ModelCellViewModel.cs`, then the
 `ItemsRepeater` and its `UniformGridLayout` in `MainPage.xaml`. See
-[Fill a grid lazily as it scrolls](../BLUEPRINTS.md#fill-a-grid-lazily-as-it-scrolls),
-[Give each grid cell its own command and lazily loaded thumbnail](../BLUEPRINTS.md#give-each-grid-cell-its-own-command-and-lazily-loaded-thumbnail)
-and [Fetch a whole remote catalog once and cache images behind a concurrency gate](../BLUEPRINTS.md#fetch-a-whole-remote-catalog-once-and-cache-images-behind-a-concurrency-gate).
+[Fill a grid lazily as it scrolls](../BLUEPRINTS-MVVM.md#fill-a-grid-lazily-as-it-scrolls),
+[Give each grid cell its own command and lazily loaded thumbnail](../BLUEPRINTS-MVVM.md#give-each-grid-cell-its-own-command-and-lazily-loaded-thumbnail)
+and [Fetch a whole remote catalog once and cache images behind a concurrency gate](../BLUEPRINTS-DocumentsAndData.md#fetch-a-whole-remote-catalog-once-and-cache-images-behind-a-concurrency-gate).
 
 ### A per-cell command with an application-wide gate, and a search box that debounces
 
@@ -344,10 +344,10 @@ sort selector in the same file deliberately rebuilds immediately, because a disc
 does not need debouncing, and it is written in the classic backing-field form so the two
 property shapes sit side by side in one file.
 
-See [Give each grid cell its own command and lazily loaded thumbnail](../BLUEPRINTS.md#give-each-grid-cell-its-own-command-and-lazily-loaded-thumbnail),
-[Refresh CanExecute when the gating state is not a bound property](../BLUEPRINTS.md#refresh-canexecute-when-the-gating-state-is-not-a-bound-property),
-[Debounce a search box before rebuilding a filtered list](../BLUEPRINTS.md#debounce-a-search-box-before-rebuilding-a-filtered-list)
-and [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
+See [Give each grid cell its own command and lazily loaded thumbnail](../BLUEPRINTS-MVVM.md#give-each-grid-cell-its-own-command-and-lazily-loaded-thumbnail),
+[Refresh CanExecute when the gating state is not a bound property](../BLUEPRINTS-MVVM.md#refresh-canexecute-when-the-gating-state-is-not-a-bound-property),
+[Debounce a search box before rebuilding a filtered list](../BLUEPRINTS-MVVM.md#debounce-a-search-box-before-rebuilding-a-filtered-list)
+and [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 
 ### Downloading: gated on a folder, honest about progress, free when cached
 
@@ -366,8 +366,8 @@ download folder has been chosen; it raises a dialog explaining that the folder b
 top of the window decides where models are saved, and returns. That is friendlier than a
 dead button, and it means the explanation lives next to the rule.
 
-See [Report true byte progress across a multi file download with side car files](../BLUEPRINTS.md#report-true-byte-progress-across-a-multi-file-download-with-side-car-files)
-and [Gate an action behind a chosen folder and explain the gate with a dialog](../BLUEPRINTS.md#gate-an-action-behind-a-chosen-folder-and-explain-the-gate-with-a-dialog).
+See [Report true byte progress across a multi file download with side car files](../BLUEPRINTS-DocumentsAndData.md#report-true-byte-progress-across-a-multi-file-download-with-side-car-files)
+and [Gate an action behind a chosen folder and explain the gate with a dialog](../BLUEPRINTS-MVVM.md#gate-an-action-behind-a-chosen-folder-and-explain-the-gate-with-a-dialog).
 
 ### The Document button: a staged pipeline the user can walk away from
 
@@ -395,10 +395,10 @@ be flipped before encoding. And a compatibility-first GL context may offer no mu
 so `ModelShotRenderer` supersamples into a framebuffer with a conservative size ceiling and
 downscales, rather than relying on MSAA.
 
-See [Snapshot view model state before a long running command](../BLUEPRINTS.md#snapshot-view-model-state-before-a-long-running-command),
-[Render off screen product shots on the head own GL context](../BLUEPRINTS.md#render-off-screen-product-shots-on-the-head-own-gl-context),
-[Generate scene set dressing as ordinary geometry](../BLUEPRINTS.md#generate-scene-set-dressing-as-ordinary-geometry)
-and [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
+See [Snapshot view model state before a long running command](../BLUEPRINTS-MVVM.md#snapshot-view-model-state-before-a-long-running-command),
+[Render off screen product shots on the head own GL context](../BLUEPRINTS-GraphicsAndRendering.md#render-off-screen-product-shots-on-the-head-own-gl-context),
+[Generate scene set dressing as ordinary geometry](../BLUEPRINTS-GraphicsAndRendering.md#generate-scene-set-dressing-as-ordinary-geometry)
+and [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS-MVVM.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
 
 ### The one-sheet is a poster, drawn rather than flowed, in fonts it brings with it
 
@@ -431,8 +431,8 @@ on a page.
 The font files and their license texts are both embedded resources, declared in the csproj
 alongside each other.
 
-See [Compose a fixed layout poster with the CodeBrix PdfDocuments library](../BLUEPRINTS.md#compose-a-fixed-layout-poster-with-the-codebrix-pdfdocuments-library)
-and [Register embedded OFL fonts with the PDF font system](../BLUEPRINTS.md#register-embedded-ofl-fonts-with-the-pdf-font-system).
+See [Compose a fixed layout poster with the CodeBrix PdfDocuments library](../BLUEPRINTS-DocumentsAndData.md#compose-a-fixed-layout-poster-with-the-codebrix-pdfdocuments-library)
+and [Register embedded OFL fonts with the PDF font system](../BLUEPRINTS-DocumentsAndData.md#register-embedded-ofl-fonts-with-the-pdf-font-system).
 
 ### The API client is a library with no idea an application exists
 
@@ -454,9 +454,9 @@ its own pooled handler, which is exactly how the tests use it. The application's
 `RegisterServices.cs` calls that extension, sets an identifying `User-Agent` because Poly
 Haven asks consumers to identify themselves, and adds the application's own services.
 
-See [Build a typed REST client with source generated JSON and its own exceptions](../BLUEPRINTS.md#build-a-typed-rest-client-with-source-generated-json-and-its-own-exceptions),
-[Be a polite HTTP client to a public API](../BLUEPRINTS.md#be-a-polite-http-client-to-a-public-api)
-and [Register library services with one AddXxx extension method](../BLUEPRINTS.md#register-library-services-with-one-addxxx-extension-method).
+See [Build a typed REST client with source generated JSON and its own exceptions](../BLUEPRINTS-DocumentsAndData.md#build-a-typed-rest-client-with-source-generated-json-and-its-own-exceptions),
+[Be a polite HTTP client to a public API](../BLUEPRINTS-DocumentsAndData.md#be-a-polite-http-client-to-a-public-api)
+and [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
 
 ### Picker paths, and heads that have no picker
 
@@ -477,9 +477,9 @@ opt-in, one builder call each in that head's `Program.cs`. A head that registers
 raises `NotSupportedException`, which the view model catches specifically and turns into an
 explanation instead of an error dialog. Nothing in the view model changes per head.
 
-See [Clean up the path a file picker returns](../BLUEPRINTS.md#clean-up-the-path-a-file-picker-returns),
-[Save a file through a native dialog from the view model](../BLUEPRINTS.md#save-a-file-through-a-native-dialog-from-the-view-model)
-and [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
+See [Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns),
+[Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model)
+and [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
 
 ### Telling the user why the 3D pane is empty
 
@@ -492,8 +492,8 @@ tree, which can happen after the view has already switched. It reports once per 
 run, so navigating between models does not re-nag, and it decides whether the Windows hint
 applies by asking `SimpleOsInfo` at run time rather than compiling the hint in.
 
-See [Tell the user when graphics initialization failed](../BLUEPRINTS.md#tell-the-user-when-graphics-initialization-failed)
-and [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+See [Tell the user when graphics initialization failed](../BLUEPRINTS-PlatformServices.md#tell-the-user-when-graphics-initialization-failed)
+and [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 
 ### The page reflows, and the theme follows the application's palette
 
@@ -516,9 +516,9 @@ resolves them too. Icons are `FontIcon` glyphs rather than literal symbol charac
 the default text font and its script fallbacks come from the bundled font package, so the
 application renders identically on a device with no system fonts at all.
 
-See [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in),
-[Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette)
-and [Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts).
+See [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS-ViewsAndControls.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in),
+[Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS-ViewsAndControls.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette)
+and [Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS-ViewsAndControls.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts).
 
 ### Testing GL for real, and testing HTTP without a network
 
@@ -547,12 +547,12 @@ tests cover the "load, then hand to the renderer" flow with neither a GPU nor a 
 disk, which is the payoff for putting `IModelLoader` and `IModelSceneRenderer` in front of
 the concrete types.
 
-See [Test GL code headlessly with a surfaceless EGL context](../BLUEPRINTS.md#test-gl-code-headlessly-with-a-surfaceless-egl-context),
-[Pin a fixed bug with a regression test that says why it is shaped that way](../BLUEPRINTS.md#pin-a-fixed-bug-with-a-regression-test-that-says-why-it-is-shaped-that-way),
-[Test an HTTP client offline with a stub handler](../BLUEPRINTS.md#test-an-http-client-offline-with-a-stub-handler),
-[Make live tests opt in and keep them out of the default run](../BLUEPRINTS.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run),
-[Mock a rendering or API seam with CodeBrix TestMocks](../BLUEPRINTS.md#mock-a-rendering-or-api-seam-with-codebrix-testmocks)
-and [Build the binary inputs your tests need instead of committing them](../BLUEPRINTS.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them).
+See [Test GL code headlessly with a surfaceless EGL context](../BLUEPRINTS-Testing.md#test-gl-code-headlessly-with-a-surfaceless-egl-context),
+[Pin a fixed bug with a regression test that says why it is shaped that way](../BLUEPRINTS-Testing.md#pin-a-fixed-bug-with-a-regression-test-that-says-why-it-is-shaped-that-way),
+[Test an HTTP client offline with a stub handler](../BLUEPRINTS-Testing.md#test-an-http-client-offline-with-a-stub-handler),
+[Make live tests opt in and keep them out of the default run](../BLUEPRINTS-Testing.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run),
+[Mock a rendering or API seam with CodeBrix TestMocks](../BLUEPRINTS-Testing.md#mock-a-rendering-or-api-seam-with-codebrix-testmocks)
+and [Build the binary inputs your tests need instead of committing them](../BLUEPRINTS-Testing.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them).
 
 ## Third-party content
 

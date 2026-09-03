@@ -25,95 +25,95 @@ gracefully when a head has no file dialog or the host has no ffmpeg.
 ## What this sample shows a CodeBrix.Platform developer
 
 - Keep the whole document pipeline in a UI-free class library that the view model
-  reaches only through one interface: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface).
+  reaches only through one interface: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS-DocumentsAndData.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface).
 - Call a REST API from a service the view model resolves, never from the view
-  model itself: [Call a REST API behind a service interface the view model resolves](../BLUEPRINTS.md#call-a-rest-api-behind-a-service-interface-the-view-model-resolves).
+  model itself: [Call a REST API behind a service interface the view model resolves](../BLUEPRINTS-DocumentsAndData.md#call-a-rest-api-behind-a-service-interface-the-view-model-resolves).
 - Hide a fetch, download, compose and render pipeline behind a single awaitable
-  service method that reports progress: [Run a multi stage pipeline behind one service method](../BLUEPRINTS.md#run-a-multi-stage-pipeline-behind-one-service-method).
+  service method that reports progress: [Run a multi stage pipeline behind one service method](../BLUEPRINTS-DocumentsAndData.md#run-a-multi-stage-pipeline-behind-one-service-method).
 - Accept whatever identifier form a user pastes and normalize it before it reaches
-  the API: [Normalize a user entered ID or URL before calling an API](../BLUEPRINTS.md#normalize-a-user-entered-id-or-url-before-calling-an-api).
+  the API: [Normalize a user entered ID or URL before calling an API](../BLUEPRINTS-DocumentsAndData.md#normalize-a-user-entered-id-or-url-before-calling-an-api).
 - Resolve one identifier that could name any of several object kinds by trying each
-  retrieval in turn: [Resolve an ID that may be one of several object kinds](../BLUEPRINTS.md#resolve-an-id-that-may-be-one-of-several-object-kinds).
+  retrieval in turn: [Resolve an ID that may be one of several object kinds](../BLUEPRINTS-DocumentsAndData.md#resolve-an-id-that-may-be-one-of-several-object-kinds).
 - Walk a nested API tree one level per request without looping forever on a
-  self-referencing node: [Read a nested tree from an API with a cycle guard](../BLUEPRINTS.md#read-a-nested-tree-from-an-api-with-a-cycle-guard).
+  self-referencing node: [Read a nested tree from an API with a cycle guard](../BLUEPRINTS-DocumentsAndData.md#read-a-nested-tree-from-an-api-with-a-cycle-guard).
 - Serialize outbound calls and space them out so you stay inside a published rate
-  limit instead of provoking retries: [Pace outbound API calls with a rate gate](../BLUEPRINTS.md#pace-outbound-api-calls-with-a-rate-gate).
+  limit instead of provoking retries: [Pace outbound API calls with a rate gate](../BLUEPRINTS-DocumentsAndData.md#pace-outbound-api-calls-with-a-rate-gate).
 - Build a real book: an unnumbered cover section, one section per chapter, running
-  heads, and folios that start once and never restart: [Compose a book with sections styles running heads and folios](../BLUEPRINTS.md#compose-a-book-with-sections-styles-running-heads-and-folios).
+  heads, and folios that start once and never restart: [Compose a book with sections styles running heads and folios](../BLUEPRINTS-DocumentsAndData.md#compose-a-book-with-sections-styles-running-heads-and-folios).
 - Derive every margin, type size and rule in a document from a single page-size
-  choice, so a new trim needs no new tuning: [Derive a whole document theme from one page size choice](../BLUEPRINTS.md#derive-a-whole-document-theme-from-one-page-size-choice).
+  choice, so a new trim needs no new tuning: [Derive a whole document theme from one page size choice](../BLUEPRINTS-DocumentsAndData.md#derive-a-whole-document-theme-from-one-page-size-choice).
 - Embed OFL-licensed fonts in your own assembly and register them with the PDF font
-  system so output looks the same everywhere: [Register embedded OFL fonts with the PDF font system](../BLUEPRINTS.md#register-embedded-ofl-fonts-with-the-pdf-font-system).
+  system so output looks the same everywhere: [Register embedded OFL fonts with the PDF font system](../BLUEPRINTS-DocumentsAndData.md#register-embedded-ofl-fonts-with-the-pdf-font-system).
 - Read a font's real coverage from its cmap table and drop what it cannot draw
-  rather than printing empty boxes: [Drop characters your embedded fonts cannot render](../BLUEPRINTS.md#drop-characters-your-embedded-fonts-cannot-render).
+  rather than printing empty boxes: [Drop characters your embedded fonts cannot render](../BLUEPRINTS-DocumentsAndData.md#drop-characters-your-embedded-fonts-cannot-render).
 - Turn annotated rich-text runs into formatted PDF text whether or not they carry a
-  link: [Write rich text runs into a paragraph or a hyperlink](../BLUEPRINTS.md#write-rich-text-runs-into-a-paragraph-or-a-hyperlink).
+  link: [Write rich text runs into a paragraph or a hyperlink](../BLUEPRINTS-DocumentsAndData.md#write-rich-text-runs-into-a-paragraph-or-a-hyperlink).
 - Write the same content into either a document section or a table cell through one
-  small target adapter: [Render into either a section or a table cell](../BLUEPRINTS.md#render-into-either-a-section-or-a-table-cell).
+  small target adapter: [Render into either a section or a table cell](../BLUEPRINTS-DocumentsAndData.md#render-into-either-a-section-or-a-table-cell).
 - Place numbered, framed figures with their captions and credit lines kept with the
-  plate: [Place numbered framed figures with credit lines](../BLUEPRINTS.md#place-numbered-framed-figures-with-credit-lines).
+  plate: [Place numbered framed figures with credit lines](../BLUEPRINTS-DocumentsAndData.md#place-numbered-framed-figures-with-credit-lines).
 - Look ahead one sibling so a credit paragraph following an image is typeset as the
-  figure's credit, not as body text: [Pair a figure with the credit paragraph that follows it](../BLUEPRINTS.md#pair-a-figure-with-the-credit-paragraph-that-follows-it).
+  figure's credit, not as body text: [Pair a figure with the credit paragraph that follows it](../BLUEPRINTS-DocumentsAndData.md#pair-a-figure-with-the-credit-paragraph-that-follows-it).
 - Print a visible marker and record a warning for content you cannot render, so
-  nothing silently vanishes and nothing throws mid-document: [Keep unsupported content visible instead of failing the document](../BLUEPRINTS.md#keep-unsupported-content-visible-instead-of-failing-the-document).
+  nothing silently vanishes and nothing throws mid-document: [Keep unsupported content visible instead of failing the document](../BLUEPRINTS-DocumentsAndData.md#keep-unsupported-content-visible-instead-of-failing-the-document).
 - Download every referenced file once per run into a private temp folder that
-  deletes itself when the run ends: [Download run scoped media into a self cleaning temp cache](../BLUEPRINTS.md#download-run-scoped-media-into-a-self-cleaning-temp-cache).
+  deletes itself when the run ends: [Download run scoped media into a self cleaning temp cache](../BLUEPRINTS-MediaAndVision.md#download-run-scoped-media-into-a-self-cleaning-temp-cache).
 - Ask an external tool for a video poster frame and fall back to a card when the
-  tool is not installed: [Extract a video poster frame and degrade when the external tool is missing](../BLUEPRINTS.md#extract-a-video-poster-frame-and-degrade-when-the-external-tool-is-missing).
+  tool is not installed: [Extract a video poster frame and degrade when the external tool is missing](../BLUEPRINTS-MediaAndVision.md#extract-a-video-poster-frame-and-degrade-when-the-external-tool-is-missing).
 - Decode, cap and re-encode a downloaded image so the document embedder can take it:
-  [Normalize a downloaded image before embedding it in a document](../BLUEPRINTS.md#normalize-a-downloaded-image-before-embedding-it-in-a-document).
+  [Normalize a downloaded image before embedding it in a document](../BLUEPRINTS-GraphicsAndRendering.md#normalize-a-downloaded-image-before-embedding-it-in-a-document).
 - Write bound properties, `SimpleCommand` commands and `[AffectsCommands]` the way
-  the family does: [Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
+  the family does: [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 - Run a long command with a busy flag, a progress bar and a status line that all
-  come from the view model: [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
+  come from the view model: [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS-MVVM.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
 - Marshal results from background work back onto the UI thread before touching bound
-  state: [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
+  state: [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
 - Give each tree row its own small view model and load its children the first time it
-  expands: [Load a tree lazily as the user expands it](../BLUEPRINTS.md#load-a-tree-lazily-as-the-user-expands-it).
+  expands: [Load a tree lazily as the user expands it](../BLUEPRINTS-MVVM.md#load-a-tree-lazily-as-the-user-expands-it).
 - Discard an async result that arrives after the user has moved on to another
-  selection: [Ignore a stale async result when the selection moved on](../BLUEPRINTS.md#ignore-a-stale-async-result-when-the-selection-moved-on).
+  selection: [Ignore a stale async result when the selection moved on](../BLUEPRINTS-MVVM.md#ignore-a-stale-async-result-when-the-selection-moved-on).
 - Swap placeholders and content with computed `Visibility` properties instead of
-  converters or code-behind: [Show and hide panes with computed Visibility properties](../BLUEPRINTS.md#show-and-hide-panes-with-computed-visibility-properties).
+  converters or code-behind: [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties).
 - Ask and tell from the view model with the `SimpleViewModel` dialog helpers, without
-  a reference to the page: [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
+  a reference to the page: [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
 - Guard a view model constructor so the XAML designer can instantiate it without a DI
-  container: [Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer).
+  container: [Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
 - Dispose the commands, the resolved service and the bridge delegate a view model
-  holds: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+  holds: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 - Let the view model ask for a save location through a bridge interface the page
-  fills in: [Save a file through a native dialog from the view model](../BLUEPRINTS.md#save-a-file-through-a-native-dialog-from-the-view-model).
+  fills in: [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model).
 - Hand the view model a `XamlRoot` getter so its dialogs have somewhere to attach:
-  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+  [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 - Decode the percent-encoded path some pickers return before anything writes to disk:
-  [Clean up the path a file picker returns](../BLUEPRINTS.md#clean-up-the-path-a-file-picker-returns).
+  [Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns).
 - Bind a `TreeView` to a view model tree whose checkboxes select each node
-  independently: [Bind a TreeView to a view model tree with checkboxes](../BLUEPRINTS.md#bind-a-treeview-to-a-view-model-tree-with-checkboxes).
+  independently: [Bind a TreeView to a view model tree with checkboxes](../BLUEPRINTS-ViewsAndControls.md#bind-a-treeview-to-a-view-model-tree-with-checkboxes).
 - Take a secret in a `PasswordBox`, keep it in a session-only property and never write
-  it anywhere: [Take a secret token in a PasswordBox and keep it out of storage](../BLUEPRINTS.md#take-a-secret-token-in-a-passwordbox-and-keep-it-out-of-storage).
+  it anywhere: [Take a secret token in a PasswordBox and keep it out of storage](../BLUEPRINTS-ViewsAndControls.md#take-a-secret-token-in-a-passwordbox-and-keep-it-out-of-storage).
 - Re-key the Fluent theme's own brush resources so buttons, checkboxes, dialogs and
-  picker chrome all follow your palette: [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette).
+  picker chrome all follow your palette: [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS-ViewsAndControls.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette).
 - Build header and action bars that reflow to a narrow window with the FlexPanel
-  add-in: [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in).
+  add-in: [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS-ViewsAndControls.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in).
 - Draw every icon from `FontIcon` glyphs so the UI survives on a device with no system
-  fonts: [Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts).
+  fonts: [Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS-ViewsAndControls.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts).
 - Give each head a tiny `Program.Main` that names its backend and nothing else:
-  [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
+  [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
 - Do fonts, services and design-mode setup once in the `App` constructor, before
-  `InitializeComponent()`: [Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
+  `InitializeComponent()`: [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
 - Give `SimpleServiceResolver` a generic host builder through a small provider type:
-  [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+  [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
 - Let a library register its own services with one `AddXxx()` extension method:
-  [Register library services with one AddXxx extension method](../BLUEPRINTS.md#register-library-services-with-one-addxxx-extension-method).
+  [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
 - Wire console logging into the platform's ambient logger factory in Debug builds
-  only: [Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
+  only: [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 - Opt the Linux framebuffer head into the save picker and the software keyboard it
-  needs: [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
+  needs: [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
 - Force the software render surface on the WinWpfSkia head after the host is built:
-  [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head).
+  [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head).
 - Test a document renderer by walking the object model it produces instead of parsing
-  a PDF: [Test a document renderer against the object model it produces](../BLUEPRINTS.md#test-a-document-renderer-against-the-object-model-it-produces).
+  a PDF: [Test a document renderer against the object model it produces](../BLUEPRINTS-Testing.md#test-a-document-renderer-against-the-object-model-it-produces).
 - Keep the tests that need a live account and network out of the default run:
-  [Make live tests opt in and keep them out of the default run](../BLUEPRINTS.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run).
+  [Make live tests opt in and keep them out of the default run](../BLUEPRINTS-Testing.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run).
 
 ## Building, running and testing
 
@@ -292,9 +292,9 @@ to see how much sits behind them. The payoff is visible in the tests: the test
 project references the library directly, with no head and no window, because there
 is nothing in it that needs one.
 
-Blueprints: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface),
-[Register library services with one AddXxx extension method](../BLUEPRINTS.md#register-library-services-with-one-addxxx-extension-method),
-[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+Blueprints: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS-DocumentsAndData.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface),
+[Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method),
+[Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
 
 ### A secret the application takes but never keeps
 
@@ -310,8 +310,8 @@ reference along with the commands. If your own application needs to remember a t
 the shape to start from and the point at which you add a store deliberately, rather
 than discovering later that a token leaked into a log or a settings file.
 
-Blueprints: [Take a secret token in a PasswordBox and keep it out of storage](../BLUEPRINTS.md#take-a-secret-token-in-a-passwordbox-and-keep-it-out-of-storage),
-[Write bound properties and commands the family way](../BLUEPRINTS.md#write-bound-properties-and-commands-the-family-way).
+Blueprints: [Take a secret token in a PasswordBox and keep it out of storage](../BLUEPRINTS-ViewsAndControls.md#take-a-secret-token-in-a-passwordbox-and-keep-it-out-of-storage),
+[Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 
 ### The page tree: resolving what was pasted, loading lazily, and dropping a stale preview
 
@@ -344,12 +344,12 @@ switching done with computed `Visibility` properties (`PreviewContentVisibility`
 `TreePlaceholderVisibility`), each recomputed by `[AffectsProperties]` on the state
 it depends on, so the XAML binds straight to them with no converters.
 
-Blueprints: [Normalize a user entered ID or URL before calling an API](../BLUEPRINTS.md#normalize-a-user-entered-id-or-url-before-calling-an-api),
-[Resolve an ID that may be one of several object kinds](../BLUEPRINTS.md#resolve-an-id-that-may-be-one-of-several-object-kinds),
-[Load a tree lazily as the user expands it](../BLUEPRINTS.md#load-a-tree-lazily-as-the-user-expands-it),
-[Bind a TreeView to a view model tree with checkboxes](../BLUEPRINTS.md#bind-a-treeview-to-a-view-model-tree-with-checkboxes),
-[Ignore a stale async result when the selection moved on](../BLUEPRINTS.md#ignore-a-stale-async-result-when-the-selection-moved-on),
-[Show and hide panes with computed Visibility properties](../BLUEPRINTS.md#show-and-hide-panes-with-computed-visibility-properties).
+Blueprints: [Normalize a user entered ID or URL before calling an API](../BLUEPRINTS-DocumentsAndData.md#normalize-a-user-entered-id-or-url-before-calling-an-api),
+[Resolve an ID that may be one of several object kinds](../BLUEPRINTS-DocumentsAndData.md#resolve-an-id-that-may-be-one-of-several-object-kinds),
+[Load a tree lazily as the user expands it](../BLUEPRINTS-MVVM.md#load-a-tree-lazily-as-the-user-expands-it),
+[Bind a TreeView to a view model tree with checkboxes](../BLUEPRINTS-ViewsAndControls.md#bind-a-treeview-to-a-view-model-tree-with-checkboxes),
+[Ignore a stale async result when the selection moved on](../BLUEPRINTS-MVVM.md#ignore-a-stale-async-result-when-the-selection-moved-on),
+[Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties).
 
 ### Being a good citizen of someone else's API
 
@@ -367,9 +367,9 @@ follows its source's children through the same guarded path. The preview reader 
 deliberately cheap by contrast, capped at two API calls and one batch of blocks,
 because it only has to help you recognize a page.
 
-Blueprints: [Pace outbound API calls with a rate gate](../BLUEPRINTS.md#pace-outbound-api-calls-with-a-rate-gate),
-[Read a nested tree from an API with a cycle guard](../BLUEPRINTS.md#read-a-nested-tree-from-an-api-with-a-cycle-guard),
-[Call a REST API behind a service interface the view model resolves](../BLUEPRINTS.md#call-a-rest-api-behind-a-service-interface-the-view-model-resolves).
+Blueprints: [Pace outbound API calls with a rate gate](../BLUEPRINTS-DocumentsAndData.md#pace-outbound-api-calls-with-a-rate-gate),
+[Read a nested tree from an API with a cycle guard](../BLUEPRINTS-DocumentsAndData.md#read-a-nested-tree-from-an-api-with-a-cycle-guard),
+[Call a REST API behind a service interface the view model resolves](../BLUEPRINTS-DocumentsAndData.md#call-a-rest-api-behind-a-service-interface-the-view-model-resolves).
 
 ### Create!: one command, four stages, one progress bar
 
@@ -394,10 +394,10 @@ across when you copy this: every method on `INotionDocumentService` already take
 loop, so adding a `CancellationTokenSource` and a Cancel command to the view model is
 the natural finishing move for an application whose jobs run long.
 
-Blueprints: [Run a multi stage pipeline behind one service method](../BLUEPRINTS.md#run-a-multi-stage-pipeline-behind-one-service-method),
-[Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag),
-[Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread),
-[Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
+Blueprints: [Run a multi stage pipeline behind one service method](../BLUEPRINTS-DocumentsAndData.md#run-a-multi-stage-pipeline-behind-one-service-method),
+[Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS-MVVM.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag),
+[Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread),
+[Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
 
 ### Asking for a save location without knowing what a head is
 
@@ -426,9 +426,9 @@ are policy about the saved document, so in your own application let the page ret
 the raw chosen path and put that policy in the view model or in the service that
 writes the file.
 
-Blueprints: [Save a file through a native dialog from the view model](../BLUEPRINTS.md#save-a-file-through-a-native-dialog-from-the-view-model),
-[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show),
-[Clean up the path a file picker returns](../BLUEPRINTS.md#clean-up-the-path-a-file-picker-returns).
+Blueprints: [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model),
+[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show),
+[Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns).
 
 ### Embedded fonts, exact coverage, and no empty boxes
 
@@ -456,9 +456,9 @@ coverage check therefore rejects anything outside the Basic Multilingual Plane. 
 dropped count comes back to the user as one line in the result dialog, so nothing
 disappears without being mentioned.
 
-Blueprints: [Register embedded OFL fonts with the PDF font system](../BLUEPRINTS.md#register-embedded-ofl-fonts-with-the-pdf-font-system),
-[Drop characters your embedded fonts cannot render](../BLUEPRINTS.md#drop-characters-your-embedded-fonts-cannot-render),
-[Write rich text runs into a paragraph or a hyperlink](../BLUEPRINTS.md#write-rich-text-runs-into-a-paragraph-or-a-hyperlink).
+Blueprints: [Register embedded OFL fonts with the PDF font system](../BLUEPRINTS-DocumentsAndData.md#register-embedded-ofl-fonts-with-the-pdf-font-system),
+[Drop characters your embedded fonts cannot render](../BLUEPRINTS-DocumentsAndData.md#drop-characters-your-embedded-fonts-cannot-render),
+[Write rich text runs into a paragraph or a hyperlink](../BLUEPRINTS-DocumentsAndData.md#write-rich-text-runs-into-a-paragraph-or-a-hyperlink).
 
 ### From one trim size to a composed book
 
@@ -483,8 +483,8 @@ it again on a later section restarts numbering at 1 there. Every chapter opening
 bookmark named for its page, which is what lets cross-references elsewhere in the book
 print the real page number of the page they refer to.
 
-Blueprints: [Derive a whole document theme from one page size choice](../BLUEPRINTS.md#derive-a-whole-document-theme-from-one-page-size-choice),
-[Compose a book with sections styles running heads and folios](../BLUEPRINTS.md#compose-a-book-with-sections-styles-running-heads-and-folios).
+Blueprints: [Derive a whole document theme from one page size choice](../BLUEPRINTS-DocumentsAndData.md#derive-a-whole-document-theme-from-one-page-size-choice),
+[Compose a book with sections styles running heads and folios](../BLUEPRINTS-DocumentsAndData.md#compose-a-book-with-sections-styles-running-heads-and-folios).
 
 ### Media fetched once, prepared for print, and optional all the way down
 
@@ -511,9 +511,9 @@ know plus a warning. That is what makes ffmpeg genuinely optional rather than no
 optional, and the same structure applies to any external tool your application would
 rather have than require.
 
-Blueprints: [Download run scoped media into a self cleaning temp cache](../BLUEPRINTS.md#download-run-scoped-media-into-a-self-cleaning-temp-cache),
-[Extract a video poster frame and degrade when the external tool is missing](../BLUEPRINTS.md#extract-a-video-poster-frame-and-degrade-when-the-external-tool-is-missing),
-[Normalize a downloaded image before embedding it in a document](../BLUEPRINTS.md#normalize-a-downloaded-image-before-embedding-it-in-a-document).
+Blueprints: [Download run scoped media into a self cleaning temp cache](../BLUEPRINTS-MediaAndVision.md#download-run-scoped-media-into-a-self-cleaning-temp-cache),
+[Extract a video poster frame and degrade when the external tool is missing](../BLUEPRINTS-MediaAndVision.md#extract-a-video-poster-frame-and-degrade-when-the-external-tool-is-missing),
+[Normalize a downloaded image before embedding it in a document](../BLUEPRINTS-GraphicsAndRendering.md#normalize-a-downloaded-image-before-embedding-it-in-a-document).
 
 ### The renderer's rule: nothing vanishes and nothing throws mid-book
 
@@ -538,10 +538,10 @@ becoming a stray body paragraph after the figure. All the warnings collected alo
 way come back on the result and are shown to the user, capped so the dialog stays
 readable.
 
-Blueprints: [Keep unsupported content visible instead of failing the document](../BLUEPRINTS.md#keep-unsupported-content-visible-instead-of-failing-the-document),
-[Render into either a section or a table cell](../BLUEPRINTS.md#render-into-either-a-section-or-a-table-cell),
-[Place numbered framed figures with credit lines](../BLUEPRINTS.md#place-numbered-framed-figures-with-credit-lines),
-[Pair a figure with the credit paragraph that follows it](../BLUEPRINTS.md#pair-a-figure-with-the-credit-paragraph-that-follows-it).
+Blueprints: [Keep unsupported content visible instead of failing the document](../BLUEPRINTS-DocumentsAndData.md#keep-unsupported-content-visible-instead-of-failing-the-document),
+[Render into either a section or a table cell](../BLUEPRINTS-DocumentsAndData.md#render-into-either-a-section-or-a-table-cell),
+[Place numbered framed figures with credit lines](../BLUEPRINTS-DocumentsAndData.md#place-numbered-framed-figures-with-credit-lines),
+[Pair a figure with the credit paragraph that follows it](../BLUEPRINTS-DocumentsAndData.md#pair-a-figure-with-the-credit-paragraph-that-follows-it).
 
 ### Making the Fluent theme look like your application
 
@@ -567,11 +567,11 @@ why `src/NotionDocumentCreator.UI/App.xaml.cs` calls `SimpleViewModel.SetIsDesig
 `IsDesignMode(true)` guard, and why the bridge wiring happens in `DataContextChanged`
 rather than in the constructor.
 
-Blueprints: [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette),
-[Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in),
-[Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts),
-[Guard a view model constructor for the XAML designer](../BLUEPRINTS.md#guard-a-view-model-constructor-for-the-xaml-designer),
-[Bootstrap the application in the App constructor](../BLUEPRINTS.md#bootstrap-the-application-in-the-app-constructor).
+Blueprints: [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS-ViewsAndControls.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette),
+[Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS-ViewsAndControls.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in),
+[Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS-ViewsAndControls.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts),
+[Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer),
+[Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
 
 ### Six heads that differ by a handful of lines
 
@@ -589,10 +589,10 @@ are identical apart from the backend they name. That uniformity is the point: th
 projects hold no application logic at all, so there is only ever one place to change
 behavior.
 
-Blueprints: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
-[Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head),
-[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS.md#force-the-software-render-surface-on-the-winwpfskia-head),
-[Turn on console logging only in Debug builds](../BLUEPRINTS.md#turn-on-console-logging-only-in-debug-builds).
+Blueprints: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
+[Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head),
+[Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head),
+[Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 
 ### Testing a document by reading the document, not the PDF
 
@@ -614,8 +614,8 @@ all of the tested code lives in the library's `Internal` namespace. The live tes
 are quarantined by `Assert.SkipWhen(...)` in their constructor on the two
 environment variables, so the default run needs nothing from the outside world.
 
-Blueprints: [Test a document renderer against the object model it produces](../BLUEPRINTS.md#test-a-document-renderer-against-the-object-model-it-produces),
-[Make live tests opt in and keep them out of the default run](../BLUEPRINTS.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run).
+Blueprints: [Test a document renderer against the object model it produces](../BLUEPRINTS-Testing.md#test-a-document-renderer-against-the-object-model-it-produces),
+[Make live tests opt in and keep them out of the default run](../BLUEPRINTS-Testing.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run).
 
 ## Third-party content
 
