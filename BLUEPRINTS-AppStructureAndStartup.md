@@ -7,7 +7,8 @@ the `App` constructor for fonts, the `SimpleServiceResolver` container,
 `SimpleViewModel.SetIsDesignMode(false)` and `InitializeComponent()`. They also
 cover the pieces that hang off that startup path - supplying a host builder,
 registering a library's services through a single `AddXxx` extension, wiring
-Debug-only console logging, creating the window and navigating to the first
+Debug-only console logging, creating the window, deciding what size it opens
+at and how small it may be dragged, and navigating to the first
 page. Reach for this file when you are starting a new application, adding a
 head to an existing one, or chasing a startup problem such as an application
 that launches and then does nothing, a head whose window renders blank,
@@ -24,6 +25,8 @@ conventions the code blocks follow.
 - [Start each head from a Program Main and pick the platform backend](#start-each-head-from-a-program-main-and-pick-the-platform-backend)
 - [Bootstrap the application in the App constructor](#bootstrap-the-application-in-the-app-constructor)
 - [Create the main window and navigate to the first page](#create-the-main-window-and-navigate-to-the-first-page)
+- [Set the window's launch size](#set-the-windows-launch-size)
+- [Keep the window from shrinking below a minimum](#keep-the-window-from-shrinking-below-a-minimum)
 - [Supply a generic host builder to SimpleServiceResolver](#supply-a-generic-host-builder-to-simpleserviceresolver)
 - [Register library services with one AddXxx extension method](#register-library-services-with-one-addxxx-extension-method)
 - [Turn on console logging only in Debug builds](#turn-on-console-logging-only-in-debug-builds)
@@ -301,6 +304,213 @@ in the file as a comment)
 - A native WPF head has no frame at all: `PainDiagram.Wpf` uses
   `StartupUri="Views/MainWindow.xaml"` in `App.xaml` and has no `OnLaunched`
   override, while a native WinUI 3 head keeps the frame-and-`Navigate()` shape.
+
+### Set the window's launch size
+
+**When you want this.** The window should open at a size you chose rather than at
+the platform's own default, and you have found that nothing you can write in
+`OnLaunched` happens early enough to decide it.
+
+**The MVVM shape.** Two constants on `App` and one assignment in the `App`
+constructor, before `InitializeComponent()`. No view model is involved. Every
+desktop head reads `ApplicationView.PreferredLaunchViewSize` while it is creating
+the native window, and falls back to the platform's own 1024 by 640 when the value
+is empty, so the size has to be in place before anything a page could reach exists.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/App.xaml.cs
+public partial class App : Application
+{
+    //The size the window opens at, and the smallest size it may be dragged to. The launch
+    //size fits the header, the two search rows and about a dozen result rows without
+    //scrolling; the minimum is the point below which the header stops fitting on two lines
+    //and the result columns start to collide.
+    private const int LaunchWidth = 1180;
+    private const int LaunchHeight = 800;
+    private const int MinimumWidth = 760;
+    private const int MinimumHeight = 520;
+```
+
+The assignment is the last thing the constructor does before the XAML is
+initialized:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/App.xaml.cs
+    //The size the first window opens at. ApplicationView.PreferredLaunchViewSize is the
+    //only public seam an application has for its own launch size: every desktop head
+    //reads it while it is creating the native window and falls back to the platform's
+    //own 1024 by 640 when it is empty, so it has to be set before any window exists.
+    //On the Linux X11 head the numbers are NATIVE pixels of the window's CLIENT area,
+    //which on a display at scale 1 is the same as logical units; how each of the other
+    //heads reads them is written up in the report that accompanied this change. The
+    //value is set on every launch, unconditionally, because the platform remembers it
+    //in its own settings file; setting it every time keeps that file in step with this
+    //source file instead of letting an old value linger.
+    Windows.UI.ViewManagement.ApplicationView.PreferredLaunchViewSize =
+        new Windows.Foundation.Size(LaunchWidth, LaunchHeight);
+
+    InitializeComponent();
+```
+
+Both applications write the two types fully qualified, so the file's `using` block
+does not change.
+
+**What each head does with the numbers.** They do not all read them the same way,
+and at a display scale other than 1 that matters:
+
+| Head | Launch size | Minimum size |
+| --- | --- | --- |
+| LinuxX11 | native pixels, client area | native pixels, client area |
+| LinuxWayland | logical units, window geometry | logical units, window geometry |
+| Win32Skia | native pixels, framed window | native pixels, framed window |
+| MacOS | points, client area | points, framed window |
+| WinWpfSkia | device-independent units, framed window | native pixels divided by the rasterization scale, framed window |
+
+At a display scale of 1 every one of those reads the same, which is why one pair of
+constants is the right thing to write. On the X11 head at a display scale of 2 the
+same constants produce a window half the intended logical size and a clamp at half
+the intended logical minimum.
+
+**Where the value is kept between runs.** The setter does nothing but write two
+doubles into `ApplicationData.Current.LocalSettings`, under the keys
+`__CodeBrix.PreferredLaunchViewSizeKey.Width` and `.Height`, and the getter returns
+an empty size when either is missing. The value therefore survives between runs,
+which is why both applications set it unconditionally on every launch rather than
+only when it is empty: an unconditional set is what stops the remembered copy
+drifting away from the source file. On Linux the store is
+`<LocalApplicationData>/<package name>/Settings/Local.dat`, and it is per head,
+because the package name is the head's own assembly name. It does not collide with
+the AppSettings add-in, whose store is a separate `settings.sqlite` under the
+configuration folder.
+
+**Variant: open at the size the user left.** Pinta.Brix reads two settings and
+feeds them to the same property, and writes the size back on every resize; see
+[Restore a remembered window size before any window exists](BLUEPRINTS-SettingsAndPersistence.md#restore-a-remembered-window-size-before-any-window-exists).
+Fresco.Brix combines the two: the constants are the size a launch with an empty
+store opens at, and a remembered size is applied a moment later through
+`AppWindow.Resize` when the page loads. The two do not fight, because the platform
+value is consulted while the native window is created and the remembered one is
+applied after it exists.
+
+**Where to look.**
+`GitHubIssueFinder/src/GitHubIssueFinder.UI/App.xaml.cs`
+`Pinta.Brix/src/Pinta.Brix.UI/App.xaml.cs`
+
+**Also shown by.**
+`CodeBrix.Samples.Gpl3/Fresco.Brix/src/Fresco.Brix.UI/App.xaml.cs` (in the
+CodeBrix.Samples.Gpl3 repository: the same block with 1280 by 840, and one extra
+sentence in the comment saying that a size the user left behind still wins)
+
+**Sharp edges.**
+- It has to be the constructor, not `OnLaunched`. The `Window` constructor creates
+  the native window and the head reads the value while doing so, so by the time
+  `OnLaunched` runs the window already has a size.
+- The value persists, so a constant you change in source does not take effect
+  unless the assignment actually runs. Setting it unconditionally on every launch
+  is the habit that keeps the two in step.
+- The units differ head by head, as the table above shows, and the heads also
+  disagree on whether the numbers describe the client area or the framed window.
+- Do not try to correct for the display scale from application code. The scale is
+  not knowable until the `XamlRoot` exists, which is after the native window has
+  been created, so any correction is a visible resize of an existing window, and a
+  correction that is right for the X11 head is wrong for the Wayland and macOS
+  heads.
+- Pick the numbers by measuring the layout rather than estimating it. The floor is
+  whatever stops fitting first, and a row that scrolls does not set one: Fresco.Brix
+  keeps its toolbar in a hidden-scrollbar `ScrollViewer`, so buttons past the
+  minimum width scroll into view instead of becoming unreachable.
+
+### Keep the window from shrinking below a minimum
+
+**When you want this.** Your layout stops being usable below some size, and you
+want the window manager to refuse to go there rather than letting the user drag
+the page into nonsense.
+
+**The MVVM shape.** Two more constants on `App` and one presenter block in
+`OnLaunched`, immediately after the `Window` is constructed and before
+`Activate()`. The window's default presenter is an `OverlappedPresenter`, and the
+minimum and maximum sizes are its properties.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/App.xaml.cs
+protected override void OnLaunched(LaunchActivatedEventArgs args)
+{
+    MainWindow = new Window
+    {
+        Title = "GitHubIssueFinder"
+    };
+
+    //The smallest size the user may drag the window to. The presenter is already in
+    //place here: constructing a Window builds its native window straight away once the
+    //application has finished initializing, and the window's default presenter is an
+    //OverlappedPresenter. Setting the minimum now, before Activate(), means the window
+    //manager has the constraint before the window is ever shown; setting it after
+    //Activate() also works, but the window has been mapped once by then. No maximum is
+    //set, so the window can still be resized up and maximized.
+    if (MainWindow.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
+    {
+        presenter.PreferredMinimumWidth = MinimumWidth;
+        presenter.PreferredMinimumHeight = MinimumHeight;
+    }
+
+    // ...
+
+    MainWindow.Activate();
+}
+```
+
+**Why `AppWindow` compiles here.** `Window.AppWindow` is public only where
+`HAS_CODEBRIX_WINUI` is defined, and the platform package's build targets inject
+that symbol into every project that references it. Application code therefore
+reaches `MainWindow.AppWindow.Presenter` with nothing defined by hand and no
+extra using directive, because the presenter type is written fully qualified.
+
+**Why immediately after `new Window()` works.** The `Window` constructor
+initializes eagerly once the application has finished starting, and that path
+installs the default `OverlappedPresenter`, so the `is OverlappedPresenter` test
+succeeds the instant the constructor returns. The properties are safe to set even
+where there is no native window yet: the change is pushed to the native window
+through a null-conditional call, so it is dropped rather than throwing, and the
+whole set of constraints is re-applied when a native window is attached.
+
+**What it looks like when it works on the X11 head.** The head answers the
+properties with `XSetWMNormalHints`, so `xprop -id <id> WM_NORMAL_HINTS` reads
+`program specified minimum size: <W> by <H>` from the first frame the window is
+mapped. Three separate ways of making the window smaller were tried against both
+applications, and all three stop at exactly the minimum: `xdotool windowsize`,
+`wmctrl -i -r <id> -e`, and dragging the bottom-right corner. Resizing up still
+works normally afterwards.
+
+**Where to look.**
+`GitHubIssueFinder/src/GitHubIssueFinder.UI/App.xaml.cs`
+
+**Also shown by.**
+`CodeBrix.Samples.Gpl3/Fresco.Brix/src/Fresco.Brix.UI/App.xaml.cs` (in the
+CodeBrix.Samples.Gpl3 repository: the same block with 900 by 620, placed after
+the window is also stored in a static property the page reads)
+
+**Sharp edges.**
+- Leave the maximum alone unless you have a real reason for one. An unset maximum
+  is treated as the largest possible value, so maximize and a full-screen drag keep
+  working; setting one takes that away.
+- Before `Activate()` is better than after. Setting the properties later also
+  works, but the window has been mapped once without the constraint by then.
+- An unset minimum is written as zero rather than skipped, so the hints always
+  exist. That means an application that never touches the presenter still gets
+  hints, and reading `WM_NORMAL_HINTS` on such a window shows a minimum of 0 by 0
+  rather than nothing.
+- The numbers are in the same head-dependent units as the launch size, so read the
+  table in [Set the window's launch size](#set-the-windows-launch-size) before
+  choosing them.
+- Every launch on the X11 head logs two error-level lines from the presenter about
+  `_NET_WM_STATE` not existing on the window. They are harmless and are not caused
+  by anything the application does: they appear whether or not the application ever
+  touches the presenter, because the property does not exist yet on a window that
+  has not been mapped.
 
 ### Supply a generic host builder to SimpleServiceResolver
 

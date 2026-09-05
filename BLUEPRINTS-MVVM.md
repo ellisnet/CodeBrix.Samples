@@ -35,6 +35,8 @@ conventions the code blocks follow.
 - [Set bound properties from a background thread with InvokeOnMainThread](#set-bound-properties-from-a-background-thread-with-invokeonmainthread)
 - [Hand results from a capture thread through a worker to the UI thread](#hand-results-from-a-capture-thread-through-a-worker-to-the-ui-thread)
 - [Run a long job from a command with progress cancellation and a busy flag](#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag)
+- [Stream an IAsyncEnumerable of pages into a bound collection](#stream-an-iasyncenumerable-of-pages-into-a-bound-collection)
+- [Make a rate limit wait visible through the progress channel](#make-a-rate-limit-wait-visible-through-the-progress-channel)
 - [Report progress across stages when only some of them know a percentage](#report-progress-across-stages-when-only-some-of-them-know-a-percentage)
 - [Snapshot view model state before a long running command](#snapshot-view-model-state-before-a-long-running-command)
 - [Dispose a view model its commands and its bridge delegates](#dispose-a-view-model-its-commands-and-its-bridge-delegates)
@@ -1081,6 +1083,332 @@ public sealed record RenderProgress(RenderStage Stage, string Message, int Perce
   the percentage as a band per stage stops the bar going backwards between stages.
 - Make `IProgress<T>` optional on the service; the offline tests rely on passing
   `null`.
+
+### Stream an IAsyncEnumerable of pages into a bound collection
+
+**When you want this.** A service reads a paged remote source that takes minutes to
+walk, and the user should see each page as it lands rather than a spinner until the
+end.
+
+**The MVVM shape.** The service returns `IAsyncEnumerable<TPage>` and takes an
+`IProgress<T>` and a `CancellationToken`. The view model enumerates it with
+`await foreach` under `ConfigureAwait(false)`, and hands each page to
+`InvokeOnMainThread` to be folded into the bound collections. The
+`CancellationTokenSource` is a field so a Cancel command can reach it, and every
+callback the run posts checks that it is still the current run before it touches
+anything.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+private async Task DoSearch()
+{
+    if (!CanSearch()) { return; }
+
+    //Everything the run needs is copied out now, because the user is free to keep typing.
+    var owner = (Owner ?? string.Empty).Trim();
+    var assignee = (Assignee ?? string.Empty).Trim();
+    var includeClosed = IncludeClosed;
+
+    // ... write all three through the settings facade ...
+
+    //Starting a search supersedes whatever was already running. The new token source is
+    //published first, so the older run sees that it is no longer the current one and stays
+    //quiet on its way out.
+    var previous = _searchCts;
+    var cancellation = new CancellationTokenSource();
+    _searchCts = cancellation;
+    previous?.Cancel();
+
+    // ... remember what this run is searching for, and clear the last run's results ...
+
+    IsSearching = true;
+    IsCancelling = false;
+    IsProgressIndeterminate = true;
+    ProgressValue = 0d;
+    SetStatus("Contacting GitHub...", SearchStatusKind.Working);
+
+    //Created on the UI thread, so its callbacks already arrive there and must not be
+    //marshalled a second time.
+    var progress = new Progress<SearchProgress>(report =>
+    {
+        if (!ReferenceEquals(cancellation, _searchCts)) { return; }
+        OnProgress(report);
+    });
+
+    // ... build the request from the three locals ...
+
+    try
+    {
+        await foreach (var page in _searchService
+            .SearchAsync(request, progress, cancellation.Token)
+            .ConfigureAwait(false))
+        {
+            var arrived = page;
+            InvokeOnMainThread(() =>
+            {
+                if (!ReferenceEquals(cancellation, _searchCts)) { return; }
+                FoldPage(arrived);
+            });
+        }
+
+        InvokeOnMainThread(() =>
+        {
+            if (!ReferenceEquals(cancellation, _searchCts)) { return; }
+            CompleteSearch();
+        });
+    }
+    catch (OperationCanceledException)
+    {
+        InvokeOnMainThread(() =>
+        {
+            if (!ReferenceEquals(cancellation, _searchCts)) { return; }
+            SetStatus($"Cancelled after {CountPhrase()}.", SearchStatusKind.Cancelled);
+        });
+    }
+    // ... one catch turning a typed API failure into status text, and one for anything else ...
+    finally
+    {
+        //Everything this run still has to say is already queued on the UI thread, so the
+        //tidying up is queued behind it: clearing the field here would make the last page and
+        //the closing sentence look as though a newer run had superseded them.
+        InvokeOnMainThread(() =>
+        {
+            if (ReferenceEquals(cancellation, _searchCts))
+            {
+                _searchCts = null;
+                IsSearching = false;
+                IsCancelling = false;
+            }
+
+            cancellation.Dispose();
+        });
+    }
+}
+```
+
+A page is turned into rows and grouped in full before any of it reaches a bound
+collection:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+//The whole page is turned into rows and gathered by repository BEFORE anything reaches the
+//bound collections. A repository new to this search then arrives on screen with its rows
+//already in it: a group inserted empty and filled a moment later can be measured while it
+//is still empty and draws as a bare header until something else forces a fresh layout.
+foreach (var repository in order)
+{
+    var rows = rowsByRepository[repository];
+
+    if (_groupsByRepository.TryGetValue(repository, out var existing))
+    {
+        foreach (var row in rows) { existing.Add(row); }
+        continue;
+    }
+
+    var group = new RepositoryGroupViewModel(repository, urlByRepository[repository], OpenUrlAsync);
+    foreach (var row in rows) { group.Add(row); }
+    _groupsByRepository[repository] = group;
+    InsertAlphabetically(group);
+}
+```
+
+The service side is an ordinary iterator, with one deliberate exception: the public
+method is not the iterator, so argument validation happens on the call rather than on
+the first `MoveNextAsync`.
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/GitHubIssueSearchService.cs
+//Deliberately not an iterator: an iterator would defer the argument checks until the
+//first MoveNextAsync, which hides a bad call from anything that only starts the search.
+public IAsyncEnumerable<IssueSearchPage> SearchAsync(IssueSearchRequest request,
+    IProgress<SearchProgress> progress = null, CancellationToken cancellationToken = default)
+{
+    if (request == null) { throw new ArgumentNullException(nameof(request)); }
+    ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+    //Copied so a caller that edits its request while the pages are still arriving
+    //cannot change the query half way through.
+    var snapshot = new IssueSearchRequest
+    {
+        Owner = request.Owner,
+        Assignee = request.Assignee,
+        IncludeClosed = request.IncludeClosed,
+    };
+
+    //Checks the owner and throws now rather than on the first page.
+    IssueSearchQueryBuilder.BuildQuery(snapshot);
+
+    return SearchInternalAsync(snapshot, progress, cancellationToken);
+}
+```
+
+**Where to look.**
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs`
+`GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/GitHubIssueSearchService.cs`
+`GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/IGitHubIssueSearchService.cs`
+
+**Sharp edges.**
+- Publish the new `CancellationTokenSource` to the field *before* cancelling the old
+  one. Do it the other way round and the old run wakes up while it is still the
+  current one, and writes its cancellation over the new run's status line.
+- Do the tidying up inside `InvokeOnMainThread` rather than on the background thread.
+  It then runs behind everything the run has already posted; clearing the field
+  eagerly makes the last page and the closing message look superseded, and the search
+  appears to stop one page short.
+- A `Progress<T>` created on the UI thread already marshals its callbacks. Wrapping
+  them in `InvokeOnMainThread` as well is a second hop for nothing.
+- `ConfigureAwait(false)` on the `await foreach` keeps the enumeration off the UI
+  thread; the only things that go back to it are the explicit
+  `InvokeOnMainThread` calls.
+
+### Make a rate limit wait visible through the progress channel
+
+**When you want this.** Your service sometimes has to sit and wait - for a rate limit
+to reset, for a lock, for a retry delay - and a progress bar that simply stops looks
+like a hang.
+
+**The MVVM shape.** The wait reports itself on the same `IProgress<T>` channel the
+work reports on, once a second, as a phase of its own carrying how much of the wait is
+left. The view model switches on the phase to pick the status text, its color and its
+glyph. Nothing new is built for the wait: it is another kind of progress.
+
+**Code.**
+
+The progress record carries the phase and, for a wait, how long is left; its
+`ToString` writes the sentence for every phase, so the view model does not compose
+strings:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Models/SearchProgress.cs
+public sealed record SearchProgress(
+    SearchPhase Phase,
+    int Fetched,
+    int? Total,
+    int PagesFetched,
+    TimeSpan? WaitRemaining,
+    DateTimeOffset? WaitUntil,
+    RateLimitSnapshot Search,
+    RateLimitSnapshot Core)
+{
+    public override string ToString()
+    {
+        switch (Phase)
+        {
+            case SearchPhase.Starting:
+                return "Contacting GitHub...";
+
+            case SearchPhase.ListingRepositories:
+                return $"Listing repositories ({PagesFetched} {(PagesFetched == 1 ? "page" : "pages")} so far)";
+
+            case SearchPhase.WaitingForQuota:
+                return $"Fetched {CountText()} · {WaitText()}";
+
+            // ... one case per remaining phase ...
+        }
+    }
+}
+```
+
+The waiting loop announces itself once a second and measures on the injected clock, so
+a test can watch a whole hour of reports go by in a millisecond:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/RateLimitThrottle.cs
+//Waits until the given moment, announcing what is left once a second. Returns at once
+//when the moment has already passed.
+internal async Task DelayUntilAsync(DateTimeOffset until, Action<TimeSpan, DateTimeOffset> reportWait,
+    CancellationToken cancellationToken)
+{
+    var now = _timeProvider.GetUtcNow();
+    while (now < until)
+    {
+        var remaining = until - now;
+        if (reportWait != null) { reportWait(remaining, until); }
+
+        var slice = remaining > ReportInterval ? ReportInterval : remaining;
+        await Task.Delay(slice, _timeProvider, cancellationToken).ConfigureAwait(false);
+        now = _timeProvider.GetUtcNow();
+    }
+}
+```
+
+The service turns that callback into a report on the caller's channel:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/GitHubIssueSearchService.cs
+private Action<TimeSpan, DateTimeOffset> BuildWaitReporter(IProgress<SearchProgress> progress,
+    SearchState state)
+{
+    if (progress == null) { return null; }
+
+    return (remaining, until) => progress.Report(new SearchProgress(SearchPhase.WaitingForQuota,
+        state.Fetched, state.Total, state.PagesFetched, remaining, until,
+        _searchThrottle.Snapshot, _coreThrottle.Snapshot));
+}
+```
+
+The view model reads the phase, not the text, to decide how the line should look:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+switch (report.Phase)
+{
+    case SearchPhase.WaitingForQuota:
+        SetStatus(report.ToString(), SearchStatusKind.Waiting);
+        break;
+
+    case SearchPhase.Failed:
+    case SearchPhase.Cancelled:
+    case SearchPhase.Completed:
+        //The view model writes its own sentence for these three, because it knows the
+        //repository count and how long the run took.
+        break;
+
+    default:
+        SetStatus(report.ToString(), SearchStatusKind.Working);
+        break;
+}
+```
+
+The status kind then picks the color role and the glyph, and re-tints the brushes the
+view model owns rather than the resource dictionary:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+private void RepaintOwnBrushes()
+{
+    var palette = CurrentPalette;
+    if (palette == null) { return; }
+
+    PaletteBrushes.Repoint(StatusBrush as SolidColorBrush, palette[StatusRole()]);
+
+    var waiting = StatusKind == SearchStatusKind.Waiting;
+    PaletteBrushes.Repoint(SearchQuotaBackground as SolidColorBrush,
+        waiting ? palette.AttentionSubtle : palette.CanvasInset);
+    PaletteBrushes.Repoint(SearchQuotaBorderBrush as SolidColorBrush,
+        waiting ? palette.Attention : palette.Hairline);
+    PaletteBrushes.Repoint(SearchQuotaForeground as SolidColorBrush,
+        waiting ? palette.Attention : palette.TextSecondary);
+}
+```
+
+**Where to look.**
+`GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Models/SearchProgress.cs`
+`GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/RateLimitThrottle.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs`
+
+**Sharp edges.**
+- Report once a second, not once a frame. The reports go through the UI thread, and a
+  countdown that ticks faster than a second is noise the user cannot read anyway.
+- Let the library report only what it knows. Cancellation and failure are the view
+  model's phases: it is the thing that caught the exception, and it knows what to say
+  about the run as a whole.
+- A display fed only by progress reports freezes on its last value when the work
+  stops. Where a number keeps changing after the run - a quota that refills, a
+  countdown to a retry - refresh it from the service on a timer until it is back to
+  rest, and stop the timer there.
 
 ### Report progress across stages when only some of them know a percentage
 

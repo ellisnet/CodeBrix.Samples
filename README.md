@@ -17,9 +17,9 @@ knowing about: three applications (JustBetweenUs, PainDiagram and
 WikipediaPublisher) additionally carry native WinUI 3 and WPF heads that reuse
 the same view model without the CodeBrix.Platform UI stack, and JustBetweenUs
 adds a .NET MAUI head, the only mobile head in the repository, while
-CodeBrixVideoTool builds four of the six. Libraries are consumed as packages,
-never as source references, so each application folder is self-contained and can
-be opened and built on its own.
+CodeBrixVideoTool and GitHubIssueFinder each build four of the six. Libraries
+are consumed as packages, never as source references, so each application folder
+is self-contained and can be opened and built on its own.
 
 Everything in this repository is licensed under the Apache License, Version 2.0.
 This is the repository for the reference applications whose libraries are
@@ -39,6 +39,7 @@ collect how-tos mined from all of them.
 | Application | What it is | Headline CodeBrix libraries |
 | --- | --- | --- |
 | [CodeBrixVideoTool](CodeBrixVideoTool/README.md) | Desktop video converter and player for AV1 media, with chapter and caption drop-downs, a resolution and quality ladder, and long conversions run with live progress and cancellation | CodeBrix.Platform.VideoPlayer add-in, CodeBrix.VideoPlayback, CodeBrix.VideoPlayback.Authoring, CodeBrix.VideoProcessing |
+| [GitHubIssueFinder](GitHubIssueFinder/README.md) | Finds the open issues and pull requests nobody has picked up across a GitHub user's or organization's public repositories, grouped by repository, paced to the anonymous API allowance with every wait shown on screen and five switchable color schemes | the CodeBrix.Platform FlexPanel and AppSettings add-ins |
 | [JustBetweenUs](JustBetweenUs/README.md) | Text-encryption utility (AES, Triple DES, Twofish) and the repository's "one view model, many heads" reference, the only application that also runs on mobile | CodeBrix.Cryptography, CodeBrix.SkiaSvg, CodeBrix.Platform with its WinUI, WPF and Mobile support |
 | [KenneyAssetBrowser](KenneyAssetBrowser/README.md) | Browser for downloaded kenney.nl game-asset packs: reads each zip without extracting it and previews images, SVG art, font specimens, Tiled maps, 3D models and audio | CodeBrix.Compression, CodeBrix.Imaging, CodeBrix.SkiaSvg; the CodeBrix.Platform Graphics3DGL, AudioPlayer, FlexPanel and AppSettings add-ins |
 | [MediaPlayerDemo](MediaPlayerDemo/README.md) | One-page media player - an address box, a stretch picker and the element's own transport controls - and the smallest six-head skeleton here | CodeBrix.Platform.MediaPlayer add-in |

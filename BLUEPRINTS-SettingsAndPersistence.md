@@ -27,6 +27,7 @@ conventions the code blocks follow.
 - [BLUEPRINTS-AppStructureAndStartup.md](BLUEPRINTS-AppStructureAndStartup.md) - the App constructor ordering these recipes slot into, before InitializeComponent
 - [BLUEPRINTS-PlatformServices.md](BLUEPRINTS-PlatformServices.md) - the folder picker bridge that the remember-a-folder recipe calls through
 - [BLUEPRINTS-MVVM.md](BLUEPRINTS-MVVM.md) - the async commands and change notifications that surround a settings read or write
+- [BLUEPRINTS-ThemingAndStyling.md](BLUEPRINTS-ThemingAndStyling.md) - the color scheme this store remembers, and why it has to be read before the first page is built
 - [BLUEPRINTS-NotYetCovered.md](BLUEPRINTS-NotYetCovered.md) - the topics no application here demonstrates yet, if this store is not the persistence you need
 
 ---
@@ -142,6 +143,10 @@ Pinta.Brix.Settings.SettingsService.Initialize();
 `KenneyAssetBrowser/src/KenneyAssetBrowser.UI/App.xaml.cs` (opened after the
 container and before `InitializeComponent()`, because the page's view model reads
 a setting in its own constructor)
+`GitHubIssueFinder/src/GitHubIssueFinder.UI/App.xaml.cs` (opened for the same
+reason, and then read immediately, because the remembered color scheme decides the
+application theme and that may be set only before initialization completes - see
+[Remember the chosen scheme and read it back before the first page](BLUEPRINTS-ThemingAndStyling.md#remember-the-chosen-scheme-and-read-it-back-before-the-first-page))
 
 **Sharp edges.**
 - The failure is quiet and order-dependent: a static constructor that runs before
@@ -259,8 +264,15 @@ MainWindow.SizeChanged += (_, args) =>
   consumed as native pixels on the X11 head. Multiply by the root's rasterization
   scale on the way in, or the window shrinks or grows at every restart on a scaled
   display.
-- There is no public presenter state on the Skia heads, so a maximized flag cannot
-  be restored - only the size.
+- Pinta.Brix restores the size and not a maximized flag, and the comment above says
+  why it was written that way. The presenter itself is reachable from application
+  code: `MainWindow.AppWindow.Presenter` is an `OverlappedPresenter` as soon as the
+  `Window` is constructed, and that is where a minimum or maximum size goes. See
+  [Keep the window from shrinking below a minimum](BLUEPRINTS-AppStructureAndStartup.md#keep-the-window-from-shrinking-below-a-minimum).
+- Setting the launch size from a settings read is one use of the same seam. For the
+  plain form, where the size is a constant in the `App` class rather than a stored
+  value, and for what each head does with the numbers, see
+  [Set the window's launch size](BLUEPRINTS-AppStructureAndStartup.md#set-the-windows-launch-size).
 - Write-through on every resize is cheap because the store skips unchanged values.
 
 ### Persist small pieces of application state through the same store

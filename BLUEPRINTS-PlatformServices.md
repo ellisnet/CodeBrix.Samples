@@ -27,6 +27,7 @@ conventions the code blocks follow.
 - [Suppress a native save dialog overwrite prompt so the view model owns confirmation](#suppress-a-native-save-dialog-overwrite-prompt-so-the-view-model-owns-confirmation)
 - [Let the page invalidate a canvas through a bridge interface](#let-the-page-invalidate-a-canvas-through-a-bridge-interface)
 - [Copy text to the clipboard from a command through a bridge interface](#copy-text-to-the-clipboard-from-a-command-through-a-bridge-interface)
+- [Open a URL in the default browser from a view model](#open-a-url-in-the-default-browser-from-a-view-model)
 - [Put a platform service behind an interface with a no-op default](#put-a-platform-service-behind-an-interface-with-a-no-op-default)
 - [Install UI dialogs into a headless model through handler delegates](#install-ui-dialogs-into-a-headless-model-through-handler-delegates)
 - [Marshal a repeating timer into a headless model](#marshal-a-repeating-timer-into-a-headless-model)
@@ -977,6 +978,89 @@ BindingContextChanged += (sender, args) =>
   Nothing throws.
 - Three implementations use three different clipboard APIs, which is why the
   bridge is a delegate rather than a method the view model could call directly.
+
+### Open a URL in the default browser from a view model
+
+**When you want this.** A row, a link or a button should open a web page in whatever
+browser the user has, and the view model is where the click lands.
+
+**The MVVM shape.** `Windows.System.Launcher.LaunchUriAsync` is available to the view
+model directly - no bridge interface and no page involvement - but it needs wrapping,
+because it can both return false and throw. One private method in the whole application
+does it, and every list item reaches that method through a `Func<string, Task>` it was
+handed, so no row or group holds a reference to the view model that made it.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+//One place in the whole application asks the host to open a URL. A refusal is a status line,
+//never an exception that reaches the user.
+private async Task OpenUrlAsync(string url)
+{
+    if (string.IsNullOrWhiteSpace(url)) { return; }
+
+    try
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            SetStatus($"That link could not be read: {url}", SearchStatusKind.Failed);
+            return;
+        }
+
+        var opened = await Windows.System.Launcher.LaunchUriAsync(uri);
+        if (!opened)
+        {
+            SetStatus("No browser was available to open that page.", SearchStatusKind.Failed);
+        }
+    }
+    catch (Exception failure)
+    {
+        SetStatus($"That page could not be opened: {failure.Message}", SearchStatusKind.Failed);
+    }
+}
+```
+
+The item view models take the opener as a delegate and expose an ordinary command, so the
+data template binds to the item's own `OpenCommand`:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/IssueRowViewModel.cs
+/// <summary>
+/// Opens this row's page in the host's browser. Living on the row keeps the template's
+/// binding a plain one, because a template binds to its own item.
+/// </summary>
+public SimpleCommand OpenCommand => _openCommand ??=
+    new SimpleCommand((Func<object, Task>)(_ => OpenAsync()));
+
+// ...
+
+private Task OpenAsync() => _openUrlAsync == null ? Task.CompletedTask : _openUrlAsync(Url);
+```
+
+The owner passes the method group when it builds each item:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+rows.Add(new IssueRowViewModel(item, palette, _showAssignees, now, OpenUrlAsync));
+```
+
+**Where to look.**
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/IssueRowViewModel.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/RepositoryGroupViewModel.cs`
+
+**Sharp edges.**
+- `LaunchUriAsync` reports two kinds of failure. A false return means nothing was willing
+  to open the address; an exception means the attempt itself failed. Handle both, and
+  turn both into whatever your application uses to tell the user - here, the status line.
+- Parse the address before handing it over. A malformed string is the common case when the
+  URL came from an API, and `Uri.TryCreate` says so without an exception.
+- Hand list items a delegate rather than a reference to their owner. An item that holds its
+  owner keeps the whole view model alive for as long as the list does, and makes the item
+  untestable on its own.
+- Verify it on each head you ship. It opens the host's default handler, which is a
+  different mechanism on each desktop.
 
 ### Put a platform service behind an interface with a no-op default
 

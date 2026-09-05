@@ -1,0 +1,46 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the GitHubIssueFinder sample application, together with the licenses
+under which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here. That includes the font package that supplies the
+application's text font and its script fallbacks.
+
+------------------------------------------------------------------------
+Color schemes  (src/GitHubIssueFinder.Core/Theming/ColorSchemes.cs)
+------------------------------------------------------------------------
+The four color schemes the application offers - Light, Light High Contrast,
+Dark and Dark Dimmed - are hand-authored for this application. No palette,
+theme file or color table was copied from anywhere; the names mirror the
+familiar choices an issue tracker's own appearance menu offers, and the values
+were chosen for this application's contrast requirements. They are original
+work and are covered by the repository's overall license, the Apache License,
+Version 2.0 (see the repository LICENSE file).
+
+------------------------------------------------------------------------
+Test fixtures  (tests/libs/GitHubIssueFinder.GitHub.Tests/Fixtures/*.json)
+------------------------------------------------------------------------
+The offline tests replay real GitHub API responses saved as JSON. The files
+are captured responses from the public, unauthenticated GitHub REST API,
+trimmed to the fields the code reads and edited where a case needed a
+particular value. They contain public issue, pull request and repository
+metadata - titles, numbers, dates, logins and label names - published by the
+repositories they came from. The rights to that content remain with its
+owners; it is included only so the tests can run without a network.
+
+------------------------------------------------------------------------
+GitHub data (read at run time)
+------------------------------------------------------------------------
+The application reads public issue, pull request and repository data from the
+GitHub REST API as an anonymous caller, and opens issue and repository pages
+in the user's browser. That content belongs to its owners and to GitHub; none
+of it is redistributed as part of this repository, and nothing is cached to
+disk.
+
+No further third-party attribution notices apply to this sample. Nothing
+third-party is vendored into this folder: no fonts, no images, no code.

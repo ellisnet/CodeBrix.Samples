@@ -26,7 +26,11 @@ conventions the code blocks follow.
 
 - [Declare a Skia page and bind with the platform Binding markup extension](#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension)
 - [Re-key theme brushes so controls dialogs and picker chrome follow your palette](#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette)
+- [Switch between several color schemes by mutating keyed brushes in place](#switch-between-several-color-schemes-by-mutating-keyed-brushes-in-place)
+- [Follow the operating system light and dark preference with a System default entry](#follow-the-operating-system-light-and-dark-preference-with-a-system-default-entry)
+- [Build a grouped list from group and row view models](#build-a-grouped-list-from-group-and-row-view-models)
 - [Dim a list row for an item the application cannot act on](#dim-a-list-row-for-an-item-the-application-cannot-act-on)
+- [Show a relative date with the exact one in a ToolTip](#show-a-relative-date-with-the-exact-one-in-a-tooltip)
 - [Format a value for display with an IValueConverter](#format-a-value-for-display-with-an-ivalueconverter)
 - [Highlight the selected button with a value converter](#highlight-the-selected-button-with-a-value-converter)
 - [Bind a scrubber and volume slider straight to the media element](#bind-a-scrubber-and-volume-slider-straight-to-the-media-element)
@@ -45,6 +49,7 @@ conventions the code blocks follow.
 - [Let the page do the layout arithmetic only it can do](#let-the-page-do-the-layout-arithmetic-only-it-can-do)
 - [Build menus and toolbars from a command model instead of XAML](#build-menus-and-toolbars-from-a-command-model-instead-of-xaml)
 - [Dispatch keyboard shortcuts from one page KeyDown handler](#dispatch-keyboard-shortcuts-from-one-page-keydown-handler)
+- [Bind a page level CheckBox two way](#bind-a-page-level-checkbox-two-way)
 - [Run a command when the user presses Enter in a text box](#run-a-command-when-the-user-presses-enter-in-a-text-box)
 - [Render a tool options toolbar from a descriptor model](#render-a-tool-options-toolbar-from-a-descriptor-model)
 - [Build a drawn widget as an SKXamlCanvas subclass with hit testing](#build-a-drawn-widget-as-an-skxamlcanvas-subclass-with-hit-testing)
@@ -59,6 +64,7 @@ conventions the code blocks follow.
 ## Related blueprints
 
 - [BLUEPRINTS-MVVM.md](BLUEPRINTS-MVVM.md) - the properties, SimpleCommand definitions and change notification that the markup here binds against
+- [BLUEPRINTS-ThemingAndStyling.md](BLUEPRINTS-ThemingAndStyling.md) - the decisions behind the brush keys these recipes declare: the palette as data, the repaint mechanism, the visual language, the glyph table and the capability probe
 - [BLUEPRINTS-GraphicsAndRendering.md](BLUEPRINTS-GraphicsAndRendering.md) - what actually gets painted inside the canvas elements these pages host
 - [BLUEPRINTS-AppStructureAndStartup.md](BLUEPRINTS-AppStructureAndStartup.md) - application-level resources, fonts and the per-head startup these pages assume
 - [BLUEPRINTS-TextEditing.md](BLUEPRINTS-TextEditing.md) - shaping, caret and selection geometry for a control that draws its own text
@@ -285,6 +291,494 @@ slider brushes so the audio scrubber follows the palette)
   looked at for a long time beside a moving picture, so the panels sit back and
   the picture is the only bright thing on screen.
 
+### Switch between several color schemes by mutating keyed brushes in place
+
+**When you want this.** The application offers the user more than the platform's two
+themes - several named palettes, light and dark - and switching between them has to
+repaint everything at once without losing a scroll position, a typed value or a search
+that is still running.
+
+**The MVVM shape.** The palettes are plain data in the shared library: one enum of
+choices, one record of ARGB numbers per scheme, and no drawing type anywhere. The page
+paints, through a small bridge interface declared beside the view model. Every color the
+application draws is a keyed `SolidColorBrush` declared once at application level, and
+applying a scheme assigns a new `Color` to the brush that is already in the dictionary.
+Mutating a brush repaints every `{StaticResource}` consumer in the same frame, including
+the stock control chrome and the list rows already realized, with nothing rebuilt.
+
+**Code.**
+
+The scheme table is numbers, with no UI type in the file:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/ColorSchemes.cs
+/// <summary>The light scheme.</summary>
+public static ColorSchemePalette Light { get; } = new ColorSchemePalette
+{
+    BaseIsDark = false,
+    Canvas = 0xFFFFFFFF,
+    CanvasSubtle = 0xFFF6F8FA,
+    CanvasInset = 0xFFF6F8FA,
+    Hairline = 0xFFD0D7DE,
+    // ... one value per role, twenty-four of them ...
+};
+
+// ... three more palettes in the same shape ...
+```
+
+A second table says which role each keyed brush carries, including the stock control keys
+the application re-keys:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/SchemeBrushMap.cs
+/// <summary>
+/// Which color role each keyed brush in App.xaml carries. Applying a scheme is walking this
+/// table, looking the key up in the resource dictionaries and assigning the role's color to the
+/// brush that is already there, which repaints every consumer without touching the markup.
+/// Keys whose color is the same in every scheme - the fully transparent faces and the dialog
+/// scrim - are deliberately absent, because nothing needs to be done to them.
+/// </summary>
+public static class SchemeBrushMap
+{
+    public static IReadOnlyDictionary<string, ColorRole> Entries { get; } =
+        new Dictionary<string, ColorRole>(StringComparer.Ordinal)
+        {
+            //The application's own role brushes.
+            { "CanvasBrush", ColorRole.Canvas },
+            { "CanvasSubtleBrush", ColorRole.CanvasSubtle },
+            // ...
+
+            //Button, which is both the secondary button and every clickable row.
+            { "ButtonBackground", ColorRole.ButtonFace },
+            { "ButtonBackgroundPointerOver", ColorRole.ButtonFaceHover },
+            { "ButtonBackgroundPressed", ColorRole.ButtonFacePressed },
+            { "ButtonBackgroundDisabled", ColorRole.ButtonFace },
+            // ...
+        };
+}
+```
+
+The view model owns the choice and calls the page through the bridge; the page does the
+painting:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+public interface IColorSchemeApplier
+{
+    void Apply(ColorSchemePalette palette, bool baseIsDark, bool followSystem);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml.cs
+/// <summary>
+/// Paints a color scheme: the element theme decides the chrome this application does not
+/// re-key, and every keyed brush the scheme drives is re-pointed in place, which repaints
+/// every consumer without a binding being raised.
+/// </summary>
+void IColorSchemeApplier.Apply(ColorSchemePalette palette, bool baseIsDark, bool followSystem)
+{
+    if (palette == null) { return; }
+
+    RootGrid.RequestedTheme = followSystem
+        ? ElementTheme.Default
+        : (baseIsDark ? ElementTheme.Dark : ElementTheme.Light);
+
+    Repoint(Application.Current?.Resources, palette);
+    Repoint(Resources, palette);
+}
+
+private static void Repoint(ResourceDictionary dictionary, ColorSchemePalette palette)
+{
+    if (dictionary == null) { return; }
+
+    foreach (var entry in SchemeBrushMap.Entries)
+    {
+        if (dictionary.TryGetValue(entry.Key, out var value) && value is SolidColorBrush brush)
+        {
+            PaletteBrushes.Repoint(brush, palette[entry.Value]);
+        }
+    }
+}
+```
+
+Re-pointing is one assignment, and it is what makes every consumer repaint:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/PaletteBrushes.cs
+/// <summary>
+/// Re-points an existing brush at another color, which repaints everything drawn with it.
+/// </summary>
+public static void Repoint(SolidColorBrush brush, uint argb)
+{
+    if (brush == null) { return; }
+    brush.Color = ToColor(argb);
+}
+```
+
+Some colors cannot be shared resources because they follow application state rather than
+the scheme - a status line that turns amber while something waits, a state glyph per row.
+Those brushes live on the view models and are re-pointed the same way, and the owner walks
+its children on a scheme change:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+private void ApplyCurrentScheme()
+{
+    var choice = _selectedScheme?.Scheme ?? ColorScheme.SystemDefault;
+    var palette = ColorSchemes.Get(ColorSchemes.Resolve(choice, _osPrefersDark));
+    CurrentPalette = palette;
+
+    _schemeApplier?.Apply(palette, palette.BaseIsDark, choice == ColorScheme.SystemDefault);
+
+    RepaintOwnBrushes();
+    foreach (var group in Groups)
+    {
+        group.ApplyPalette(palette);
+    }
+}
+```
+
+**Where to look.**
+`GitHubIssueFinder/src/GitHubIssueFinder.UI/App.xaml`
+`GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/SchemeBrushMap.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/ColorSchemes.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/PaletteBrushes.cs`
+
+**Related.**
+[Re-key theme brushes so controls dialogs and picker chrome follow your palette](#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette)
+is the static half of this: which keys to declare and where. This recipe is what to do
+when the values have to change while the application runs.
+
+**Sharp edges.**
+- Declare the brushes at application level, after the merged control resources and in the
+  same dictionary. That is what makes them win over the theme's own values, and it is the
+  only place the popup layer can see them.
+- Mutate the brush; do not replace it. Putting a new `SolidColorBrush` under the same key
+  leaves every consumer holding the old object.
+- Each control family needs every state key - normal, pointer-over, pressed, disabled - in
+  the map, or a disabled button keeps the stock theme's color while everything around it
+  changes.
+- Set the element theme as well as the values. It governs the residue the application does
+  not re-key: focus visuals, the caret and selection highlight, tooltips and the popup
+  layer.
+- A `TextBox` placeholder reaches its color through a binding whose fallback is a theme
+  resource, and that fallback does not survive an element-theme change at run time - the
+  placeholder text disappears for good. Set `PlaceholderForeground` explicitly to a brush
+  you own.
+- `Application.RequestedTheme` cannot change after startup, so the popup layer keeps the
+  family it launched with. Re-key the dialog brushes anyway and the surfaces still follow
+  the scheme.
+
+### Follow the operating system light and dark preference with a System default entry
+
+**When you want this.** Your theme picker should open on "System default", follow the
+desktop's own light or dark preference while it is selected, and stop following it
+completely the moment the user picks something explicit.
+
+**The MVVM shape.** The choice is an enum value like any other, and a `Resolve` helper
+turns it into a real scheme using a single boolean the page supplies. The page owns the
+platform side: it reads the preference from `UISettings`, keeps that instance alive, and
+tells the view model when it changes. The one rule that decides everything else is that
+setting `Application.RequestedTheme` at all is what makes the platform stop following the
+operating system - so for the system choice it is never set.
+
+**Code.**
+
+The choice resolves to a scheme; nothing else in the application has to know about the
+operating system:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/ColorSchemes.cs
+public static ColorScheme Resolve(ColorScheme choice, bool osPrefersDark) =>
+    choice == ColorScheme.SystemDefault
+        ? (osPrefersDark ? ColorScheme.Dark : ColorScheme.Light)
+        : choice;
+
+public static string DisplayName(ColorScheme choice, bool osPrefersDark) => choice switch
+{
+    ColorScheme.SystemDefault => osPrefersDark ? "System default (Dark)" : "System default (Light)",
+    ColorScheme.Light => "Light",
+    ColorScheme.LightHighContrast => "Light High Contrast",
+    ColorScheme.Dark => "Dark",
+    ColorScheme.DarkDimmed => "Dark Dimmed",
+    _ => choice.ToString(),
+};
+```
+
+The `App` constructor sets the application theme only for an explicit choice:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/App.xaml.cs
+//Application.RequestedTheme may be set only here, before initialization completes, and
+//setting it at all is what makes the platform stop following the operating system. So it
+//is left alone for the "System default" choice and set for every explicit one.
+var scheme = ColorSchemes.Parse(
+    SettingsService.Get(SettingKeys.ColorScheme, nameof(ColorScheme.SystemDefault)));
+if (scheme != ColorScheme.SystemDefault)
+{
+    this.RequestedTheme = ColorSchemes.Get(scheme).BaseIsDark
+        ? ApplicationTheme.Dark
+        : ApplicationTheme.Light;
+}
+```
+
+The page watches the operating system and hands the answer to the view model. The
+`UISettings` instance has to be a field:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml.cs
+//Kept in a field on purpose: the platform holds only a weak reference to a UISettings, so a
+//local one would be collected and the operating system's theme changes would stop arriving.
+private readonly UISettings _systemColors = new UISettings();
+
+public MainPage()
+{
+    DataContextChanged += (_, _) =>
+    {
+        //Give the view model's dialog helpers a XamlRoot to attach to, and hand it the page
+        //as the thing that can paint a color scheme.
+        (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
+        (DataContext as MainViewModel)?.AttachSchemeApplier(this, SystemPrefersDark());
+    };
+
+    _systemColors.ColorValuesChanged += (_, _) => DispatcherQueue.TryEnqueue(() =>
+        (DataContext as MainViewModel)?.OnSystemThemeChanged(SystemPrefersDark()));
+
+    this.InitializeComponent(); //Leave this line last
+}
+
+//The operating system reports its preference as the color it would paint a window with.
+private bool SystemPrefersDark()
+{
+    var background = _systemColors.GetColorValue(UIColorType.Background);
+    var brightness = (background.R * 0.299d) + (background.G * 0.587d) + (background.B * 0.114d);
+    return brightness < 128d;
+}
+```
+
+The view model repaints only when the system choice is the one selected, and replaces the
+picker entry rather than renaming it:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+public void OnSystemThemeChanged(bool osPrefersDark)
+{
+    if (_osPrefersDark == osPrefersDark) { return; }
+
+    _osPrefersDark = osPrefersDark;
+    RefreshSchemeNames();
+
+    if (_selectedScheme != null && _selectedScheme.Scheme == ColorScheme.SystemDefault)
+    {
+        ApplyCurrentScheme();
+    }
+}
+
+private void RefreshSchemeNames()
+{
+    for (var index = 0; index < SchemeOptions.Count; index++)
+    {
+        var option = SchemeOptions[index];
+        var wanted = ColorSchemes.DisplayName(option.Scheme, _osPrefersDark);
+        if (string.Equals(option.DisplayName, wanted, StringComparison.Ordinal)) { continue; }
+
+        //The entry is replaced rather than renamed, because the picker's closed face reads
+        //its item once and would otherwise keep showing the old text.
+        var replacement = new ColorSchemeOptionViewModel(option.Scheme, _osPrefersDark);
+        var wasSelected = ReferenceEquals(_selectedScheme, option);
+        SchemeOptions[index] = replacement;
+
+        if (wasSelected)
+        {
+            _selectedScheme = replacement;
+            NotifyPropertyChanged(nameof(SelectedScheme));
+        }
+    }
+}
+```
+
+**Where to look.**
+`GitHubIssueFinder/src/GitHubIssueFinder.UI/App.xaml.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/ColorSchemes.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs`
+
+**Sharp edges.**
+- Keep the `UISettings` in a field. The platform holds a weak reference to it, so a local
+  one is collected and the notifications quietly stop.
+- `ColorValuesChanged` does not arrive on the UI thread. Enqueue on the dispatcher before
+  touching anything bound.
+- Set `Application.RequestedTheme` in the `App` constructor or not at all. Leaving it unset
+  is the mechanism that keeps the platform following the desktop, and setting it is the
+  mechanism that stops it - there is no third state, and it cannot be changed later.
+- Replace the entry that names the resolved theme, do not rename it in place. A picker's
+  closed face reads its item once and does not listen for a property change on it.
+- On Linux the preference comes from the desktop portal's appearance setting, and which
+  desktop component serves that setting varies. On a Cinnamon session it is
+  `org.x.apps.portal color-scheme` that the portal reports, not
+  `org.gnome.desktop.interface color-scheme`; changing the latter has no effect on what the
+  application sees. If the portal is missing entirely the platform assumes light.
+
+### Build a grouped list from group and row view models
+
+**When you want this.** Results belong under headings - files under a folder, issues
+under a repository, messages under a day - and the headings and the rows are both
+clickable.
+
+**The MVVM shape.** Two item view models. The group carries its heading, its count and
+an `ObservableCollection` of rows; the row carries everything its own line draws, worked
+out once in its constructor. The page is an outer `ListView` bound to the groups whose
+item template holds the heading and an inner `ItemsControl` bound to that group's rows.
+Selection is off: nothing here is selected, only clicked, so each heading and each row is
+a stretched transparent `Button` whose `Command` is the item's own.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/RepositoryGroupViewModel.cs
+[Microsoft.UI.Xaml.Data.Bindable]
+public class RepositoryGroupViewModel : SimpleViewModel
+{
+    public RepositoryGroupViewModel(string fullName, string htmlUrl, Func<string, Task> openUrlAsync)
+    {
+        FullName = fullName ?? string.Empty;
+        Url = htmlUrl ?? string.Empty;
+        _openUrlAsync = openUrlAsync;
+        Rows = new ObservableCollection<IssueRowViewModel>();
+        CountText = "0";
+    }
+
+    public string FullName { get; }
+
+    public ObservableCollection<IssueRowViewModel> Rows { get; }
+
+    public string CountText
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    }
+
+    public SimpleCommand OpenCommand => _openCommand ??=
+        new SimpleCommand((Func<object, Task>)(_ => OpenAsync()));
+
+    public void Add(IssueRowViewModel row)
+    {
+        if (row == null) { return; }
+
+        Rows.Add(row);
+        CountText = Rows.Count.ToString("N0", CultureInfo.InvariantCulture);
+    }
+}
+```
+
+The row does its formatting once, so the template binds to plain strings and
+visibilities and a list of thousands of rows stays cheap:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/IssueRowViewModel.cs
+public IssueRowViewModel(IssueItem item, ColorSchemePalette palette, bool showAssignees,
+    DateTimeOffset now, Func<string, Task> openUrlAsync)
+{
+    if (item == null) { throw new ArgumentNullException(nameof(item)); }
+
+    _openUrlAsync = openUrlAsync;
+
+    Url = item.HtmlUrl ?? string.Empty;
+    Title = item.Title ?? string.Empty;
+    IsPullRequest = item.Kind == IssueKind.PullRequest;
+    PullRequestChipVisibility = GetVisibility(IsPullRequest);
+
+    CommentCountText = item.CommentCount.ToString("N0", CultureInfo.InvariantCulture);
+    CommentVisibility = GetVisibility(item.CommentCount > 0);
+
+    MetaText = BuildMeta(item, showAssignees, now);
+    MetaToolTip = BuildToolTip(item);
+
+    (StateGlyph, _stateRole) = DescribeState(item);
+    // ... build the label pills ...
+}
+```
+
+The markup is one template inside another. The outer list turns selection off and
+flattens its containers so the group draws edge to edge:
+
+```xml
+<!-- From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml -->
+<ListView Visibility="{d:Binding ResultsVisibility}"
+          SelectionMode="None"
+          ItemsSource="{d:Binding Groups}"
+          Padding="0"
+          HorizontalContentAlignment="Stretch">
+  <ListView.ItemContainerStyle>
+    <ui:Style TargetType="c:ListViewItem"
+              BasedOn="{StaticResource DefaultListViewItemStyle}">
+      <ui:Setter Property="Padding" Value="0" />
+      <ui:Setter Property="MinHeight" Value="0" />
+      <ui:Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </ui:Style>
+  </ListView.ItemContainerStyle>
+  <ListView.ItemTemplate>
+    <ui:DataTemplate>
+      <StackPanel>
+        <!-- The group header is itself a button, so hover and
+             press come from the re-keyed Button brushes. -->
+        <Button HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                Background="{StaticResource CanvasSubtleBrush}"
+                BorderBrush="{StaticResource HairlineMutedBrush}"
+                BorderThickness="0,0,0,1"
+                CornerRadius="0" Padding="16,8"
+                Command="{d:Binding OpenCommand}">
+          <!-- ... the repository glyph, its name, the count pill ... -->
+        </Button>
+
+        <ItemsControl ItemsSource="{d:Binding Rows}">
+          <ItemsControl.ItemTemplate>
+            <ui:DataTemplate>
+              <Button HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Stretch"
+                      Background="{StaticResource TransparentBrush}"
+                      BorderBrush="{StaticResource HairlineMutedBrush}"
+                      BorderThickness="0,0,0,1"
+                      CornerRadius="0" Padding="16,10"
+                      ToolTipService.ToolTip="{d:Binding MetaToolTip}"
+                      Command="{d:Binding OpenCommand}">
+                <!-- ... the state glyph, the title and its label pills, the meta line ... -->
+              </Button>
+            </ui:DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </ui:DataTemplate>
+  </ListView.ItemTemplate>
+</ListView>
+```
+
+**Where to look.**
+`GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/RepositoryGroupViewModel.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/IssueRowViewModel.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs`
+
+**Sharp edges.**
+- Fill a new group before it goes into the bound collection. A group inserted empty and
+  filled a moment later can be measured while it is still empty, and draws as a bare
+  heading until something else forces a fresh layout.
+- Both item view models need `[Microsoft.UI.Xaml.Data.Bindable]`, not just the page's
+  view model.
+- A template binds to its own item, so put the command on the item. A group's command and
+  a row's command can both be called `OpenCommand` and each template gets the right one.
+- Flatten the `ListViewItem` container - zero padding, zero minimum height, stretched
+  content - or the theme's own row metrics show through as gaps between your groups.
+- From the second time the list is filled onwards, the platform reports one binding
+  resolution per property of the inner templates against the outer item type - the row
+  template resolved once against a group, the label template once against a row - as it
+  recycles containers between items. It is logged at error level in a Debug build, once
+  per name, and never grows with the number of rows; every value on screen is correct.
+  Bind each template only to members of its own item type and let it be.
+
 ### Dim a list row for an item the application cannot act on
 
 **When you want this.** Some rows in a list are still selectable and still useful,
@@ -335,6 +829,99 @@ dims together.
   prefix is separate from the one for your own converters.
 - Naming the row element lets a scripted run walk the visual tree and read the
   opacity actually applied, rather than trusting the converter.
+
+### Show a relative date with the exact one in a ToolTip
+
+**When you want this.** A list reads better with "3 days ago" than with a
+timestamp, and the exact moment still has to be reachable without leaving the
+row.
+
+**The MVVM shape.** The row view model builds both strings once, in its
+constructor: the relative phrase for the line it draws, and a multi-line exact
+form for the tooltip. The phrasing itself is a plain static helper in the
+UI-free library that takes the current moment as a parameter, so it is testable
+and so every row folded from one page of results measures from the same instant.
+The markup binds the tooltip to the row's outermost element.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Helpers/RelativeTime.cs
+/// <summary>
+/// Turns a moment into the short phrase GitHub shows beside an issue, for example
+/// "3 days ago". Plain text work with the clock passed in, so it is straightforward to test.
+/// </summary>
+public static class RelativeTime
+{
+    public static string Describe(DateTimeOffset when, DateTimeOffset now)
+    {
+        var elapsed = now - when;
+        if (elapsed < TimeSpan.Zero) { return "just now"; }
+        if (elapsed.TotalSeconds < 60d) { return "just now"; }
+
+        var minutes = (int)elapsed.TotalMinutes;
+        if (minutes < 60) { return Phrase(minutes, "minute"); }
+
+        // ... hours, then "yesterday", then days, weeks, months and years ...
+    }
+}
+```
+
+The row builds the visible line and the tooltip beside each other, so the two
+cannot describe different fields:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/IssueRowViewModel.cs
+private static string BuildToolTip(IssueItem item)
+{
+    var text = new StringBuilder();
+    text.Append("Opened ").Append(item.CreatedAt.ToLocalTime().ToString("f", CultureInfo.CurrentCulture));
+    text.Append("\nUpdated ").Append(item.UpdatedAt.ToLocalTime().ToString("f", CultureInfo.CurrentCulture));
+
+    if (item.ClosedAt.HasValue)
+    {
+        text.Append("\nClosed ")
+            .Append(item.ClosedAt.Value.ToLocalTime().ToString("f", CultureInfo.CurrentCulture));
+    }
+
+    return text.ToString();
+}
+```
+
+The tooltip goes on the row itself, which here is the button the whole row is
+made of:
+
+```xml
+<!-- From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml -->
+<Button HorizontalAlignment="Stretch"
+        HorizontalContentAlignment="Stretch"
+        Background="{StaticResource TransparentBrush}"
+        BorderBrush="{StaticResource HairlineMutedBrush}"
+        BorderThickness="0,0,0,1"
+        CornerRadius="0" Padding="16,10"
+        ToolTipService.ToolTip="{d:Binding MetaToolTip}"
+        Command="{d:Binding OpenCommand}">
+```
+
+**Where to look.**
+`GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Helpers/RelativeTime.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/IssueRowViewModel.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml`
+`GitHubIssueFinder/tests/libs/GitHubIssueFinder.GitHub.Tests/RelativeTimeTests.cs`
+
+**Sharp edges.**
+- Pass the clock in rather than reading it inside the helper. That is what makes
+  the phrasing testable without waiting, and it is what stops rows folded from one
+  page disagreeing about what "now" was.
+- Build both strings once in the constructor. A converter would run again on every
+  realization of a recycled row, for a value that cannot change.
+- Put the tooltip on the row's outermost element so it appears wherever in the row
+  the pointer rests, not only over the line of text it describes.
+- Show the exact form in local time and in the running culture, and keep the
+  relative form in words that need no culture at all.
+- The relative phrase is an approximation by design - months of thirty days, years
+  of three hundred and sixty-five - and saying so in the helper is honest, because
+  the exact value is one hover away.
 
 ### Format a value for display with an IValueConverter
 
@@ -1929,6 +2516,86 @@ AddHandler(UIElement.KeyUpEvent, new KeyEventHandler(OnGlobalKeyUp), handledEven
   were not bound.
 - Duplicate accelerators resolve first-registration-wins, deliberately.
 
+### Bind a page level CheckBox two way
+
+**When you want this.** A checkbox on the page is one of the inputs to a command, and its
+value has to be readable by the view model, settable from code, and remembered between
+runs.
+
+**The MVVM shape.** `IsChecked` binds `TwoWay` to a plain `bool` property with
+`{d:Binding}`, exactly like a `TextBox`. The property does whatever else has to happen -
+persisting the value, refreshing computed text - in its setter, and
+`[AffectsProperties]` refreshes anything derived from it. The tick box follows the
+application palette because the checkbox brush keys are re-keyed like every other control
+family.
+
+**Code.**
+
+```xml
+<!-- From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml -->
+<CheckBox Content="Include closed issues" FontSize="13" TabIndex="3"
+          Margin="0,3,14,3" VerticalAlignment="Center"
+          IsChecked="{d:Binding IncludeClosed, Mode=TwoWay}" />
+```
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+/// <summary>Whether closed issues and pull requests are searched as well as open ones.</summary>
+[AffectsProperties(nameof(HelperText))]
+public bool IncludeClosed
+{
+    get => _includeClosed;
+    set
+    {
+        if (_includeClosed == value) { return; }
+
+        _includeClosed = value;
+        NotifyPropertyChanged(nameof(IncludeClosed));
+        SettingsService.Set(SettingKeys.IncludeClosed, value);
+    }
+}
+```
+
+The value is read back in the constructor into the field rather than through the property,
+so opening the application does not write the stored value straight back:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+_includeClosed = SettingsService.Get(SettingKeys.IncludeClosed, false);
+```
+
+Its tick follows the scheme because the checkbox keys are in the brush map with the rest:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/SchemeBrushMap.cs
+//CheckBox: the tick box, its stroke and the tick itself.
+{ "CheckBoxForegroundUnchecked", ColorRole.TextPrimary },
+// ...
+{ "CheckBoxCheckBackgroundFillChecked", ColorRole.Accent },
+{ "CheckBoxCheckBackgroundFillCheckedPointerOver", ColorRole.Accent },
+{ "CheckBoxCheckBackgroundFillCheckedPressed", ColorRole.Accent },
+{ "CheckBoxCheckBackgroundFillCheckedDisabled", ColorRole.Hairline },
+{ "CheckBoxCheckBackgroundStrokeUnchecked", ColorRole.Hairline },
+// ...
+```
+
+**Where to look.**
+`GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/SchemeBrushMap.cs`
+
+**Sharp edges.**
+- `Mode=TwoWay` is not the default for `IsChecked`. Without it the box moves on screen and
+  the view model never hears about it.
+- Read the stored value into the backing field in the constructor, not through the
+  property. Going through the setter writes the value back to the store on every launch
+  and raises a change notification before anything is bound.
+- A checkbox is not a text box: pressing Enter on it does not run the page's default
+  action, because the Enter handler is on the text boxes. Say so, or handle the key on the
+  page.
+- Re-key the whole `CheckBox*` family, not just the checked fill, or the box wears the
+  stock accent while the rest of the page follows your palette.
+
 ### Run a command when the user presses Enter in a text box
 
 **When you want this.** Enter in a search box should do what the Search button
@@ -1966,13 +2633,65 @@ private void SearchBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedE
 }
 ```
 
+A page often wants a second key that means the same thing wherever the focus is.
+That one belongs on the root element rather than on each control. Here Enter runs
+the search from either text box, and Escape cancels a running search from anywhere
+on the page:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml.cs
+//Pressing Enter in either box runs Search, exactly as clicking the button does. The
+//CanExecute check matters: a key handler would otherwise walk past the disabled state that a
+//button honours.
+private void OnSearchBoxKeyDown(object sender, KeyRoutedEventArgs e)
+{
+    if (e.Key != Windows.System.VirtualKey.Enter) { return; }
+
+    if (DataContext is MainViewModel { SearchCommand: var search }
+        && search != null
+        && search.CanExecute(null))
+    {
+        search.Execute(null);
+        e.Handled = true;
+    }
+}
+
+//Escape stops a running search from anywhere on the page.
+private void OnRootKeyDown(object sender, KeyRoutedEventArgs e)
+{
+    if (e.Key != Windows.System.VirtualKey.Escape) { return; }
+
+    if (DataContext is MainViewModel { CancelCommand: var cancel }
+        && cancel != null
+        && cancel.CanExecute(null))
+    {
+        cancel.Execute(null);
+        e.Handled = true;
+    }
+}
+```
+
+```xml
+<!-- From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml -->
+<Grid x:Name="RootGrid" Background="{StaticResource CanvasBrush}" KeyDown="OnRootKeyDown">
+```
+
 **Where to look.**
 `WikipediaPublisher/WikipediaPublisher.Wpf/Views/MainWindow.xaml`
 `WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml`
 
 **Sharp edges.**
 - Check `CanExecute` before invoking; a key handler bypasses the disabled state a
   button would have honored.
+- Enter means "do the default thing for this box", so it stays on the boxes. A key
+  that means the same thing everywhere - Escape for cancel - goes on the root
+  element's `KeyDown` instead, and then works whatever has focus.
+- Match the command out of the data context and check it for null as well. A page
+  can raise a key event while its data context is still being set.
+- Say in the interface which keys do what where. Enter on a checkbox does not run
+  the page's default action, because the Enter handler is on the text boxes.
 
 ### Render a tool options toolbar from a descriptor model
 

@@ -32,7 +32,9 @@ conventions the code blocks follow.
 - [Build a typed REST client with source generated JSON and its own exceptions](#build-a-typed-rest-client-with-source-generated-json-and-its-own-exceptions)
 - [Call a REST API behind a service interface the view model resolves](#call-a-rest-api-behind-a-service-interface-the-view-model-resolves)
 - [Pace outbound API calls with a rate gate](#pace-outbound-api-calls-with-a-rate-gate)
+- [Throttle from the rate limit headers an API sends back](#throttle-from-the-rate-limit-headers-an-api-sends-back)
 - [Be a polite HTTP client to a public API](#be-a-polite-http-client-to-a-public-api)
+- [Fall back to one search per repository when a search API caps its results](#fall-back-to-one-search-per-repository-when-a-search-api-caps-its-results)
 - [Normalize a user entered ID or URL before calling an API](#normalize-a-user-entered-id-or-url-before-calling-an-api)
 - [Resolve an ID that may be one of several object kinds](#resolve-an-id-that-may-be-one-of-several-object-kinds)
 - [Read a nested tree from an API with a cycle guard](#read-a-nested-tree-from-an-api-with-a-cycle-guard)
@@ -866,6 +868,225 @@ internal sealed class NotionRateGate : IDisposable
   the UI context.
 - The interval is measured from call completion, not call start.
 
+### Throttle from the rate limit headers an API sends back
+
+**When you want this.** A public API publishes a rate limit, reports what is left of it
+in every response, and refuses you outright when you overrun it. You want to stay inside
+the limit without guessing, and you want to test the waiting without waiting.
+
+**The MVVM shape.** One throttle object per quota pool, owned by the service and
+invisible to the view model. It trusts the response headers first, because they account
+for every other caller sharing the address, and falls back to a sliding count of its own
+calls before the first response has arrived. It takes a `TimeProvider`, so a test can run
+its waits on a fake clock.
+
+**Code.**
+
+The gate: the headers decide, then the local count, and only then is the call counted and
+made.
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/RateLimitThrottle.cs
+//Waits until a call may be made, then counts it. Both waits report themselves once a
+//second through reportWait, which may be null when nobody is listening.
+internal async Task AcquireAsync(Action<TimeSpan, DateTimeOffset> reportWait,
+    CancellationToken cancellationToken)
+{
+    await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+    try
+    {
+        //The headers win: GitHub knows about every other caller on this address.
+        var snapshot = Reported;
+        if (snapshot != null && snapshot.Remaining <= 1
+            && _timeProvider.GetUtcNow() < snapshot.ResetAt)
+        {
+            await DelayUntilAsync(snapshot.ResetAt + ResetGrace, reportWait, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        //Then the local count, which is all there is to go on before the first response.
+        while (true)
+        {
+            DateTimeOffset oldest;
+            lock (_issued)
+            {
+                Trim(_timeProvider.GetUtcNow());
+                if (_issued.Count < Ceiling) { break; }
+                oldest = _issued.Peek();
+            }
+
+            await DelayUntilAsync(oldest + Window, reportWait, cancellationToken).ConfigureAwait(false);
+        }
+
+        RecordIssued();
+    }
+    finally
+    {
+        _gate.Release();
+    }
+}
+```
+
+Every response refreshes what the pool reports, and a response with no rate-limit headers
+leaves the last reading in place rather than pretending the pool is unknown:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/RateLimitThrottle.cs
+internal void UpdateFrom(HttpResponseHeaders headers)
+{
+    if (headers == null) { return; }
+    if (!TryReadLong(headers, LimitHeaderName, out var limit)) { return; }
+    if (!TryReadLong(headers, RemainingHeaderName, out var remaining)) { return; }
+    if (!TryReadLong(headers, ResetHeaderName, out var reset)) { return; }
+
+    Reported = new RateLimitSnapshot((int)limit, (int)remaining, Ceiling,
+        DateTimeOffset.FromUnixTimeSeconds(reset));
+}
+```
+
+What the application *displays* is not the raw header value. It is worked out on every
+read, so a budget pill reaches zero exactly when the throttle starts waiting and climbs
+back on its own:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/RateLimitThrottle.cs
+internal RateLimitSnapshot Snapshot
+{
+    get
+    {
+        var reported = Reported;
+        if (reported == null) { return null; }
+
+        //Past the reset moment GitHub's pool has refilled, so the number the last response
+        //carried is stale and the pool is full again.
+        var reportedLeft = _timeProvider.GetUtcNow() >= reported.ResetAt
+            ? reported.Limit
+            : reported.Remaining;
+
+        var left = Ceiling - IssuedInWindow;
+        if (left < 0) { left = 0; }
+        if (reportedLeft < left) { left = reportedLeft; }
+        if (left < 0) { left = 0; }
+
+        return new RateLimitSnapshot(reported.Limit, left, Ceiling, reported.ResetAt);
+    }
+}
+```
+
+A refusal is still handled, because another caller on the same address can empty the pool
+between the last response and this call. The retry waits once, counts itself in, and sends
+again; a second refusal becomes a typed exception naming the reset time.
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/GitHubIssueSearchService.cs
+//One call, with everything the rate limits ask of it: wait for a slot, send, take the
+//new pool figures from the headers, and give a refusal exactly one second chance.
+private async Task<string> GetAsync(string relativeUrl, RateLimitThrottle throttle, string owner,
+    SearchState state, IProgress<SearchProgress> progress, CancellationToken cancellationToken)
+{
+    ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+    var reportWait = BuildWaitReporter(progress, state);
+    var absoluteUrl = new Uri(_httpClient.BaseAddress, relativeUrl).AbsoluteUri;
+
+    await throttle.AcquireAsync(reportWait, cancellationToken).ConfigureAwait(false);
+    var attempt = await SendOnceAsync(relativeUrl, absoluteUrl, throttle, cancellationToken)
+        .ConfigureAwait(false);
+    if (attempt.IsSuccess) { return attempt.Body; }
+
+    if (attempt.IsRateLimitRefusal)
+    {
+        var until = attempt.RetryAfter.HasValue
+            ? TimeProvider.GetUtcNow() + attempt.RetryAfter.Value
+            : ResetMoment(throttle);
+
+        await throttle.DelayUntilAsync(until, reportWait, cancellationToken).ConfigureAwait(false);
+
+        //The wait replaced the gate, so the retry only has to be counted.
+        throttle.RecordIssued();
+        attempt = await SendOnceAsync(relativeUrl, absoluteUrl, throttle, cancellationToken)
+            .ConfigureAwait(false);
+        if (attempt.IsSuccess) { return attempt.Body; }
+    }
+
+    throw BuildException(attempt, absoluteUrl, throttle, owner);
+}
+```
+
+**The test technique.** The clock seam is a `TimeProvider` on the internal constructor.
+The test double is a real `TimeProvider` subclass that treats being asked for a timer as
+being asked to wait: it records the wait, jumps its own clock to the due moment, and hands
+the callback to the thread pool. A test of an hour-long wait finishes in a millisecond,
+against the shipping code unchanged, and can then assert on how long the code *believed* it
+waited.
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/tests/libs/GitHubIssueFinder.GitHub.Tests/RateLimitThrottleTests.cs
+[Fact]
+public async Task the_snapshot_climbs_back_as_the_window_slides()
+{
+    //Arrange
+    var clock = new FakeTimeProvider(Start);
+    var throttle = new RateLimitThrottle("search", 3, Minute, clock);
+    await throttle.AcquireAsync(null, TestContext.Current.CancellationToken);
+    throttle.UpdateFrom(Headers(10, 9, Start.AddSeconds(60)));
+    throttle.Snapshot.Remaining.Should().Be(2);
+
+    //Act - the call ages out of the window
+    clock.Advance(TimeSpan.FromSeconds(61));
+
+    //Assert
+    throttle.Snapshot.Remaining.Should().Be(3);
+}
+```
+
+One case still proves the real clock, so the fake cannot hide a mistake in the waiting
+itself:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/tests/libs/GitHubIssueFinder.GitHub.Tests/RateLimitThrottleTests.cs
+[Fact]
+public async Task a_run_at_the_ceiling_on_the_real_clock_really_waits()
+{
+    //Arrange - a one second window, so the wall clock proves the point in a moment
+    var throttle = new RateLimitThrottle("search", 1, TimeSpan.FromSeconds(1), TimeProvider.System);
+    await throttle.AcquireAsync(null, TestContext.Current.CancellationToken);
+    var watch = Stopwatch.StartNew();
+
+    //Act
+    await throttle.AcquireAsync(null, TestContext.Current.CancellationToken);
+    watch.Stop();
+
+    //Assert - the second call waited out the window instead of going straight through
+    watch.Elapsed.Should().BeGreaterThan(TimeSpan.FromMilliseconds(900));
+}
+```
+
+**Where to look.**
+`GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/RateLimitThrottle.cs`
+`GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/GitHubIssueSearchService.cs`
+`GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Models/RateLimitSnapshot.cs`
+`GitHubIssueFinder/tests/libs/GitHubIssueFinder.GitHub.Tests/TestDoubles/FakeTimeProvider.cs`
+
+**Related.**
+[Pace outbound API calls with a rate gate](#pace-outbound-api-calls-with-a-rate-gate) is
+the simpler shape for an API that publishes a rate but does not report what is left.
+
+**Sharp edges.**
+- Hold yourself one call below the published ceiling. The last call in a pool is the one
+  every other process sharing your address is also about to take.
+- Keep two numbers apart: what the server reported, and what your own budget allows. The
+  wait decisions want the first; the display wants the smaller of the two, or the pill
+  says one call is available at the moment you start waiting.
+- Give the reset moment a second of grace. Your clock and the server's are never exactly
+  the same, and coming back a moment early is a refusal.
+- One throttle per pool, not one per client. Two pools with different windows - a
+  per-minute search allowance and a per-hour general one - are two objects, and the work
+  that spends one must not be able to starve the other.
+- `Task.Delay(slice, timeProvider, token)` takes the provider, so the fake clock reaches
+  the delay as well as the arithmetic. A `Task.Delay` without it is a real wait no test
+  can skip.
+
 ### Be a polite HTTP client to a public API
 
 **When you want this.** You are downloading many files from someone else's servers
@@ -947,6 +1168,143 @@ consumers to identify themselves)
   callers cannot bypass it.
 - The owning service disposes the client, and the client disposes both the HTTP
   client and the semaphore.
+
+### Fall back to one search per repository when a search API caps its results
+
+**When you want this.** A search endpoint tells you how many matches there are but will
+only ever serve the first N of them, and your user's query is bigger than N. Paging
+harder does not help: past the cap the endpoint refuses the page outright.
+
+**The MVVM shape.** The service reads the total from page one and picks a plan. Under
+the cap it walks the pages. Over the cap it throws that page away, enumerates the
+smaller units the query can be split into - here, the owner's repositories - and runs the
+same query against each of them in turn. Both plans yield the same page type on the same
+stream, so nothing above the service knows which plan ran.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/GitHubIssueSearchService.cs
+private async IAsyncEnumerable<IssueSearchPage> SearchInternalAsync(IssueSearchRequest request,
+    IProgress<SearchProgress> progress, [EnumeratorCancellation] CancellationToken cancellationToken)
+{
+    var state = new SearchState();
+    Report(progress, SearchPhase.Starting, state);
+
+    var firstUrl = IssueSearchQueryBuilder.BuildSearchUrl(request, 1);
+    var first = await GetSearchAsync(firstUrl, request.Owner, state, progress, cancellationToken)
+        .ConfigureAwait(false);
+    state.Total = first.TotalCount;
+
+    if (first.TotalCount > SearchResultCap)
+    {
+        //Past the cap the whole-owner search can never reach the end, so this first page
+        //is thrown away and the work starts again one repository at a time. The total
+        //stays as it was: it is still the number of matches the user is waiting for.
+        await foreach (var page in SearchByRepositoryAsync(request, state, progress, cancellationToken)
+            .ConfigureAwait(false))
+        {
+            yield return page;
+        }
+    }
+    else
+    {
+        await foreach (var page in WalkAsync(request, null, first, state, progress, cancellationToken)
+            .ConfigureAwait(false))
+        {
+            yield return page;
+        }
+    }
+
+    Report(progress, SearchPhase.Completed, state);
+}
+```
+
+The second plan lists the units, drops the ones that cannot hold a match, and runs the
+same walk against each. Listing is a different API with a different quota pool, so it
+goes through a different throttle:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/GitHubIssueSearchService.cs
+//The plan for an owner with more matches than one search can return: list the owner's
+//repositories, drop the ones that cannot hold a match, and search what is left one at a
+//time. The core pool pays for the listing, the search pool for the searches.
+private async IAsyncEnumerable<IssueSearchPage> SearchByRepositoryAsync(IssueSearchRequest request,
+    SearchState state, IProgress<SearchProgress> progress,
+    [EnumeratorCancellation] CancellationToken cancellationToken)
+{
+    var repositories = await ListRepositoriesAsync(request, state, progress, cancellationToken)
+        .ConfigureAwait(false);
+
+    foreach (var repository in repositories)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await foreach (var page in WalkAsync(request, repository, null, state, progress, cancellationToken)
+            .ConfigureAwait(false))
+        {
+            yield return page;
+        }
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/GitHubIssueSearchService.cs
+foreach (var repository in repositories)
+{
+    if (repository == null || string.IsNullOrWhiteSpace(repository.FullName)) { continue; }
+    if (repository.Archived || !repository.HasIssues) { continue; }
+
+    //A repository with nothing open cannot answer an open-items search; it can
+    //still answer one that includes closed items.
+    if (repository.OpenIssuesCount <= 0 && !request.IncludeClosed) { continue; }
+
+    kept.Add(repository);
+}
+```
+
+The cap still applies to each unit, so the page walk stops at the last servable page
+rather than asking for one the endpoint will refuse:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/GitHubIssueSearchService.cs
+if (pageNumber == 1)
+{
+    //However many matches there are, GitHub serves only the first thousand of
+    //them, so the walk stops at the tenth page even when the total is larger.
+    //A whole-owner search never gets here with a larger total, but one
+    //repository inside the per-repository plan can.
+    total = response.TotalCount > SearchResultCap ? SearchResultCap : response.TotalCount;
+}
+```
+
+One query builder writes both queries, so the two plans cannot drift apart:
+
+```csharp
+// Adapted from CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/IssueSearchQueryBuilder.cs
+// user:{owner} is:open no:assignee          the whole owner
+// repo:{owner}/{name} is:open no:assignee   one repository, same rules
+```
+
+**Where to look.**
+`GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/GitHubIssueSearchService.cs`
+`GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/IssueSearchQueryBuilder.cs`
+`GitHubIssueFinder/tests/libs/GitHubIssueFinder.GitHub.Tests/GitHubIssueSearchServiceTests.cs`
+
+**Sharp edges.**
+- The fallback costs a page you cannot use. Reading page one is how you learn the total,
+  and past the cap that page is thrown away because the per-unit plan will return the same
+  items in a different order.
+- Keep reporting the original total. The plan changed; what the user is waiting for did
+  not, and a progress bar that restarts at a different denominator looks broken.
+- The cap applies per query, so it still applies to each unit. A single unit bigger than
+  the cap is truncated, and that is worth saying in the application's documentation rather
+  than hiding.
+- The two APIs usually have different quota pools. Give each its own throttle, or the
+  listing spends the budget the searches need.
+- Filter the units before searching them. Every unit you can rule out from the listing you
+  already paid for is a search call you do not spend.
 
 ### Normalize a user entered ID or URL before calling an API
 
