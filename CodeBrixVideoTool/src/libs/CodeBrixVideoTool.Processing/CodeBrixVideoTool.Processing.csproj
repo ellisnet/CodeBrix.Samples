@@ -27,6 +27,6 @@
     <PackageReference Include="CodeBrix.VideoProcessing.MitLicenseForever" Version="1.0.241.68" />
 
     <!-- SimpleViewModel and SimpleCommand for the operation view model -->
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.243.226" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.254.167" />
   </ItemGroup>
 </Project>

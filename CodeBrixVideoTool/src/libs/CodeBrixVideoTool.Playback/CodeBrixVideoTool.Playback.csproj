@@ -23,7 +23,7 @@
     <PackageReference Include="CodeBrix.Audio.Opus.BsdLicenseForever" Version="1.0.245.260" />
 
     <!-- SimpleViewModel and SimpleCommand for the playback view model -->
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.243.226" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.254.167" />
   </ItemGroup>
 
   <ItemGroup>
