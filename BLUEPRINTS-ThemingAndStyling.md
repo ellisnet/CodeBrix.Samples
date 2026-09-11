@@ -36,6 +36,7 @@ conventions the code blocks follow.
 - [Remember the chosen scheme and read it back before the first page](#remember-the-chosen-scheme-and-read-it-back-before-the-first-page)
 - [Prove a platform capability with a throwaway page before designing around it](#prove-a-platform-capability-with-a-throwaway-page-before-designing-around-it)
 - [Drive a status line color and glyph from a small enum](#drive-a-status-line-color-and-glyph-from-a-small-enum)
+- [Keep a text box's own colors while it is hovered or focused](#keep-a-text-boxs-own-colors-while-it-is-hovered-or-focused)
 
 ## Related blueprints
 
@@ -1137,3 +1138,105 @@ is the same brush-owning technique applied to list items.
   everything above it at the worst possible moment.
 - Give the empty state a real sentence rather than an empty string, so the line never
   looks broken.
+
+### Keep a text box's own colors while it is hovered or focused
+
+**When you want this.** You gave a `TextBox` or a `PasswordBox` a `Foreground`, a
+`Background` and a `BorderThickness` of your own, and it keeps them only while nobody is
+touching it. The moment it has keyboard focus the text goes dark and a hairline border with
+an accent underline appears; while the pointer is over it the text goes dark on a grey
+fill, and it stays that way while you type in another box, until the pointer leaves. You
+want the box to look the way you styled it, either in every state or at least whenever
+the pointer is the only thing touching it.
+
+**The MVVM shape.** None. This is markup, and it belongs on the control, on the page or in
+`App.xaml`, never in a view model. What you are doing is lightweight styling: the text
+control template paints its focused and pointer-over states from named theme resources
+rather than from the control's own properties, and a resource with the same key declared
+nearer to the control wins.
+
+**Code.**
+
+Why it happens, so the fix is not a mystery. The `TextBox` template binds the control's
+`Foreground`, `Background` and `BorderThickness` only in the rest state. Its `Focused`
+state swaps in `TextControlForegroundFocused`, `TextControlBackgroundFocused`,
+`TextControlBorderBrushFocused` and `TextControlBorderThemeThicknessFocused` (a `1,1,1,2`
+thickness: a hairline and a 2 px underline), and its `PointerOver` state swaps in
+`TextControlForegroundPointerOver`, `TextControlBackgroundPointerOver` and
+`TextControlBorderBrushPointerOver`. Keyboard focus and pointer-over are separate state
+groups, so a box the pointer rests on keeps its pointer-over look while you type somewhere
+else. `PasswordBox` uses the same seven keys.
+
+The recipe most applications want: keep the platform's focused look, which is how the
+box says "typing goes here", but stop the pointer from changing the box. Override only
+the three pointer-over resources, on the box itself:
+
+```xml
+<!-- Blue text on a white box with no border. Typing still shows the dark text, the
+     hairline and the accent underline; hovering changes nothing, and the box goes back
+     to blue on white the moment focus leaves it, whether the pointer is over it or not. -->
+<TextBox Foreground="Blue" Background="White" BorderThickness="0"
+         FontSize="32" Width="500" Text="Hello">
+    <TextBox.Resources>
+        <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="Blue" />
+        <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="White" />
+        <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+    </TextBox.Resources>
+</TextBox>
+```
+
+The full version, for a box that must look the same in every state, overrides the
+focused resources as well:
+
+```xml
+<!-- Blue text on a white box with no border in every state: at rest, under the
+     pointer, and while it has focus and is being typed into. -->
+<TextBox Foreground="Blue" Background="White" BorderThickness="0"
+         FontSize="32" Width="500" Text="Hello">
+    <TextBox.Resources>
+        <SolidColorBrush x:Key="TextControlForegroundFocused" Color="Blue" />
+        <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="Blue" />
+        <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="White" />
+        <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="White" />
+        <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+        <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+        <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+    </TextBox.Resources>
+</TextBox>
+```
+
+A `PasswordBox` takes exactly the same block inside `<PasswordBox.Resources>`. To give
+every text box in the application the same treatment, declare the same keys once in the
+application's resource dictionary in `App.xaml` rather than on each control; the nearest
+declaration wins, so a single box can still differ from the rest. An application that
+follows the desktop's light and dark appearance declares them per theme, in the shape
+[Re-key every control brush family the platform ships](#re-key-every-control-brush-family-the-platform-ships)
+shows.
+
+**Where to look.**
+No application in this repository does this yet. The two blocks above are box E and box D
+of the first scenario in the CodeBrix.Platform repository's EvaluateUIElementsDemo sample
+(`samples/CodeBrixPlatform/EvaluateUIElementsDemo`, `Views/Scenarios/TextBoxFocusView.xaml`),
+where they were proven on the Linux X11 head by measuring the box's pixels in every state
+beside an unstyled twin.
+
+**Related.**
+[Re-key every control brush family the platform ships](#re-key-every-control-brush-family-the-platform-ships)
+is the same lever applied to the whole application at once.
+[Prove a platform capability with a throwaway page before designing around it](#prove-a-platform-capability-with-a-throwaway-page-before-designing-around-it)
+is how this recipe was established.
+
+**Sharp edges.**
+- The keys belong to the template, not to the control. Setting `Foreground` again, or a
+  `Style` setter for it, changes nothing in the focused and pointer-over states.
+- Pointer-over is not focus. A box the pointer rests on keeps its pointer-over look while
+  you type in another box; that is the state design, and only the override changes it.
+- Keep the focused look unless you have a reason not to. The dark text, hairline and
+  underline are the platform's signal that typing goes here; the three pointer-over keys
+  are enough to stop a box from changing under a resting pointer.
+- The placeholder has its own pair of keys, `TextControlPlaceholderForegroundFocused` and
+  `TextControlPlaceholderForegroundPointerOver`, which these overrides leave alone. Set
+  `PlaceholderForeground` on the box to fix the placeholder's color in every state
+  instead; the template prefers it over both keys.
+- The small clear button that appears in a focused `TextBox` is the template's delete
+  button, not a state color; it is unaffected by any of this.

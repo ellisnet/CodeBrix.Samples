@@ -60,6 +60,7 @@ conventions the code blocks follow.
 - [Lay out a document editor shell with tabs a toolbox and pads](#lay-out-a-document-editor-shell-with-tabs-a-toolbox-and-pads)
 - [Split a page code-behind into named partial files](#split-a-page-code-behind-into-named-partial-files)
 - [Use FontIcon glyphs so icons survive on a device with no system fonts](#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts)
+- [Set the PasswordBox mask character back to WinUI's black circle](#set-the-passwordbox-mask-character-back-to-winuis-black-circle)
 
 ## Related blueprints
 
@@ -3244,3 +3245,84 @@ element for an icon.
   and the script fallbacks from a bundled font package rather than trusting the
   host. See the font blueprint in the startup area.
 
+### Set the PasswordBox mask character back to WinUI's black circle
+
+**When you want this.** The application's password boxes should be masked the way
+they are on Windows, with the black circle U+25CF, rather than with the platform's
+default bullet U+2022 - on one box, or on every box in the application.
+
+**The MVVM shape.** None. `PasswordChar` is a property of the control, set in
+markup; the view model never knows what the mask looks like.
+
+**Code.**
+
+Why there is anything to do: the platform's default mask is the bullet, on every
+head, which is an intentional divergence from WinUI. A CodeBrix.Platform
+application draws its text from the fonts it ships, and the black circle is missing
+from every face of the Open Sans and Roboto Mono packages (Roboto and Merriweather
+carry it), while the bullet is in every face of every application-font package. So
+the default mask is always drawn from the application's own font, and a
+`PasswordBox` is exactly as tall as a `TextBox` of the same font and size, empty or
+full. Asking for the circle is a choice you make knowing which font you ship.
+
+One box:
+
+```xml
+<!-- The black circle on this box only. The character can also be typed literally
+     in place of the entity. -->
+<PasswordBox Width="250" PlaceholderText="Password" PasswordChar="&#x25CF;" />
+```
+
+Every box in the application, from `App.xaml`: an implicit style based on the
+platform's own default style, carrying just the one setter.
+
+```xml
+<!-- In App.xaml, inside Application.Resources, after the XamlControlsResources merge. -->
+<Style TargetType="PasswordBox" BasedOn="{StaticResource DefaultPasswordBoxStyle}">
+    <Setter Property="PasswordChar" Value="&#x25CF;" />
+</Style>
+```
+
+A box that sets its own `PasswordChar` still wins over the style, so the two forms
+combine: the application's boxes show the circle, and one box can show something
+else.
+
+Whether the circle can be drawn at all depends on the font the box uses. A glyph
+the application's font lacks is drawn from a host font on the desktop heads, if
+the host has one with that glyph, and comes out in that font's shape and weight
+rather than the application's; on a device where the application cannot reach
+system fonts, or has none to reach, it renders as the font's missing-glyph shape,
+which is blank in Open Sans and a box in Roboto. The box's height does not change
+either way, because a line is never laid out shorter than its own font's line
+height, but its look does. If the circle matters, choose Roboto or Merriweather as
+the application font, or declare a companion face that carries it the way
+[Set a bundled font as the default text font and register script fallbacks](BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks)
+shows; otherwise stay with the default bullet.
+
+**Where to look.**
+No application in this repository does this. Both forms were proven with a
+throwaway change to the CodeBrix.Platform repository's EvaluateUIElementsDemo
+sample on the Linux X11 head: with the application-wide style every default box
+switched to circles, a box with its own `PasswordChar` kept it, and no box changed
+height.
+
+**Related.**
+[Take a secret token in a PasswordBox and keep it out of storage](#take-a-secret-token-in-a-passwordbox-and-keep-it-out-of-storage)
+is the box this recipe changes the look of.
+[Keep a text box's own colors while it is hovered or focused](BLUEPRINTS-ThemingAndStyling.md#keep-a-text-boxs-own-colors-while-it-is-hovered-or-focused)
+is the other thing an application tends to want from the same control.
+[Set a bundled font as the default text font and register script fallbacks](BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks)
+is where the application decides which fonts a glyph can come from.
+
+**Sharp edges.**
+- The application-wide style must be `BasedOn` `DefaultPasswordBoxStyle`. An
+  implicit style without it replaces the platform's default style, and the box
+  loses its template along with it.
+- `PasswordChar` is exactly one character; the platform throws on an empty or a
+  longer string.
+- The circle is a font question before it is a style question: Open Sans and
+  Roboto Mono do not carry it, Roboto and Merriweather do, and a host font is not
+  something an application can count on.
+- The bullet, the asterisk and the middle dot are in every face of every
+  application-font package; anything else needs checking against the font you ship.
+- The symbols font and the music font are not text fonts and never mask a password.
