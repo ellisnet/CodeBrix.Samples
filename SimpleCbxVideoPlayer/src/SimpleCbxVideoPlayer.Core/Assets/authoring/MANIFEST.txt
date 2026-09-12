@@ -1,0 +1,680 @@
+================================================================================
+MANIFEST: Assets/authoring
+The sample-video corpus, file by file - what it is and how it was verified
+================================================================================
+
+Written by the corpus generator on 2026-09-02 09:57:24 (local time). Nothing in this
+application regenerates the corpus; these files are shipped as data and read from the
+output folder. The command lines below name the folder layout the corpus was produced
+in, which is the record of how each file was made rather than a path in this
+application; the two MP4 originals they read are not carried here.
+
+Every command line below was BUILT by CodeBrix.VideoPlayback.Authoring and RUN by
+CodeBrix.VideoProcessing, which launches the host's ffmpeg as a child process. The
+generator never invokes ffmpeg itself, and the CodeBrix-Mode2 files are muxed by the
+playback library's own bespoke muxer rather than by ffmpeg at all.
+
+WHAT THIS RUN RE-ENCODED: CodeBrix-Mode1.
+Everything else below was read back and re-verified, not re-encoded; its command line
+is re-derived from the plan, which is where it came from in the first place, and its
+encode time is the one the previous manifest recorded.
+
+REPRODUCIBILITY. The SHAPE of this corpus is deterministic - the same twenty-four files,
+the same resolutions, the same settings, the same command lines every run. The BYTES
+are NOT: the Matroska muxer writes a random track UID and a fresh muxing date into
+every file, so two runs of this tool produce files that differ even when the encoder
+has made an identical bitstream. Those fields are fixed-length, so the sizes below do
+tend to come back the same - but do not pin these files with a hash, and do not treat
+a size that moves by a few bytes as a fault. The CodeBrix-Mode2 files carry no random
+field at all, but the AV1 encoder is itself only deterministic for a fixed build and
+thread count, so the same caution applies to them.
+
+
+================================================================================
+THE PUBLIC-DOMAIN ORIGINALS
+================================================================================
+
+Created by Jeremy Ellis on his phone, and placed by him in the Public Domain on
+2026-08-29. Everything in MKV/, WebM/, CodeBrix-Mode1/ and CodeBrix-Mode2/ is derived
+from these two files and is therefore Public Domain too.
+
+  MP4/landscape_video_test_4k.mp4
+      stored frame     3840x2160
+      rotation         0 degrees
+      displayed frame  3840x2160
+      frame rate       30 per second
+      duration         4.033 s
+      video / audio    h264 / aac
+      size             23.34 MB (24,479,005 bytes)
+
+  MP4/portrait_video_test_4k.mp4
+      stored frame     3840x2160
+      rotation         -90 degrees (applied while decoding; the outputs have true pixels)
+      displayed frame  2160x3840
+      frame rate       30 per second
+      duration         5.467 s
+      video / audio    h264 / aac
+      size             31.56 MB (33,096,016 bytes)
+
+
+================================================================================
+ENCODER SETTINGS, BY RESOLUTION RUNG
+================================================================================
+
+  rung   landscape     portrait      preset  crf  keyframes  audio
+  -----  ------------  ------------  ------  ---  ---------  ---------
+  4k     3840x2160     2160x3840     6       28   60 frames  128 kbit/s
+  hd     1920x1080     1080x1920     5       26   60 frames  128 kbit/s
+  720p   1280x720      720x1280      4       24   60 frames  96 kbit/s
+
+  Video   libsvtav1, 8-bit yuv420p, 30 frames per second, scaled with lanczos.
+  Audio   libopus for MKV, WebM and CodeBrix-Mode1; libvorbis for CodeBrix-Mode2.
+          2 channels at 48000 Hz throughout, at the bit rates in the table above.
+          The rungs are the SAME numbers for both codecs, so the two ladders stay
+          comparable. Mode2 is Vorbis rather than Opus because Mode2 is the flavour an
+          application ships inside itself, and a Vorbis file plays with the core
+          playback package alone - an Opus one needs the application to add
+          CodeBrix.Audio.Opus and call its Register().
+  Keyframes every 60 frames is two seconds at 30 frames per second - set
+  explicitly, because the encoder's own default interval is far longer and a long
+  interval is exactly what makes a scrub feel slow.
+
+  The preset gets FASTER as the frame gets bigger and the rate factor gets LOWER as it
+  gets smaller: encode cost scales with the pixel count, and AV1's rate factor is
+  resolution-relative, so this keeps both the wall clock and the perceived quality
+  roughly level across the three rungs.
+
+
+================================================================================
+THE FILES
+================================================================================
+
+MKV/
+====
+
+  off-the-shelf Matroska, AV1 + Opus, cues at the end
+
+  landscape_4k.mkv
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       3840x2160 (planned 3840x2160)
+      frame rate       30 per second
+      duration         4.033 s
+      size             2.73 MB (2,860,062 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 6, crf 28, keyframes every 60 frames
+      encode time      7.0 s
+      read-back check  OK
+      profile check    DOES NOT pass the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [FAIL] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 6 -crf 28 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=3840:h=2160:flags=lanczos, format=yuv420p" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f matroska "tests/assets/authoring/MKV/landscape_4k.mkv" -y
+
+  landscape_hd.mkv
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       1920x1080 (planned 1920x1080)
+      frame rate       30 per second
+      duration         4.033 s
+      size             0.82 MB (861,903 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 5, crf 26, keyframes every 60 frames
+      encode time      3.2 s
+      read-back check  OK
+      profile check    DOES NOT pass the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [FAIL] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 5 -crf 26 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=1920:h=1080:flags=lanczos, format=yuv420p" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f matroska "tests/assets/authoring/MKV/landscape_hd.mkv" -y
+
+  landscape_720p.mkv
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       1280x720 (planned 1280x720)
+      frame rate       30 per second
+      duration         4.033 s
+      size             0.50 MB (520,405 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 96 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 4, crf 24, keyframes every 60 frames
+      encode time      3.7 s
+      read-back check  OK
+      profile check    DOES NOT pass the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [FAIL] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 4 -crf 24 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=1280:h=720:flags=lanczos, format=yuv420p" -c:a libopus -b:a 96k -ar 48000 -ac 2 -f matroska "tests/assets/authoring/MKV/landscape_720p.mkv" -y
+
+  portrait_4k.mkv
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       2160x3840 (planned 2160x3840)
+      frame rate       30 per second
+      duration         5.466 s
+      size             3.79 MB (3,973,354 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 6, crf 28, keyframes every 60 frames
+      encode time      9.1 s
+      read-back check  OK
+      profile check    DOES NOT pass the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [FAIL] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 6 -crf 28 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=2160:h=3840:flags=lanczos, format=yuv420p" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f matroska "tests/assets/authoring/MKV/portrait_4k.mkv" -y
+
+  portrait_hd.mkv
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       1080x1920 (planned 1080x1920)
+      frame rate       30 per second
+      duration         5.466 s
+      size             1.17 MB (1,225,286 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 5, crf 26, keyframes every 60 frames
+      encode time      4.4 s
+      read-back check  OK
+      profile check    DOES NOT pass the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [FAIL] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 5 -crf 26 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=1080:h=1920:flags=lanczos, format=yuv420p" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f matroska "tests/assets/authoring/MKV/portrait_hd.mkv" -y
+
+  portrait_720p.mkv
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       720x1280 (planned 720x1280)
+      frame rate       30 per second
+      duration         5.466 s
+      size             0.72 MB (751,847 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 96 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 4, crf 24, keyframes every 60 frames
+      encode time      4.6 s
+      read-back check  OK
+      profile check    DOES NOT pass the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [FAIL] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 4 -crf 24 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=720:h=1280:flags=lanczos, format=yuv420p" -c:a libopus -b:a 96k -ar 48000 -ac 2 -f matroska "tests/assets/authoring/MKV/portrait_720p.mkv" -y
+
+WebM/
+=====
+
+  off-the-shelf WebM, AV1 + Opus, cues at the end
+
+  landscape_4k.webm
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       3840x2160 (planned 3840x2160)
+      frame rate       30 per second
+      duration         4.033 s
+      size             2.73 MB (2,859,978 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 6, crf 28, keyframes every 60 frames
+      encode time      7.5 s
+      read-back check  OK
+      profile check    DOES NOT pass the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [FAIL] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 6 -crf 28 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=3840:h=2160:flags=lanczos, format=yuv420p" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f webm "tests/assets/authoring/WebM/landscape_4k.webm" -y
+
+  landscape_hd.webm
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       1920x1080 (planned 1920x1080)
+      frame rate       30 per second
+      duration         4.033 s
+      size             0.82 MB (861,819 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 5, crf 26, keyframes every 60 frames
+      encode time      3.6 s
+      read-back check  OK
+      profile check    DOES NOT pass the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [FAIL] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 5 -crf 26 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=1920:h=1080:flags=lanczos, format=yuv420p" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f webm "tests/assets/authoring/WebM/landscape_hd.webm" -y
+
+  landscape_720p.webm
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       1280x720 (planned 1280x720)
+      frame rate       30 per second
+      duration         4.033 s
+      size             0.50 MB (520,321 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 96 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 4, crf 24, keyframes every 60 frames
+      encode time      4.0 s
+      read-back check  OK
+      profile check    DOES NOT pass the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [FAIL] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 4 -crf 24 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=1280:h=720:flags=lanczos, format=yuv420p" -c:a libopus -b:a 96k -ar 48000 -ac 2 -f webm "tests/assets/authoring/WebM/landscape_720p.webm" -y
+
+  portrait_4k.webm
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       2160x3840 (planned 2160x3840)
+      frame rate       30 per second
+      duration         5.466 s
+      size             3.79 MB (3,973,270 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 6, crf 28, keyframes every 60 frames
+      encode time      9.8 s
+      read-back check  OK
+      profile check    DOES NOT pass the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [FAIL] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 6 -crf 28 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=2160:h=3840:flags=lanczos, format=yuv420p" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f webm "tests/assets/authoring/WebM/portrait_4k.webm" -y
+
+  portrait_hd.webm
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       1080x1920 (planned 1080x1920)
+      frame rate       30 per second
+      duration         5.466 s
+      size             1.17 MB (1,225,202 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 5, crf 26, keyframes every 60 frames
+      encode time      4.6 s
+      read-back check  OK
+      profile check    DOES NOT pass the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [FAIL] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 5 -crf 26 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=1080:h=1920:flags=lanczos, format=yuv420p" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f webm "tests/assets/authoring/WebM/portrait_hd.webm" -y
+
+  portrait_720p.webm
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       720x1280 (planned 720x1280)
+      frame rate       30 per second
+      duration         5.466 s
+      size             0.72 MB (751,763 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 96 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 4, crf 24, keyframes every 60 frames
+      encode time      4.7 s
+      read-back check  OK
+      profile check    DOES NOT pass the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [FAIL] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 4 -crf 24 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=720:h=1280:flags=lanczos, format=yuv420p" -c:a libopus -b:a 96k -ar 48000 -ac 2 -f webm "tests/assets/authoring/WebM/portrait_720p.webm" -y
+
+CodeBrix-Mode1/
+===============
+
+  CodeBrix Video Mode1: WebM with the cues moved to the FRONT
+
+  landscape_4k.cbv
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       3840x2160 (planned 3840x2160)
+      frame rate       30 per second
+      duration         4.033 s
+      size             2.73 MB (2,859,978 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 6, crf 28, keyframes every 60 frames
+      encode time      7.6 s
+      read-back check  OK
+      profile check    passes the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 6 -crf 28 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=3840:h=2160:flags=lanczos, format=yuv420p" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f webm -cues_to_front 1 "tests/assets/authoring/CodeBrix-Mode1/landscape_4k.cbv" -y
+
+  landscape_hd.cbv
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       1920x1080 (planned 1920x1080)
+      frame rate       30 per second
+      duration         4.033 s
+      size             0.82 MB (861,819 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 5, crf 26, keyframes every 60 frames
+      encode time      3.5 s
+      read-back check  OK
+      profile check    passes the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 5 -crf 26 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=1920:h=1080:flags=lanczos, format=yuv420p" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f webm -cues_to_front 1 "tests/assets/authoring/CodeBrix-Mode1/landscape_hd.cbv" -y
+
+  landscape_720p.cbv
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       1280x720 (planned 1280x720)
+      frame rate       30 per second
+      duration         4.033 s
+      size             0.50 MB (520,321 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 96 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 4, crf 24, keyframes every 60 frames
+      encode time      3.9 s
+      read-back check  OK
+      profile check    passes the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 4 -crf 24 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=1280:h=720:flags=lanczos, format=yuv420p" -c:a libopus -b:a 96k -ar 48000 -ac 2 -f webm -cues_to_front 1 "tests/assets/authoring/CodeBrix-Mode1/landscape_720p.cbv" -y
+
+  portrait_4k.cbv
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       2160x3840 (planned 2160x3840)
+      frame rate       30 per second
+      duration         5.466 s
+      size             3.79 MB (3,973,270 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 6, crf 28, keyframes every 60 frames
+      encode time      9.6 s
+      read-back check  OK
+      profile check    passes the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 6 -crf 28 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=2160:h=3840:flags=lanczos, format=yuv420p" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f webm -cues_to_front 1 "tests/assets/authoring/CodeBrix-Mode1/portrait_4k.cbv" -y
+
+  portrait_hd.cbv
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       1080x1920 (planned 1080x1920)
+      frame rate       30 per second
+      duration         5.466 s
+      size             1.17 MB (1,225,202 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 5, crf 26, keyframes every 60 frames
+      encode time      4.6 s
+      read-back check  OK
+      profile check    passes the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 5 -crf 26 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=1080:h=1920:flags=lanczos, format=yuv420p" -c:a libopus -b:a 128k -ar 48000 -ac 2 -f webm -cues_to_front 1 "tests/assets/authoring/CodeBrix-Mode1/portrait_hd.cbv" -y
+
+  portrait_720p.cbv
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       720x1280 (planned 720x1280)
+      frame rate       30 per second
+      duration         5.466 s
+      size             0.72 MB (751,763 bytes)
+      video            av1, yuv420p
+      audio            opus, 2 channels at 48000 Hz, 96 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 4, crf 24, keyframes every 60 frames
+      encode time      4.7 s
+      read-back check  OK
+      profile check    passes the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'opus'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] cues sit before the first cluster
+                       [pass] every element declares a known size
+                       [pass] the Info element states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [one pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map 0:a:0 -map_chapters -1 -map_metadata -1 -c:v libsvtav1 -preset 4 -crf 24 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=720:h=1280:flags=lanczos, format=yuv420p" -c:a libopus -b:a 96k -ar 48000 -ac 2 -f webm -cues_to_front 1 "tests/assets/authoring/CodeBrix-Mode1/portrait_720p.cbv" -y
+
+CodeBrix-Mode2/
+===============
+
+  CodeBrix Video Mode2: the bespoke CBVF container, AV1 + Vorbis
+
+  landscape_4k.cbv
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       3840x2160 (planned 3840x2160)
+      frame rate       30 per second
+      duration         4.033 s
+      size             2.74 MB (2,870,093 bytes)
+      video            av01, yuv420p
+      audio            vorbis, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 6, crf 28, keyframes every 60 frames
+      encode time      8.4 s
+      read-back check  OK
+      profile check    passes the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'vorbis'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [video pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map_metadata -1 -c:v libsvtav1 -preset 6 -crf 28 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=3840:h=2160:flags=lanczos, format=yuv420p" -an -f ivf "/tmp/landscape_4k.video.ivf" -y
+      command          [audio pass] ffmpeg -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:a:0 -map_metadata -1 -c:a libvorbis -b:a 128k -ar 48000 -ac 2 -vn -f ogg "/tmp/landscape_4k.audio.ogg" -y
+
+  landscape_hd.cbv
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       1920x1080 (planned 1920x1080)
+      frame rate       30 per second
+      duration         4.033 s
+      size             0.83 MB (871,957 bytes)
+      video            av01, yuv420p
+      audio            vorbis, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 5, crf 26, keyframes every 60 frames
+      encode time      3.9 s
+      read-back check  OK
+      profile check    passes the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'vorbis'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [video pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map_metadata -1 -c:v libsvtav1 -preset 5 -crf 26 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=1920:h=1080:flags=lanczos, format=yuv420p" -an -f ivf "/tmp/landscape_hd.video.ivf" -y
+      command          [audio pass] ffmpeg -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:a:0 -map_metadata -1 -c:a libvorbis -b:a 128k -ar 48000 -ac 2 -vn -f ogg "/tmp/landscape_hd.audio.ogg" -y
+
+  landscape_720p.cbv
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       1280x720 (planned 1280x720)
+      frame rate       30 per second
+      duration         4.033 s
+      size             0.51 MB (534,873 bytes)
+      video            av01, yuv420p
+      audio            vorbis, 2 channels at 48000 Hz, 96 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 4, crf 24, keyframes every 60 frames
+      encode time      4.5 s
+      read-back check  OK
+      profile check    passes the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'vorbis'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [video pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map_metadata -1 -c:v libsvtav1 -preset 4 -crf 24 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=1280:h=720:flags=lanczos, format=yuv420p" -an -f ivf "/tmp/landscape_720p.video.ivf" -y
+      command          [audio pass] ffmpeg -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:a:0 -map_metadata -1 -c:a libvorbis -b:a 96k -ar 48000 -ac 2 -vn -f ogg "/tmp/landscape_720p.audio.ogg" -y
+
+  portrait_4k.cbv
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       2160x3840 (planned 2160x3840)
+      frame rate       30 per second
+      duration         5.467 s
+      size             3.80 MB (3,987,035 bytes)
+      video            av01, yuv420p
+      audio            vorbis, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 6, crf 28, keyframes every 60 frames
+      encode time      10.6 s
+      read-back check  OK
+      profile check    passes the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'vorbis'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [video pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map_metadata -1 -c:v libsvtav1 -preset 6 -crf 28 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=2160:h=3840:flags=lanczos, format=yuv420p" -an -f ivf "/tmp/portrait_4k.video.ivf" -y
+      command          [audio pass] ffmpeg -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:a:0 -map_metadata -1 -c:a libvorbis -b:a 128k -ar 48000 -ac 2 -vn -f ogg "/tmp/portrait_4k.audio.ogg" -y
+
+  portrait_hd.cbv
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       1080x1920 (planned 1080x1920)
+      frame rate       30 per second
+      duration         5.467 s
+      size             1.18 MB (1,238,999 bytes)
+      video            av01, yuv420p
+      audio            vorbis, 2 channels at 48000 Hz, 128 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 5, crf 26, keyframes every 60 frames
+      encode time      5.1 s
+      read-back check  OK
+      profile check    passes the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'vorbis'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [video pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map_metadata -1 -c:v libsvtav1 -preset 5 -crf 26 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=1080:h=1920:flags=lanczos, format=yuv420p" -an -f ivf "/tmp/portrait_hd.video.ivf" -y
+      command          [audio pass] ffmpeg -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:a:0 -map_metadata -1 -c:a libvorbis -b:a 128k -ar 48000 -ac 2 -vn -f ogg "/tmp/portrait_hd.audio.ogg" -y
+
+  portrait_720p.cbv
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       720x1280 (planned 720x1280)
+      frame rate       30 per second
+      duration         5.467 s
+      size             0.74 MB (771,994 bytes)
+      video            av01, yuv420p
+      audio            vorbis, 2 channels at 48000 Hz, 96 kbit/s requested
+      rotation         0 degrees
+      encoder          libsvtav1 preset 4, crf 24, keyframes every 60 frames
+      encode time      5.3 s
+      read-back check  OK
+      profile check    passes the profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is Opus or Vorbis - 'vorbis'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+      command          [video pass] ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map_metadata -1 -c:v libsvtav1 -preset 4 -crf 24 -pix_fmt yuv420p -r 30 -g 60 -vf "scale=w=720:h=1280:flags=lanczos, format=yuv420p" -an -f ivf "/tmp/portrait_720p.video.ivf" -y
+      command          [audio pass] ffmpeg -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:a:0 -map_metadata -1 -c:a libvorbis -b:a 96k -ar 48000 -ac 2 -vn -f ogg "/tmp/portrait_720p.audio.ogg" -y
+
+
+================================================================================
+TOTALS
+================================================================================
+
+  files            24 of 24 present
+  total size       38.96 MB (40,852,514 bytes)
+  read-back checks 24 of 24 passed
+  run wall time    34.7 s
+
+================================================================================

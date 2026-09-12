@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <!-- Match the namespace used by the app code -->
+    <RootNamespace>PicoScope.Brix</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.254.167" />
+    <PackageReference Include="CodeBrix.Platform.Fonts.Roboto.OflLicenseForever" Version="1.0.248.1219" />
+    <!-- The chart control. It brings the CodeBrix.Plotter engine in with it, so
+         nothing in this sample references the Plotter package directly. -->
+    <PackageReference Include="CodeBrix.Platform.PlotterView.ApacheLicenseForever" Version="1.0.254.167" />
+  </ItemGroup>
+
+  <!-- The device-agnostic scope contract. The real device (PicoScope.Brix.ScopeData.Ps2000)
+       is referenced by the heads, which register it; this project never sees it. -->
+  <ItemGroup>
+    <ProjectReference Include="..\libs\PicoScope.Brix.ScopeData\PicoScope.Brix.ScopeData.csproj" />
+  </ItemGroup>
+</Project>

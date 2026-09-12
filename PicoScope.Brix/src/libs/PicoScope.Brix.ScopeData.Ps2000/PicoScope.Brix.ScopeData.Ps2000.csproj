@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- The fast-streaming callback receives int16_t** from the driver -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!--
+    Plain net10.0, not net10.0-windows: nothing in here is Windows-specific. The
+    P/Invokes bind to the same ps2000 entry points on every operating system
+    (ps2000.dll on Windows, libps2000.so on Linux), and the only per-OS code is
+    where Ps2000DriverLoader looks for the driver.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\PicoScope.Brix.ScopeData\PicoScope.Brix.ScopeData.csproj" />
+  </ItemGroup>
+
+</Project>

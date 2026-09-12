@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- xUnit.net v3 test projects are self-executing binaries and
+         must build as Exe; run via Microsoft.Testing.Platform,
+         matching the CodeBrix family test convention. -->
+    <OutputType>Exe</OutputType>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\libs\SimpleCbxVideoPlayer.SkiaVideo\SimpleCbxVideoPlayer.SkiaVideo.csproj" />
+  </ItemGroup>
+
+  <!--
+    The corpus the application ships, laid out beside the test binary exactly as it is laid out beside a
+    head's executable, so the catalogue tests read the same files at the same relative paths the running
+    application does. It is linked rather than copied: there is one corpus in this application.
+  -->
+  <ItemGroup>
+    <None Include="..\..\..\src\SimpleCbxVideoPlayer.Core\Assets\**\*"
+          Link="Assets\%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
+    <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="xunit.v3" Version="4.0.0" />
+    <!--
+      The TEST project supplies Skia's native binary for this machine, because the render-path tests build a
+      presenter. The libraries never choose a native asset package; an application does, and each head of
+      this sample gets one from its CodeBrix.Platform runtime package.
+    -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.152.0" />
+  </ItemGroup>
+
+</Project>

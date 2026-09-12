@@ -1,0 +1,56 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the WebcamViewer sample application, together with the licenses
+under which that content is provided.
+
+Nothing third-party is bundled in this folder. The application ships no
+fonts, models, media, images or vendored source code of its own: every file
+under WebcamViewer/ is part of the sample itself.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here. Two of them are worth naming explicitly.
+
+------------------------------------------------------------------------
+CodeBrix.Webcam (package; LGPL)
+------------------------------------------------------------------------
+The webcam library that this application is built around - camera
+enumeration, the live capture session, audio monitoring and the in-memory
+still - arrives as a NuGet package licensed under the GNU Lesser General
+Public License, version 2.1 or later, together with the media-engine package
+it depends on. Those packages carry their own license text and notices,
+including the notices for the upstream VideoLAN work they were ported from;
+none of their source code is copied into this folder.
+
+------------------------------------------------------------------------
+Native media runtime (not bundled; installed by the user)
+------------------------------------------------------------------------
+On Linux and macOS the webcam library opens a capture session through the
+native libvlc runtime, which is published separately by VideoLAN under the
+GNU Lesser General Public License, version 2.1 or later. It is NOT bundled
+with, or redistributed by, this repository: on Linux it is installed with the
+system package manager, and on macOS it is supplied by an installed VLC media
+player application. On Windows no native runtime is used at all - capture
+goes through the operating system's own media engine. "VideoLAN", "VLC" and
+"LibVLC" are trademarks of VideoLAN; this sample is not affiliated with or
+endorsed by VideoLAN.
+
+------------------------------------------------------------------------
+Open Sans font (package)
+------------------------------------------------------------------------
+The application's text is set in Open Sans, which arrives inside a CodeBrix
+font package rather than as a file in this folder. That package carries the
+font's Apache License, Version 2.0 notice.
+
+------------------------------------------------------------------------
+User content (created and displayed at run time)
+------------------------------------------------------------------------
+The application displays whatever the connected camera delivers and writes
+frame-photos into a folder the user chooses. The rights to that content
+remain with its owners; nothing of it is redistributed as part of this
+repository.
+
+No further third-party attribution notices apply to this sample.

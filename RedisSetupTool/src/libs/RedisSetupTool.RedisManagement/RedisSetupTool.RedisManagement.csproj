@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- CodeBrix.Redis - the CodeBrix family's own drop-in replacement for StackExchange.Redis,
+         RESPite and RedLock.net. This is the ONLY project in the sample that talks to Redis. -->
+    <PackageReference Include="CodeBrix.Redis.MitLicenseForever" Version="1.0.254.1168" />
+    <!-- The DI registration extension method lives in this library, so it needs the abstractions -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+  </ItemGroup>
+</Project>

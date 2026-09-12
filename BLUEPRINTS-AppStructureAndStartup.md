@@ -37,6 +37,8 @@ conventions the code blocks follow.
 - [Turn on extra media codecs once at startup](#turn-on-extra-media-codecs-once-at-startup)
 - [Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads)
 - [Detect which platform head is running without referencing it](#detect-which-platform-head-is-running-without-referencing-it)
+- [Give a hosted guest program the environment it assumes with a bootstrap script](#give-a-hosted-guest-program-the-environment-it-assumes-with-a-bootstrap-script)
+- [Register hardware implementations from each head and ask a finder for the best one](#register-hardware-implementations-from-each-head-and-ask-a-finder-for-the-best-one)
 
 ## Related blueprints
 
@@ -1257,4 +1259,253 @@ private static PlatformHead DetectCurrentHead()
 - A `Lazy<PlatformHead>` caches the result so the assembly scan happens once.
 - For a view model that only needs the operating system rather than the head,
   `SimpleOsInfo` is the simpler answer; see the view-model area.
+
+### Give a hosted guest program the environment it assumes with a bootstrap script
+
+**When you want this.** The program you are hosting was written to run under a
+standard launcher, and it assumes things a hosted engine does not provide:
+packages that are present, global variables the launcher filled in from the
+command line, and built-in commands that behave a particular way. You want those
+assumptions satisfied without editing a single line of the guest.
+
+**The MVVM shape.** Not a view-model concern. One glue script, authored by the
+application and sourced immediately before the guest's first line, holds every
+adaptation. Each block says why it exists and quotes the stock mechanism it stands
+in for, so the file doubles as the complete list of what hosting cost. The
+application's C# does the parts that have to be managed code; the glue script does
+the parts that are cheaper to express in the guest's own language.
+
+**Code.**
+
+```tcl
+# From CodeBrix.Samples/DRAKON.Brix/src/DRAKON.Brix.Core/Assets/bootstrap.tcl
+# =============================================================================
+# DRAKON.Brix bootstrap
+#
+# This is a NEW file, authored for the DRAKON.Brix port. It is NOT a modified
+# copy of any DRAKON-Editor file (stock DRAKON has no bootstrap.tcl). It is the
+# ONLY Tcl that runs before the UNMODIFIED drakon_editor.tcl is sourced, and it
+# exists purely to reproduce the environment that stock DRAKON assumes so that
+# drakon_editor.tcl's own (unchanged) startup code succeeds.
+#
+# Everything below is glue that was ADDED for this port. Each block is tagged
+#   "Added for DRAKON.Brix - because <reason>"
+# and shows, as a "Stock DRAKON / Tcl:" reference comment, the mechanism it
+# stands in for. The invariant marker text "for DRAKON.Brix" is searchable:
+# grep it (and its sibling "Removed for DRAKON.Brix", used when we ever have to
+# edit a genuinely-vendored original file) to find every port-specific change.
+#
+# Already handled in C# before this file runs, so nothing is needed here for
+# them:
+#   * Tk / Img packages + ::tcl_version / ::tk_version / ::tk_patchLevel
+#       -> CodeBrix.Platform.TkCanvas.TkBootstrap.Register
+#   * sqlite3 and pdf4tcl commands + "package provide"
+#       -> CodeBrix.Platform.TclTk.Extras.TclTkExtras.RegisterAll
+# =============================================================================
+```
+
+Three kinds of adaptation show up, and they are the three to expect. Some packages
+only have to be present, because their only real consumer has been replaced by a
+managed shim, so declaring them satisfies the guest's gate and keeps a large
+dependency out of the application entirely:
+
+```tcl
+# From CodeBrix.Samples/DRAKON.Brix/src/DRAKON.Brix.Core/Assets/bootstrap.tcl
+# Added for DRAKON.Brix - because stock DRAKON's [package require snit] loads
+#   the ~3000-line Tcl "snit" object package from tcllib. snit's ONLY consumer
+#   was pdf4tcl, whose implementation is now the managed CodeBrix Extras shim,
+#   so the package only has to be PRESENT to satisfy drakon_editor.tcl's line-1
+#   [require snit] gate — never actually used. An empty provide is enough, and
+#   it keeps tcllib out of the app.
+#
+# Stock DRAKON / Tcl:
+#   package require snit          ;# pulls the real snit implementation from tcllib
+package provide snit 2.3.2
+```
+
+Some are host facts rather than packages. The globals a command-line launcher
+would have set are synthesized, which is also how the application can start with a
+document already open:
+
+```tcl
+# From CodeBrix.Samples/DRAKON.Brix/src/DRAKON.Brix.Core/Assets/bootstrap.tcl
+# Added for DRAKON.Brix - because stock DRAKON is launched as
+#   "tclsh8.6 drakon_editor.tcl ?FILE?", so tclsh populates ::argc / ::argv /
+#   ::argv0 from the process command line, and drakon_editor.tcl's
+#   [start_up $argc $argv] opens FILE (or shows the intro when there is none).
+#   The port has no command line, so the host passes the file to open via the
+#   DRAKONBRIX_OPEN environment variable and we build the same globals here.
+#
+# Stock DRAKON / Tcl:
+#   (::argc / ::argv / ::argv0 are set automatically by tclsh from argv;
+#    no code in drakon_editor.tcl sets them.)
+if { [info exists ::env(DRAKONBRIX_OPEN)] && $::env(DRAKONBRIX_OPEN) ne "" } {
+    set ::argc 1
+    set ::argv [list $::env(DRAKONBRIX_OPEN)]
+} else {
+    set ::argc 0
+    set ::argv {}
+}
+set ::argv0 drakon_editor.tcl
+```
+
+And some have to be genuinely re-implemented. The message catalog is the one done
+properly here - the locale preference list, the catalog loading, the
+fall-back-to-source-string lookup - because the guest ships real translations and
+an English-only stub would have thrown them away.
+
+**Where to look.**
+`DRAKON.Brix/src/DRAKON.Brix.Core/Assets/bootstrap.tcl`
+`DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs` (the two-step
+sourcing at the end of the boot sequence)
+
+**Sharp edges.**
+- Sourcing the glue and sourcing the guest are two steps and the order is
+  load-bearing. The glue has to have finished before the guest's first line runs.
+- Write the reason into every block, and quote the stock mechanism the block
+  replaces. Six months later the reason is the only thing that tells you whether a
+  block can be deleted.
+- Use one searchable marker phrase for every port-specific change, with a sibling
+  marker for the rare case where a genuinely vendored file had to be edited. That
+  pair of phrases is how you find the whole diff against the original program.
+- Decide per package whether presence is enough or the behavior is really needed.
+  A stub where behavior mattered is a silent loss of function; a real
+  implementation where presence was enough is a dependency you did not have to
+  take on.
+
+### Register hardware implementations from each head and ask a finder for the best one
+
+**When you want this.** The application drives a device that may or may not be
+attached, and the shared code - the pages, the view models, the Core library -
+must never name the implementation, so that one build runs identically on a
+machine with the hardware and on a machine without it.
+[Start each head from a Program Main and pick the platform backend](BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend)
+covers what every head's entry point must contain; this recipe is about the one
+other decision a head is allowed to make, and where the result of it is asked
+for.
+
+**The MVVM shape.** A UI-free contract library declares the device interface,
+the model types and a static finder. The real implementation lives in its own
+library; the simulator lives beside the contract. Each head's `Program.Main`
+registers both before the host is built, because a head is the only project that
+is allowed to reference an implementation. The view model asks the finder for
+the best one and works against the interface only.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.LinuxX11/Program.cs
+App.InitializeLogging();
+
+//This head decides which scope implementations the application can use.
+//  Registration order does not matter: FindBest() prefers real hardware
+//  and falls back to the simulator when nothing is plugged in.
+ScopeDeviceFinder.Register(new Ps2000ScopeDataDevice());
+ScopeDeviceFinder.Register(new SimulatedScopeDataDevice());
+
+var host = CodeBrixPlatformHostBuilder.Create()
+    .App(() => new App())
+    .UseLinuxX11()
+    .UseDirectSkiaCanvasMode() //Experimental - should be safe to leave enabled
+    .Build();
+
+host.Run();
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData/ScopeDeviceFinder.cs
+public static IScopeDataDevice FindBest(bool allowSimulatedFallback = true)
+{
+    IScopeDataDevice[] candidates;
+    lock (SyncRoot)
+    {
+        candidates = Registered.ToArray();
+    }
+
+    //Real hardware first: a physical device beats a simulation whenever one
+    //  is actually there.
+    foreach (IScopeDataDevice scope in candidates.Where(s => !s.IsSimulated))
+    {
+        if (scope.IsOpen) { return scope; }
+
+        try
+        {
+            if (scope.OpenScope()) { return scope; }
+        }
+        catch (PicoScopeException)
+        {
+            //A present-but-unusable device should not stop us falling back
+            //  to the simulator, so swallow and keep looking.
+        }
+    }
+
+    if (!allowSimulatedFallback) { return null; }
+
+    foreach (IScopeDataDevice scope in candidates.Where(s => s.IsSimulated))
+    {
+        if (scope.IsOpen) { return scope; }
+        if (scope.OpenScope()) { return scope; }
+    }
+
+    return null;
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs
+public async Task InitializeAsync()
+{
+    SetStatus("Looking for a scope...");
+
+    //Opening a real device takes a second or two of USB traffic, which the
+    //  UI thread should not sit through.
+    _scope = await Task.Run(() => ScopeDeviceFinder.FindBest()).ConfigureAwait(false);
+
+    if (_scope == null)
+    {
+        SetStatus("No scope available -- nothing registered with ScopeDeviceFinder.");
+        return;
+    }
+
+    IsSimulated = _scope.IsSimulated;
+    DeviceText = _scope.UnitInfo.ToString();
+    // ...
+}
+```
+
+What keeps the rule true is written into the project files: the contract library
+has no package references at all, and the Core library says out loud what it is
+not allowed to reference.
+
+```xml
+<!-- From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/PicoScope.Brix.Core.csproj -->
+<!-- The device-agnostic scope contract. The real device (PicoScope.Brix.ScopeData.Ps2000)
+     is referenced by the heads, which register it; this project never sees it. -->
+<ItemGroup>
+  <ProjectReference Include="..\libs\PicoScope.Brix.ScopeData\PicoScope.Brix.ScopeData.csproj" />
+</ItemGroup>
+```
+
+**Where to look.**
+`PicoScope.Brix/src/PicoScope.Brix.LinuxX11/Program.cs` and the five sibling
+head projects under `PicoScope.Brix/src/`
+`PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData/ScopeDeviceFinder.cs` and
+`IScopeDataDevice.cs`
+`PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs`
+
+**Sharp edges.**
+- Registration order is deliberately not a rule. The finder decides, so a head
+  that registers the simulator first behaves the same as one that registers it
+  last; if you let order decide as well, you have two rules that can disagree.
+- A real implementation that fails to open, or throws the library's own
+  exception type while opening, is skipped rather than treated as an error.
+  "Nothing plugged in" is an ordinary condition, not a failure.
+- The finder is process-global state. Tests must reset it around every case;
+  the sample's finder test class resets in its constructor and again in
+  `Dispose()`.
+- Open the device off the UI thread. A real instrument is seconds of USB traffic
+  at startup, which is why the call is wrapped in `Task.Run`.
+- Registering the simulator in the head, alongside the real device, is what makes
+  it an equal citizen rather than a fallback bolted on afterwards - and it is
+  what lets a head ship without the interop library at all.
 

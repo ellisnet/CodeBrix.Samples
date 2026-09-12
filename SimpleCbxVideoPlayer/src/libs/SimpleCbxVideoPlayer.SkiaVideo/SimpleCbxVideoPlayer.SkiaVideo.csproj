@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.VideoPlayback.MitLicenseForever" Version="1.0.252.1212" />
+    <PackageReference Include="CodeBrix.VideoPlayback.Skia.MitLicenseForever" Version="1.0.252.1212" />
+  </ItemGroup>
+
+  <!--
+    The AV1 decoder and the Opus audio decoder, both registered once in SkiaVideoRuntime.Initialize().
+    Without the first, "av01" has no decoder and nothing plays; without the second, the Opus soundtrack
+    every Matroska and WebM file in the corpus carries has none either.
+  -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.VideoPlayback.Dav1d.BsdLicenseForever" Version="1.0.252.1241" />
+    <PackageReference Include="CodeBrix.Audio.Opus.BsdLicenseForever" Version="1.0.250.73" />
+  </ItemGroup>
+</Project>

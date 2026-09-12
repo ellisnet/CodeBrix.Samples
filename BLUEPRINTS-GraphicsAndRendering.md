@@ -63,6 +63,11 @@ conventions the code blocks follow.
 - [Combine selection polygons with the CodeBrix PolygonTools library](#combine-selection-polygons-with-the-codebrix-polygontools-library)
 - [Give a headless library a drawing facade over SkiaSharp](#give-a-headless-library-a-drawing-facade-over-skiasharp)
 - [Play a Lottie animation on a Skia head and on native WinUI](#play-a-lottie-animation-on-a-skia-head-and-on-native-winui)
+- [Decimate incoming samples to a fixed point budget so redraw cost stays flat](#decimate-incoming-samples-to-a-fixed-point-budget-so-redraw-cost-stays-flat)
+- [Settle between a GPU canvas and a CPU canvas and tell the view model which one started](#settle-between-a-gpu-canvas-and-a-cpu-canvas-and-tell-the-view-model-which-one-started)
+- [Hand a video presenter the graphics context inside the paint handler that makes it current](#hand-a-video-presenter-the-graphics-context-inside-the-paint-handler-that-makes-it-current)
+- [Rebuild an expensive effect chain only when its signature changes](#rebuild-an-expensive-effect-chain-only-when-its-signature-changes)
+- [Deliver a frame capture from inside the paint handler to the command that asked for it](#deliver-a-frame-capture-from-inside-the-paint-handler-to-the-command-that-asked-for-it)
 
 ## Related blueprints
 
@@ -3182,4 +3187,546 @@ button's `Command` still binds to the view model.
 - The Lottie player on the Skia heads needs the Lottie add-in and its animation
   library, both referenced from the library that carries the application's
   packages.
+
+### Decimate incoming samples to a fixed point budget so redraw cost stays flat
+
+**When you want this.** A live source produces more points per second than any
+chart can usefully draw, and redraw cost must not grow with the sample rate or
+with how long the application has been running.
+
+**The MVVM shape.** Not a view-model concern, and deliberately not a rendering
+concern either. The class that owns the plot model carries two numbers - how
+many points a channel may keep, and how many seconds of history the window shows
+- and decimates on the way in, so the stored history is already at budget.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/Charting/ScopePlot.cs
+/// <summary>
+/// The most points to keep per channel. Incoming data is decimated to fit.
+/// </summary>
+public int MaxPointsPerChannel { get; set; } = 2000;
+
+/// <summary>
+/// How many seconds of history a live stream keeps on screen.
+/// </summary>
+public double StreamWindowSeconds { get; set; } = 2.0;
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/Charting/ScopePlot.cs
+//Decimate on the way in. A stream at 1 microsecond per sample
+//  delivers a million points a second; the chart wants a couple of
+//  thousand on screen in total.
+//
+//  samples per second        = 1 / intervalSeconds
+//  points the window affords = MaxPointsPerChannel / StreamWindowSeconds
+//  step                      = the ratio of the two
+int step = 1;
+if (intervalSeconds > 0 && MaxPointsPerChannel > 0)
+{
+    double stride = StreamWindowSeconds / (intervalSeconds * MaxPointsPerChannel);
+    step = Math.Max(1, (int)Math.Ceiling(stride));
+}
+
+for (int i = 0; i < samples.Count; i += step)
+{
+    if (samples.IsLostData(i)) { continue; }
+    double t = _streamElapsedSeconds + (i * intervalSeconds);
+    queue.Enqueue(new DataPoint(t, samples.VoltsAt(i)));
+}
+
+//Drop anything that has scrolled off the left edge.
+double cutoff = _streamElapsedSeconds + (samples.Count * intervalSeconds) - StreamWindowSeconds;
+while (queue.Count > 0 && queue.Peek().X < cutoff) { queue.Dequeue(); }
+while (queue.Count > MaxPointsPerChannel) { queue.Dequeue(); }
+
+series.Points.Clear();
+series.Points.AddRange(queue);
+```
+
+A one-shot capture needs the same budget but no window, so the step is simply
+the ratio of what arrived to what may be kept:
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/Charting/ScopePlot.cs
+int step = Math.Max(1, samples.Count / MaxPointsPerChannel);
+for (int i = 0; i < samples.Count; i += step)
+{
+    if (samples.IsLostData(i)) { continue; }
+    queue.Enqueue(new DataPoint(block.TimeSecondsAt(i), samples.VoltsAt(i)));
+}
+```
+
+**Where to look.**
+`PicoScope.Brix/src/PicoScope.Brix.Core/Charting/ScopePlot.cs`
+`PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData/Model/CaptureBlock.cs` (the
+sample-to-volts and lost-data helpers the loop calls)
+
+**Sharp edges.**
+- Derive the step from the source's own sample interval and the window length,
+  not from the size of the batch that happened to arrive. A device that delivers
+  one big batch and a device that delivers many small ones must produce the same
+  picture.
+- Round the step up and floor it at one. A step of zero is an endless loop, and
+  rounding down quietly overspends the budget.
+- Trim twice: by time, so points that scrolled off the left edge go, and by
+  count, as a hard ceiling for the case where the two numbers disagree.
+- Skip the source's no-data sentinel before converting to a value. It is a
+  distinct number from negative full scale precisely so a gap can be recognized,
+  and converting it draws a full-scale spike that looks like real data.
+- Decimating on the way in is what keeps the cost flat: the kept history is
+  already at budget, so a redraw costs the same at the fastest sample rate as at
+  the slowest.
+
+### Settle between a GPU canvas and a CPU canvas and tell the view model which one started
+
+**When you want this.** Your drawing needs a real graphics context - a shader, a
+color grade, anything the raster backend cannot do - but the application still has
+to run on a machine or a head that has no graphics device, and the view model has
+to know which of the two it ended up with so it can say so and gray out what is
+not available. This is the two-element form of
+[Offer a CPU fallback for a GPU rendering path behind one switch](BLUEPRINTS-GraphicsAndRendering.md#offer-a-cpu-fallback-for-a-gpu-rendering-path-behind-one-switch):
+there the same canvas is told which backend to use before it starts, here two
+different canvas types share one cell and the page settles on whichever one
+actually came up.
+
+**The MVVM shape.** The page owns the settling, because inserting an element and
+collapsing one is the one thing only a page can do. It ends in a single call that
+tells the view model what it got, once; from then on the view model reasons about
+"GPU canvas or not" and never touches either control again. Both paint handlers
+call the same draw method on the view model, and one page-private invalidate
+method repaints whichever canvas is showing.
+
+**Code.**
+
+```xml
+<!-- From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml -->
+<!-- The canvases live here: the GPU one is added by the page when the graphics device starts -->
+<Border Grid.Column="0" Background="Black" BorderBrush="{StaticResource HairlineBrush}"
+        BorderThickness="1" CornerRadius="4">
+    <Grid x:Name="VideoHost" Background="Black">
+        <skia:SKXamlCanvas x:Name="CpuCanvas" PaintSurface="OnCpuPaintSurface" />
+    </Grid>
+</Border>
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs
+private async void OnLoaded(object sender, RoutedEventArgs args)
+{
+    if (gpuCanvas != null) { return; }
+
+    //The GPU canvas is built here rather than in XAML because constructing it is what starts the
+    //  graphics API, and that must not happen inside InitializeComponent().
+    gpuCanvas = new SkiaGLCanvasElement();
+    gpuCanvas.PaintSurface += OnGpuPaintSurface;
+    VideoHost.Children.Insert(0, gpuCanvas);
+
+    CpuCanvas.SizeChanged += (_, _) => CpuCanvas.Invalidate();
+
+    //IsGpuInitialized reads null until the element has loaded and tried to start OpenGL.
+    await Task.Delay(600);
+
+    DispatcherQueue?.TryEnqueue(SettleVideoSurface);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs
+private void SettleVideoSurface()
+{
+    var hasGpuCanvas = gpuCanvas?.IsGpuInitialized == true;
+
+    if (gpuCanvas != null)
+    {
+        gpuCanvas.Visibility = hasGpuCanvas ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    CpuCanvas.Visibility = hasGpuCanvas ? Visibility.Collapsed : Visibility.Visible;
+
+    if (!hasSettledVideoSurface)
+    {
+        hasSettledVideoSurface = true;
+        ViewModel?.OnVideoSurfaceReady(hasGpuCanvas);
+    }
+
+    InvalidateVideoCanvas();
+}
+
+private void InvalidateVideoCanvas()
+{
+    if (gpuCanvas is { Visibility: Visibility.Visible })
+    {
+        gpuCanvas.Invalidate();
+        return;
+    }
+
+    CpuCanvas?.Invalidate();
+}
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs
+public void OnVideoSurfaceReady(bool gpuCanvasAvailable)
+{
+    IsGpuCanvasAvailable = gpuCanvasAvailable;
+
+    if (!gpuCanvasAvailable)
+    {
+        //Without a context the presenter cannot take the graphics path, whatever the drop-down says.
+        controller?.SetGraphicsContext(null);
+    }
+
+    UpdateUiState();
+    // ...
+}
+```
+
+The settle is one-way and happens once: the guard flag means a later resize or a
+second pass through the same method repaints but never re-announces, so the view
+model's picture of the world cannot flip underneath it.
+
+**Where to look.**
+`SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs`
+`SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml` and
+`src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs`
+
+**Sharp edges.**
+- The GPU element reports nothing about itself until it has loaded and tried to
+  start OpenGL, so the settle has to wait for it rather than read it in the loaded
+  handler. A delay is the crude form of that wait; an element that raises its own
+  "I am up" event is the better one where you have it.
+- Build the GPU element in code and insert it, rather than declaring it in XAML:
+  constructing it is what starts the graphics API, so a failure there is a failure
+  you can still catch instead of one that takes the whole page down inside
+  `InitializeComponent`.
+- Insert it at index zero so the already-declared canvas sits above it; collapsing
+  the loser then leaves exactly one canvas painting.
+- Telling the view model "no GPU canvas" must also withdraw the context from
+  whatever is drawing, or the drawing code keeps believing in a device the page
+  has just collapsed.
+- The page reaches its view model by casting the data context to the concrete view
+  model type. A one-method bridge interface, the way the game-canvas recipes do it,
+  keeps the page from naming the view model's type at all.
+
+### Hand a video presenter the graphics context inside the paint handler that makes it current
+
+**When you want this.** A library of yours - a presenter, a renderer, an effect
+chain - needs the host's `GRContext` to do its work on the graphics device, and
+you have to give it one from somewhere. The only place the context is reliably
+current is inside the paint handler the canvas raised.
+
+**The MVVM shape.** The page's paint handler passes the context straight through
+to the view model, which forwards it to the library and keeps no graphics state of
+its own. The library treats the call as idempotent, so a paint handler may make it
+on every single frame without thinking about it; the same handler then draws, so
+supplying the context and using it are one beat.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs
+private void OnGpuPaintSurface(object sender, SkiaGLPaintSurfaceEventArgs args)
+{
+    //The context is current for the length of this call, which is where the presenter wants it.
+    ViewModel?.SetGraphicsContext(args.Context);
+    args.Surface.Canvas.Clear(SKColors.Black);
+    ViewModel?.DrawVideo(args.Surface.Canvas, new SKRect(0f, 0f, args.Info.Width, args.Info.Height));
+}
+
+private void OnCpuPaintSurface(object sender, SKPaintSurfaceEventArgs args)
+{
+    args.Surface.Canvas.Clear(SKColors.Black);
+    ViewModel?.DrawVideo(args.Surface.Canvas, new SKRect(0f, 0f, args.Info.Width, args.Info.Height));
+}
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs
+/// <summary>Hands the player the graphics context the host's GPU canvas created.</summary>
+/// <param name="context">The context, or null when the host has none.</param>
+public void SetGraphicsContext(GRContext context) => controller?.SetGraphicsContext(context);
+
+/// <summary>Draws the video into the canvas the host's paint handler supplied.</summary>
+/// <param name="canvas">The canvas to draw into.</param>
+/// <param name="bounds">The rectangle the video should occupy.</param>
+public void DrawVideo(SKCanvas canvas, SKRect bounds)
+{
+    controller?.Draw(canvas, bounds);
+    // ...
+}
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs
+/// <summary>Supplies, or withdraws, the host's graphics context.</summary>
+/// <param name="context">The host's context, or null to go back to the processor path.</param>
+/// <remarks>
+/// The presenter does not own the context and never disposes it; the host that created it must outlive
+/// this controller, or withdraw the context first. Calling this with the context it already has costs
+/// nothing, so a paint handler may call it on every frame.
+/// </remarks>
+public void SetGraphicsContext(GRContext context)
+{
+    if (isDisposed || ReferenceEquals(graphicsContext, context)) { return; }
+
+    graphicsContext = context;
+    presenter.UseGpu(context);
+    ResolveRenderPath();
+}
+```
+
+Note which way ownership runs: the host created the context and the host disposes
+it, so the library's documentation says plainly that it neither owns nor releases
+it. That one sentence is what keeps a page from tearing a context down under a
+library that is still holding surfaces on it.
+
+**Where to look.**
+`SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs`
+`SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs` and
+`src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs`
+
+**Sharp edges.**
+- Caching the context somewhere at startup and handing it over later is the trap:
+  outside the paint handler it is not current, and the call that looked fine will
+  fail at the first draw.
+- Guard the setter on reference equality, or a per-frame call rebuilds the render
+  path sixty times a second.
+- Passing null is a real instruction, not a no-op: it is how the host says the
+  device has gone and the drawing should fall back.
+- The processor paint handler passes no context at all and is otherwise the same
+  two lines, which is what keeps both paths one drawing code path.
+- Whatever the drop-down asks for, what is actually running is a separate
+  question; expose the running answer as its own property and report that in the
+  status line rather than the request.
+
+### Rebuild an expensive effect chain only when its signature changes
+
+**When you want this.** A renderer's effect chain is expensive to build - it walks
+a lookup grid, compiles something, allocates buffers - and the state that feeds it
+comes from a panel a person is fiddling with. You want the chain rebuilt when the
+selection really moved and not when a repaint, a re-entry or an unchanged
+re-application asks for it.
+
+**The MVVM shape.** A small class in the library owns the applied chain and
+decides whether a new one differs, by reducing it to a signature string: the
+files, their order and their strengths. The controller asks that class first and
+returns immediately when it says nothing moved. The view model builds a candidate
+chain from its bound rows on demand and never caches one, so the panel stays the
+single source of truth.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/Effects/LutChain.cs
+/// <remarks>
+/// Composing an effect chain walks tens of thousands of grid nodes, so the presenter's Effects collection
+/// is rebuilt only when the SELECTION, the ORDER or a PERCENTAGE actually changes - never on every
+/// keystroke or every frame. <see cref="TrySet" /> is the gate that decides.
+/// </remarks>
+public sealed class LutChain
+{
+    // ...
+
+    /// <summary>Replaces the chain, if the new one differs from the old one.</summary>
+    public bool TrySet(IReadOnlyList<LutChainEntry> newEntries)
+    {
+        IReadOnlyList<LutChainEntry> replacement = newEntries == null
+            ? []
+            : newEntries.Where(entry => entry != null).ToList();
+
+        var signature = ComputeSignature(replacement);
+
+        if (string.Equals(signature, Signature, StringComparison.Ordinal)) { return false; }
+
+        entries = replacement;
+        Signature = signature;
+        ChangeCount++;
+        return true;
+    }
+
+    /// <summary>Builds the signature of a chain: its files, its order and its percentages.</summary>
+    /// <returns>A string that is equal for two chains exactly when they would render the same picture.</returns>
+    public static string ComputeSignature(IReadOnlyList<LutChainEntry> entries)
+    {
+        if (entries == null || entries.Count == 0) { return string.Empty; }
+
+        return string.Join("|", entries.Where(entry => entry != null).Select(entry => entry.Signature));
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs
+public bool ApplyLutChain(IReadOnlyList<LutChainEntry> entries)
+{
+    if (isDisposed || !lutChain.TrySet(entries)) { return false; }
+
+    var effects = LutEffectFactory.Build(lutChain.Entries, out var failures);
+
+    presenter.Effects.Clear();
+
+    foreach (IVideoFrameEffect effect in effects) { presenter.Effects.Add(effect); }
+
+    if (failures.Count > 0) { Report(string.Join("; ", failures)); }
+
+    RaiseRenderPathStatus(null);
+    return true;
+}
+```
+
+The same signature answers a second question for free - whether what the panel
+holds has reached the picture yet - so the heading above the panel can say "press
+Play to apply" without any extra bookkeeping:
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs
+private string BuildLutSummary()
+{
+    var selected = Luts.Count(lut => lut.IsChecked);
+    var applied = controller.LutEntries.Count;
+    var pending = !string.Equals(
+        LutChain.ComputeSignature(BuildPanelChain()),
+        LutChain.ComputeSignature(controller.LutEntries),
+        StringComparison.Ordinal);
+
+    if (pending)
+    {
+        return selected == 0
+            ? $"Nothing ticked · press Play to drop the {applied} applied table(s)"
+            : $"{selected} ticked · press Play to apply (in list order)";
+    }
+    // ...
+}
+```
+
+**Where to look.**
+`SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/Effects/LutChain.cs`
+`SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/Effects/LutChainEntry.cs` and
+`src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs`
+`SimpleCbxVideoPlayer/tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/LutChainTests.cs`
+
+**Sharp edges.**
+- The signature has to include everything that changes the result and nothing that
+  does not: file, order and strength here. Leave the strength out and a slider
+  stops working; put a display name in and an unrelated rename rebuilds the world.
+- Format the numbers in the signature with an invariant culture, or the same chain
+  compares unequal on a machine whose decimal separator is a comma.
+- Signature comparison is ordinal on purpose. Culture-aware comparison of paths is
+  both slower and occasionally wrong.
+- The change counter is there for the tests: it is how a test says "this rebuilt
+  once" rather than inspecting the renderer.
+- A per-entry strength of zero is deliberately kept in the chain rather than
+  filtered out, so the order a person set stays visible; the renderer skips it when
+  it composes.
+
+### Deliver a frame capture from inside the paint handler to the command that asked for it
+
+**When you want this.** Something outside the drawing code - a command, a script,
+a test - wants the composed picture as it is on screen, effects and all. The
+capture can only be taken where the graphics context is current, which is inside
+the paint handler, and the asker is not on that thread and has no way to get onto
+it at a moment of its choosing.
+
+**The MVVM shape.** The view model holds the request, not the page: a pending
+destination path plus a `TaskCompletionSource` for the result. The asker sets the
+request, asks the page to invalidate the canvas and awaits the task with a
+deadline. The paint handler already calls the view model's draw method, so the
+draw method checks for a pending request and completes it. No capture code goes
+into the code-behind at all.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs
+public void DrawVideo(SKCanvas canvas, SKRect bounds)
+{
+    controller?.Draw(canvas, bounds);
+
+    //A capture belongs here, inside the paint handler, where the graphics context is current.
+    CompletePendingSnapshot();
+}
+
+private void CompletePendingSnapshot()
+{
+    if (pendingSnapshotPath == null || controller == null) { return; }
+
+    var path = pendingSnapshotPath;
+    pendingSnapshotPath = null;
+
+    ComposedFrameSnapshot snapshot = null;
+
+    try
+    {
+        snapshot = controller.SaveComposedFrame(path);
+    }
+    catch (Exception exception)
+    {
+        //A capture that fails must not take the paint handler with it; the smoke run reports it.
+        SmokeLog($"FAIL capture {exception.GetType().Name}: {exception.Message}");
+    }
+
+    pendingSnapshot?.TrySetResult(snapshot);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs
+private async Task<ComposedFrameSnapshot> CaptureSmokeSnapshotAsync()
+{
+    //Pausing and seeking to a fixed position makes the captured picture the SAME picture on every run,
+    //  which is what lets one run's snapshot be compared with another's.
+    controller.Pause();
+    controller.Seek(smoke.SnapshotPosition);
+    await Task.Delay(TimeSpan.FromMilliseconds(1200));
+
+    pendingSnapshot = new TaskCompletionSource<ComposedFrameSnapshot>(TaskCreationOptions.RunContinuationsAsynchronously);
+    pendingSnapshotPath = smoke.SnapshotPath;
+    InvalidateVideoCanvas?.Invoke();
+
+    Task completed = await Task.WhenAny(pendingSnapshot.Task, Task.Delay(TimeSpan.FromSeconds(8)));
+
+    return ReferenceEquals(completed, pendingSnapshot.Task) ? pendingSnapshot.Task.Result : null;
+}
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs
+/// <remarks>
+/// Call this on the thread that draws, with the graphics context current - inside the paint handler,
+/// in other words. What is captured is the COMPOSED picture, with the effect chain and any overlay
+/// applied, and it is readable on the processor whichever path composed it.
+/// </remarks>
+public ComposedFrameSnapshot SaveComposedFrame(string pngFilePath)
+{
+    if (isDisposed || string.IsNullOrWhiteSpace(pngFilePath)) { return null; }
+
+    using SKImage composed = presenter.CaptureComposedFrame();
+
+    if (composed == null) { return null; }
+
+    using SKData png = composed.Encode(SKEncodedImageFormat.Png, 100);
+    // ...
+}
+```
+
+**Where to look.**
+`SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs`
+`SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs` and
+`src/libs/SimpleCbxVideoPlayer.SkiaVideo/Playback/ComposedFrameSnapshot.cs`
+
+**Sharp edges.**
+- Clear the pending path before taking the capture, not after. A capture that
+  throws would otherwise be retried on every repaint forever.
+- Wrap the capture: an exception escaping a paint handler is a torn frame at best
+  and a dead window at worst.
+- Complete the task with the run-continuations-asynchronously option, or the
+  awaiting code resumes on the drawing thread inside the paint handler.
+- Always race the wait against a deadline. If no repaint arrives - a collapsed
+  canvas, a window that is not showing - nothing will ever complete the request.
+- The capture is of the composed picture, so it includes the effect chain. Pause
+  and seek to a fixed point first if two runs are meant to produce comparable
+  pictures.
 

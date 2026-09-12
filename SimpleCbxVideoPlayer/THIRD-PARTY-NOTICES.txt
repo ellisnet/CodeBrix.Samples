@@ -1,0 +1,123 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the SimpleCbxVideoPlayer sample application, together with the licenses
+under which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here. That includes the AV1 video decoder and the Opus audio
+decoder this application registers at start-up, and the Skia bindings and native
+Skia binaries the drawing surfaces are built on.
+
+------------------------------------------------------------------------
+Video corpus (bundled: src/SimpleCbxVideoPlayer.Core/Assets/authoring/**)
+------------------------------------------------------------------------
+The clips under Assets/authoring/ - the MKV/, WebM/, CodeBrix-Mode1/ and
+CodeBrix-Mode2/ folders - are AV1 video with Opus or Vorbis sound, derived by
+re-encoding two phone recordings.
+
+Those two recordings were created by Jeremy Ellis and placed by him in the
+PUBLIC DOMAIN on 2026-08-29. That dedication covers everything derived from
+them, so every file in all four folders is Public Domain as well. No rights are
+reserved, no attribution is required, and no license obligation attaches to any
+of them.
+
+Nothing in that folder is third-party media. The two original recordings
+themselves are not bundled here.
+
+Assets/authoring/README.txt and Assets/authoring/MANIFEST.txt carry the full
+record: the dedication above, what each file is, and the exact encoder settings
+and command line that produced it.
+
+------------------------------------------------------------------------
+Color lookup tables, found (bundled: .../Assets/LUTs/found/**)
+------------------------------------------------------------------------
+Nine ".cube" color lookup tables from six independent open-source projects.
+Each was accepted only after its license was read at its source AND the file's
+own origin was traced to the project that published it. The verbatim license
+text of every one of the six projects is bundled beside the tables, under
+Assets/LUTs/LICENSES/, and is named per project below.
+
+  smol-cube - https://github.com/aras-p/smol-cube
+      Copyright (c) 2024 Aras Pranckevičius.
+      Licensed MIT OR Unlicense, at the recipient's choice; the Unlicense arm
+      is a public-domain dedication.
+      License text: Assets/LUTs/LICENSES/smol-cube.txt
+      Bundled: found/smol-cube/shaper_3d.cube
+
+  cube-lut-factory.js - https://github.com/diegoinacio/cube-lut-factory.js
+      Copyright (c) 2020 Diego Inácio.
+      Licensed under the MIT License.
+      License text: Assets/LUTs/LICENSES/cube-lut-factory.js.txt
+      Bundled: found/cube-lut-factory.js/1DLUT.cube
+               found/cube-lut-factory.js/3DLUT.cube
+
+  dart-lut - https://github.com/NiKoTron/dart-lut
+      Copyright (c) 2018 Nickolai Simonov.
+      Licensed under the MIT License.
+      License text: Assets/LUTs/LICENSES/dart-lut.txt
+      Bundled: found/dart-lut/exmp.cube
+               found/dart-lut/exmp-example.cube
+               found/dart-lut/exmp_linear.cube
+
+  cameraluts - https://github.com/cgardev/cameraluts
+      Copyright (c) 2026 cgardev.
+      Licensed under the MIT License.
+      License text: Assets/LUTs/LICENSES/cameraluts.txt
+      Bundled: found/cameraluts/
+                   Sony_A7III_SLog3_SGamut3Cine_To_Rec709_Standard.cube
+      This table is computed by generator programs committed in that same
+      repository, from published transfer functions; it is not a
+      redistributed camera-vendor file.
+
+  opensource-luts - https://github.com/darkyboys/opensource-luts
+      By darkyboys. Dedicated to the public domain under the Creative Commons
+      CC0 1.0 Universal public domain dedication.
+      License text: Assets/LUTs/LICENSES/opensource-luts.txt
+      Bundled: found/opensource-luts/GTG Look LUT (Cold Vs Warm).cube
+
+  gtgluts - https://github.com/darkyboys/gtgluts
+      By darkyboys. Dedicated to the public domain under the Creative Commons
+      CC0 1.0 Universal public domain dedication.
+      License text: Assets/LUTs/LICENSES/gtgluts.txt
+      Bundled: found/gtgluts/GTG Skin Warmer V2.cube
+
+Assets/LUTs/MANIFEST.txt records, per table, its upstream path, the retrieval
+date, its SHA-256, and what the validator made of it. Assets/LUTs/README.txt
+records the license bar that was applied, and which candidate tables were
+rejected and why.
+
+------------------------------------------------------------------------
+Color lookup tables, generated (bundled: .../Assets/LUTs/generated/**)
+------------------------------------------------------------------------
+The twelve ".cube" files under Assets/LUTs/generated/, AND the
+Assets/LUTs/generate-luts.py script that writes them, were created for this
+family by Jeremy Ellis and contributors, and are placed in the PUBLIC DOMAIN
+under the Creative Commons CC0 1.0 Universal public domain dedication. No
+rights are reserved and no attribution is required.
+
+They are not derived from any third-party table. Each is defined by arithmetic
+stated in the file's own comment header, in the script, and in
+Assets/LUTs/MANIFEST.txt - a matrix, a curve, a per-channel scale - and is
+computed from that arithmetic alone. The script needs only the Python 3
+standard library; it imports, downloads and installs nothing.
+
+------------------------------------------------------------------------
+Fonts
+------------------------------------------------------------------------
+The Roboto family this application uses as its default text font, and the Noto
+faces it registers as fallbacks, arrive inside their NuGet package. No font
+file is bundled in this folder.
+
+------------------------------------------------------------------------
+User content (opened at run time)
+------------------------------------------------------------------------
+The application writes a baked ".cube" file wherever the person using it
+chooses, and its scripted mode can be pointed at a ".cube" file of your own.
+The rights to any such file remain with its owner; nothing of the kind is
+redistributed as part of this repository.
+
+No further third-party attribution notices apply to this sample.

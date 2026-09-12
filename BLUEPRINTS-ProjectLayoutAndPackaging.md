@@ -34,6 +34,12 @@ conventions the code blocks follow.
 - [Code to the higher-level graphics package and let the binding arrive transitively](#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively)
 - [Know what a transitive package brings and name what you depend on](#know-what-a-transitive-package-brings-and-name-what-you-depend-on)
 - [Record bundled third-party content in a notices file](#record-bundled-third-party-content-in-a-notices-file)
+- [Copy a guest program tree beside the binaries and read it from there](#copy-a-guest-program-tree-beside-the-binaries-and-read-it-from-there)
+- [Generate an application's whole asset set from arithmetic on first run](#generate-an-applications-whole-asset-set-from-arithmetic-on-first-run)
+- [Bind a native driver by its bare name and resolve it yourself at run time](#bind-a-native-driver-by-its-bare-name-and-resolve-it-yourself-at-run-time)
+- [Keep a third-party API inside one library with PrivateAssets and a module initializer](#keep-a-third-party-api-inside-one-library-with-privateassets-and-a-module-initializer)
+- [Ship a data corpus as content items and find it under the application base directory](#ship-a-data-corpus-as-content-items-and-find-it-under-the-application-base-directory)
+- [Depend on a native runtime the user installs instead of shipping a package](#depend-on-a-native-runtime-the-user-installs-instead-of-shipping-a-package)
 
 ## Related blueprints
 
@@ -901,4 +907,639 @@ Every other application folder in the repository carries the same file.
 - Bundled fonts count. A font embedded in a library needs its license text beside
   it and an entry here.
 - Adding a bundled asset means editing this file in the same change, not later.
+
+### Copy a guest program tree beside the binaries and read it from there
+
+**When you want this.** The thing your application runs is a folder of files
+rather than a package - a script program, a template set, a data tree - and it has
+to be beside the binaries at run time on every head, with one lookup that does not
+care where the build put the output.
+
+**The MVVM shape.** Not a view-model concern, but the split matters. The asset tree
+lives in the Core project, which is the project every head references; the library
+that reads it takes the directory as a parameter and is therefore usable against a
+tree anywhere. Exactly two project-file items do the copying, and the run-time side
+of the contract is one lookup under the base directory.
+
+**Code.**
+
+```xml
+<!-- From CodeBrix.Samples/DRAKON.Brix/src/DRAKON.Brix.Core/DRAKON.Brix.Core.csproj -->
+  <!-- The vendored DRAKON Editor Tcl tree + the bootstrap glue script,
+       copied beside the binaries so the runtime can source them. -->
+  <ItemGroup>
+    <None Include="Assets\bootstrap.tcl" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Assets\drakon\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+```
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
+    WindowTree tree = host.Tree;
+    string assets = Path.Combine(AppContext.BaseDirectory, "Assets");
+    // ...
+    string bootstrap = Path.Combine(assetsDirectory, "bootstrap.tcl");
+    string editor = Path.Combine(assetsDirectory, "drakon", "drakon_editor.tcl");
+```
+
+The hosted start is the only place the base directory appears. Everything below it
+works from the directory it was handed, which is what lets a headless caller point
+the same boot sequence at the tree in the source folder instead of the output one.
+
+**Where to look.**
+`DRAKON.Brix/src/DRAKON.Brix.Core/DRAKON.Brix.Core.csproj`
+`DRAKON.Brix/src/DRAKON.Brix.Core/Assets/` and
+`src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs`
+`DRAKON.Brix/THIRD-PARTY-NOTICES.txt`
+
+**Sharp edges.**
+- Both halves are required: the copy items in the project file and the
+  base-directory lookup in the code. Either one alone fails at run time, and it
+  fails on whichever head you did not test.
+- Resolve from the base directory, never from a path relative to the project. A
+  project-relative path works from the IDE and stops working the moment the
+  application is published.
+- Glob only what the guest actually reads at run time. Here the documentation,
+  artwork and example-document folders are deliberately not copied: they exist to
+  be opened by a person, and by the test suite, which copies them out one at a
+  time. Copying them would cost build time and output size for nothing.
+- Keep the tree in the project every head references, and keep the reader library
+  free of it. A directory parameter costs one argument and buys the headless test
+  path.
+- A bundled third-party tree belongs in the notices file, with what it is and what
+  license it arrives under.
+
+### Generate an application's whole asset set from arithmetic on first run
+
+**When you want this.** The application needs binary inputs to do anything at all -
+audio, instruments, a folder-shaped export - and you do not want them in the
+repository, downloaded, or asked of the user before the first button works. This is
+[Build the binary inputs your tests need instead of committing them](BLUEPRINTS-Testing.md#build-the-binary-inputs-your-tests-need-instead-of-committing-them)
+turned up to application scope: the same argument, but the writer ships inside the
+product, runs on first launch beside the executable, and has to produce the layouts
+real files come in rather than the smallest thing a reader will accept.
+
+**The MVVM shape.** Not a view-model concern. A static factory in the same library
+as the code that consumes the assets exposes a path per asset and one
+`EnsureAssets()` the start-up path calls before anything is loaded.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/GameEngineMusicDemo/src/libs/GameEngineMusicDemo.Game/MusicAssetFactory.cs
+/// <para>
+/// WHY GENERATE RATHER THAN SHIP FILES: this application ships no binary music assets, and a sample
+/// that needs some cannot be run by anyone who does not have them. Everything here is written from
+/// arithmetic, so the sample is self-contained on every platform and every checkout, and the
+/// generated files are ordinary <c>.wav</c> / <c>.mid</c> / <c>.sfz</c> that can be opened in any
+/// editor to see what the engine was given.
+/// </para>
+// ...
+/// <para>
+/// TWO OF THE ASSETS ARE FOLDERS, NOT FILES. A <c>.dspreset</c> points at sample files beside it,
+/// and a stems export is a set of files that belong together and are named for each other. Both are
+/// written as the real thing is laid out, because that is the part a game gets wrong.
+/// </para>
+```
+
+```csharp
+// From CodeBrix.Samples/GameEngineMusicDemo/src/libs/GameEngineMusicDemo.Game/MusicAssetFactory.cs
+/// <summary>Where the generated assets live.</summary>
+public static string AssetDirectory { get; } =
+    Path.Combine(AppContext.BaseDirectory, "GeneratedMusic");
+
+// ...
+
+public static void EnsureAssets()
+{
+    Directory.CreateDirectory(AssetDirectory);
+
+    // A chord that agrees with itself: C major, one layer per role.
+    WriteIfMissing(StemPaths[0], () => Pad(new[] { 261.63, 329.63, 392.00 }));
+    WriteIfMissing(StemPaths[1], () => Pulse(65.41, notesPerBar: 4, duty: 0.45));
+    WriteIfMissing(StemPaths[2], () => Arpeggio(new[] { 523.25, 659.25, 783.99, 659.25 }));
+
+    // ...
+
+    EnsureInstrument();
+    EnsureMidi();
+    EnsureDecentSamplerInstrument();
+    EnsureTempoChangeMidi();
+    EnsureStemsExport();
+}
+
+private static void WriteIfMissing(string path, Func<float[]> render)
+{
+    if (File.Exists(path))
+    {
+        return;
+    }
+
+    WaveFileWriter.CreateWaveFile16(path, new BufferSampleProvider(render(), SampleRate, 2));
+}
+```
+
+The two folder-shaped assets are where the recipe earns its keep. An instrument
+preset is written into its own folder with the samples it points at beside it, and
+the export is written under the file-naming convention a real download uses:
+
+```csharp
+// From CodeBrix.Samples/GameEngineMusicDemo/src/libs/GameEngineMusicDemo.Game/MusicAssetFactory.cs
+// A .dspreset is not one file: it POINTS AT sample files beside it, so the folder is as much
+// part of the instrument as the XML is. Written here the same way as everything else, so the
+// sample still ships no binary assets.
+private static void EnsureDecentSamplerInstrument()
+{
+    var instrumentFolder = Path.GetDirectoryName(DecentSamplerPresetPath);
+    var samplesFolder = Path.Combine(instrumentFolder, "Samples");
+    Directory.CreateDirectory(samplesFolder);
+
+    var samplePath = Path.Combine(samplesFolder, "bell.wav");
+    // ...
+}
+
+private static void EnsureStemsExport()
+{
+    Directory.CreateDirectory(StemsExportFolder);
+
+    var beats = StemsBeatTimes();
+
+    WriteStemIfMissing("Vocals", () => StemsPad(beats));
+    WriteStemIfMissing("Drums", () => StemsPulse(beats, frequency: 180, gain: 0.30, decay: 26));
+    WriteStemIfMissing("Bass", () => StemsPulse(beats, frequency: 65.41, gain: 0.34, decay: 6));
+
+    EnsureStemsMidi();
+}
+
+private static void WriteStemIfMissing(string stemName, Func<float[]> render)
+{
+    var path = Path.Combine(StemsExportFolder, $"Fake Song ({stemName}).wav");
+
+    if (!File.Exists(path))
+    {
+        WaveFileWriter.CreateWaveFile16(path,
+            new BufferSampleProvider(render(), StemsExportSampleRate, 2));
+    }
+}
+```
+
+**Where to look.**
+`GameEngineMusicDemo/src/libs/GameEngineMusicDemo.Game/MusicAssetFactory.cs`
+`GameEngineMusicDemo/tests/libs/GameEngineMusicDemo.Game.Tests/MusicAssetFactoryTests.cs`
+
+**Sharp edges.**
+- Write beside the executable through `AppContext.BaseDirectory`, never the working
+  directory, and skip anything already there so only the first run pays. Deleting
+  the folder is then the way to have it written again.
+- Generate the layouts, not just the bytes: a preset with its samples folder, an
+  export whose files are named for each other with its grid file beside them. The
+  layout is the part an application gets wrong, and a flat folder of correct files
+  proves nothing.
+- Make the generated inputs disagree with the application on purpose where the
+  application claims to cope - a different sample rate, a tempo that changes
+  partway through - so the coping path runs on every machine rather than only on
+  the one that had the real files.
+- A format's own rules still apply: a note is two events, and the export step here
+  sorts and closes a track without releasing anything, so a note written without
+  its off event is still sounding at the end of the file and the reader reports it.
+  Looping audio gets a very short fade at each end so the seam does not click.
+
+### Bind a native driver by its bare name and resolve it yourself at run time
+
+**When you want this.** The application talks to a native library that is
+installed on the machine rather than shipped with the application - a device
+driver, a vendor runtime - and it is not reliably anywhere the default probe
+looks. Unlike
+[Fan native packages out across the heads](BLUEPRINTS-ProjectLayoutAndPackaging.md#fan-native-packages-out-across-the-heads)
+and
+[Add the native assets a head would have supplied](BLUEPRINTS-Testing.md#add-the-native-assets-a-head-would-have-supplied),
+there is no package to reference and nothing to copy to the output: the library
+must be found where the user's own installation put it.
+
+**The MVVM shape.** Not a view-model concern. One interop library holds the
+declarations and one static loader holds the search. Every entry point calls the
+loader's registration method first, so no caller has to remember to.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData.Ps2000/Interop/Ps2000Api.cs
+private const string Driver = Ps2000DriverLoader.LibraryName;
+
+/// <summary>
+/// Prepares the driver for use. Call before the first P/Invoke.
+/// </summary>
+public static void Initialise() => Ps2000DriverLoader.EnsureRegistered();
+
+// ...
+
+[DllImport(Driver, EntryPoint = "ps2000_open_unit")]
+public static extern short ps2000_open_unit();
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData.Ps2000/Interop/Ps2000DriverLoader.cs
+public static void EnsureRegistered()
+{
+    if (_registered) { return; }
+
+    lock (SyncRoot)
+    {
+        if (_registered) { return; }
+
+        NativeLibrary.SetDllImportResolver(typeof(Ps2000DriverLoader).Assembly, Resolve);
+        _registered = true;
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData.Ps2000/Interop/Ps2000DriverLoader.cs
+private static IntPtr Resolve(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+{
+    if (!string.Equals(libraryName, LibraryName, StringComparison.OrdinalIgnoreCase))
+    {
+        return IntPtr.Zero;
+    }
+
+    string fileName = DriverFileName;
+    foreach (string directory in GetSearchPaths())
+    {
+        string candidate = Path.Combine(directory, fileName);
+        if (!File.Exists(candidate)) { continue; }
+
+        //Loading by absolute path also lets the OS resolve the driver's own
+        //  dependencies (picoipp.dll on Windows) from beside it, which a
+        //  plain name-based load would not do.
+        if (NativeLibrary.TryLoad(candidate, out IntPtr handle))
+        {
+            LoadedFrom = candidate;
+            return handle;
+        }
+    }
+
+    //Fall through to the default probe, which covers the case where the
+    //  driver has been copied next to the executable, put on PATH, or -- on
+    //  Linux -- registered with the system loader by its package.
+    return IntPtr.Zero;
+}
+```
+
+Naming the library by its bare name is what lets one assembly serve every
+operating system, which is why the project targets the plain framework rather
+than the Windows-flavored one:
+
+```xml
+<!-- From CodeBrix.Samples/PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData.Ps2000/PicoScope.Brix.ScopeData.Ps2000.csproj -->
+<!--
+  Plain net10.0, not net10.0-windows: nothing in here is Windows-specific. The
+  P/Invokes bind to the same ps2000 entry points on every operating system
+  (ps2000.dll on Windows, libps2000.so on Linux), and the only per-OS code is
+  where Ps2000DriverLoader looks for the driver.
+-->
+```
+
+**Where to look.**
+`PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData.Ps2000/Interop/Ps2000DriverLoader.cs`
+`PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData.Ps2000/Interop/Ps2000Api.cs` and
+`PicoScope.Brix.ScopeData.Ps2000.csproj`
+
+**Sharp edges.**
+- The resolver is registered per assembly, and it must be registered before the
+  first call into that assembly's declarations. Calling it from every entry
+  point, behind a flag and a lock, is cheaper than documenting the rule.
+- Load by absolute path. A name-based load leaves the library's own dependencies
+  to the default search, and a vendor library that sits beside its dependency in
+  an unusual folder will not find it.
+- Returning zero from the resolver means "I have nothing", not "fail": the
+  runtime then runs its own probe, which is the normal path on a system whose
+  package manager registered the library properly.
+- Keep, and report, the path that was actually loaded. When the answer is wrong,
+  the loaded path is the first thing anyone needs.
+- A 32-bit host against a 64-bit library fails with a bad-image error rather
+  than a missing-library error, and the two send you looking in different
+  places.
+- Do not commit the driver or bundle it. Record in the notices file that it is
+  loaded at run time and never redistributed.
+
+### Keep a third-party API inside one library with PrivateAssets and a module initializer
+
+**When you want this.** One library is meant to be the only place a third-party
+API is ever named - a device SDK, a daemon client, a vendor object model - and
+you want that boundary enforced by the compiler rather than by review. A
+downstream project that reaches past the library should fail to build, not merely
+be frowned upon in a pull request.
+
+**The MVVM shape.** Not a view-model concern. The library takes the package
+reference with `PrivateAssets=all`, exposes its own data transfer types at the
+seam and maps into them, so no third-party type crosses the boundary either.
+Everything above it - the Core library, the heads, the other libraries and the
+test projects - sees only the library's own surface.
+
+**Code.**
+
+```xml
+<!-- Adapted from CodeBrix.Samples/RedisSetupTool/src/libs/RedisSetupTool.DockerManagement/RedisSetupTool.DockerManagement.csproj
+     (package ids and versions elided - see the project's csproj) -->
+<!-- The CodeBrix Docker library - the whole reason this library exists. PrivateAssets=all keeps
+     the reference from flowing to RedisSetupTool.Core and the heads, so the boundary is
+     enforced by the compiler rather than by discipline: a downstream project that names a
+     CodeBrix.Docker type fails with CS0234. -->
+<ItemGroup>
+  <PackageReference Include="(the CodeBrix Docker package)">
+    <PrivateAssets>all</PrivateAssets>
+  </PackageReference>
+</ItemGroup>
+
+<!-- PrivateAssets=all also stops the RUNTIME asset flowing, which would leave every consumer
+     with a missing CodeBrix.Docker.dll at load time. Re-publish just the assembly as a
+     copy-to-output item so consumers get the file without getting the compile-time reference.
+     The assembly still does not appear in the consumer's deps.json, which is why
+     DockerAssemblyResolver hooks AssemblyLoadContext to find it at load time. -->
+<Target Name="FlowDockerAssemblyToConsumers" BeforeTargets="GetCopyToOutputDirectoryItems" DependsOnTargets="ResolveReferences">
+  <ItemGroup>
+    <AllItemsFullPathWithTargetPath Include="@(ReferencePath-&gt;WithMetadataValue('Filename', 'CodeBrix.Docker'))">
+      <TargetPath>CodeBrix.Docker.dll</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </AllItemsFullPathWithTargetPath>
+  </ItemGroup>
+</Target>
+```
+
+Copying the file out is only half of it. The consumer's dependency manifest still
+does not mention the assembly, so the default load context will not find it; the
+library closes that gap itself, once, in the one place that knows where its
+private copy sits.
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/libs/RedisSetupTool.DockerManagement/DockerAssemblyResolver.cs
+//A module initializer is the trigger, not a static constructor on DockerManager: the runtime has to
+//  resolve CodeBrix.Docker while it prepares that constructor's body, which is earlier than the
+//  constructor's first statement. The module initializer runs before any code in this assembly does,
+//  so the hook is always in place by then.
+internal static class DockerAssemblyResolver
+{
+    private const string DockerAssemblyName = "CodeBrix.Docker";
+
+    private static int _registered;
+
+    //CA2255 warns that module initializers belong in application code. This is the one case the
+    //  rule cannot cover: the hook has to be installed before any code in THIS assembly runs, and
+    //  only this assembly knows where its private copy of CodeBrix.Docker.dll sits.
+#pragma warning disable CA2255
+    [ModuleInitializer]
+    internal static void EnsureRegistered()
+    {
+        if (Interlocked.Exchange(ref _registered, 1) == 0)
+        {
+            AssemblyLoadContext.Default.Resolving += ResolveDockerAssembly;
+        }
+    }
+#pragma warning restore CA2255
+
+    private static Assembly ResolveDockerAssembly(AssemblyLoadContext context, AssemblyName name)
+    {
+        if (!string.Equals(name?.Name, DockerAssemblyName, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var directory = Path.GetDirectoryName(typeof(DockerAssemblyResolver).Assembly.Location);
+        if (string.IsNullOrEmpty(directory))
+        {
+            return null;
+        }
+
+        var candidate = Path.Combine(directory, DockerAssemblyName + ".dll");
+        return File.Exists(candidate) ? context.LoadFromAssemblyPath(candidate) : null;
+    }
+}
+```
+
+**Where to look.**
+`RedisSetupTool/src/libs/RedisSetupTool.DockerManagement/RedisSetupTool.DockerManagement.csproj`
+`RedisSetupTool/src/libs/RedisSetupTool.DockerManagement/DockerAssemblyResolver.cs` and
+`Models/`, `Mapping/` (the data transfer types and the mappers that keep third-party
+types off the seam)
+
+**Sharp edges.**
+- The private reference stops the runtime asset flowing as well as the
+  compile-time one. Without the re-publish target the application builds cleanly
+  and fails at load time, which is the worst place to find out.
+- The timing is the whole trick. The runtime resolves the referenced assembly
+  while it prepares the body of the first method that mentions one of its types,
+  which is earlier than that method's first statement - so a static constructor on
+  the facade is too late and a module initializer is not.
+- Register the resolving handler once and guard it, because a module initializer
+  can run more than once in a process that loads the assembly into more than one
+  context.
+- `PrivateAssets=all` alone does not hold the boundary: if the library returns a
+  third-party type from a public method, every consumer needs the reference back.
+  Publish your own types at the seam and map into them.
+
+### Ship a data corpus as content items and find it under the application base directory
+
+**When you want this.** Your sample or tool has to have something real to open the
+moment it starts - clips, documents, tables, fixtures - and you want it to work
+the same way beside every head's executable and beside the test binary, with no
+configuration file, no installer step and no search of the file system. This is the
+copied-to-output counterpart of
+[Embed an asset with an explicit logical name and load it by reflection](BLUEPRINTS-ProjectLayoutAndPackaging.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection):
+embed what the code reads as a stream, copy what a person browses, a library opens
+by path, or a test compares against on disk.
+
+**The MVVM shape.** Not a view-model concern in itself. The data lives under the
+Core library that every head references, as ordinary content copied to the output
+folder; a static class in the library that owns the feature resolves it under
+`AppContext.BaseDirectory` and answers "is it there" with a path or null. The view
+model asks that class once at startup and turns a null into a sentence a person can
+act on.
+
+**Code.**
+
+```xml
+<!-- From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/SimpleCbxVideoPlayer.Core.csproj -->
+<!--
+  The video corpus and the colour lookup tables the application plays and grades with. They are DATA:
+  nothing here is compiled, and every head that references this project gets its own copy beside its
+  executable, which is where SampleAssets looks for them.
+-->
+<ItemGroup>
+  <None Include="Assets\**\*" CopyToOutputDirectory="PreserveNewest" />
+</ItemGroup>
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/Assets/SampleAssets.cs
+/// <remarks>
+/// The corpus is ordinary data that the Core project copies to the output folder, so it sits beside the
+/// running executable under <c>Assets/</c> - no configuration file, no search of the file system, and the
+/// same layout on every head and in the test run. A copy of the application that has lost its
+/// <c>Assets</c> folder finds nothing, which is why the user interface says so rather than failing.
+/// </remarks>
+public static class SampleAssets
+{
+    /// <summary>The video corpus, relative to the folder the application runs from.</summary>
+    public const string AuthoringRelativePath = "Assets/authoring";
+
+    /// <summary>Finds the corpus beside the running application.</summary>
+    /// <returns>The folder the corpus sits in, or null when the application carries no corpus.</returns>
+    public static string FindAssetsRoot() => FindAssetsRoot(AppContext.BaseDirectory);
+
+    /// <summary>Finds the corpus beside a folder of your choosing.</summary>
+    public static string FindAssetsRoot(string applicationFolder)
+    {
+        if (string.IsNullOrWhiteSpace(applicationFolder)) { return null; }
+
+        return Directory.Exists(GetAuthoringFolder(applicationFolder)) ? applicationFolder : null;
+    }
+    // ...
+}
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs
+private void LoadCorpus()
+{
+    var assetsRoot = SampleAssets.FindAssetsRoot();
+
+    if (assetsRoot == null)
+    {
+        CorpusText = "The sample corpus was not found. The application plays the files under "
+            + $"{SampleAssets.AuthoringRelativePath}, which is copied to the folder it runs from, so a "
+            + "copy that has lost that folder has nothing to open.";
+        return;
+    }
+    // ...
+}
+```
+
+The test project links the same folder rather than keeping a second copy, so the
+tests read the files the application reads, at the same relative paths:
+
+```xml
+<!-- From CodeBrix.Samples/SimpleCbxVideoPlayer/tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/SimpleCbxVideoPlayer.SkiaVideo.Tests.csproj -->
+<!--
+  The corpus the application ships, laid out beside the test binary exactly as it is laid out beside a
+  head's executable, so the catalogue tests read the same files at the same relative paths the running
+  application does. It is linked rather than copied: there is one corpus in this application.
+-->
+<ItemGroup>
+  <None Include="..\..\..\src\SimpleCbxVideoPlayer.Core\Assets\**\*"
+        Link="Assets\%(RecursiveDir)%(Filename)%(Extension)"
+        CopyToOutputDirectory="PreserveNewest" />
+</ItemGroup>
+```
+
+**Where to look.**
+`SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/SimpleCbxVideoPlayer.Core.csproj`
+`SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/Assets/SampleAssets.cs` and
+`tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/SimpleCbxVideoPlayer.SkiaVideo.Tests.csproj`
+`SimpleCbxVideoPlayer/tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/SampleAssetsTests.cs`
+
+**Sharp edges.**
+- Resolve from `AppContext.BaseDirectory`, never from the current directory: a
+  shortcut, a debugger or a test runner can start a process anywhere.
+- Put the content on the library every head references and let the copy fan out;
+  one glob item then feeds six output folders, and a new head needs no build edit.
+- Keep the relative path as a constant and build every other path from it, so the
+  message shown when nothing is found names the same path the code looked in.
+- Make "the folder is missing" a normal answer - a null and a sentence - rather
+  than an exception. A copy that lost its content should still start and say what
+  is wrong.
+- Link the folder into the test project with the same relative layout rather than
+  copying it; two corpora drift, and the drift shows up as a test that passes
+  against files the application never sees.
+- Preserve-newest keeps incremental builds cheap; a corpus of any size copied on
+  every build is felt immediately.
+
+### Depend on a native runtime the user installs instead of shipping a package
+
+**When you want this.** A library you reference needs a native runtime on some
+operating systems and not on others, and redistributing it is the wrong answer -
+because of its license, its size, or because the machine usually has it already.
+This is the opposite arrangement from
+[Fan native packages out across the heads](BLUEPRINTS-ProjectLayoutAndPackaging.md#fan-native-packages-out-across-the-heads):
+nothing in the build declares the dependency at all.
+
+**The MVVM shape.** Not a view-model concern on the packaging side. The half that
+is: a missing runtime has to arrive as a state the view model reports, not an
+exception at startup, because the application must still open, still list what it
+can, and still say what is wrong on a machine that does not have it.
+
+**Code.**
+
+```xml
+<!-- Adapted from CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/WebcamViewer.Core.csproj
+     (package ids and versions elided - see the project's csproj) -->
+<ItemGroup>
+  <!-- ... CodeBrix.Platform, the Open Sans font package, the generic host and console logging ... -->
+
+  <!-- SKXamlCanvas - the SkiaSharp video surface hosted in CodeBrix.Platform XAML -->
+  <!-- ... the CodeBrix.Platform SkiaSharp Views package ... -->
+
+  <!-- Webcam capture: device enumeration, live BGRA frames, in-memory photos -->
+  <!-- ... the CodeBrix.Webcam package. This is the whole declaration: no native payload
+       package here or on any head, because on Linux and macOS the capture session opens
+       through a native media runtime the user installs. -->
+
+  <!-- PNG encoding for the frame-photo feature -->
+  <!-- ... the CodeBrix.Imaging package ... -->
+</ItemGroup>
+```
+
+Because the build says nothing about it, the notices file and the README are the
+only places the dependency is written down, and the notices entry has to be
+explicit that it is not redistributed:
+
+```text
+// From CodeBrix.Samples/WebcamViewer/THIRD-PARTY-NOTICES.txt
+------------------------------------------------------------------------
+Native media runtime (not bundled; installed by the user)
+------------------------------------------------------------------------
+On Linux and macOS the webcam library opens a capture session through the
+native libvlc runtime, which is published separately by VideoLAN under the
+GNU Lesser General Public License, version 2.1 or later. It is NOT bundled
+with, or redistributed by, this repository: on Linux it is installed with the
+system package manager, and on macOS it is supplied by an installed VLC media
+player application. On Windows no native runtime is used at all - capture
+goes through the operating system's own media engine. "VideoLAN", "VLC" and
+"LibVLC" are trademarks of VideoLAN; this sample is not affiliated with or
+endorsed by VideoLAN.
+```
+
+The application-side half is one catch, placed where the runtime is first needed:
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+        _session = new WebcamSession(camera.Device);
+        // ...
+    }
+    catch (Exception e)
+    {
+        StatusText = $"Could not start '{camera?.Device.FriendlyName}': {e.Message}";
+    }
+```
+
+**Where to look.**
+`WebcamViewer/src/WebcamViewer.Core/WebcamViewer.Core.csproj`
+`WebcamViewer/THIRD-PARTY-NOTICES.txt` and
+`WebcamViewer/README.md` (the prerequisites list, per operating system)
+
+**Sharp edges.**
+- Separate what works without the runtime from what does not, and say so. Here
+  device enumeration works everywhere, so the dropdown fills on a machine with no
+  runtime and the failure only appears when a session is started - which is
+  exactly where the catch has to be.
+- The notices entry says who publishes the runtime, under what license, that it is
+  not redistributed, how it is obtained on each operating system, and that the
+  names are trademarks the sample is not affiliated with. Leaving any of those out
+  is what makes the file useless later.
+- The README carries the install instruction per operating system, including the
+  one where there is nothing to install. A reader on the platform that needs
+  nothing should be told that explicitly rather than left to infer it.
+- Operating-system consent is the same kind of undeclared dependency: a head run
+  from the command line inherits the terminal's camera permission, while the same
+  head packaged as a bundle has to declare its own usage descriptions or be
+  refused. Neither is visible in any project file.
 

@@ -40,6 +40,9 @@ conventions the code blocks follow.
 - [Recognize a gesture from landmark geometry instead of a model](#recognize-a-gesture-from-landmark-geometry-instead-of-a-model)
 - [Track multiple detections across frames with stable ids](#track-multiple-detections-across-frames-with-stable-ids)
 - [Smooth a noisy sensor position before it drives the UI](#smooth-a-noisy-sensor-position-before-it-drives-the-ui)
+- [Compose a chain of color lookup tables and write it back out as one file](#compose-a-chain-of-color-lookup-tables-and-write-it-back-out-as-one-file)
+- [Own one capture session in the view model and switch it from the selection setter](#own-one-capture-session-in-the-view-model-and-switch-it-from-the-selection-setter)
+- [Encode a device's raw BGRA still to PNG with the CodeBrix Imaging library](#encode-a-devices-raw-bgra-still-to-png-with-the-codebrix-imaging-library)
 
 ## Related blueprints
 
@@ -1910,4 +1913,352 @@ else
   always a valid normalized coordinate.
 - Two thresholds gate the result before smoothing runs: the detector's own score
   threshold and the second-stage model's presence threshold.
+
+### Compose a chain of color lookup tables and write it back out as one file
+
+**When you want this.** A person has stacked several color lookup tables at
+different strengths and wants that exact grade as a single portable `.cube` file -
+to hand to a colorist, to feed to another tool, or to apply again later as one
+table rather than a stack.
+
+**The MVVM shape.** The view model builds the chain from its bound panel rows,
+asks the head where the file goes, and calls one library method that composes and
+writes. Composing is arithmetic on the tables: no video, no graphics context, no
+frame and no window are involved, which is what lets a chain be baked that has
+never been played. The library reports every failure as a message and returns null
+rather than throwing into a command handler.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/Playback/BakeLocations.cs
+/// <summary>What a baked chain is called before the person saving it says otherwise.</summary>
+/// <remarks>
+/// There is no default FOLDER here, and that is the point: a bake goes where the person saving it says it
+/// goes, chosen in their own platform's save dialog, or it does not happen at all. This class supplies only
+/// the name the dialog opens with - a stamped one, so two bakes in a row do not silently propose the same
+/// file - and the extension this family writes.
+/// </remarks>
+public static class BakeLocations
+{
+    /// <summary>The only lookup-table format this family writes.</summary>
+    public const string LutFileExtension = ".cube";
+
+    /// <summary>Builds the name a save dialog opens with for a bake made at a given moment.</summary>
+    public static string CreateFileName(DateTime timestamp) =>
+        "chain-" + timestamp.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture) + LutFileExtension;
+}
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs
+/// <remarks>
+/// <para>
+/// A bake is INDEPENDENT of the picture. The chain handed in here is read and composed from scratch;
+/// the presenter showing the video is not read and not touched, and NEITHER IS ANY OTHER PRESENTER.
+/// </para>
+/// <para>
+/// The output size is pinned to <see cref="SkiaVideoPresenter.DefaultEffectLutSize" /> - the size the
+/// presenter composes at - rather than left to <c>LutComposer.GetOutputSize</c>. That is what keeps a
+/// baked file and a played chain agreeing to the last bit even though nothing connects them: same
+/// size, same tetrahedral sampling, same arithmetic.
+/// </para>
+/// </remarks>
+public BakedLut BakeChain(IReadOnlyList<LutChainEntry> entries, string cubeFilePath)
+{
+    // ... the guards: a blank path, and a chain with nothing in it ...
+
+    foreach (LutChainEntry entry in chain)
+    {
+        try
+        {
+            layers.Add(LutLayer.FromCubeFile(entry.FilePath, entry.ApplyAtPercent));
+        }
+        catch (Exception exception) when (exception is IOException or FormatException or InvalidDataException
+                                              or UnauthorizedAccessException or ArgumentException)
+        {
+            //One unreadable table is that table's problem, not the bake's.
+            failures.Add($"{entry.FileName}: {exception.Message}");
+        }
+    }
+
+    // ...
+
+    try
+    {
+        Lut3D table = LutComposer.Compose(
+            layers,
+            new LutComposerOptions { OutputSize = SkiaVideoPresenter.DefaultEffectLutSize });
+
+        // ...
+
+        var title = GetChainTitle(chain);
+        CubeLutFile.Write(table, cubeFilePath, title);
+
+        return new BakedLut(cubeFilePath, title, table.Size, chain.Count);
+    }
+    catch (Exception exception)
+    {
+        //A bake that cannot be written is a message in the status line, never a crash mid-playback.
+        Report(exception.Message);
+        return null;
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs
+private async Task DoBakeAsync()
+{
+    // ...
+    var cubeFilePath = await PickSaveCubePathAsync(BakeLocations.CreateFileName(DateTime.Now));
+
+    //Cancelled. Nothing is written and nothing is said: deciding not to save is not a failure.
+    if (string.IsNullOrWhiteSpace(cubeFilePath)) { return; }
+
+    //The panel's own state, composed fresh - never the chain the presenter happens to be showing.
+    BakedLut baked = controller.BakeChain(BuildPanelChain(), cubeFilePath);
+
+    if (baked == null) { return; }
+
+    BakeStatusText = $"Baked {baked.TableCount} table(s) into a {baked.Size}-node table: {baked.FilePath}";
+    UpdateUiState();
+}
+
+private List<LutChainEntry> BuildPanelChain()
+{
+    List<LutChainEntry> entries = [];
+
+    foreach (LutListItem lut in Luts.Where(lut => lut.IsChecked))
+    {
+        entries.Add(new LutChainEntry(lut.FilePath, lut.Percent));
+    }
+
+    return entries;
+}
+```
+
+The written file names itself after the chain it came from, so a stack of tables
+at their strengths survives in the file's own title line and the result is
+self-describing when it turns up on someone else's disk later.
+
+**Where to look.**
+`SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs`
+`SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/Playback/BakeLocations.cs` and
+`src/libs/SimpleCbxVideoPlayer.SkiaVideo/Playback/BakedLut.cs`
+`SimpleCbxVideoPlayer/tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/BakeLocationsTests.cs`
+
+**Sharp edges.**
+- Pin the composed size to the size the renderer composes at. Let the composer
+  pick its own and a baked file and the live picture drift apart in ways nobody
+  can see and everyone can measure.
+- Compose from the panel's state, never from what the renderer is holding: the two
+  are independent by design, and reading the renderer would make a bake depend on
+  whether something had been played first.
+- One unreadable table in a stack is that table's problem. Collect the failures,
+  report them together and compose what did read; abandoning the whole bake for one
+  bad file is the worse answer.
+- A bake with nothing ticked and a bake to a blank path both deserve their own
+  message, because they are different mistakes.
+- Create the destination folder before writing. A picker can hand back a path in a
+  folder that no longer exists.
+- Baking and playing being independent is exactly what makes a round trip - bake
+  the chain, feed the file back at full strength, compare the two pictures - a real
+  check rather than a tautology.
+
+### Own one capture session in the view model and switch it from the selection setter
+
+**When you want this.** One camera live at a time, chosen from a dropdown, in an
+application small enough that a separate capture-service library would be
+ceremony. The discovery-and-start path is
+[Enumerate cameras and start a live capture session](BLUEPRINTS-MediaAndVision.md#enumerate-cameras-and-start-a-live-capture-session),
+where a service class wraps the session and its `Start` calls its own `Stop`
+first. This recipe is the other arrangement: the view model holds the session
+object itself, so the selection setter is the entire lifecycle - teardown,
+repaint and start - and there is nowhere else for the ordering to hide.
+
+**The MVVM shape.** The selected item is a `SetProperty` property whose setter
+calls one private method. That method is both the stop path and the start path,
+it runs on the UI thread, and it is the only code in the application that touches
+the session field. The page contributes a two-way bound `ComboBox` and nothing
+else.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+private CameraOption _selectedCamera;
+public CameraOption SelectedCamera
+{
+    get => _selectedCamera;
+    set
+    {
+        if (_selectedCamera != value)
+        {
+            SetProperty(ref _selectedCamera, value);
+            SwitchCamera(value);
+        }
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+private void SwitchCamera(CameraOption camera)
+{
+    try
+    {
+        HasFrame = false;
+        if (_session != null)
+        {
+            _session.FrameReceived -= OnFrameReceived;
+            _session.Dispose();
+            _session = null;
+        }
+        lock (_frameLock)
+        {
+            _latestFrame = null;
+        }
+        InvalidateCanvas?.Invoke();
+
+        if (camera == null)
+        {
+            IsMicAvailable = false;
+            return;
+        }
+
+        _session = new WebcamSession(camera.Device);
+        _session.FrameReceived += OnFrameReceived;
+        _session.MonitorAudio = IsAudioMonitorOn;
+        _session.Start();
+        IsMicAvailable = _session.IsAudioCaptureActive;
+        StatusText = $"Live: {camera.Device.FriendlyName}";
+    }
+    catch (Exception e)
+    {
+        StatusText = $"Could not start '{camera?.Device.FriendlyName}': {e.Message}";
+    }
+}
+```
+
+```xml
+<!-- From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.UI/Views/MainPage.xaml -->
+<ComboBox MinWidth="280" VerticalAlignment="Center"
+          ItemsSource="{d:Binding Cameras}"
+          SelectedItem="{d:Binding SelectedCamera, Mode=TwoWay}" />
+```
+
+Startup goes through the same setter: the discovery method fills the collection
+and then assigns `SelectedCamera = Cameras[0]`, so the automatic start on launch
+and the user's later choice are one code path and there is no separate start
+command anywhere.
+
+**Where to look.**
+`WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs`
+`WebcamViewer/src/WebcamViewer.UI/Views/MainPage.xaml`
+
+**Sharp edges.**
+- The teardown order is the recipe. Clear the "has a frame" flag, unsubscribe
+  before disposing so a frame already in flight cannot land on a dead handler,
+  null the field, drop the cached pixels under the frame lock, and only then ask
+  for a repaint - which is what paints the previous camera's last picture over
+  with black before the new session can deliver anything.
+- A null selection means stop and stay stopped, and it has to clear the derived
+  device capabilities on the way out or the UI keeps advertising the camera that
+  just went away.
+- Settings that belong to the session rather than to the device are copied into
+  each new session before it starts, so a preference survives a camera change.
+- The whole method runs on the UI thread from a property setter, and starting a
+  session is synchronous, so a slow camera is a visible hitch. Move the start onto
+  a worker and report progress if that matters in your application.
+- Discovery happens once at startup. Nothing here watches for a camera being
+  plugged in afterwards.
+- The dropdown binds straight to the collection with no item template, because the
+  wrapper type overrides `ToString()`; see the device-wrapper recipe.
+
+### Encode a device's raw BGRA still to PNG with the CodeBrix Imaging library
+
+**When you want this.** A capture device hands you a still as a flat array of
+BGRA bytes plus its dimensions, and you want a file on disk without an
+intermediate bitmap, a Skia surface or a format registry in between. The
+registry-shaped use of the same library, with per-format factory methods behind
+an import and export interface, is
+[Add codec coverage beyond SkiaSharp with the CodeBrix Imaging library](BLUEPRINTS-DocumentsAndData.md#add-codec-coverage-beyond-skiasharp-with-the-codebrix-imaging-library);
+this is the one-call version, and the thing it teaches is buffer ownership.
+
+**The MVVM shape.** The command asks the session for the still on the UI thread,
+then does the wrap, the encode and the file write inside one `Task.Run` that it
+awaits. The busy flag is set around the whole thing and cleared in a `finally`,
+and the outcome is a line of status text either way.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+using CodeBrix.Imaging;
+using CodeBrix.Imaging.Formats.Png;
+using CodeBrix.Imaging.PixelFormats;
+```
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+private async Task DoTakePhoto()
+{
+    if (!CanTakePhoto()) { return; }
+
+    IsBusy = true;
+    try
+    {
+        var session = _session;
+        if (session == null) { return; }
+
+        WebcamPhoto photo = session.CapturePhoto();
+        string fileName = $"frame_capture_{DateTime.Now:yyyyMMdd_HHmmss_fff}.png";
+        string outputPath = Path.Combine(FolderPath.Trim(), fileName);
+
+        // The raw BGRA pixels hand straight to CodeBrix.Imaging for PNG encoding.
+        await Task.Run(() =>
+        {
+            using Image<Bgra32> image = Image.LoadPixelData<Bgra32>(
+                photo.PixelsBgra32, photo.Width, photo.Height, PngFormat.Instance);
+            image.SaveAsPng(outputPath);
+        });
+
+        StatusText = $"Saved: {outputPath}";
+    }
+    catch (Exception e)
+    {
+        StatusText = $"Photo failed: {e.Message}";
+    }
+    finally
+    {
+        IsBusy = false;
+    }
+}
+```
+
+The pixel type argument is what says how the bytes are laid out, and the format
+instance passed at load time is what lets the save call take a path and nothing
+else. Reach for an explicit encoder object only when you need options the default
+does not give you.
+
+**Where to look.**
+`WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs`
+`WebcamViewer/src/WebcamViewer.Core/WebcamViewer.Core.csproj` (the imaging
+package, referenced once, with a comment saying what it is for)
+
+**Sharp edges.**
+- Loading pixel data wraps the array you pass rather than copying it, so nothing
+  may touch that buffer until the encode returns. That is exactly why the work is
+  awaited instead of fired and forgotten, and why the still is a separate capture
+  rather than the live preview buffer another thread keeps overwriting.
+- The still can be a different resolution from the frames on screen. Take the
+  dimensions from the still itself, never from what the preview last reported.
+- Read the session field into a local first. A camera switch on another code path
+  can null it between the check and the call.
+- The folder's existence was proved by the command's `CanExecute`, not at write
+  time, so a folder deleted in between arrives here as a caught exception and a
+  status line.
+- The file name is a timestamp to the millisecond, which is not a uniqueness
+  guarantee; add a counter if two stills can be requested together.
 

@@ -119,7 +119,21 @@ though it runs only on Windows.
 
 ### Prerequisites
 
-- The .NET 10 SDK. Nothing else needs installing.
+- The .NET 10 SDK. All CodeBrix code arrives from NuGet; no CodeBrix library is
+  referenced as a source project, so this folder builds on its own.
+- A native media runtime on Linux and macOS, because that is how the webcam library
+  opens a capture session there. No head declares a native package for it:
+  - **Linux** - install it with the system package manager
+    (`sudo apt install libvlc5 vlc-plugin-base` on Debian and derivatives). The
+    desktop VLC application and the development headers are not needed.
+  - **macOS** - install the VLC media player application from
+    [videolan.org/vlc](https://www.videolan.org/vlc/) into `/Applications`; the
+    library's loader finds it and its plugins automatically.
+  - **Windows** - nothing to install. Capture goes through the operating system's
+    own media engine.
+  Camera *enumeration* works everywhere without that runtime, so a machine missing
+  it fills the dropdown and then reports the failure in the status line when the
+  capture session starts.
 - A webcam. With no camera attached the application still starts and the dropdown is
   empty; the status line reads "No cameras were found on this machine." and **Take
   Photo** stays disabled because it requires a delivered frame.

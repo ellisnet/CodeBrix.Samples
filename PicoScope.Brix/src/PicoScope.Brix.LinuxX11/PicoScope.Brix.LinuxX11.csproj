@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <!-- Tell MSBuild to treat .xaml files as CodeBrix.Platform XAML pages -->
+  <ItemGroup>
+    <Page Include="**\*.xaml" Exclude="bin\**\*.xaml;obj\**\*.xaml" />
+    <None Remove="**\*.xaml" />
+  </ItemGroup>
+
+  <!-- Shared UI files (App.xaml + Views) -->
+  <Import Project="..\PicoScope.Brix.UI\PicoScope.Brix.UI.projitems" Label="Shared" />
+  <ItemGroup>
+    <ProjectReference Include="..\PicoScope.Brix.Core\PicoScope.Brix.Core.csproj" />
+    <!-- The real device, registered in Program.cs; PicoScope.Brix.Core only knows the contract -->
+    <ProjectReference Include="..\libs\PicoScope.Brix.ScopeData.Ps2000\PicoScope.Brix.ScopeData.Ps2000.csproj" />
+  </ItemGroup>
+
+  <!-- EXACTLY ONE platform head package; all other packages come from PicoScope.Brix.Core -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Platform.Runtime.Skia.X11.ApacheLicenseForever" Version="1.0.254.167" />
+  </ItemGroup>
+</Project>

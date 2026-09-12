@@ -61,6 +61,11 @@ conventions the code blocks follow.
 - [Split a page code-behind into named partial files](#split-a-page-code-behind-into-named-partial-files)
 - [Use FontIcon glyphs so icons survive on a device with no system fonts](#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts)
 - [Set the PasswordBox mask character back to WinUI's black circle](#set-the-passwordbox-mask-character-back-to-winuis-black-circle)
+- [Host an unmodified guest program in one page element](#host-an-unmodified-guest-program-in-one-page-element)
+- [Host a live chart with the PlotterView add-in and bind the model the view model owns](#host-a-live-chart-with-the-plotterview-add-in-and-bind-the-model-the-view-model-owns)
+- [Host a control with no dependency properties by mirroring a collection from code-behind](#host-a-control-with-no-dependency-properties-by-mirroring-a-collection-from-code-behind)
+- [Generate a form from a parameter list with one template and per-editor Visibility](#generate-a-form-from-a-parameter-list-with-one-template-and-per-editor-visibility)
+- [Show mask and copy a secret in a one-line row](#show-mask-and-copy-a-secret-in-a-one-line-row)
 
 ## Related blueprints
 
@@ -3326,3 +3331,753 @@ is where the application decides which fonts a glyph can come from.
 - The bullet, the asterisk and the middle dot are in every face of every
   application-font package; anything else needs checking against the font you ship.
 - The symbols font and the music font are not text fonts and never mask a password.
+
+### Host an unmodified guest program in one page element
+
+**When you want this.** The application you are shipping is somebody else's
+program - a script program, an interpreted editor, a toolkit UI - and you want it
+running inside a CodeBrix.Platform window without rewriting it as XAML. The whole
+guest user interface, menus and dialogs included, has to draw into one element on
+one page, and the application must contribute no controls of its own.
+
+**The MVVM shape.** The page owns the hosting element and its lifecycle, because
+only the page has the element and only the page knows when it has been loaded. It
+holds one small facade type - here a `RuntimeHost` with a start method and a
+dispose - so the code-behind never sees the interpreter, the toolkit bridge or the
+boot sequence. The view model is a `SimpleViewModel` that stays empty on purpose:
+the guest owns every pixel, so there is nothing to bind yet, and the design-mode
+guard and the empty regions are kept so application state has somewhere to go the
+day the application grows a control of its own.
+
+**Code.**
+
+```xml
+<!-- From CodeBrix.Samples/DRAKON.Brix/src/DRAKON.Brix.UI/Views/MainPage.xaml -->
+<Page
+    x:Class="DRAKON.Brix.Views.MainPage"
+    xmlns="clr-namespace:Microsoft.UI.Xaml.Controls;assembly=CodeBrix.Platform.UI"
+    xmlns:d="clr-namespace:Microsoft.UI.Xaml.Data;assembly=CodeBrix.Platform.UI"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="clr-namespace:DRAKON.Brix.ViewModels;assembly=DRAKON.Brix.Core"
+    xmlns:local="using:DRAKON.Brix.Views"
+    xmlns:tkhost="clr-namespace:CodeBrix.Platform.TkCanvas.Hosting;assembly=CodeBrix.Platform.TkCanvas"
+    FontFamily="{StaticResource OpenSansFont}"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.DataContext>
+        <vm:MainViewModel />
+    </Page.DataContext>
+
+    <!-- The entire DRAKON Editor UI is built by its own (unmodified) Tcl
+         through the TkCanvas command bridge; this page only hosts the
+         single Tk surface. -->
+    <Grid>
+        <tkhost:TkHostView x:Name="TkHost" />
+    </Grid>
+</Page>
+```
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/DRAKON.Brix.UI/Views/MainPage.xaml.cs
+// ...
+public sealed partial class MainPage : Page
+{
+    private readonly RuntimeHost _runtimeHost = new RuntimeHost();
+
+    public MainPage()
+    {
+        DataContextChanged += (_, _) =>
+        {
+            //Give the view model's SimpleDialog helpers a XamlRoot to attach dialogs to
+            (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
+        };
+
+        //The DRAKON Editor Tcl builds the whole UI; this page just starts the
+        //  Tcl runtime once the Tk host (and its dispatcher) is live, and disposes
+        //  it on unload. RuntimeHost keeps this page decoupled from DrakonRuntime.
+        Loaded += (s, e) => _runtimeHost.Start(TkHost);
+        Unloaded += (s, e) => _runtimeHost.Dispose();
+
+        this.InitializeComponent(); //Leave this line last
+    }
+}
+```
+
+The facade is the whole of what the page is allowed to know, and it is guarded so
+that a double start or a double dispose costs nothing:
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/RuntimeHost.cs
+public sealed class RuntimeHost : IDisposable
+{
+    private DrakonRuntime _runtime;
+
+    /// <summary>
+    /// Creates and starts the DRAKON runtime inside the given host view. Call
+    /// once, from the UI thread, after the host has loaded (its tree and
+    /// dispatcher exist). Subsequent calls are ignored.
+    /// </summary>
+    /// <param name="host">The loaded Tk host view.</param>
+    public void Start(TkHostView host)
+    {
+        if (host == null) { throw new ArgumentNullException(nameof(host)); }
+        if (_runtime != null) { return; }
+
+        _runtime = new DrakonRuntime();
+        _runtime.Start(host);
+    }
+
+    /// <summary>
+    /// Stops the Tcl thread and disposes the runtime. Safe to call more than
+    /// once, and safe to call when <see cref="Start"/> was never called.
+    /// </summary>
+    public void Dispose()
+    {
+        DrakonRuntime runtime = _runtime;
+        _runtime = null;
+        if (runtime != null) { runtime.Dispose(); }
+    }
+}
+```
+
+**Where to look.**
+`DRAKON.Brix/src/DRAKON.Brix.UI/Views/MainPage.xaml`
+`DRAKON.Brix/src/DRAKON.Brix.UI/Views/MainPage.xaml.cs` and
+`src/libs/DRAKON.Brix.TclBridge/RuntimeHost.cs`
+`DRAKON.Brix/src/DRAKON.Brix.Core/ViewModels/MainViewModel.cs`
+
+**Sharp edges.**
+- The loaded event, not the constructor, is the moment to start. The hosting
+  element's window tree and its dispatcher only exist once the page has been
+  loaded, and the guest needs both.
+- The hosting namespace is declared in the same assembly-qualified
+  `clr-namespace:...;assembly=...` form as the platform's own namespaces; the
+  `using:` form is only for the application's own types.
+- Dispose reads the field into a local, nulls the field and only then disposes, so
+  a second unload or a concurrent teardown cannot double-dispose. The runtime one
+  level down repeats the guard with its own started flag, which is cheap insurance
+  in an application whose teardown can be started by the guest, by the window
+  closing or by a page unload.
+- Keep the empty view model rather than deleting it. It costs nothing, it keeps
+  the data context shape every other page in a repository uses, and it is where
+  the first real bound property will go.
+
+### Host a live chart with the PlotterView add-in and bind the model the view model owns
+
+**When you want this.** A page needs a real chart - axes, a legend, pan, zoom and
+a tracker - fed by data the application produces, on every head. This is the
+opposite shape to
+[Host the VideoPlayer add-in in a page and drive it from the view model](BLUEPRINTS-MediaAndVision.md#host-the-videoplayer-add-in-in-a-page-and-drive-it-from-the-view-model):
+that add-in owns its own state, so the page has to implement a bridge interface
+over it. The chart's whole state is a plain model object, so the view model owns
+the model and one binding is the entire seam.
+
+**The MVVM shape.** A UI-free class in the Core library builds the plot model,
+holds it as a get-only property, and exposes the application's vocabulary -
+show a captured block, append a streaming batch, show or hide a channel. The
+view model owns one instance of that class and exposes it. The page binds the
+control's `Model` property through it and has no chart code at all.
+
+**Code.**
+
+```xml
+<!-- From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.UI/Views/MainPage.xaml -->
+xmlns:plot="clr-namespace:CodeBrix.Platform.UI.PlotterView;assembly=CodeBrix.Platform.UI.PlotterView"
+...
+<!-- The chart. A bounded star cell, so the control has a real size to render into. -->
+<Border Grid.Row="4" BorderBrush="#3A3A46" BorderThickness="1">
+    <plot:PlotterControl x:Name="Plotter" Model="{d:Binding Plot.Model}" />
+</Border>
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs
+/// <summary>
+/// The chart. Its <see cref="ScopePlot.Model"/> is what the view renders.
+/// </summary>
+public ScopePlot Plot { get; } = new ScopePlot();
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/Charting/ScopePlot.cs
+/// <summary>
+/// Creates a plot, building the axes and legend.
+/// </summary>
+public ScopePlot()
+{
+    Model = BuildModel();
+}
+
+/// <summary>
+/// The plot model to render. Hand this to a plot view; do not mutate it
+/// directly.
+/// </summary>
+public PlotModel Model { get; }
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/Charting/ScopePlot.cs
+var model = new PlotModel
+{
+    Title = "PicoScope.Brix",
+    //Set explicitly, and not only for looks. The text and gridline
+    //  colours below are chosen for a dark background; without a
+    //  Background on the model an exported PNG comes out white and the
+    //  title, legend and grid are all but invisible. The plot view
+    //  clears to the model's background, so screen and export match.
+    Background = PlotterColor.FromRgb(24, 24, 30),
+    PlotAreaBorderColor = PlotterColor.FromRgb(90, 90, 100),
+    TextColor = PlotterColor.FromRgb(220, 220, 225),
+    TitleColor = PlotterColor.FromRgb(240, 240, 245),
+    SubtitleColor = PlotterColor.FromRgb(170, 170, 180)
+};
+```
+
+**Where to look.**
+`PicoScope.Brix/src/PicoScope.Brix.UI/Views/MainPage.xaml`
+`PicoScope.Brix/src/PicoScope.Brix.Core/Charting/ScopePlot.cs` and
+`ViewModels/MainViewModel.cs`
+`PicoScope.Brix/src/PicoScope.Brix.Core/PicoScope.Brix.Core.csproj`
+
+**Sharp edges.**
+- The control needs a bounded cell. A star row inside a `Border` gives it a real
+  size; put it in an auto-sized row, or inside a stack panel, and it has nothing
+  to render into.
+- Set the model's background explicitly. On screen the control clears to it, so
+  a model with no background of its own looks correct until something exports,
+  and then the light text and gridlines land on white.
+- The add-in brings the plotting engine with it, so the axis, series and color
+  types come from a package the application never names. That is fine, and it is
+  worth a comment in the project file saying so - see
+  [Know what a transitive package brings and name what you depend on](BLUEPRINTS-ProjectLayoutAndPackaging.md#know-what-a-transitive-package-brings-and-name-what-you-depend-on).
+- The chart class hands out the model and asks callers not to mutate it, because
+  every mutation it makes is done under a lock. A page that reached past the
+  binding and edited series directly would break that.
+- Time axes read better with a plain decimal format than with the default:
+  a scope's axis spans microseconds to seconds, and exponents are hard to read
+  at a glance.
+
+### Host a control with no dependency properties by mirroring a collection from code-behind
+
+**When you want this.** A control you need declares no dependency properties, so
+it cannot be bound, styled or placed inside a data template - and you want one of
+them per item in a bound collection, created and destroyed as items come and go.
+An items control cannot help you here, so the page has to do it by hand without
+that turning into the page owning the state as well.
+
+**The MVVM shape.** The view model still owns the list and each item's status as
+ordinary bound properties, and the commands that add and remove items. The page
+subscribes to the collection's change notification and mirrors it: one control per
+item, created in code, torn down on removal. What the page learns while the item
+lives - the resolved session, the grid size, the state - it pushes back through a
+few `Apply` methods on the item view model, so the status strip beside the control
+is still plain bound XAML.
+
+**Code.**
+
+```xml
+<!-- From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.UI/Views/MainPage.xaml -->
+<!-- The tab strip only. Each tab's body lives in the star row below, so
+     the TerminalControl sits in a real bounded cell: a tab's own content
+     presenter measures against an unbounded height, which leaves a star
+     row inside it collapsed and the terminal a few rows tall. Bodies are
+     built in code-behind because TerminalControl declares no dependency
+     properties and so cannot live in a DataTemplate. -->
+<TabView x:Name="ConsoleTabs" Grid.Row="0" VerticalAlignment="Top"
+         IsAddTabButtonVisible="False"
+         TabCloseRequested="ConsoleTabs_TabCloseRequested"
+         SelectionChanged="ConsoleTabs_SelectionChanged" />
+<Grid x:Name="ConsoleBodyHost" Grid.Row="1" />
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.UI/Views/MainPage.Consoles.cs
+private void AttachConsoles(MainViewModel viewModel)
+{
+    if (viewModel is null || _consoles is not null) { return; }
+
+    _consoles = viewModel.Consoles;
+    _consoles.Tabs.CollectionChanged += ConsoleTabs_ModelCollectionChanged;
+    _consoles.ReopenRequested += ReopenConsole;
+    // ...
+}
+
+private void ConsoleTabs_ModelCollectionChanged(object sender,
+    NotifyCollectionChangedEventArgs args)
+{
+    if (args.NewItems is not null)
+    {
+        foreach (var added in args.NewItems)
+        {
+            if (added is ConsoleTabViewModel model) { AddConsoleTab(model); }
+        }
+    }
+
+    if (args.OldItems is not null)
+    {
+        foreach (var removed in args.OldItems)
+        {
+            if (removed is ConsoleTabViewModel model) { RemoveConsoleTab(model); }
+        }
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.UI/Views/MainPage.Consoles.cs
+private void AddConsoleTab(ConsoleTabViewModel model)
+{
+    // ... build the options, then the control, through the factory ...
+
+    var status = new ContentControl
+    {
+        Content = model,
+        ContentTemplate = (DataTemplate)Resources["ConsoleStatusTemplate"],
+        HorizontalContentAlignment = HorizontalAlignment.Stretch,
+        HorizontalAlignment = HorizontalAlignment.Stretch,
+    };
+
+    //TerminalControl's grid follows the control's pixel size, so it must land in a bounded
+    //  cell; the body stretches into ConsoleBodyHost's star row and gives it one.
+    var body = new Grid
+    {
+        HorizontalAlignment = HorizontalAlignment.Stretch,
+        VerticalAlignment = VerticalAlignment.Stretch,
+    };
+    // ... an auto row for the status strip and a star row for the control ...
+
+    //The tab carries no content: a tab's content presenter measures its child against an
+    //  unbounded height, which leaves a star row inside it collapsed and the terminal a few
+    //  rows tall. The body goes into ConsoleBodyHost instead, a real star cell in the page's
+    //  own grid, and the tab strip only selects which body is showing.
+    var tab = new TabViewItem { Header = model.ContainerName };
+
+    var host = new ConsoleHost { Tab = tab, Terminal = terminal, Model = model, Body = body };
+    _consoleHosts[model] = host;
+
+    ConsoleBodyHost.Children.Add(body);
+
+    //The control drops anything fed to it before Loaded, so the exec is opened and the pump
+    //  started there - which is also what makes a tab created while this section is hidden
+    //  work: Loaded arrives when the section becomes visible.
+    terminal.Loaded += (_, _) => _ = StartConsoleAsync(host, options);
+
+    ConsoleTabs.TabItems.Add(tab);
+    ConsoleTabs.SelectedItem = tab;
+    ShowConsoleBody(host);
+}
+
+//Exactly one console body is visible at a time; the others stay in the tree, collapsed, so
+//  their terminals remain loaded and keep receiving their sessions' output.
+private void ShowConsoleBody(ConsoleHost selected)
+{
+    foreach (var pair in _consoleHosts)
+    {
+        pair.Value.Body.Visibility = ReferenceEquals(pair.Value, selected)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/ViewModels/ConsolesViewModel.cs
+/// <summary>The open console tabs. The page mirrors this into its tab strip.</summary>
+public ObservableCollection<ConsoleTabViewModel> Tabs { get; } = [];
+
+// ...
+
+/// <summary>
+/// Opens a console tab on a container. The page notices the new tab through the collection
+/// and does the rest: it probes for a shell, opens the exec and starts the pump.
+/// </summary>
+public ConsoleTabViewModel OpenConsole(string containerId, string containerName)
+{
+    if (string.IsNullOrEmpty(containerId)) { return null; }
+
+    IsPickerOpen = false;
+    var tab = new ConsoleTabViewModel(containerId, containerName, CloseTab, Reopen);
+    Tabs.Add(tab);
+    NotifyPropertyChanged(nameof(EmptyVisibility));
+    NotifyPropertyChanged(nameof(TabsVisibility));
+    // ...
+    return tab;
+}
+```
+
+**Where to look.**
+`RedisSetupTool/src/RedisSetupTool.UI/Views/MainPage.Consoles.cs`
+`RedisSetupTool/src/RedisSetupTool.Core/ViewModels/ConsolesViewModel.cs` and
+`src/RedisSetupTool.UI/Views/MainPage.xaml` (the tab strip, the body host and the
+status strip's data template)
+
+**Sharp edges.**
+- A tab's own content presenter measures its child against an unbounded height,
+  which flattens any star row inside it. Put the body in a real star cell of the
+  page's grid and let the tab strip only choose which body is visible.
+- Collapse the inactive bodies rather than removing them. A control removed from
+  the tree stops receiving whatever is feeding it, and in this application that
+  means losing shell output while the user is looking somewhere else.
+- Anything fed to a control before its loaded event can be silently dropped, so
+  open the session from that handler. It is also what makes an item created while
+  the whole section is collapsed work, because the loaded event arrives when the
+  section becomes visible.
+- Removal is the page's job and it is easy to half-do: take the control out of
+  both the strip and the host grid, unhook the handlers, and dispose the session.
+  Key the page's bookkeeping on the item's view model rather than on the control,
+  because that is what every one of those lookups starts from.
+
+### Generate a form from a parameter list with one template and per-editor Visibility
+
+**When you want this.** The fields on a form are not known at design time: they
+come from whichever item the user selected, each with a kind, a label, a help
+line, a default and its own validity rule. Unlike
+[Generate an options panel from object properties by reflection](#generate-an-options-panel-from-object-properties-by-reflection),
+which walks a settings object's members and builds controls in code, here the
+fields are declared as plain data in a catalog and the editors are real XAML in
+one data template - so the form is styled, themed and testable like any other
+markup.
+
+**The MVVM shape.** Selecting an item clears and refills a bound collection of
+field view models, one per declared parameter. Each field view model carries the
+value, the typed value its editor writes through, and a `Visibility` property per
+editor kind, with exactly one ever visible. The form's own view model builds the
+request out of the fields, publishes what is still wrong with it as a bound list,
+and gates the command on that list being empty.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/ViewModels/ParameterFieldViewModel.cs
+/// <summary>
+/// One generated field of the create form. The family has no <c>DataTemplateSelector</c>, so a
+/// single template carries all six editors and each one has its own <see cref="Visibility"/>
+/// property here; exactly one is ever visible.
+/// </summary>
+[Microsoft.UI.Xaml.Data.Bindable]
+public class ParameterFieldViewModel : SimpleViewModel
+{
+    // ... the constructor copies the label, kind, bounds and choices off the parameter ...
+
+    /// <summary>Whether the plain-text editor is showing.</summary>
+    public Visibility TextVisibility => GetVisibility(Kind == TopologyParameterKind.Text);
+
+    /// <summary>Whether the password editor is showing.</summary>
+    public Visibility PasswordVisibility => GetVisibility(Kind == TopologyParameterKind.Password);
+
+    /// <summary>Whether the number editor is showing.</summary>
+    public Visibility IntegerVisibility => GetVisibility(Kind == TopologyParameterKind.Integer);
+
+    /// <summary>Whether the choice editor is showing.</summary>
+    public Visibility ChoiceVisibility => GetVisibility(Kind == TopologyParameterKind.Choice);
+
+    /// <summary>Whether the switch is showing.</summary>
+    public Visibility BooleanVisibility => GetVisibility(Kind == TopologyParameterKind.Boolean);
+
+    /// <summary>Whether the multi-line editor is showing.</summary>
+    public Visibility MultiLineVisibility =>
+        GetVisibility(Kind == TopologyParameterKind.MultiLineText);
+
+    /// <summary>
+    /// The value of an integer field. <c>NumberBox</c> reports an emptied box as
+    /// <see cref="double.NaN"/>, which is left in place rather than written through, so the
+    /// request keeps the last good number and validation still sees it.
+    /// </summary>
+    public double NumberValue
+    {
+        get => _numberValue;
+        set
+        {
+            //There is no double overload of SetProperty, so compare and notify by hand.
+            if (double.IsNaN(value)) { return; }
+            if (Math.Abs(_numberValue - value) < 0.0001d) { return; }
+            _numberValue = value;
+            NotifyPropertyChanged(nameof(NumberValue));
+            Value = ((long)Math.Round(value)).ToString(CultureInfo.InvariantCulture);
+        }
+    }
+}
+```
+
+```xml
+<!-- From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.UI/Views/MainPage.xaml -->
+<!-- One generated field of the create form. The family has no DataTemplateSelector, so
+     all six editors live here and exactly one of them is visible. -->
+<ui:DataTemplate x:Key="ParameterFieldTemplate">
+    <StackPanel Spacing="4" Margin="0,0,0,14">
+        <TextBlock Text="{d:Binding Label}" FontSize="11.5" FontWeight="SemiBold"
+                   Foreground="{StaticResource TextSecondaryBrush}" />
+        <Grid ColumnSpacing="8">
+            <!-- ... a star column for the editor and an auto column for the button ... -->
+
+            <TextBox CornerRadius="8" Visibility="{d:Binding TextVisibility}"
+                     Text="{d:Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <PasswordBox CornerRadius="8" Visibility="{d:Binding PasswordVisibility}"
+                         Password="{d:Binding Value, Mode=TwoWay}" />
+            <NumberBox CornerRadius="8" Visibility="{d:Binding IntegerVisibility}"
+                       Minimum="{d:Binding Minimum}" Maximum="{d:Binding Maximum}"
+                       SpinButtonPlacementMode="Inline"
+                       Value="{d:Binding NumberValue, Mode=TwoWay}" />
+            <ComboBox HorizontalAlignment="Stretch" CornerRadius="8"
+                      Visibility="{d:Binding ChoiceVisibility}"
+                      ItemsSource="{d:Binding Choices}"
+                      SelectedItem="{d:Binding Value, Mode=TwoWay}" />
+            <ToggleSwitch Header="" Visibility="{d:Binding BooleanVisibility}"
+                          IsOn="{d:Binding BoolValue, Mode=TwoWay}" />
+            <!-- ... the multi-line editor, same shape ... -->
+
+            <Button Grid.Column="1" Content="Generate" VerticalAlignment="Top"
+                    Style="{StaticResource SmallButtonStyle}"
+                    Visibility="{d:Binding GenerateVisibility}"
+                    Command="{d:Binding GenerateCommand}" />
+        </Grid>
+        <TextBlock Text="{d:Binding HelpText}" FontSize="10.5" TextWrapping="Wrap"
+                   Foreground="{StaticResource TextTertiaryBrush}"
+                   Visibility="{d:Binding HelpVisibility}" />
+    </StackPanel>
+</ui:DataTemplate>
+```
+
+```xml
+<!-- From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.UI/Views/MainPage.xaml -->
+<ItemsControl ItemsSource="{d:Binding Fields}"
+              ItemTemplate="{StaticResource ParameterFieldTemplate}"
+              Visibility="{d:Binding FieldsVisibility}" />
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/ViewModels/CreateInstanceViewModel.cs
+private void Select(TopologyChoiceViewModel choice)
+{
+    if (choice is null || IsCreating) { return; }
+
+    // ... mark the chosen row and copy the descriptor's captions into bound properties ...
+
+    _isBuildingForm = true;
+    Fields.Clear();
+    foreach (var parameter in descriptor.Parameters)
+    {
+        Fields.Add(new ParameterFieldViewModel(parameter, Revalidate));
+    }
+    _isBuildingForm = false;
+    NotifyPropertyChanged(nameof(FieldsVisibility));
+
+    // ...
+    Revalidate();
+}
+
+private void Revalidate()
+{
+    if (_isBuildingForm) { return; }
+
+    var descriptor = SelectedTopology?.Descriptor;
+    ValidationMessages.Clear();
+
+    // ... the one rule the form owns: a resource name the daemon will accept ...
+
+    foreach (var problem in _topologies.Validate(BuildRequest(descriptor)))
+    {
+        ValidationMessages.Add(problem);
+    }
+
+    CanCreate = ValidationMessages.Count == 0;
+    NotifyPropertyChanged(nameof(ValidationVisibility));
+}
+```
+
+**Where to look.**
+`RedisSetupTool/src/RedisSetupTool.Core/ViewModels/ParameterFieldViewModel.cs`
+`RedisSetupTool/src/RedisSetupTool.Core/ViewModels/CreateInstanceViewModel.cs` and
+`src/RedisSetupTool.UI/Views/MainPage.xaml`,
+`src/libs/RedisSetupTool.DockerManagement/Topologies/TopologyCatalog.cs` (where the
+parameters are declared)
+
+**Sharp edges.**
+- Every editor in the template is really there, collapsed. Get one of the
+  visibility predicates wrong and the user sees two editors for one field, which
+  looks like a layout bug rather than a logic one.
+- Seed the field's value through the backing field, not the property, and raise a
+  flag while the collection is being refilled - otherwise every field added
+  revalidates a form that is still being built.
+- A number editor reports an emptied box as not-a-number. Refuse to write that
+  through, or the request loses a value the user never meant to clear.
+- Publish the validation messages as a bound list and derive the command's
+  enablement from that list being empty. Two separate rules - one in the command
+  predicate and one in the message the user reads - drift apart on the first
+  change. The field's public value stays a string either way, so the request the
+  builder receives is the same shape whichever editor produced it.
+
+### Show mask and copy a secret in a one-line row
+
+**When you want this.** A details panel lists connection facts - an address, a
+user name, a password, a whole command line - and every one of them should be one
+click away from the clipboard, with the secret ones hidden until asked for. This
+is the display side of a secret, not the entry side:
+[Take a secret token in a PasswordBox and keep it out of storage](#take-a-secret-token-in-a-passwordbox-and-keep-it-out-of-storage)
+covers taking one from the user, and
+[Copy text to the clipboard from a command through a bridge interface](BLUEPRINTS-PlatformServices.md#copy-text-to-the-clipboard-from-a-command-through-a-bridge-interface)
+covers reaching the clipboard at all; this recipe is the row itself.
+
+**The MVVM shape.** A small view model per row: the label, the value as it should
+be shown, a flag saying whether it is a secret, the reveal caption and a
+visibility for the transient confirmation. Two commands, copy and toggle. Nothing
+platform-specific: the row is handed a copy delegate by whoever built it, and that
+delegate goes through the shell's clipboard bridge, so a head with no clipboard
+simply copies nothing. One data template renders all of them.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/ViewModels/EndpointRowViewModel.cs
+private EndpointRowViewModel(string label, string secret, Action<string> copy, bool isSecret)
+{
+    Label = label;
+    _secret = secret ?? string.Empty;
+    _copy = copy;
+    IsSecret = isSecret;
+    Value = new string('•', Math.Min(12, Math.Max(6, _secret.Length)));
+}
+
+/// <summary>
+/// Creates a masked row whose value is hidden behind bullets until it is revealed. The
+/// password is also readable through <c>docker inspect</c>, so this is convenience rather
+/// than secrecy — the card says so.
+/// </summary>
+public static EndpointRowViewModel Secret(string label, string secret, Action<string> copy) =>
+    new(label, secret, copy, true);
+
+// ...
+
+/// <summary>The value shown on the row: bullets while a secret is hidden.</summary>
+public string Value { get; private set; }
+
+/// <summary>Whether the reveal button is offered.</summary>
+public Visibility RevealVisibility => GetVisibility(IsSecret);
+
+/// <summary>The reveal button's caption.</summary>
+public string RevealText => _isRevealed ? "hide" : "show";
+
+/// <summary>Whether the transient "Copied" confirmation is showing.</summary>
+public Visibility CopiedVisibility => GetVisibility(_isCopied);
+
+// ...
+
+private async Task CopyAsync()
+{
+    var text = IsSecret ? _secret : Value;
+    if (string.IsNullOrEmpty(text)) { return; }
+
+    _copy?.Invoke(text);
+    _isCopied = true;
+    NotifyPropertyChanged(nameof(CopiedVisibility));
+
+    //The confirmation is a nicety, not state: it fades on its own after a moment.
+    await Task.Delay(1500).ConfigureAwait(true);
+    _isCopied = false;
+    NotifyPropertyChanged(nameof(CopiedVisibility));
+}
+
+private void ToggleReveal()
+{
+    if (!IsSecret) { return; }
+
+    _isRevealed = !_isRevealed;
+    Value = _isRevealed
+        ? _secret
+        : new string('•', Math.Min(12, Math.Max(6, _secret.Length)));
+    NotifyPropertyChanged(nameof(Value));
+    NotifyPropertyChanged(nameof(RevealText));
+}
+```
+
+```xml
+<!-- From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.UI/Views/MainPage.xaml -->
+<!-- One copyable connection row of an instance card -->
+<ui:DataTemplate x:Key="EndpointRowTemplate">
+    <Grid ColumnSpacing="8" Margin="0,2">
+        <!-- ... a fixed label column, a star value column and three auto columns ... -->
+        <TextBlock Text="{d:Binding Label}" FontSize="11"
+                   Foreground="{StaticResource TextTertiaryBrush}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{d:Binding Value}"
+                   FontFamily="{StaticResource RobotoMonoFont}" FontSize="11.5"
+                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                   Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2" Text="Copied" FontSize="10.5" Margin="0,0,4,0"
+                   Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"
+                   Visibility="{d:Binding CopiedVisibility}" />
+        <Button Grid.Column="3" Command="{d:Binding ToggleRevealCommand}"
+                Content="{d:Binding RevealText}" FontSize="10.5"
+                Height="24" MinWidth="0" MinHeight="0" Padding="7,0" CornerRadius="5"
+                BorderThickness="0" Background="{StaticResource CardWellBrush}"
+                Visibility="{d:Binding RevealVisibility}" />
+        <Button Grid.Column="4" Command="{d:Binding CopyCommand}"
+                Width="26" Height="24" MinWidth="0" MinHeight="0" Padding="0"
+                CornerRadius="5" Background="Transparent" BorderThickness="0"
+                ToolTipService.ToolTip="Copy to clipboard">
+            <FontIcon Glyph="&#xE8C8;" FontSize="12" />
+        </Button>
+    </Grid>
+</ui:DataTemplate>
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/ViewModels/InstanceCardViewModel.cs
+private void RebuildConnectionRows(TopologyInstance instance)
+{
+    ConnectionRows.Clear();
+    Notes.Clear();
+
+    var connection = instance.Connection;
+    // ...
+
+    void Copy(string text) => _shell?.CopyToClipboard(text);
+
+    if (!string.IsNullOrEmpty(connection.ServiceName))
+    {
+        ConnectionRows.Add(new EndpointRowViewModel("service", connection.ServiceName, Copy));
+    }
+
+    // ... the endpoints, and the sentinels where a topology has them ...
+
+    if (!string.IsNullOrEmpty(connection.Password))
+    {
+        ConnectionRows.Add(EndpointRowViewModel.Secret("password", connection.Password, Copy));
+    }
+    foreach (var user in connection.AdditionalUsers)
+    {
+        ConnectionRows.Add(EndpointRowViewModel.Secret("user " + user.Username,
+            user.Password, Copy));
+    }
+    if (!string.IsNullOrEmpty(connection.ConnectionString))
+    {
+        ConnectionRows.Add(new EndpointRowViewModel("string",
+            connection.ConnectionString, Copy));
+    }
+    // ...
+}
+```
+
+The card says plainly, next to the rows, that the masked value is readable
+elsewhere anyway. Where masking is convenience rather than secrecy, saying so
+beside it is part of the design.
+
+**Where to look.**
+`RedisSetupTool/src/RedisSetupTool.Core/ViewModels/EndpointRowViewModel.cs`
+`RedisSetupTool/src/RedisSetupTool.Core/ViewModels/InstanceCardViewModel.cs` and
+`src/RedisSetupTool.UI/Views/MainPage.xaml`,
+`src/RedisSetupTool.Core/Bridges/ICopyToClipboard.cs`
+
+**Sharp edges.**
+- The shown value and the real value are different fields. Copy the real one and
+  show the masked one, or revealing becomes the only way to copy. Two
+  constructors, one public and one private behind a named factory, keep a plain
+  row and a masked row from being confused at the call site - a masked row built
+  by the plain constructor shows the secret.
+- Clamp the bullet count instead of matching the secret's length, so the mask does
+  not publish how long the value is.
+- The confirmation is transient display state, not something to persist or to
+  bind two-way. Raise its change notification by hand around the wait, and let the
+  wait resume on the UI thread.
+- The copy delegate can be null on a head with no clipboard. Invoke it
+  conditionally and let the row do nothing rather than reporting a failure the
+  user cannot act on.

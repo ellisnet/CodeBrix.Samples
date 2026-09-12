@@ -73,6 +73,13 @@ conventions the code blocks follow.
 - [Drive an undo history from a list and travel to a clicked point](#drive-an-undo-history-from-a-list-and-travel-to-a-clicked-point)
 - [Bind a tab per open document and keep both directions in sync](#bind-a-tab-per-open-document-and-keep-both-directions-in-sync)
 - [Show selection state in button captions from computed properties](#show-selection-state-in-button-captions-from-computed-properties)
+- [Mutate a plot model under its own sync root so streamed batches need no dispatcher hop](#mutate-a-plot-model-under-its-own-sync-root-so-streamed-batches-need-no-dispatcher-hop)
+- [Root a native callback delegate for the life of a streaming session](#root-a-native-callback-delegate-for-the-life-of-a-streaming-session)
+- [Refresh every section from one shared snapshot and one pausable timer](#refresh-every-section-from-one-shared-snapshot-and-one-pausable-timer)
+- [Let section view models ask the shell for the few things they cannot do](#let-section-view-models-ask-the-shell-for-the-few-things-they-cannot-do)
+- [Cache the newest frame in the view model and let the renderer pull it](#cache-the-newest-frame-in-the-view-model-and-let-the-renderer-pull-it)
+- [Push a bound toggle into a live native session and re-apply it to the next one](#push-a-bound-toggle-into-a-live-native-session-and-re-apply-it-to-the-next-one)
+- [Validate a typed folder path inside CanExecute](#validate-a-typed-folder-path-inside-canexecute)
 
 ## Related blueprints
 
@@ -4218,4 +4225,874 @@ public string TinglingButtonText => ActiveLayerName == TinglingLayerName ? "✓ 
 - Commands with no meaningful `CanExecute` - here the three selection commands -
   are constructed from the handler alone, and a synchronous handler in an
   async-shaped signature ends with `return Task.CompletedTask;`.
+
+### Mutate a plot model under its own sync root so streamed batches need no dispatcher hop
+
+**When you want this.** A device, a decoder or a sensor delivers batches on its
+own thread, far faster than a repaint, and every batch must reach the chart
+without being dropped or queued. This is the case
+[Set bound properties from a background thread with InvokeOnMainThread](BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread)
+and
+[Hand results from a capture thread through a worker to the UI thread](BLUEPRINTS-MVVM.md#hand-results-from-a-capture-thread-through-a-worker-to-the-ui-thread)
+do not cover: the data never crosses to the UI thread at all, because the render
+target and the producer share one lock. Only the notifications cross.
+
+**The MVVM shape.** The view model subscribes to the device's event and forwards
+the batch straight into its chart object on the thread it arrived on. The chart
+object holds the render target's own sync root while it mutates, and asks for a
+repaint after releasing it. Bound properties keep the ordinary rule: every
+setter marshals its change notification.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs
+private void OnSamplesAvailable(object sender, StreamingSamplesEventArgs e)
+{
+    //Arrives on the polling thread. ScopePlot locks the model while it
+    //  mutates and the plot view renders under the same lock, so the batch
+    //  is applied right here.
+    Plot.AppendStreaming(e);
+
+    if (!_loggedFirstBatch)
+    {
+        _loggedFirstBatch = true;
+        _log.LogInformation("Streaming: first batch of {Count} samples at {Interval} ns/sample.",
+            e.SampleCount, e.IntervalNanoseconds);
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/Charting/ScopePlot.cs
+public void AppendStreaming(StreamingSamplesEventArgs batch)
+{
+    if (batch == null) { throw new ArgumentNullException(nameof(batch)); }
+
+    lock (Model.SyncRoot)
+    {
+        double intervalSeconds = batch.IntervalNanoseconds / 1e9;
+        double widestVolts = 0;
+
+        // ... decimate, append and trim each channel's points ...
+
+        _streamElapsedSeconds += batch.SampleCount * intervalSeconds;
+
+        double windowEnd = _streamElapsedSeconds;
+        _timeAxis.Minimum = Math.Max(0, windowEnd - StreamWindowSeconds);
+        _timeAxis.Maximum = windowEnd > 0 ? windowEnd : double.NaN;
+        ApplyVoltageRange(widestVolts);
+
+        Model.Subtitle = FormatStreamSubtitle(batch);
+    }
+
+    Model.InvalidatePlot(true);
+}
+```
+
+The bound half of the view model is unchanged by any of this: it is still the
+UI thread's, and every setter says so.
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs
+/// <summary>A one-line status message for the view.</summary>
+public string StatusText
+{
+    get => _statusText;
+    private set => SetProperty(ref _statusText, value ?? string.Empty, notifyOnMainThread: true);
+}
+```
+
+**Where to look.**
+`PicoScope.Brix/src/PicoScope.Brix.Core/Charting/ScopePlot.cs`
+`PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs` (the class
+remark on threading, and every bindable property)
+
+**Sharp edges.**
+- This works only because the control documents that it renders under the
+  model's sync root and accepts an invalidate from any thread. Check that a
+  render target makes that promise before copying the pattern; without it, the
+  batch has to be marshalled like anything else.
+- Ask for the repaint after the lock is released, not inside it.
+- Bound properties still belong to the UI thread. A change notification raised
+  from the polling thread breaks binding, which is why every setter here passes
+  the notify-on-main-thread flag.
+- The lock is held for the whole batch, so keep the work inside it bounded -
+  here the decimation is what keeps it short, and it happens inside the lock on
+  purpose so nothing else can observe a half-updated series.
+- The chart object is the only thing that touches the model. That is what makes
+  a single-lock argument reviewable at all.
+
+### Root a native callback delegate for the life of a streaming session
+
+**When you want this.** A native library calls back into managed code for as
+long as a session runs, and the session is started and stopped by commands on a
+view model. It is the lifetime sibling of
+[Survive a native runtime tearing down while a frame is in flight](BLUEPRINTS-MVVM.md#survive-a-native-runtime-tearing-down-while-a-frame-is-in-flight):
+that one is about a call that outlives the runtime, this one about a delegate
+that must not be collected before the session ends.
+
+**The MVVM shape.** The view model's start and stop commands call a library
+session object and know nothing about delegates. The library holds the delegate
+in a field for exactly as long as the session runs, copies the data out inside
+the callback, and clears the field only after the polling loop has stopped.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData.Ps2000/Ps2000ScopeDataDevice.cs
+//Rooted for the lifetime of a stream so the garbage collector cannot
+//  reclaim the native thunk between polls. Passing a method group directly
+//  to the P/Invoke would allocate a fresh delegate per call and leave its
+//  lifetime to chance.
+private Ps2000Api.GetOverviewBuffersMaxMin _streamingCallback;
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData.Ps2000/Ps2000ScopeDataDevice.cs
+//Root the delegate for the lifetime of the stream. Binding a method
+//  group to a delegate whose signature contains pointers needs an
+//  unsafe context, even though no pointer is dereferenced here.
+unsafe { _streamingCallback = StreamingCallback; }
+
+_streamCancellation = new CancellationTokenSource();
+CancellationToken token = _streamCancellation.Token;
+_streamTask = Task.Run(() => StreamLoop(settings, token), token);
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData.Ps2000/Ps2000ScopeDataDevice.cs
+try
+{
+    cts.Cancel();
+    task?.Wait(TimeSpan.FromSeconds(2));
+}
+catch (AggregateException)
+{
+    //Cancellation surfaces as an exception on the task; expected.
+}
+finally
+{
+    cts.Dispose();
+    _streamingCallback = null;
+    if (IsOpen) { Ps2000Api.ps2000_stop(_handle); }
+}
+```
+
+The callback itself runs inside the polling call, so everything it is handed has
+to be copied before it returns:
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData.Ps2000/Ps2000ScopeDataDevice.cs
+lock (_syncRoot)
+{
+    int channelIndex = 0;
+    foreach (ChannelId channel in _streamBuffers.Keys.ToArray())
+    {
+        //Two buffers per channel: maxima then minima. With no
+        //  aggregation the two are identical, so the maximum is taken.
+        short* source = overviewBuffers[channelIndex * 2];
+        if (source == null) { channelIndex++; continue; }
+
+        List<short> target = _streamBuffers[channel];
+        for (uint i = 0; i < nValues; i++) { target.Add(source[i]); }
+        channelIndex++;
+    }
+}
+```
+
+**Where to look.**
+`PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData.Ps2000/Ps2000ScopeDataDevice.cs`
+`PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData.Ps2000/Interop/Ps2000Api.cs`
+(the delegate declaration and what it says about lifetime)
+
+**Sharp edges.**
+- One delegate in a field, created once when the session starts. Passing a
+  method group at every call site allocates a fresh delegate whose lifetime
+  nobody owns, and the symptom - a callback that simply stops firing, usually
+  under load - looks nothing like a collected delegate.
+- Binding a method group to a delegate whose signature contains pointers needs
+  an unsafe context even though no pointer is dereferenced at that line, so the
+  interop project has to allow unsafe blocks. That requirement belongs to the
+  interop library only; nothing else in the application needs it.
+- The data the callback is handed is valid only for the duration of the call.
+  Copy it out; do not keep the pointers.
+- Clear the field in a `finally`, after the polling task has been cancelled and
+  waited for, so the delegate outlives the last call rather than the other way
+  round.
+- Expect noise on the first status check of a freshly started session; treating
+  the first overrun report as real produces a warning on every start.
+
+### Refresh every section from one shared snapshot and one pausable timer
+
+**When you want this.** Several sections of one window all read the same remote
+state - a daemon, a device, a service - and each of them polling for itself would
+mean several sets of calls racing each other for the same answers, several
+different ideas of what is current, and no way to hold the polling still while a
+long operation runs. The timer itself is a familiar piece; what is different here
+is that one timer and one snapshot serve every section, where
+[Marshal a repeating timer into a headless model](BLUEPRINTS-PlatformServices.md#marshal-a-repeating-timer-into-a-headless-model)
+is about getting a tick into a library that may not touch the dispatcher at all.
+
+**The MVVM shape.** A plain service class owns the snapshot: get-only properties
+for everything the screen needs, one `RefreshAsync` that fills all of them behind
+a semaphore, and one event raised afterwards whether the refresh succeeded or
+not. A second small class owns the single dispatcher timer and can suppress its
+ticks without stopping it. The shell view model wires the two together, and then
+pushes the snapshot into its own bound properties and into each section's
+`ApplySnapshot`. No section ever calls the service the snapshot came from.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/Services/AppState.cs
+/// <summary>
+/// The shared, observable snapshot every section reads. One refresh asks the daemon for
+/// everything the shell and the eight sections need, so the sections never race each other
+/// for the same daemon call. <see cref="Changed"/> is raised on whatever thread the refresh
+/// finished on; subscribers marshal for themselves.
+/// </summary>
+public sealed class AppState
+{
+    private readonly IDockerManager _docker;
+    private readonly IRedisTopologyService _topologies;
+    private readonly SemaphoreSlim _gate = new(1, 1);
+
+    // ... the constructor, and a get-only property per thing the snapshot holds ...
+
+    /// <summary>Raised after every refresh, successful or not.</summary>
+    public event Action Changed;
+
+    /// <summary>Whether the last refresh reached the daemon.</summary>
+    public bool IsDaemonReachable { get; private set; }
+
+    /// <summary>The message from the last failed refresh, or null when the last one succeeded.</summary>
+    public string LastError { get; private set; }
+
+    // ...
+
+    public async Task RefreshAsync(CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var daemon = await _docker.GetDaemonInfoAsync(cancellationToken).ConfigureAwait(false);
+            Daemon = daemon;
+            IsDaemonReachable = daemon is not null && daemon.IsReachable;
+
+            if (!IsDaemonReachable)
+            {
+                LastError = "The Docker daemon did not answer at " + _docker.Endpoint + ".";
+                LastRefreshed = DateTimeOffset.Now;
+                return;
+            }
+
+            Containers = await _docker.ListContainersAsync(true, cancellationToken)
+                .ConfigureAwait(false);
+            // ... images, networks, volumes, disk usage, discovered instances, advisor findings ...
+
+            LastError = null;
+            LastRefreshed = DateTimeOffset.Now;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            IsDaemonReachable = false;
+            LastError = exception.Message;
+            LastRefreshed = DateTimeOffset.Now;
+        }
+        finally
+        {
+            _gate.Release();
+            Changed?.Invoke();
+        }
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/Services/RefreshCoordinator.cs
+/// <summary>
+/// One <see cref="DispatcherTimer"/> driving the app's periodic refresh. It exists so that
+/// exactly one timer ticks for the whole application instead of one per section, and so the
+/// tick can be paused while a long operation (creating an instance, tearing one down) is in
+/// flight. Construct it on the UI thread.
+/// </summary>
+public sealed class RefreshCoordinator
+{
+    private readonly DispatcherTimer _timer = new();
+    private bool _isPaused;
+
+    // ... the constructor sets the interval and hooks Tick ...
+
+    /// <summary>Raised on the UI thread on every unpaused tick.</summary>
+    public event Action Tick;
+
+    /// <summary>Starts ticking.</summary>
+    public void Start() => _timer.Start();
+
+    /// <summary>Stops ticking altogether.</summary>
+    public void Stop() => _timer.Stop();
+
+    /// <summary>Suppresses ticks without stopping the timer, for the length of a long operation.</summary>
+    public void Pause() => _isPaused = true;
+
+    /// <summary>Lets ticks through again.</summary>
+    public void Resume() => _isPaused = false;
+}
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/ViewModels/MainViewModel.cs
+_refresh = new RefreshCoordinator();
+_refresh.Tick += () => _ = RefreshAsync();
+_refresh.Start();
+
+// ...
+
+public async Task RefreshAsync()
+{
+    if (_isRefreshing) { return; }
+
+    _isRefreshing = true;
+    IsBusy = true;
+    try
+    {
+        await _state.RefreshAsync().ConfigureAwait(true);
+        ApplyState();
+    }
+    finally
+    {
+        IsBusy = false;
+        _isRefreshing = false;
+    }
+}
+
+// ...
+
+private void ApplyState()
+{
+    IsDaemonReachable = _state.IsDaemonReachable;
+    var daemon = _state.Daemon;
+    DaemonPillText = _state.IsDaemonReachable && daemon is not null
+        ? "Docker " + daemon.ServerVersion + " · API " + daemon.ApiVersion
+        : "daemon unreachable";
+    DaemonPillBrush = _state.IsDaemonReachable ? Palette.Good : Palette.Bad;
+    // ... the footer captions and the rail badges ...
+
+    Dashboard.ApplySnapshot();
+    Instances.ApplySnapshot();
+    CreateInstance.ApplySnapshot();
+    Containers.ApplySnapshot();
+    Consoles.ApplySnapshot();
+    Images.ApplySnapshot();
+    NetworksVolumes.ApplySnapshot();
+    System.ApplySnapshot();
+}
+```
+
+A long operation pauses the tick rather than stopping the timer, and resumes it
+in a `finally` so a failure cannot leave the application frozen:
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/ViewModels/CreateInstanceViewModel.cs
+IsCreating = true;
+SetError(null);
+ProgressLines.Clear();
+ProgressHeadline = "Starting…";
+Shell?.PauseAutoRefresh();
+_createCancellation = new CancellationTokenSource();
+
+// ...
+
+finally
+{
+    _createCancellation?.Dispose();
+    _createCancellation = null;
+    IsCreating = false;
+    Shell?.ResumeAutoRefresh();
+}
+```
+
+**Where to look.**
+`RedisSetupTool/src/RedisSetupTool.Core/Services/AppState.cs`
+`RedisSetupTool/src/RedisSetupTool.Core/Services/RefreshCoordinator.cs` and
+`ViewModels/MainViewModel.cs`, `ViewModels/SectionViewModel.cs`
+
+**Sharp edges.**
+- The refresh never throws. A failure leaves the reachability flag false and the
+  message beside it, and the change event fires from the `finally` either way, so
+  a section that lost the daemon redraws as empty rather than as stale.
+- The event is raised on whatever thread the refresh finished on. Say so on the
+  event itself, as this one does, because subscribers have to marshal for
+  themselves.
+- The dispatcher timer has to be constructed on the UI thread. Building the
+  coordinator in the shell's constructor is what guarantees that.
+- Two guards are doing different jobs: the snapshot's semaphore serializes
+  refreshes from any caller, while the shell's own re-entry flag stops a tick
+  queueing behind the refresh already running. And pause, do not stop - a stopped
+  timer has to be restarted by someone, and the someone is easy to forget on the
+  failure path.
+
+### Let section view models ask the shell for the few things they cannot do
+
+**When you want this.** A shell holds several child view models that occasionally
+need something only the shell can do - show a different section, raise a dialog,
+reach the clipboard, hold the polling still - and you do not want to hand each
+child a reference to the whole shell. This is the narrow-interface half of
+[Compose a page from a parent view model and child view models](#compose-a-page-from-a-parent-view-model-and-child-view-models):
+that recipe is about the parent owning the children and pushing state down, this
+one is about what the children are allowed to ask for on the way back up, written
+as one interface the parent implements.
+
+**The MVVM shape.** The shell implements a context interface and passes `this` to
+every child's constructor. The interface is deliberately short: it is the complete
+list of cross-section moves the application allows, and adding to it is a
+deliberate act. An abstract section base class stores it, exposes the shared
+snapshot through it, and wraps the one thing every section does the same way -
+running a remote operation with a busy flag and turning a failure into a readable
+line.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/Services/IShellContext.cs
+/// <summary>
+/// What a section view model may ask of the shell. <c>MainViewModel</c> implements it and
+/// hands itself to every child at construction, which keeps the children free of a back
+/// reference to the whole shell and makes the small set of cross-section moves explicit.
+/// </summary>
+public interface IShellContext
+{
+    /// <summary>The shared daemon snapshot every section reads.</summary>
+    AppState State { get; }
+
+    /// <summary>Shows the given section.</summary>
+    void Navigate(SectionKey section);
+
+    /// <summary>Puts text on the clipboard, doing nothing on a head with no clipboard.</summary>
+    void CopyToClipboard(string text);
+
+    /// <summary>Re-reads everything from the daemon and pushes it into every section.</summary>
+    Task RefreshAsync();
+
+    /// <summary>Opens a console tab on a container and shows the Consoles section.</summary>
+    void OpenConsole(string containerId, string containerName);
+
+    /// <summary>Shows the Containers section with the given container selected.</summary>
+    void ShowContainer(string containerId);
+
+    /// <summary>Suppresses the periodic refresh while a long operation runs.</summary>
+    void PauseAutoRefresh();
+
+    /// <summary>Lets the periodic refresh resume.</summary>
+    void ResumeAutoRefresh();
+
+    /// <summary>
+    /// Asks the user to confirm something. Dialogs go through the shell because only the view
+    /// model the page set as its DataContext has been given a <c>XamlRoot</c> to attach one to.
+    /// </summary>
+    Task<bool> ConfirmAsync(string message, string title);
+
+    // ... ShowErrorAsync, ShowInfoAsync and the automation log line ...
+}
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/ViewModels/MainViewModel.cs
+public MainViewModel()
+{
+    if (IsDesignMode(true)) { return; } //Leave as the first line of constructor
+
+    _state = GetService<AppState>();
+    _docker = GetService<IDockerManager>();
+    _automation = new StartupAutomation(this);
+
+    Dashboard = new DashboardViewModel(this);
+    Instances = new InstancesViewModel(this);
+    CreateInstance = new CreateInstanceViewModel(this);
+    // ... the other five sections, each handed the same `this` ...
+}
+
+// ...
+
+/// <inheritdoc />
+public void Navigate(SectionKey section)
+{
+    if (_currentSection == section) { return; }
+
+    //Leaving a section cancels whatever live feed it was running: the container stats
+    //  stream and the log poll are the two that would otherwise keep asking the daemon.
+    if (_currentSection == SectionKey.Containers) { Containers.Suspend(); }
+
+    // ... flip the selected rail row and notify the eight Visibility properties ...
+}
+
+/// <inheritdoc />
+public void CopyToClipboard(string text)
+{
+    //A head with no clipboard leaves the delegate null; copying is then simply a no-op.
+    CopyTextToClipboard?.Invoke(text);
+}
+
+/// <inheritdoc />
+public Task<bool> ConfirmAsync(string message, string title) => ConfirmDialog(message, title);
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/ViewModels/SectionViewModel.cs
+protected SectionViewModel(IShellContext shell)
+{
+    Shell = shell;
+}
+
+/// <summary>The shell that owns this section. Null in design mode.</summary>
+protected IShellContext Shell { get; }
+
+/// <summary>The shared daemon snapshot.</summary>
+protected AppState State => Shell?.State;
+
+// ...
+
+protected async Task<bool> RunAsync(Func<Task> work, bool refreshAfter = true)
+{
+    if (work is null) { return false; }
+
+    IsBusy = true;
+    NotifyPropertyChanged(nameof(IsNotBusy));
+    SetError(null);
+    try
+    {
+        await work().ConfigureAwait(true);
+        if (refreshAfter && Shell is not null)
+        {
+            await Shell.RefreshAsync().ConfigureAwait(true);
+        }
+        return true;
+    }
+    catch (OperationCanceledException)
+    {
+        //A cancelled operation is the user changing their mind, not a failure.
+        return false;
+    }
+    catch (Exception exception)
+    {
+        SetError(exception.Message);
+        return false;
+    }
+    finally
+    {
+        IsBusy = false;
+        NotifyPropertyChanged(nameof(IsNotBusy));
+    }
+}
+```
+
+**Where to look.**
+`RedisSetupTool/src/RedisSetupTool.Core/Services/IShellContext.cs`
+`RedisSetupTool/src/RedisSetupTool.Core/ViewModels/MainViewModel.cs` and
+`ViewModels/SectionViewModel.cs`, `ViewModels/ConsolesViewModel.cs`
+
+**Sharp edges.**
+- The design-mode guard returns before the children are built, so the shell
+  reference a section holds is null in the designer. Every use of it in a section
+  is null-conditional, and the base class's snapshot property is too.
+- Dialogs belong on the interface, not in the child, because only the view model
+  the page set as its data context was handed a root to attach one to. A child
+  that raises its own dialog silently does nothing.
+- Leaving a section is the natural place to stop whatever live feed it was
+  running. Put that in the navigate method rather than in each section, or one day
+  a section will keep polling from behind another one.
+- Keep the interface honestly small. Every method added to it is a new thing every
+  section is permitted to do, and the list is the only documentation of that
+  permission.
+
+### Cache the newest frame in the view model and let the renderer pull it
+
+**When you want this.** A device raises frames faster than the screen can show
+them, and you want whatever arrived most recently on screen with no queue, no
+backlog bookkeeping and no worker thread in between. This is the pull half of a
+producer and consumer pair; the push half, where frames are handed to a
+processing worker that swaps buffers under its own lock, is
+[Run a sensor pipeline on a worker thread with latest frame wins](BLUEPRINTS-MVVM.md#run-a-sensor-pipeline-on-a-worker-thread-with-latest-frame-wins).
+The difference is who asks: there the producer submits and a worker consumes,
+here the producer only refreshes a cache and the UI thread's paint handler takes
+what it finds.
+
+**The MVVM shape.** The view model owns the buffer, the lock and the two
+dimensions, and is the only thing that knows the frames exist. The capture
+callback writes into that cache and leaves. A `TryGet...` method reads out into a
+buffer the caller owns, and is the whole surface the renderer is given. No
+control, no Skia type and no dispatcher appears on either side of it.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+private readonly object _frameLock = new object();
+private byte[] _latestFrame;
+private int _frameWidth;
+private int _frameHeight;
+
+// ...
+
+private void OnFrameReceived(object sender, WebcamFrameEventArgs frame)
+{
+    // Capture-thread context: copy the pixels and get out fast.
+    lock (_frameLock)
+    {
+        var needed = (int)(frame.Width * frame.Height * 4);
+        if (_latestFrame == null || _latestFrame.Length != needed)
+        {
+            _latestFrame = new byte[needed];
+        }
+        frame.CopyTo(_latestFrame);
+        _frameWidth = (int)frame.Width;
+        _frameHeight = (int)frame.Height;
+    }
+
+    if (!HasFrame)
+    {
+        InvokeOnMainThread(() => HasFrame = true);
+    }
+    InvalidateCanvas?.Invoke();
+}
+```
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+/// <summary>
+/// Copies the most recent video frame (tightly packed BGRA) into <paramref name="buffer"/>
+/// (which is (re)allocated as needed). Returns false when no frame has arrived yet.
+/// Called by the canvas renderer on the UI thread.
+/// </summary>
+public bool TryGetLatestFrame(ref byte[] buffer, out int width, out int height)
+{
+    lock (_frameLock)
+    {
+        if (_latestFrame == null)
+        {
+            width = 0;
+            height = 0;
+            return false;
+        }
+        if (buffer == null || buffer.Length != _latestFrame.Length)
+        {
+            buffer = new byte[_latestFrame.Length];
+        }
+        Array.Copy(_latestFrame, buffer, _latestFrame.Length);
+        width = _frameWidth;
+        height = _frameHeight;
+        return true;
+    }
+}
+```
+
+The consumer is a paint handler, so the read has to answer "nothing yet" as a
+normal state rather than as an error:
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/Video/VideoCanvas.cs
+if (viewModel == null
+    || !viewModel.TryGetLatestFrame(ref _frameBuffer, out int width, out int height)
+    || width <= 0 || height <= 0)
+{
+    return;
+}
+```
+
+**Where to look.**
+`WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs`
+`WebcamViewer/src/WebcamViewer.Core/Video/VideoCanvas.cs` and
+`src/WebcamViewer.UI/Views/MainPage.xaml.cs`
+
+**Sharp edges.**
+- One lock guards three fields together - the pixels, the width and the height -
+  so a reader can never pair new pixels with the previous frame's dimensions.
+- Both sides reallocate only when the length changes, because a camera can change
+  resolution mid-session. Steady state is two copies per displayed frame and no
+  allocation at all, and that is the deliberate trade for never letting the two
+  threads touch the same array.
+- Nothing but the copy happens inside the lock. The bound flag's dispatch and the
+  repaint request are both raised after it is released.
+- The "a frame has arrived" flag is raised on the transition only, and through
+  `InvokeOnMainThread` because it is bound and gates a command. Raising it per
+  frame would churn that command many times a second for no change.
+- Nothing is queued, so a slow UI misses frames instead of building a backlog.
+  That is the intended behavior for a live view and the wrong behavior for a
+  recorder.
+
+### Push a bound toggle into a live native session and re-apply it to the next one
+
+**When you want this.** A checkbox controls something inside a running native
+session - audio monitoring, a torch, a mute - and the user expects it to take
+effect the moment it is clicked, to stay grayed out on a device that cannot do
+it, and to survive switching to another device.
+
+**The MVVM shape.** Three members and no plumbing. A read-only capability flag
+the session reports after it has started drives `IsEnabled`. A two-way bound
+setting drives `IsChecked`, and its setter both stores the value and pushes it
+into the live session. One line in the device-switch path copies the stored value
+into each new session before it is started.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+private bool _isMicAvailable;
+public bool IsMicAvailable
+{
+    get => _isMicAvailable;
+    private set => SetProperty(ref _isMicAvailable, value);
+}
+
+private bool _isAudioMonitorOn;
+public bool IsAudioMonitorOn
+{
+    get => _isAudioMonitorOn;
+    set
+    {
+        SetProperty(ref _isAudioMonitorOn, value);
+        var session = _session;
+        if (session != null)
+        {
+            session.MonitorAudio = value;
+        }
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+_session = new WebcamSession(camera.Device);
+_session.FrameReceived += OnFrameReceived;
+_session.MonitorAudio = IsAudioMonitorOn;
+_session.Start();
+IsMicAvailable = _session.IsAudioCaptureActive;
+```
+
+```xml
+<!-- From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.UI/Views/MainPage.xaml -->
+<CheckBox Content="Monitor audio" VerticalAlignment="Center"
+          IsChecked="{d:Binding IsAudioMonitorOn, Mode=TwoWay}"
+          IsEnabled="{d:Binding IsMicAvailable}" />
+```
+
+**Where to look.**
+`WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs`
+`WebcamViewer/src/WebcamViewer.UI/Views/MainPage.xaml`
+
+**Sharp edges.**
+- The ordering around `Start()` is not interchangeable: the setting is applied
+  before the session starts, and the capability is read after, because a session
+  cannot say whether it has audio until it has tried to open it.
+- Read the session field into a local before using it. A teardown on another code
+  path can null it between the null check and the assignment.
+- Two properties, two jobs. The capability is private-set and drives enablement;
+  the preference is public-set and drives the tick. Keeping them apart is what
+  lets a device with no microphone gray the box without discarding the user's
+  preference.
+- `Mode=TwoWay` is not the default for `IsChecked`; without it the box moves on
+  screen and the view model never hears about it.
+- Off at startup is the right default for anything that feeds a camera's
+  microphone back through the same room's speakers.
+- Nothing here persists the preference. Adding a settings store is the natural
+  next step; see the settings area.
+
+### Validate a typed folder path inside CanExecute
+
+**When you want this.** The destination of an action can be typed as well as
+picked, and the button that uses it should be dead until the destination is real
+- with no converter, no validation framework and no error decoration on the box.
+Where the gate is explained to the user with a dialog and the location can only
+come from a picker, see
+[Gate an action behind a chosen folder and explain the gate with a dialog](BLUEPRINTS-MVVM.md#gate-an-action-behind-a-chosen-folder-and-explain-the-gate-with-a-dialog);
+this is the quieter arrangement, where the check is a predicate the command
+already calls and a dead button is the whole message.
+
+**The MVVM shape.** A private static predicate over the string sits beside the
+command and is called from its `CanExecute`, alongside the other gates. Every
+property the predicate reads carries `[AffectsCommands]` naming that command, so
+nothing anywhere calls `RaiseCanExecuteChanged()`.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+private static bool IsValidFolder(string path)
+    => !String.IsNullOrWhiteSpace(path) && Directory.Exists(path.Trim());
+```
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+private bool _hasFrame;
+[AffectsCommands(nameof(PhotoCommand))]
+public bool HasFrame
+{
+    get => _hasFrame;
+    private set => SetProperty(ref _hasFrame, value);
+}
+
+// ...
+
+private string _folderPath = string.Empty;
+[AffectsCommands(nameof(PhotoCommand))]
+public string FolderPath
+{
+    get => _folderPath;
+    set => SetProperty(ref _folderPath, value ?? string.Empty);
+}
+
+private bool _isBusy;
+[AffectsCommands(nameof(PhotoCommand), nameof(BrowseFolderCommand))]
+public bool IsBusy
+{
+    get => _isBusy;
+    set => SetProperty(ref _isBusy, value);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+private SimpleCommand _photoCommand;
+public SimpleCommand PhotoCommand =>
+    (_photoCommand ??= new SimpleCommand(CanTakePhoto, DoTakePhoto));
+
+private bool CanTakePhoto() => (!IsBusy) && HasFrame && IsValidFolder(FolderPath);
+```
+
+```xml
+<!-- From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.UI/Views/MainPage.xaml -->
+<TextBox Grid.Column="1" Text="{d:Binding FolderPath, Mode=TwoWay}"
+         PlaceholderText="Where frame-photos get saved" VerticalAlignment="Center" />
+<Button Grid.Column="2" Content="Browse…" Command="{d:Binding BrowseFolderCommand}"
+        Margin="8,0,0,0" MinWidth="100" />
+<Button Grid.Column="3" Content="Photo" Command="{d:Binding PhotoCommand}"
+        Margin="8,0,0,0" MinWidth="100" Style="{ThemeResource AccentButtonStyle}" />
+```
+
+**Where to look.**
+`WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs`
+`WebcamViewer/src/WebcamViewer.UI/Views/MainPage.xaml`
+
+**Sharp edges.**
+- Three unrelated properties gate one command, and each names it in its own
+  attribute. That, plus the predicate, is the entire enablement mechanism; there
+  is not a line of code about it in the page.
+- The attribute refreshes the command when the property changes, and a text box
+  changes its bound property when it pushes its value to the source. Add
+  `UpdateSourceTrigger=PropertyChanged` to the binding if the button should follow
+  the typing rather than the commit.
+- Touching the disk from a `CanExecute` predicate runs it every time enablement is
+  re-evaluated. It is cheap enough here and honest about a folder that has
+  disappeared; cache the answer if your check is expensive.
+- The check proves the folder existed when the button was evaluated, not when the
+  file is written. The write still needs its own try and catch.
+- Trim in both places. The predicate trims before testing and the command trims
+  before combining the path, because the same property can be typed into by hand.
+- The busy flag gates both commands, so the browse button is dead while a file is
+  being written.
 

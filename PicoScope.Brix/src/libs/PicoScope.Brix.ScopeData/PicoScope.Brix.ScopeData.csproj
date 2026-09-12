@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <!--
+    Device-agnostic by construction: this project has no interop, no package
+    references and no reference to any UI framework, so it cannot grow a
+    dependency on a physical scope or on a platform by accident. The real
+    device lives in PicoScope.Brix.ScopeData.Ps2000; the chart lives in
+    PicoScope.Brix.Core.
+  -->
+
+</Project>

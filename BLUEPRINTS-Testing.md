@@ -44,6 +44,11 @@ conventions the code blocks follow.
 - [Compare rendered images pixel by pixel](#compare-rendered-images-pixel-by-pixel)
 - [Point a process-global store at a throwaway folder in tests](#point-a-process-global-store-at-a-throwaway-folder-in-tests)
 - [Drive a scripted end-to-end run of the whole application](#drive-a-scripted-end-to-end-run-of-the-whole-application)
+- [Run one boot sequence hosted on a thread and inline for tests](#run-one-boot-sequence-hosted-on-a-thread-and-inline-for-tests)
+- [Copy a gold master fixture before a test that writes to it](#copy-a-gold-master-fixture-before-a-test-that-writes-to-it)
+- [Check audible-only behavior with an opt-in unattended walkthrough](#check-audible-only-behavior-with-an-opt-in-unattended-walkthrough)
+- [Ship a simulator that enforces the real device's limits rather than a stub](#ship-a-simulator-that-enforces-the-real-devices-limits-rather-than-a-stub)
+- [Make a byte pump testable by writing to a sink interface instead of a control](#make-a-byte-pump-testable-by-writing-to-a-sink-interface-instead-of-a-control)
 
 ## Related blueprints
 
@@ -1630,4 +1635,677 @@ region: `SmokeOptions`, `RunSmoke`, `RunMp4ExportAsync`, `CheckLastRunNotes`,
   element and compares it against a control case.
 - Where a case is expected to fail a profile check, assert the expectation rather
   than success.
+
+### Run one boot sequence hosted on a thread and inline for tests
+
+**When you want this.** An application whose real work happens inside a long
+startup sequence - create an engine, register extensions, source scripts, hand it
+a surface - and you want a test suite to exercise that exact sequence rather than
+a test-only approximation of it.
+
+**The MVVM shape.** Not a view-model concern. One internal runtime class exposes
+two entry points that differ only in how work reaches the engine: a hosted start
+that the page calls, and a direct start that the tests call. Both funnel into one
+private boot method, and the single thing that differs between them is captured as
+a `dispatch` delegate, so the body below it is written once.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
+public void Start(TkHostView host)
+{
+    // ...
+    Task.Run(() =>
+    {
+        try
+        {
+            if (!Boot(tree, hosted: true, code => Environment.Exit(code), new TkHostFileDialogs(), assets))
+            {
+                return;
+            }
+            RunHostedDiagnostics();
+        }
+        // ...
+    });
+}
+
+/// <summary>
+/// Starts DRAKON in DIRECT mode against a headless root window, inline on the
+/// calling thread — the way tests run it. Runs the SAME registration and
+/// sourcing sequence as <see cref="Start"/>, so the Tcl open path is
+/// identical; only the marshalling differs (inline vs. a dedicated thread).
+/// A no-op quit action is used so a stray <c>exit</c> cannot end the test
+/// host. After this returns, evaluate Tcl through <see cref="EvaluateScriptForTest"/>.
+/// </summary>
+/// <param name="assetsDirectory">
+/// The directory holding <c>bootstrap.tcl</c> and <c>drakon/drakon_editor.tcl</c>
+/// (the application's <c>Assets</c> folder, in source or output).
+/// </param>
+internal void StartDirect(string assetsDirectory)
+{
+    if (assetsDirectory == null) { throw new ArgumentNullException(nameof(assetsDirectory)); }
+    if (_started) { return; }
+    _started = true;
+
+    _directRoot = TkWindow.CreateRoot();
+    _directRoot.SetForcedSize(1024, 768);
+
+    Boot(_directRoot.Tree, hosted: false, code => { }, null, assetsDirectory);
+}
+```
+
+The boot method is worth learning as an order, and each step that can fail is
+reported rather than thrown, because by the time the later steps run there is no
+caller left to catch anything:
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
+private bool Boot(
+    WindowTree tree, bool hosted, Action<int> onQuit,
+    TkHostFileDialogs fileDialogs, string assetsDirectory)
+{
+    Result createResult = null;
+    _interpreter = Interpreter.Create(ref createResult);
+    if (_interpreter == null)
+    {
+        Report("interpreter creation failed: " + createResult);
+        return false;
+    }
+
+    //DRAKON re-draws diagrams by re-running the same Tcl procedure bodies
+    //thousands of times per file open; cache their parsed form so each
+    //body is tokenized once per interpreter instead of on every execution.
+    _interpreter.CacheParsedScripts = true;
+
+    //ProductionMode skips optional per-command engine work (readiness
+    //checks, previous-result tracking, usage counters, ...) for another
+    //large speedup; results are byte-identical. Trade-off: [interp cancel]
+    //cannot interrupt a running script promptly — DRAKON never uses script
+    //cancellation, so that is acceptable here. Remove this line if prompt
+    //cancellation ever becomes necessary.
+    _interpreter.ProductionMode = true;
+
+    Result error = null;
+    if (TkBootstrap.Register(_interpreter, ref error) != ReturnCode.Ok)
+    {
+        Report("TkBootstrap failed: " + error);
+        return false;
+    }
+
+    error = null;
+    if (TclTkExtras.RegisterAll(_interpreter, ref error) != ReturnCode.Ok)
+    {
+        Report("Extras registration failed: " + error);
+        return false;
+    }
+
+    _bridge = hosted
+        ? TkTclBridge.RegisterHosted(_interpreter, tree)
+        : TkTclBridge.Register(_interpreter, tree);
+    if (fileDialogs != null) { _bridge.FileDialogs = fileDialogs; }
+    _bridge.BackgroundError += message => Report("bgerror: " + message);
+
+    Action<Action<Interpreter>> dispatch;
+    if (hosted) { dispatch = action => _bridge.Post(action); }
+    else { dispatch = action => action(_interpreter); }
+    // ...
+}
+```
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
+    string bootstrap = Path.Combine(assetsDirectory, "bootstrap.tcl");
+    string editor = Path.Combine(assetsDirectory, "drakon", "drakon_editor.tcl");
+
+    dispatch(interp =>
+    {
+        Result result = null;
+        if (interp.EvaluateScript("source {" + bootstrap + "}", ref result) != ReturnCode.Ok)
+        {
+            Report("bootstrap.tcl failed: " + result);
+            return;
+        }
+
+        result = null;
+        if (interp.EvaluateScript("source {" + editor + "}", ref result) != ReturnCode.Ok)
+        {
+            Report("drakon_editor.tcl failed: " + result);
+            return;
+        }
+
+        Report("DRAKON Editor is up.");
+    });
+```
+
+Hosted mode also hands the bridge a file-dialog adapter, so the guest's own open
+and save commands raise the platform's native dialogs; direct mode leaves it unset,
+because a headless run has nobody to show a dialog to. That one argument, the quit
+action and the dispatch delegate are the entire difference between the two modes.
+
+**Where to look.**
+`DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs`
+`DRAKON.Brix/tests/libs/DRAKON.Brix.TclBridge.Tests/DrnFileOpenTests.cs` and
+`tests/libs/DRAKON.Brix.TclBridge.Tests/DrakonRuntimeTests.cs`
+
+**Sharp edges.**
+- The order is load-bearing: engine first, then the toolkit, then the command
+  shims, then the bridge, then the application's own commands, and only then the
+  scripts. Sourcing is itself two steps, and the glue script has to have finished
+  before the guest's first line runs.
+- The direct mode creates its own root window with a forced size. A headless boot
+  against a surface with no size fails inside the guest's own layout code, a long
+  way from the cause.
+- Report and return rather than throw. The hosted path runs the whole sequence
+  inside a background task where an exception has no caller, so a failure that is
+  not reported is a window that stays empty with no explanation.
+- Make the direct entry point internal and reach it from the test project through
+  an `InternalsVisibleTo.cs` that names only that assembly, rather than widening
+  the library's public surface for testing.
+- A performance switch that trades away a capability needs the trade written down
+  in place: which capability, why this program does not need it, and what would
+  make the trade invalid.
+
+### Copy a gold master fixture before a test that writes to it
+
+**When you want this.** The test's input is a committed real-world document, and
+the code under test writes to it - a schema upgrade, an in-place migration, a
+journal file left beside it. This is the write-back angle on
+[Read a committed fixture from beside the test binary](#read-a-committed-fixture-from-beside-the-test-binary):
+the fixture is not copied to the output at all, it is read from the source tree
+and copied per test case, because a fixture that the test mutates cannot be shared.
+
+**The MVVM shape.** Not a view-model concern. A small support class finds the
+application root by walking up from the test assembly's base directory until it
+sees the solution file, and derives every path from there. Each test case copies
+its file into a temp directory it owns, runs the real code path against the copy,
+and deletes the directory in a finally block.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/tests/libs/DRAKON.Brix.TclBridge.Tests/Support/SampleLocations.cs
+/// <summary>
+/// Resolves paths inside the DRAKON.Brix sample by walking up from the test
+/// assembly to the sample root (identified by <c>DRAKON.Brix.slnx</c>). The
+/// gold-master example <c>.drn</c> files and the DRAKON <c>Assets</c> tree are
+/// read from source — never copied into the test project — so there is a single
+/// source of truth and no build-copy of the whole vendored Tcl tree.
+/// </summary>
+internal static class SampleLocations
+{
+    /// <summary>The DRAKON.Brix sample root directory.</summary>
+    public static string SampleRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "DRAKON.Brix.slnx"))) { return dir.FullName; }
+            dir = dir.Parent;
+        }
+        throw new InvalidOperationException(
+            "Could not locate the DRAKON.Brix sample root (DRAKON.Brix.slnx) above " +
+            AppContext.BaseDirectory);
+    }
+
+    /// <summary>The read-only gold-master example <c>.drn</c> directory.</summary>
+    public static string ExamplesDir(string root) => Path.Combine(root, "examples");
+
+    /// <summary>The DRAKON <c>Assets</c> directory (bootstrap.tcl + drakon/ tree).</summary>
+    public static string AssetsDir(string root) =>
+        Path.Combine(root, "src", "DRAKON.Brix.Core", "Assets");
+}
+```
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/tests/libs/DRAKON.Brix.TclBridge.Tests/DrnFileOpenTests.cs
+[Theory]
+[InlineData("01.Insertion.drn", "")]
+// ... one case per committed example document ...
+[InlineData("verilog_example.drn", "Verilog")]
+public void A_real_drn_file_opens_through_the_app_boot_path(string fileName, string relativePath)
+{
+    //Arrange — locate the gold master and copy it into a test-owned temp dir.
+    //relativePath is the directory (relative to the examples folder) holding
+    //the file, forward-slash separated; it is empty for a file that lives
+    //directly in the examples folder. fileName is the leaf name.
+    string root = SampleLocations.SampleRoot();
+    string examples = SampleLocations.ExamplesDir(root);
+    string goldMaster = String.IsNullOrWhiteSpace(relativePath)
+        ? Path.Combine(examples, fileName)
+        : Path.Combine(examples, relativePath.Replace('/', Path.DirectorySeparatorChar), fileName);
+    File.Exists(goldMaster).Should().BeTrue();
+
+    string tempDir = Path.Combine(Path.GetTempPath(), "drnopen_" + Guid.NewGuid().ToString("N"));
+    Directory.CreateDirectory(tempDir);
+    try
+    {
+        string copy = Path.Combine(tempDir, fileName);
+        File.Copy(goldMaster, copy);
+
+        var diagnostics = new List<string>();
+        using var runtime = new DrakonRuntime();
+        runtime.Diagnostic += diagnostics.Add;
+
+        //Act — boot DIRECT (headless), then open through the exact app path.
+        // ...
+        runtime.StartDirect(SampleLocations.AssetsDir(root));
+        string opened = runtime.EvaluateScriptForTest("ds::openfile {" + copy + "}");
+
+        //Assert — the editor came up and the file opened (openfile returns 1
+        //only after mod::open + gate + upgrade + reload all succeed).
+        diagnostics.Contains("DRAKON Editor is up.").Should().BeTrue();
+        opened.Should().Be("1");
+    }
+    finally
+    {
+        Directory.Delete(tempDir, true);
+    }
+}
+```
+
+A suite like this also has to say how it may be run, because the thing under test
+keeps process-global state:
+
+```xml
+<!-- From CodeBrix.Samples/DRAKON.Brix/tests/libs/DRAKON.Brix.TclBridge.Tests/DRAKON.Brix.TclBridge.Tests.csproj -->
+  <ItemGroup>
+    <!-- The bridge hosts CodeBrix.Platform.TclTk interpreters (which keep heavy
+         process-global state); run tests strictly sequentially so concurrent
+         interpreter creation cannot race/crash. -->
+    <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+```
+
+**Where to look.**
+`DRAKON.Brix/tests/libs/DRAKON.Brix.TclBridge.Tests/DrnFileOpenTests.cs`
+`DRAKON.Brix/tests/libs/DRAKON.Brix.TclBridge.Tests/Support/SampleLocations.cs` and
+`tests/libs/DRAKON.Brix.TclBridge.Tests/xunit.runner.json`
+
+**Sharp edges.**
+- Never open a gold master in place. An in-place upgrade rewrites the committed
+  file and can leave a journal beside it, so the first run passes, the repository
+  is dirty afterwards, and the second run tests something else.
+- Delete the temp directory in a finally block, and give each case its own
+  directory, so a failing case cannot leave state for the next one.
+- Walk up to a file that identifies the root - the solution file will do - rather
+  than counting parent segments from the test binary. A chain of parent hops
+  breaks the moment the configuration, target framework or output layout changes.
+- Reading fixtures from the source tree rather than copying them to the output is
+  the right call when the tree is large and the suite touches a few files per run;
+  it also keeps one source of truth.
+- Turn parallelism off in the runner configuration when the code under test owns
+  process-global state, and copy that configuration file to the output or it does
+  nothing.
+- Assert on both halves: that the subject came up, and that the operation returned
+  success. Either one alone can pass while the other silently did not happen.
+
+### Check audible-only behavior with an opt-in unattended walkthrough
+
+**When you want this.** The behavior you most need to check is the behavior nobody
+can assert on: whether a file really loaded through the instrument format you think
+it did, what it said about its own tempo, whether a transition landed where a tempo
+map said it should. This differs from
+[Drive a scripted end-to-end run of the whole application](BLUEPRINTS-Testing.md#drive-a-scripted-end-to-end-run-of-the-whole-application),
+which drives a page's commands through the view model and exits the process with a
+status: this one lives inside the shipped library as an internal type, is started
+by the code under test once it is running, drives a real engine from a worker
+thread, and reports only to the log, because there is no window to look at and
+nothing to exit.
+
+**The MVVM shape.** The walkthrough is a maintainer tool in the library, not a
+feature. Start-up asks it whether the environment wants it and hands it the running
+object; the view model and the page know nothing about it.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/GameEngineMusicDemo/src/libs/GameEngineMusicDemo.Game/GameEngineMusicDemoWalkthrough.cs
+/// <para>
+/// MAINTAINER TOOL, NOT A FEATURE OF THE SAMPLE. It runs only when the environment variable
+/// <c>GAMEENGINEMUSICDEMO_SELFTEST</c> is set to <c>1</c>, so a person running the demo never sees it. It
+/// exists because these are audible-only behaviours: on a machine with no sound card, and in a
+/// terminal, the log is the only evidence that the music system did what it says.
+/// </para>
+// ...
+internal static bool IsRequested =>
+    string.Equals(Environment.GetEnvironmentVariable("GAMEENGINEMUSICDEMO_SELFTEST"), "1", StringComparison.Ordinal);
+
+/// <summary>Starts the walkthrough on a worker thread and returns immediately.</summary>
+/// <param name="demo">The running demo.</param>
+internal static void Start(GameEngineMusicDemoGame demo) => Task.Run(() => Run(demo));
+```
+
+Each check compares a claim against what the engine reports, and says both numbers
+rather than only its verdict:
+
+```csharp
+// From CodeBrix.Samples/GameEngineMusicDemo/src/libs/GameEngineMusicDemo.Game/GameEngineMusicDemoWalkthrough.cs
+var timeline = sampler?.Timeline;
+var wait = timeline?.TimeToNextBoundary(position, MusicTransitionQuantize.Bar) ?? TimeSpan.Zero;
+var atOpeningTempo = timeline is null
+    ? 0
+    : timeline.SecondsPerBar - (position.TotalSeconds % timeline.SecondsPerBar);
+
+Check(ref passed, ref total, "grid-follows-the-tempo-map",
+    timeline is not null && Math.Abs(wait.TotalSeconds - atOpeningTempo) > 0.1,
+    $"the map says {wait.TotalSeconds:0.000}s to the next bar; a grid fixed at the opening "
+    + $"tempo would have said {atOpeningTempo:0.000}s");
+
+demo.CrossfadeToTrackA(MusicTransitionQuantize.Bar);
+
+Check(ref passed, ref total, "transition-queued",
+    MusicManager.Instance.HasPendingTransition,
+    $"waiting {wait.TotalSeconds:0.000}s for the next bar");
+```
+
+```csharp
+// From CodeBrix.Samples/GameEngineMusicDemo/src/libs/GameEngineMusicDemo.Game/GameEngineMusicDemoWalkthrough.cs
+Engine.Logger.LogInformation("{Prefix}: RESULT {Result} ({Passed}/{Total} checks)",
+    Prefix, passed == total && total > 0 ? "PASS" : "FAIL", passed, total);
+```
+
+The one thing about it a unit test can hold is the guarantee that it stays off, and
+the test project reaches the internal type to do it:
+
+```csharp
+// From CodeBrix.Samples/GameEngineMusicDemo/tests/libs/GameEngineMusicDemo.Game.Tests/GameEngineMusicDemoWalkthroughTests.cs
+[Fact]
+public void IsRequested_is_true_only_for_the_exact_opt_in_value()
+{
+    //Arrange
+    Environment.SetEnvironmentVariable(VariableName, "1");
+
+    //Act
+    var optedIn = GameEngineMusicDemoWalkthrough.IsRequested;
+    Environment.SetEnvironmentVariable(VariableName, "true");
+    var somethingElse = GameEngineMusicDemoWalkthrough.IsRequested;
+    Environment.SetEnvironmentVariable(VariableName, null);
+
+    //Assert
+    optedIn.Should().Be(true);
+    somethingElse.Should().Be(false);
+}
+```
+
+**Where to look.**
+`GameEngineMusicDemo/src/libs/GameEngineMusicDemo.Game/GameEngineMusicDemoWalkthrough.cs`
+`GameEngineMusicDemo/tests/libs/GameEngineMusicDemo.Game.Tests/GameEngineMusicDemoWalkthroughTests.cs`
+and `src/libs/GameEngineMusicDemo.Game/InternalsVisibleTo.cs`
+
+**Sharp edges.**
+- Opt in on one exact value, and pin that with a test. An environment variable
+  matched loosely is a maintainer tool that one day runs for a user.
+- Drive the same methods the controls drive. A walkthrough with its own private
+  path through the code checks a path nobody else takes.
+- Let the first frames and the first audio blocks go by before asking anything
+  about them, and wait out a queued transition before asserting that it landed.
+- Wrap the run so a throw still produces a single machine-readable result line, and
+  count the failure rather than losing it: a walkthrough whose output stops partway
+  is indistinguishable from one that never started.
+
+### Ship a simulator that enforces the real device's limits rather than a stub
+
+**When you want this.** The application drives hardware, and it has to be
+runnable, testable and demonstrable without it - but you do not want code that
+works against the simulator and then fails against the instrument. This is the
+hardware counterpart to
+[Test an HTTP client offline with a stub handler](BLUEPRINTS-Testing.md#test-an-http-client-offline-with-a-stub-handler)
+and
+[Mock a rendering or API seam with CodeBrix TestMocks](BLUEPRINTS-Testing.md#mock-a-rendering-or-api-seam-with-codebrix-testmocks),
+except that the fake ships in the product, not only in the tests.
+
+**The MVVM shape.** Not a view-model concern. The capability set of the real
+instrument is a plain data object in the contract library. The real
+implementation rebuilds that object by interrogating whatever is attached; the
+simulator loads the same object as a constant and validates every call against
+it, so the two reject exactly the same things.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData/Model/ScopeCapabilities.cs
+public static ScopeCapabilities PicoScope2204A { get; } = new ScopeCapabilities
+{
+    Variant = "2204A",
+    SupportedChannels = new[] { ChannelId.ChannelA, ChannelId.ChannelB },
+    SupportedRanges = new[]
+    {
+        VoltageRange.Range50mV, VoltageRange.Range100mV, VoltageRange.Range200mV,
+        VoltageRange.Range500mV, VoltageRange.Range1V, VoltageRange.Range2V,
+        VoltageRange.Range5V, VoltageRange.Range10V, VoltageRange.Range20V
+    },
+    // ...
+    MinTimebaseSingleChannel = 0,
+    MinTimebaseMultiChannel = 1,
+    MaxTimebase = 23,
+    MaxSamplesSingleChannel = 8064,
+    MaxSamplesMultiChannel = 3968,
+    MaxOversample = 4,
+    // ...
+};
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData/Simulation/SimulatedScopeDataDevice.cs
+public void SetChannel(ChannelId channel, ChannelSettings settings)
+{
+    EnsureOpen("set a channel");
+
+    if (!Capabilities.Supports(channel))
+    {
+        throw new ScopeCapabilityException(
+            $"Channel {channel} is not present on a {Capabilities.Variant}.");
+    }
+    if (!Capabilities.Supports(settings.Range))
+    {
+        throw new ScopeCapabilityException(
+            $"Range {settings.Range.ToDisplayString()} is not supported by a {Capabilities.Variant}.");
+    }
+
+    _channels[channel] = settings;
+}
+```
+
+Because the limits are enforced, they can be asserted, and the assertions are
+about the instrument rather than about the fake:
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/tests/libs/PicoScope.Brix.ScopeData.Tests/SimulatedScopeDataDeviceTests.cs
+[Fact]
+public void SetChannel_rejects_a_range_the_device_does_not_have()
+{
+    using var scope = Open();
+    Assert.Throws<ScopeCapabilityException>(
+        () => scope.SetChannel(ChannelId.ChannelA, new ChannelSettings(true, Coupling.Dc, VoltageRange.Range10mV)));
+    Assert.Throws<ScopeCapabilityException>(
+        () => scope.SetChannel(ChannelId.ChannelA, new ChannelSettings(true, Coupling.Dc, VoltageRange.Range50V)));
+}
+
+// ...
+
+[Fact]
+public async Task RunBlockAsync_rejects_more_samples_than_the_buffer_holds()
+{
+    using var scope = Open();
+    await Assert.ThrowsAsync<PicoScopeException>(() => scope.RunBlockAsync(4000, 7, cancellationToken: TestContext.Current.CancellationToken));
+}
+```
+
+**Where to look.**
+`PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData/Simulation/SimulatedScopeDataDevice.cs`
+`PicoScope.Brix/src/libs/PicoScope.Brix.ScopeData/Model/ScopeCapabilities.cs`
+`PicoScope.Brix/tests/libs/PicoScope.Brix.ScopeData.Tests/SimulatedScopeDataDeviceTests.cs`
+and `TestScopeDataDevice.cs`
+
+**Sharp edges.**
+- A fake that accepts what the hardware rejects is worse than no fake at all: it
+  moves the failure from your test run to the one machine that has the device.
+- Put the limits in one data object that both implementations read. The moment
+  the simulator carries its own copy of the numbers, the two drift.
+- The simulator enforces the lifecycle too - every call before the device is
+  opened throws the same not-open exception the real one does.
+- It is not a substitute for a scripted test double. The simulator synthesizes a
+  noisy signal on purpose, so tests that need exact values use a separate
+  scripted implementation of the same interface that plays back the samples it
+  is handed and records what was asked of it.
+- Making the fake wait roughly as long as the real operation would, capped so a
+  slow setting does not make it unusable, keeps command enablement and busy
+  flags honest.
+
+### Make a byte pump testable by writing to a sink interface instead of a control
+
+**When you want this.** Something in your application moves bytes between a
+remote stream and a control - a terminal, a log tail, a serial monitor - and the
+interesting behavior is all in the moving: chunk boundaries, ordering, resizes,
+end of stream, failure banners. Talking straight to the control makes every one of
+those tests need a window, a render backend and native libraries.
+
+**The MVVM shape.** Put the pump in a library with no UI reference at all and give
+it a small sink interface to write into. One adapter class is the only type in the
+application that names the control. Tests then drive the pump with a fake session
+on one side and a recording sink on the other, and assert on what came out, byte
+for byte.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/libs/RedisSetupTool.TerminalView/ITerminalSink.cs
+/// <summary>
+/// Where the pump writes. Bytes go through untouched: decoding a partial read is exactly the bug this
+/// seam avoids. Having it as an interface is also what lets the pump be tested with no control, no
+/// Skia natives and no window.
+/// </summary>
+public interface ITerminalSink
+{
+    /// <summary>Writes bytes straight to the terminal.</summary>
+    void Feed(byte[] data, int length);
+
+    /// <summary>Writes text the session generated itself, such as an exit banner.</summary>
+    void Feed(string text);
+
+    /// <summary>Resets the terminal.</summary>
+    void Reset();
+}
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/libs/RedisSetupTool.TerminalView/ExecTerminalSession.cs
+private async Task PumpAsync()
+{
+    var buffer = new byte[Math.Max(256, _options.ReadBufferSize)];
+
+    try
+    {
+        while (!_cancellation.IsCancellationRequested)
+        {
+            var read = await _session.ReadAsync(buffer, _cancellation.Token)
+                .ConfigureAwait(false);
+            if (read.EndOfStream)
+            {
+                break;
+            }
+
+            _sink.Feed(buffer, read.Count);
+        }
+
+        ExitCode = await _session.WaitForExitAsync(_cancellation.Token).ConfigureAwait(false);
+
+        if (_options.ExitBanner)
+        {
+            _sink.Feed("\r\n\x1b[2m[process exited with code "
+                + ExitCode.ToString(CultureInfo.InvariantCulture) + "]\x1b[0m\r\n");
+        }
+
+        SetState(TerminalSessionState.Exited);
+    }
+    catch (OperationCanceledException)
+    {
+        //Disposal cancels the pump; that is not a failure.
+    }
+    catch (Exception exception)
+    {
+        Fail(exception);
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/libs/RedisSetupTool.TerminalView/TerminalControlSink.cs
+/// <summary>
+/// The only type in the application that names <c>TerminalControl</c>. Everything else drives the
+/// console through <see cref="ITerminalSink"/>.
+/// </summary>
+public sealed class TerminalControlSink : ITerminalSink
+{
+    private readonly TerminalControl _control;
+
+    // ...
+
+    /// <inheritdoc />
+    /// <remarks>The control's Feed is thread safe: it copies the buffer and enqueues on the
+    /// dispatcher, so the pump can call it from a worker thread.</remarks>
+    public void Feed(byte[] data, int length) => _control.Feed(data, length);
+
+    /// <inheritdoc />
+    public void Feed(string text) => _control.Feed(text);
+
+    /// <inheritdoc />
+    public void Reset() => _control.Reset();
+}
+```
+
+The bug the seam exists to prevent then has a test of its own, and it needs
+nothing but the SDK:
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/tests/libs/RedisSetupTool.TerminalView.Tests/ExecTerminalSessionTests.cs
+/// <summary>A read that splits a multi-byte sequence still produces the right text.</summary>
+[Fact]
+public async Task Pump_WhenAReadSplitsAUtf8Sequence_NeverDecodesAPartialRead()
+{
+    //Arrange
+    var text = "café über";
+    var bytes = Encoding.UTF8.GetBytes(text);
+    var session = new FakeExecSession();
+    var sink = new RecordingTerminalSink();
+    await using var pump = new ExecTerminalSession(session, sink);
+
+    //The split lands in the middle of the two-byte sequence for the accented letter.
+    session.Emit(bytes[..4]);
+    session.Emit(bytes[4..]);
+    session.EndOfStream();
+
+    //Act
+    pump.Start();
+    await WaitForAsync(() => pump.State == TerminalSessionState.Exited);
+
+    //Assert
+    sink.Chunks.Count.Should().Be(2);
+    sink.DecodedText.Should().Be(text);
+}
+```
+
+**Where to look.**
+`RedisSetupTool/src/libs/RedisSetupTool.TerminalView/` (the sink, the pump, the
+adapter and the factory that joins them)
+`RedisSetupTool/tests/libs/RedisSetupTool.TerminalView.Tests/Fakes/` and
+`tests/libs/RedisSetupTool.TerminalView.Tests/ExecTerminalSessionTests.cs`
+
+**Sharp edges.**
+- The sink takes a buffer and a length, not an array to keep. The pump reuses one
+  buffer, so a recording fake that stores the reference records the same bytes
+  over and over; copy the used prefix on the way in.
+- Never decode inside the pump. A read can split a multi-byte sequence, and the
+  test above is the whole reason the interface takes bytes rather than a string.
+- Where the two sides disagree about argument order - here a control reporting
+  columns then rows and a daemon taking rows then columns - do the swap in one
+  place and have the fake record the far side's order, so the test asserts the
+  swap rather than repeating it.
+- The pump raises its state and size events on a worker thread, and the one
+  adapter class is the compliance point for all of this: if a second type starts
+  naming the control, or a dispatcher gets added to the library, the suite quietly
+  stops covering the path the application actually runs.
 

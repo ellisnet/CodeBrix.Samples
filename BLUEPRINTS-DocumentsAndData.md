@@ -67,6 +67,7 @@ conventions the code blocks follow.
 - [Add codec coverage beyond SkiaSharp with the CodeBrix Imaging library](#add-codec-coverage-beyond-skiasharp-with-the-codebrix-imaging-library)
 - [Save a document through a native picker with format filters](#save-a-document-through-a-native-picker-with-format-filters)
 - [Raise a UI hook from a codec through a static event](#raise-a-ui-hook-from-a-codec-through-a-static-event)
+- [Offer a data folder by rule rather than by a hard-coded list](#offer-a-data-folder-by-rule-rather-than-by-a-hard-coded-list)
 
 ## Related blueprints
 
@@ -3699,4 +3700,154 @@ protected override void DoSave (ImageSurface flattenedImage, Document document, 
   process.
 - Cancel is signalled by a sentinel value converted into a cancellation exception,
   so a cancel is distinguishable from a failure.
+
+### Offer a data folder by rule rather than by a hard-coded list
+
+**When you want this.** An application presents the contents of a folder it ships
+or a folder a person points it at, and you do not want a list of names in the code
+that somebody has to remember to edit when the data changes.
+
+**The MVVM shape.** A static class per kind of data, in a UI-free library: it
+takes a folder, applies a rule - every sub-folder except the ones named, every
+file whose extension this application can open - and returns a list of small
+immutable items. The view model calls it, wraps each item in a bound row and knows
+nothing about the file system. Because the scanner is static and takes a folder,
+it is tested against the real shipped files.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/Assets/VideoCorpus.cs
+/// <remarks>
+/// The rule is deliberately a rule rather than a list of folders: EVERY sub-folder of the corpus is read,
+/// except the ones named in <see cref="ExcludedFolderNames" />, and every file whose extension is in
+/// <see cref="PlayableExtensions" /> is offered. So MKV/, WebM/, CodeBrix-Mode1/ and CodeBrix-Mode2/ are all
+/// listed today - twenty-four files - MP4/ is not, because nothing in this family reads an MP4, and a folder
+/// added tomorrow appears in the drop-down without a line of code changing. That is not a hypothetical:
+/// CodeBrix-Mode2/ landed after this class was written and needed no change at all.
+/// </remarks>
+public static class VideoCorpus
+{
+    /// <summary>The extensions this application can open: Matroska, WebM and the bespoke container.</summary>
+    public static readonly IReadOnlyList<string> PlayableExtensions = [".mkv", ".webm", ".cbv"];
+
+    /// <summary>Corpus folders that are skipped whatever they hold.</summary>
+    /// <remarks>
+    /// MP4 is the corpus's ORIGINALS folder - H.264 video in an ISOBMFF container, which this family reads
+    /// no part of. Offering those files would offer a failure.
+    /// </remarks>
+    public static readonly IReadOnlyList<string> ExcludedFolderNames = ["MP4"];
+
+    public static IReadOnlyList<VideoCorpusItem> Scan(string authoringFolder)
+    {
+        List<VideoCorpusItem> items = [];
+
+        if (string.IsNullOrWhiteSpace(authoringFolder) || !Directory.Exists(authoringFolder)) { return items; }
+
+        foreach (var folder in Directory.GetDirectories(authoringFolder))
+        {
+            var folderName = Path.GetFileName(folder);
+
+            if (IsExcludedFolder(folderName)) { continue; }
+
+            foreach (var file in Directory.GetFiles(folder))
+            {
+                if (!IsPlayable(file)) { continue; }
+
+                items.Add(new VideoCorpusItem(folderName, Path.GetFileName(file), file));
+            }
+        }
+
+        return items
+            .OrderBy(item => item.FolderName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.FileName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+    // ...
+}
+```
+
+A second scanner in the same shape groups what it finds and reads only the header
+of each file, because a full parse of everything just to fill a list is work nobody
+asked for:
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/Assets/LutCatalog.cs
+/// <remarks>
+/// Two of the corpus's three folders are read, in this order: <c>generated/</c> then <c>found/</c>, each
+/// searched recursively because <c>found/</c> keeps one folder per upstream project. The third folder,
+/// <c>invalid/</c>, is NEVER read: the files in it are malformed on purpose, as negative test fixtures, and
+/// offering one would offer a parse failure.
+/// </remarks>
+public static class LutCatalog
+{
+    /// <summary>The corpus groups that are read, in the order the list shows them.</summary>
+    public static readonly IReadOnlyList<string> GroupFolderNames = ["generated", "found"];
+
+    public static IReadOnlyList<LutCatalogEntry> Scan(string lutsFolder)
+    {
+        List<LutCatalogEntry> entries = [];
+
+        if (string.IsNullOrWhiteSpace(lutsFolder) || !Directory.Exists(lutsFolder)) { return entries; }
+
+        foreach (var groupName in GroupFolderNames)
+        {
+            var groupFolder = Path.Combine(lutsFolder, groupName);
+
+            if (!Directory.Exists(groupFolder)) { continue; }
+
+            List<LutCatalogEntry> group = [];
+
+            foreach (var file in Directory.GetFiles(groupFolder, "*" + CubeExtension, SearchOption.AllDirectories))
+            {
+                group.Add(new LutCatalogEntry(groupName, Path.GetFileName(file), file, ReadTitle(file)));
+            }
+
+            entries.AddRange(group.OrderBy(entry => entry.DisplayName, StringComparer.OrdinalIgnoreCase));
+        }
+
+        return entries;
+    }
+    // ...
+}
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs
+foreach (VideoCorpusItem item in VideoCorpus.Scan(SampleAssets.GetAuthoringFolder(assetsRoot)))
+{
+    Videos.Add(new VideoListItem(item));
+}
+
+foreach (LutCatalogEntry entry in LutCatalog.Scan(SampleAssets.GetLutsFolder(assetsRoot)))
+{
+    //The catalogue is kept beside the rows, index for index, so a name can find its row.
+    lutCatalogue.Add(entry);
+    Luts.Add(new LutListItem(entry, OnLutPanelEdited));
+}
+```
+
+**Where to look.**
+`SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/Assets/VideoCorpus.cs`
+`SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/Assets/LutCatalog.cs` and
+`src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs`
+`SimpleCbxVideoPlayer/tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/VideoCorpusTests.cs` and
+`LutCatalogTests.cs`
+
+**Sharp edges.**
+- Exclude by rule too, and say in the code why each exclusion exists. A folder of
+  deliberately malformed fixtures and a folder in a format the application cannot
+  open are both "do not offer these", and both need the reason written down or the
+  next reader deletes the exclusion.
+- Compare extensions and folder names with an ordinal ignore-case comparison; a
+  culture-aware comparison of file names is a bug waiting for a Turkish locale.
+- Sort explicitly. Directory enumeration order is whatever the file system feels
+  like, and a list that reorders itself between runs looks broken.
+- Read only the header when a list needs a display name. The full parse belongs to
+  the moment the file is actually used.
+- A missing folder returns an empty list, not an exception: the caller shows an
+  empty list and a sentence, which is a better answer than a dialog.
+- Keep the scanned items and the bound rows in the same order so an index into one
+  finds the other; that is what lets a command line or a search box name a file and
+  tick its row.
 

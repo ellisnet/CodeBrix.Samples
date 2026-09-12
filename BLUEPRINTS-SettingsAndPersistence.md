@@ -5,9 +5,13 @@ the AppSettings add-in: wrapping the store in one application-named facade,
 opening it early enough that a static initializer can read from it, remembering
 a user's folder choice and the last window size, persisting small pieces of
 state such as a palette or a recent list through the same store, and flushing
-deferred writes at natural points rather than only at quit. Reach for this
-file when a value has to survive a restart, or when the order in which the
-store opens relative to the rest of startup matters.
+deferred writes at natural points rather than only at quit. A last recipe is
+the argument for the opposite arrangement - no store at all - for an
+application whose state lives on the resources it creates somewhere else and
+can be rebuilt from the labels they carry. Reach for this file when a value
+has to survive a restart, when the order in which the store opens relative to
+the rest of startup matters, or when you are deciding whether you need a store
+in the first place.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -21,6 +25,7 @@ conventions the code blocks follow.
 - [Restore a remembered window size before any window exists](#restore-a-remembered-window-size-before-any-window-exists)
 - [Persist small pieces of application state through the same store](#persist-small-pieces-of-application-state-through-the-same-store)
 - [Flush deferred settings at natural points instead of at quit](#flush-deferred-settings-at-natural-points-instead-of-at-quit)
+- [Put identity in labels on the resource instead of a state file beside it](#put-identity-in-labels-on-the-resource-instead-of-a-state-file-beside-it)
 
 ## Related blueprints
 
@@ -390,4 +395,161 @@ PintaCore.Settings.DoSaveSettingsBeforeQuit ();
   natural settle points instead.
 - The flush is wrapped so a failing subscriber cannot take the application down.
 - Frequent flushing is only cheap because the store skips unchanged values.
+
+### Put identity in labels on the resource instead of a state file beside it
+
+**When you want this.** Your application creates resources somewhere else - on a
+container daemon, in a cloud account, on a device - and has to find them again on
+the next run, know which ones are its own, and be able to remove exactly those and
+nothing else. The rest of this file is about remembering state in a store on the
+user's machine; this recipe is the case for having no store at all, when the thing
+you create can carry its own identity.
+
+**The MVVM shape.** Not a view-model concern. A single static class holds the
+label schema and the filters built from it; the creation path stamps the whole set
+on every resource it makes; discovery lists by the schema's presence filter,
+groups by the identity label and rebuilds the application's model of the world
+from nothing else. The view models only ever see the rebuilt model.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/libs/RedisSetupTool.DockerManagement/Instances/InstanceLabels.cs
+/// <summary>
+/// The label schema, in one place. Labels are the database: every container, volume and network this
+/// tool creates carries them, and discovery rebuilds an instance from nothing else.
+/// </summary>
+public static class InstanceLabels
+{
+    /// <summary>The prefix every label shares.</summary>
+    public const string Prefix = "codebrix.redissetup.";
+
+    /// <summary>The instance id - the primary key.</summary>
+    public const string Instance = Prefix + "instance";
+
+    /// <summary>The topology code, for example <c>D2</c>.</summary>
+    public const string Topology = Prefix + "topology";
+
+    // ... the node role and index, the friendly name, the creation time, the published ports,
+    //     the image, the shared secret and the resource kind ...
+
+    /// <summary>
+    /// Gets a filter matching every resource this tool created, whatever its instance. A null value
+    /// makes the query builder emit a presence match rather than an equality match.
+    /// </summary>
+    public static IDictionary<string, string> PresenceFilter =>
+        new Dictionary<string, string>(StringComparer.Ordinal) { [Instance] = null };
+
+    /// <summary>Gets a filter matching one instance's resources.</summary>
+    public static IDictionary<string, string> InstanceFilter(string instanceId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(instanceId);
+        return new Dictionary<string, string>(StringComparer.Ordinal) { [Instance] = instanceId };
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/libs/RedisSetupTool.DockerManagement/Topologies/Builders/TopologyBuildContext.cs
+/// <summary>Builds the label set every resource of the instance carries.</summary>
+/// <param name="resourceKind">One of <c>network</c>, <c>volume</c> or <c>container</c>.</param>
+internal Dictionary<string, string> BaseLabels(string resourceKind)
+{
+    var labels = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        [InstanceLabels.Instance] = InstanceId,
+        [InstanceLabels.Topology] = Descriptor.Code,
+        [InstanceLabels.Name] = InstanceName,
+        [InstanceLabels.Created] = CreatedAt.ToString("O", CultureInfo.InvariantCulture),
+        [InstanceLabels.Image] = Descriptor.Image,
+        [InstanceLabels.Resource] = resourceKind,
+    };
+
+    // ... the optional ones: the announced gateway, the shared password, the declared users
+    //     and the service name, each added only when the topology has one ...
+
+    return labels;
+}
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/libs/RedisSetupTool.DockerManagement/DockerManager.cs
+/// <inheritdoc />
+public Task<IReadOnlyList<ContainerInfo>> ListManagedContainersAsync(
+    CancellationToken cancellationToken = default) =>
+    ListContainersAsync(InstanceLabels.PresenceFilter, includeStopped: true, cancellationToken);
+
+/// <inheritdoc />
+public Task<IReadOnlyList<ContainerInfo>> ListInstanceContainersAsync(string instanceId,
+    CancellationToken cancellationToken = default) =>
+    ListContainersAsync(InstanceLabels.InstanceFilter(instanceId), includeStopped: true,
+        cancellationToken);
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/libs/RedisSetupTool.DockerManagement/Topologies/RedisTopologyService.cs
+public async Task<IReadOnlyList<TopologyInstance>> DiscoverAsync(
+    CancellationToken cancellationToken = default)
+{
+    var containers = await _docker.ListManagedContainersAsync(cancellationToken)
+        .ConfigureAwait(false);
+    var volumes = await _docker.ListVolumesAsync(cancellationToken).ConfigureAwait(false);
+
+    var grouped = new Dictionary<string, List<ContainerInfo>>(StringComparer.Ordinal);
+    foreach (var container in containers)
+    {
+        if (string.IsNullOrEmpty(container.InstanceId))
+        {
+            continue;
+        }
+
+        // ... add it to its instance's list ...
+    }
+
+    // ... rebuild one instance per group, newest first ...
+}
+
+// ...
+
+private async Task<TopologyInstance> RebuildAsync(string instanceId,
+    List<ContainerInfo> containers, IReadOnlyList<VolumeInfo> volumes,
+    CancellationToken cancellationToken)
+{
+    // ...
+    var code = LabelOf(containers, InstanceLabels.Topology);
+    if (!TopologyCatalog.TryParseCode(code, out var topologyId)
+        && !InstanceId.TryParseTopology(instanceId, out topologyId))
+    {
+        return null;
+    }
+    // ... every other field of the instance comes out of the labels the same way ...
+}
+```
+
+Teardown is the same query in reverse, and it is written to be idempotent: a
+resource that is already gone is not a failure, which is also what lets a
+half-finished creation roll itself back down the same path.
+
+**Where to look.**
+`RedisSetupTool/src/libs/RedisSetupTool.DockerManagement/Instances/InstanceLabels.cs`
+`RedisSetupTool/src/libs/RedisSetupTool.DockerManagement/Instances/InstanceId.cs` and
+`Topologies/RedisTopologyService.cs`,
+`Topologies/Builders/TopologyBuildContext.cs`
+
+**Sharp edges.**
+- Stamp every kind of resource, not just the primary one. A volume or a network
+  created without the label set is invisible to discovery and survives teardown as
+  litter nobody can attribute. Discovery also has to survive a partly stamped
+  resource - one created by an older version, or by a run that failed halfway -
+  and falling back to parsing the identity out of the resource name is the cheap
+  version of that.
+- A presence match and an equality match are different queries. Letting a null
+  value mean "the label exists, whatever its value" is what makes one filter find
+  everything the application ever created.
+- The schema is a published contract with something outside your process.
+  Renaming a key orphans everything an earlier run created, so treat the constants
+  as public API and add rather than rename.
+- Anything in a label is readable by anyone who can inspect the resource. This
+  application puts a development password in one and says so on the card; a real
+  secret belongs somewhere else.
 

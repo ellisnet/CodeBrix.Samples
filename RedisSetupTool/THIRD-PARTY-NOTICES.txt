@@ -1,0 +1,45 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the RedisSetupTool sample application, together with the licenses
+under which that content is provided.
+
+Nothing third-party is bundled in this folder. The application ships no fonts,
+images, models, data files, media or vendored source: every file here is
+either a project file or C# and XAML written for this application.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here. That includes the CodeBrix.Docker package, which is where
+the Docker Engine API client and its own upstream heritage live, and the
+CodeBrix.Redis package, which is where the Redis client, the RESP protocol
+implementation and the distributed-lock heritage live. Neither library's source
+is copied into this folder.
+
+The two font families the application uses - Roboto as the default text font
+and Roboto Mono for endpoints, identifiers, connection strings, log text and
+the terminal grid - arrive inside their own packages, under the SIL Open Font
+License, and are addressed from the application through ms-appx:/// URIs. No
+font file is committed here.
+
+------------------------------------------------------------------------
+Container images (pulled at run time)
+------------------------------------------------------------------------
+The application asks the user's own Docker daemon to pull the Redis and
+Valkey images a chosen topology needs, and the containerized analysis tools
+the Images section offers. Those images are fetched from a public registry by
+the daemon at the user's request, remain the property of their publishers
+under their own licenses, and are not redistributed as part of this
+repository. No image content is bundled, cached or committed here.
+
+------------------------------------------------------------------------
+User content (created and opened at run time)
+------------------------------------------------------------------------
+The containers, networks, volumes and Redis databases the application creates,
+the data a user puts in them, and any Dockerfile the user points the image
+linter at, belong to the user. Nothing of that kind is redistributed as part
+of this repository.
+
+No further third-party attribution notices apply to this sample.

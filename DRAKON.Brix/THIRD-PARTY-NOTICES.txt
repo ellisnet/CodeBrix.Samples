@@ -1,0 +1,143 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the DRAKON.Brix sample application, together with the licenses under
+which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here. That includes the Tcl/Tk and Eagle heritage of the managed
+Tcl interpreter, the Tk toolkit and the sqlite3 and pdf4tcl command shims this
+application runs on, all of which arrive inside the CodeBrix.Platform.TclTk,
+CodeBrix.Platform.TclTk.Extras and CodeBrix.Platform.TkCanvas packages and are
+covered by the notices those packages ship.
+
+------------------------------------------------------------------------
+DRAKON Editor (bundled)
+------------------------------------------------------------------------
+Project:   DRAKON Editor 1.33
+Author(s): Stepan Mitkin and contributors
+Source:    https://github.com/stepan-mitkin/drakon_editor
+License:   PUBLIC DOMAIN, per the upstream readme.html: "DRAKON Editor is
+           PUBLIC DOMAIN except some third-party components (pdf4tcl,
+           Liberation fonts)."
+
+DRAKON Editor material bundled in this folder:
+
+  * src/DRAKON.Brix.Core/Assets/drakon/ - the complete DRAKON Editor 1.33
+    program tree (its Tcl source, generators, images, message catalogs and
+    scripts), vendored UNMODIFIED and copied beside the binaries at build
+    time so the application can source it. See the PROVENANCE.txt file in
+    that directory. The two excepted third-party components carried along
+    inside it - fonts/ and pdf4tcl07/pkgIndex.tcl - are covered by their own
+    sections below.
+  * examples/ - DRAKON Editor's own example diagrams (.drn) and the generated
+    source, build scripts and compiled artifacts that ship beside them, per
+    target language.
+  * docs/ - DRAKON Editor's own documentation: the DRAKON language book, the
+    per-language generator guides, and the .drn file-format description.
+  * art/ - DRAKON Editor's icon source artwork.
+
+The application's own bootstrap script, src/DRAKON.Brix.Core/Assets/
+bootstrap.tcl, is not DRAKON Editor material: it is a new file written for
+this application, and its header says so.
+
+------------------------------------------------------------------------
+Liberation Fonts - Liberation Mono (bundled)
+------------------------------------------------------------------------
+Project:   Liberation Fonts (Liberation Mono, version 1.07)
+Author(s): Copyright (c) 2007 Red Hat, Inc. All rights reserved. Designed by
+           Steve Matteson, Ascender Corporation. LIBERATION is a trademark of
+           Red Hat, Inc.
+Source:    https://github.com/liberationfonts/liberation-fonts
+License:   GNU General Public License v.2 WITH the Liberation font embedding
+           exception - the license that applies to the Liberation 1.x fonts,
+           NOT the SIL Open Font License, which only applies to Liberation
+           2.x and later. The embedding exception provides that embedding the
+           font, or unaltered portions of it, in a document does not by itself
+           cause the document to be covered by the GPL.
+
+Bundled at src/DRAKON.Brix.Core/Assets/drakon/fonts/LiberationMono-Regular.ttf
+- the copy DRAKON Editor itself ships and loads, one of the excepted
+third-party components of the section above. The upstream license texts travel
+with the font in that same directory and are the authoritative terms:
+
+  * src/DRAKON.Brix.Core/Assets/drakon/fonts/License.txt  (the license
+    agreement and the embedding exception)
+  * src/DRAKON.Brix.Core/Assets/drakon/fonts/COPYING      (the GNU GPL v.2)
+  * src/DRAKON.Brix.Core/Assets/drakon/fonts/AUTHORS      (contributors)
+  * src/DRAKON.Brix.Core/Assets/drakon/fonts/README       (upstream readme)
+
+------------------------------------------------------------------------
+pdf4tcl (bundled: one package index file)
+------------------------------------------------------------------------
+Project:   pdf4tcl 0.7 (a library of Tcl procedures for generating Portable
+           Document Format files; a port of pdf4php)
+Author(s): Copyright (c) 2004 by Frank Richter and Jens Pönisch
+           Copyright (c) 2006-2010 by Peter Spjuth
+           Copyright (c) 2009 by Yaroslav Schekin
+Source:    https://pdf4tcl.sourceforge.net/
+License:   Tcl/Tk-style license, reproduced verbatim below from the upstream
+           "license.terms" as that license requires.
+
+Bundled at src/DRAKON.Brix.Core/Assets/drakon/pdf4tcl07/pkgIndex.tcl - the
+package index file only, carried along because DRAKON Editor sources it at
+startup. The pdf4tcl IMPLEMENTATION the application actually runs is the
+managed shim inside the CodeBrix.Platform.TclTk.Extras package; no pdf4tcl
+implementation source is bundled in this folder.
+
+--------------------------- pdf4tcl license --------------------------------
+
+This software is copyrighted by Frank Richter, Jens Pönisch and other
+parties.
+The following terms apply to all files associated with the software unless
+explicitly disclaimed in individual files.
+
+The authors hereby grant permission to use, copy, modify, distribute,
+and license this software and its documentation for any purpose, provided
+that existing copyright notices are retained in all copies and that this
+notice is included verbatim in any distributions. No written agreement,
+license, or royalty fee is required for any of the authorized uses.
+Modifications to this software may be copyrighted by their authors
+and need not follow the licensing terms described here, provided that
+the new terms are clearly indicated on the first page of each file where
+they apply.
+
+IN NO EVENT SHALL THE AUTHORS OR DISTRIBUTORS BE LIABLE TO ANY PARTY
+FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES
+ARISING OUT OF THE USE OF THIS SOFTWARE, ITS DOCUMENTATION, OR ANY
+DERIVATIVES THEREOF, EVEN IF THE AUTHORS HAVE BEEN ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+THE AUTHORS AND DISTRIBUTORS SPECIFICALLY DISCLAIM ANY WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.  THIS SOFTWARE
+IS PROVIDED ON AN "AS IS" BASIS, AND THE AUTHORS AND DISTRIBUTORS HAVE
+NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
+MODIFICATIONS.
+
+GOVERNMENT USE: If you are acquiring this software on behalf of the
+U.S. government, the Government shall have only "Restricted Rights"
+in the software and related documentation as defined in the Federal
+Acquisition Regulations (FARs) in Clause 52.227.19 (c) (2).  If you
+are acquiring the software on behalf of the Department of Defense, the
+software shall be classified as "Commercial Computer Software" and the
+Government shall have only "Restricted Rights" as defined in Clause
+252.227-7013 (c) (1) of DFARs.  Notwithstanding the foregoing, the
+authors grant the U.S. Government and others acting in its behalf
+permission to use and distribute the software in accordance with the
+terms specified in this license.
+
+----------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+User diagrams (opened at run time)
+------------------------------------------------------------------------
+The application opens, edits and saves the .drn diagram files the user
+chooses, and generates source code from them. The rights to that content
+remain with its owners; nothing a user creates is redistributed as part of
+this repository.
+
+No further third-party attribution notices apply to this sample.

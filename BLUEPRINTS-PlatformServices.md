@@ -36,6 +36,12 @@ conventions the code blocks follow.
 - [Tell the user when graphics initialization failed](#tell-the-user-when-graphics-initialization-failed)
 - [Show a WebView on every head and drive it from a command](#show-a-webview-on-every-head-and-drive-it-from-a-command)
 - [Replay a finished audio clip with one button press](#replay-a-finished-audio-clip-with-one-button-press)
+- [Keep an embedded interpreter on its own thread and post every call to it](#keep-an-embedded-interpreter-on-its-own-thread-and-post-every-call-to-it)
+- [Inject the quit action so a guest exit cannot end the test host](#inject-the-quit-action-so-a-guest-exit-cannot-end-the-test-host)
+- [Add your own commands to an embedded interpreter](#add-your-own-commands-to-an-embedded-interpreter)
+- [Release an exclusive device handle from both the page unload and the window close](#release-an-exclusive-device-handle-from-both-the-page-unload-and-the-window-close)
+- [Marshal a save dialog onto the UI thread from a command handler](#marshal-a-save-dialog-onto-the-ui-thread-from-a-command-handler)
+- [Offer a typed path where a head has no folder dialog](#offer-a-typed-path-where-a-head-has-no-folder-dialog)
 
 ## Related blueprints
 
@@ -1687,4 +1693,641 @@ viewModel.SeekAudio = position => AudioElement?.Seek(position);
   before the end can sit slightly short of the duration. A tolerance window is
   what makes the end-of-clip test reliable.
 - Loading a new source and stopping both clear the flag.
+
+### Keep an embedded interpreter on its own thread and post every call to it
+
+**When you want this.** You are hosting a synchronous guest - an interpreter, a
+script engine, a legacy toolkit - that expects to own the thread it runs on, and
+it has to share a process with an asynchronous UI thread that owns the visual
+tree.
+
+**The MVVM shape.** One rule, enforced in one class: the guest lives on its own
+thread, and the toolkit's hosted bridge marshals every one of the guest's UI calls
+back to the UI thread. Application code never touches the guest from the UI thread
+except through the bridge's post method, and never touches the visual tree from
+the guest's thread at all. What the UI thread does contribute - the host element's
+window tree - is captured on the UI thread before the background work starts.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
+/// <summary>
+/// Starts DRAKON in HOSTED mode inside the given host view — the way the
+/// application runs it. Call once, from the UI thread, after the host has
+/// loaded (its tree and dispatcher exist).
+/// </summary>
+/// <param name="host">The loaded Tk host view.</param>
+public void Start(TkHostView host)
+{
+    if (host == null) { throw new ArgumentNullException(nameof(host)); }
+    if (_started) { return; }
+    _started = true;
+
+    WindowTree tree = host.Tree;
+    string assets = Path.Combine(AppContext.BaseDirectory, "Assets");
+
+    Task.Run(() =>
+    {
+        try
+        {
+            if (!Boot(tree, hosted: true, code => Environment.Exit(code), new TkHostFileDialogs(), assets))
+            {
+                return;
+            }
+            RunHostedDiagnostics();
+        }
+        catch (Exception ex)
+        {
+            Report("startup exception: " + ex);
+        }
+    });
+}
+```
+
+Everything the application later wants to run inside the guest goes through the
+same post method, so it arrives on the guest's thread rather than the caller's:
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
+    // A generic diagnostic: when DRAKONBRIX_EVAL is set, its content is
+    // evaluated as a Tcl script once the editor is up, and the completion
+    // code/result are reported — lets any DRAKON flow be driven and observed
+    // from the log without mouse input.
+    string evalScript = Environment.GetEnvironmentVariable("DRAKONBRIX_EVAL");
+    if (!String.IsNullOrEmpty(evalScript))
+    {
+        _bridge.Post(evalInterp =>
+        {
+            Result evalResult = null;
+            ReturnCode evalCode = evalInterp.EvaluateScript(evalScript, ref evalResult);
+            Report("eval(" + evalCode + "): " + evalResult);
+        });
+    }
+```
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
+/// <summary>Stops the Tcl thread and disposes the interpreter.</summary>
+public void Dispose()
+{
+    if (_bridge != null) { _bridge.Dispose(); }
+    if (_interpreter != null) { _interpreter.Dispose(); }
+}
+```
+
+**Where to look.**
+`DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs`
+`DRAKON.Brix/src/DRAKON.Brix.UI/Views/MainPage.xaml.cs`
+
+**Sharp edges.**
+- Capture what the UI thread owns - here the host element's window tree - on the
+  UI thread, before the background task starts. Reading it from inside the task is
+  the failure this shape exists to prevent.
+- The bridge's post is the only way in. An interpreter call made directly from the
+  UI thread runs on the wrong thread and corrupts engine state that has no
+  contract for concurrent access.
+- Disposal order is the bridge first, then the engine: the bridge is what stops
+  the guest's thread, and disposing the engine out from under a running thread is
+  a teardown that will not reproduce on demand.
+- Give the bridge's background-error event a sink at boot. An error raised inside
+  the guest's own event loop has no caller, and without the subscription it is
+  simply lost.
+- Anything that must run after the guest is up belongs in a posted callback, not
+  in a wait on the UI thread.
+
+### Inject the quit action so a guest exit cannot end the test host
+
+**When you want this.** The guest program you are hosting was written for a
+command-line launcher, so its way of ending is to call the launcher's exit. Inside
+a hosted application that either does nothing visible or, in a test run, takes the
+test host down with it.
+
+**The MVVM shape.** The host re-implements the guest's notion of "the program ends
+now" as a command of its own, and injects the behavior rather than hard-coding it.
+The application passes the process-ending action; a headless caller passes a no-op.
+One command class, two callers, no conditional compilation and no test-only branch
+inside the command.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/Commands/QuitCommand.cs
+/// <summary>
+/// The <c>__drakonbrix_quit ?code?</c> Tcl command that ends the application,
+/// the way real Tk's <c>exit</c> does. The engine's own <c>exit</c> only marks
+/// the interpreter as exited; in a hosted app the UI thread keeps the process
+/// alive, so DRAKON's File &gt; Quit (a bare <c>exit</c>) would otherwise hang.
+/// bootstrap.tcl shadows <c>exit</c> with a proc that routes here.
+/// <para>The actual "end the app" behaviour is injected: the hosted
+/// application supplies <c>Environment.Exit</c>, while non-hosted callers such
+/// as tests supply a safe no-op so a stray <c>exit</c> cannot tear down the
+/// test host.</para>
+/// </summary>
+internal sealed class QuitCommand : Default
+{
+    private readonly Action<int> _onQuit;
+
+    internal QuitCommand(Action<int> onQuit)
+        : base(new CommandData(
+            "__drakonbrix_quit", null, null, null,
+            typeof(QuitCommand).FullName, CommandFlags.None, null, 0))
+    {
+        _onQuit = onQuit;
+    }
+
+    public override ReturnCode Execute(
+        Interpreter interpreter, IClientData clientData, ArgumentList arguments, ref Result result)
+    {
+        int code = 0;
+        if (arguments != null && arguments.Count >= 2)
+        {
+            int parsed;
+            if (Int32.TryParse(arguments[1], out parsed)) { code = parsed; }
+        }
+
+        // Route to the injected action. The hosted app passes
+        // Environment.Exit(code) — the single reliable way to end a hosted UI
+        // app from the Tcl thread, since the UI thread would otherwise keep the
+        // process alive after the engine's own exit merely flags the interpreter.
+        if (_onQuit != null) { _onQuit(code); }
+
+        result = string.Empty;
+        return ReturnCode.Ok;
+    }
+}
+```
+
+The action arrives as an argument to the shared boot method, so the two callers
+choose it and nothing else changes:
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
+        //The real-quit command; bootstrap.tcl shadows exit onto it so
+        //DRAKON's File > Quit ends the app. The exit action is injected so
+        //non-hosted callers (tests) pass a safe no-op.
+        var quit = new QuitCommand(onQuit);
+        long quitToken = 0;
+        Result quitError = null;
+        interp.AddCommand(quit, null, ref quitToken, ref quitError);
+```
+
+The last half of the path is in the guest's own language: a shadowing procedure
+that takes over the built-in name and forwards to the host's command.
+
+```tcl
+# From CodeBrix.Samples/DRAKON.Brix/src/DRAKON.Brix.Core/Assets/bootstrap.tcl
+# Added for DRAKON.Brix - because stock DRAKON's File > Quit menu item (and its
+#   file-error paths) run the bare [exit] command, which under tclsh terminates
+#   the process. The managed engine's own [exit] only marks the interpreter as
+#   exited; in this hosted UI app the interpreter runs on a dedicated Tcl thread
+#   while the UI thread keeps the process alive, so a bare [exit] would hang.
+#   This proc shadows [exit] onto the host's __drakonbrix_quit command (see
+#   Drakon/QuitCommand.cs), which calls Environment.Exit -- matching tclsh's
+#   process-terminating exit semantics.
+#
+# Stock DRAKON / Tcl:
+#   exit                          ;# tclsh's built-in, terminates the process
+proc exit { args } {
+    __drakonbrix_quit {*}$args
+}
+```
+
+**Where to look.**
+`DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/Commands/QuitCommand.cs`
+`DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs` and
+`src/DRAKON.Brix.Core/Assets/bootstrap.tcl`
+
+**Sharp edges.**
+- Register the host command before any script that might call it, and shadow the
+  built-in name in the glue script rather than editing the guest. A guest you have
+  not modified is a guest you can upgrade.
+- The no-op the tests pass is what makes a stray exit inside a guest script
+  harmless instead of ending the run at whichever case happened to hit it.
+- Parse the arguments defensively. A script can call the command with any arity,
+  and the exit code is optional.
+- Ending a hosted application from the guest's thread means ending the process;
+  asking the UI thread to close its window is not equivalent, because the guest's
+  caller expects never to return.
+
+### Add your own commands to an embedded interpreter
+
+**When you want this.** The guest program needs something only the host can do -
+report into the application log, read a host setting, end the application - and
+you want it available as an ordinary command in the guest's own language rather
+than as a special case in the boot code.
+
+**The MVVM shape.** Each command is a small internal class: it derives from the
+engine's command base type, declares its name and metadata in a `CommandData`, and
+implements one execute method that reads its arguments and writes a result. What
+the command actually does is a delegate handed in through the constructor, so the
+same class serves the application and a headless caller. Registration happens once,
+inside the boot sequence, on the engine's own thread.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/Commands/DiagnosticReportCommand.cs
+/// <summary>
+/// A tiny <c>__brixreport MESSAGE</c> Tcl command that routes text to the
+/// runtime's diagnostic sink — the interpreter's own <c>puts</c> is not
+/// wired to the process console, so this is how startup-time Tcl probes
+/// surface in the log.
+/// </summary>
+internal sealed class DiagnosticReportCommand : Default
+{
+    private readonly Action<string> _report;
+
+    internal DiagnosticReportCommand(Action<string> report)
+        : base(new CommandData(
+            "__brixreport", null, null, null,
+            typeof(DiagnosticReportCommand).FullName, CommandFlags.None, null, 0))
+    {
+        _report = report;
+    }
+
+    public override ReturnCode Execute(
+        Interpreter interpreter, IClientData clientData, ArgumentList arguments, ref Result result)
+    {
+        if (arguments != null && arguments.Count >= 2)
+        {
+            _report("PROBE " + arguments[1]);
+        }
+        result = string.Empty;
+        return ReturnCode.Ok;
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
+    dispatch(interp =>
+    {
+        //Diagnostic reporting command reachable from Tcl.
+        var diagnostic = new DiagnosticReportCommand(Report);
+        long token = 0;
+        Result addError = null;
+        interp.AddCommand(diagnostic, null, ref token, ref addError);
+        // ...
+    });
+```
+
+The sink the delegate points at is one private method, so every diagnostic - the
+guest's, the bridge's background errors and the host's own - leaves by the same
+door and can also be observed by a test through the event:
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
+private void Report(string message)
+{
+    Console.WriteLine("DRAKONBRIX: " + message);
+    Action<string> handler = Diagnostic;
+    if (handler != null) { handler(message); }
+}
+```
+
+**Where to look.**
+`DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/Commands/DiagnosticReportCommand.cs`
+`DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/Commands/QuitCommand.cs` and
+`src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs`
+
+**Sharp edges.**
+- Always set a result, even an empty one, and return the engine's success code
+  rather than throwing. The caller is a script, and an exception crossing back into
+  interpreted code is not something the guest can handle.
+- Prefix host command names so they cannot collide with anything the guest or its
+  libraries define.
+- Keep the command classes internal. Nothing outside the library that owns the
+  engine should be adding commands to it.
+- Register on the engine's thread, through the same dispatch the rest of the boot
+  uses, and before the scripts that call them are sourced.
+- The guest's own console output is not necessarily wired to the process console;
+  a report command is how script-side probes become log lines.
+
+### Release an exclusive device handle from both the page unload and the window close
+
+**When you want this.** The view model holds something only one process may
+hold - a device handle, an exclusive file lock, a capture session - and leaving
+it held is not a leak the operating system tidies up until the process exits.
+[Veto a window close until unsaved work is handled](BLUEPRINTS-PlatformServices.md#veto-a-window-close-until-unsaved-work-is-handled)
+is the case where the close has to be delayed; this is the case where it must
+not be delayed at all, only never missed.
+
+**The MVVM shape.** The view model exposes one idempotent shutdown method that
+unsubscribes, stops and releases. The page calls it from its unloaded handler
+and the application calls it from the window's closed event. Neither knows what
+is being released, and either may be the one that runs.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs
+/// <summary>
+/// Stops acquisition and releases the scope. Call from the view's unload or
+/// window-closed handler -- a handle left open keeps the device locked
+/// against every other process until this one exits.
+/// </summary>
+public void Shutdown()
+{
+    if (_scope == null) { return; }
+
+    _scope.SamplesAvailable -= OnSamplesAvailable;
+    _scope.StopStreaming();
+    _scope.StopSignalGenerator();
+    ScopeDeviceFinder.Reset();
+    _scope = null;
+    IsReady = false;
+    IsStreaming = false;
+    _log.LogInformation("Scope released.");
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.UI/Views/MainPage.xaml.cs
+/// <summary>The page's view model, for the window-closed handler in <see cref="App"/>.</summary>
+internal MainViewModel ViewModel => DataContext as MainViewModel;
+
+// ...
+
+public MainPage()
+{
+    // ...
+    Loaded += async (_, _) =>
+    {
+        if (ViewModel != null) { await ViewModel.InitializeAsync(); }
+    };
+
+    Unloaded += (_, _) =>
+    {
+        //Releasing the handle matters: a scope left open stays locked
+        //  against every other process until this one exits.
+        ViewModel?.Shutdown();
+    };
+
+    this.InitializeComponent(); //Leave this line last
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.UI/App.xaml.cs
+//Closing the window must release the scope: a handle left open keeps the
+//  device locked against every other process, and a running signal
+//  generator keeps running, until this process exits.
+MainWindow.Closed += (_, _) => (rootFrame.Content as Views.MainPage)?.ViewModel?.Shutdown();
+```
+
+**Where to look.**
+`PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs`
+`PicoScope.Brix/src/PicoScope.Brix.UI/Views/MainPage.xaml.cs` and
+`App.xaml.cs`
+
+**Sharp edges.**
+- Make the method idempotent and safe in either order. Both seams can fire, one
+  after the other, and the early return on the already-released field is the
+  whole guard.
+- Neither seam is enough on its own. A page that is navigated away from unloads
+  without the window closing, and on some heads a window can close without the
+  page ever unloading.
+- Unsubscribe before stopping, so no batch arrives after the view model believes
+  it has finished and mutates state nobody is watching any more.
+- Stop the side effects too. Here the signal generator keeps driving its output
+  after the window is gone unless it is stopped explicitly, which is the kind of
+  thing a dispose-only path misses.
+- Disposal is a safety net, not the plan: the interface implements it so that a
+  crash still frees the device, but the explicit release is what makes the
+  handle available to the next process promptly. For the rest of the teardown -
+  commands, delegates, subscriptions - see
+  [Dispose a view model its commands and its bridge delegates](BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+
+### Marshal a save dialog onto the UI thread from a command handler
+
+**When you want this.** A command opens a native picker, and you cannot prove
+which thread the command handler is running on. A dialog belongs to the window it
+is shown over, so the hop to the UI thread has to be made rather than assumed -
+and the awaiting command still has to get the chosen path back. This is the
+threading half of the picker story;
+[Save a file through a native dialog from the view model](BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model)
+covers the bridge and the no-dialog head, and
+[Clean up the path a file picker returns](BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns)
+covers the path the picker hands back.
+
+**The MVVM shape.** The view model exposes a settable delegate taking a suggested
+file name and returning the chosen path or null, and awaits it. The page fills the
+delegate in with a method that creates a `TaskCompletionSource`, enqueues the
+actual picker onto the dispatcher queue, and returns the task: the command awaits a
+result that is produced on the UI thread whichever thread asked for it.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs
+/// <summary>
+/// Set by the head: asks the person where to write a baked ".cube" file, and hands back the full path
+/// they chose, or null when they cancelled.
+/// </summary>
+/// <remarks>
+/// The save dialog belongs to the head because every platform's is its own - Win32 on WPF, the file
+/// picker on WinUI and on the CodeBrix.Platform heads. What they all share is the rule: a bake goes
+/// where the person says it goes, and nowhere otherwise.
+/// </remarks>
+public Func<string, Task<string>> PickSaveCubePathAsync { get; set; }
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs
+/// <summary>Asks where to write a baked lookup table, and returns null when the person cancels.</summary>
+/// <remarks>
+/// No SuggestedStartLocation: the dialog opens where this person last was, and the application never
+/// proposes a folder of its own. The frame-buffer head has no dialog to show, so a bake there simply
+/// says so rather than writing somewhere nobody chose.
+/// </remarks>
+private Task<string> PickSaveCubePathAsync(string suggestedFileName)
+{
+    //A SimpleCommand does not promise to run its handler on the user-interface thread, and a picker
+    //  belongs to the window it is shown over - so the thread is made certain rather than assumed.
+    TaskCompletionSource<string> chosen =
+        new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    var enqueued = DispatcherQueue?.TryEnqueue(async () =>
+    {
+        try { chosen.TrySetResult(await ShowSavePickerAsync(suggestedFileName)); }
+        catch (Exception exception) { chosen.TrySetException(exception); }
+    });
+
+    //No dispatcher means no window to show it over, which reads the same as declining to choose.
+    if (enqueued != true) { chosen.TrySetResult(null); }
+
+    return chosen.Task;
+}
+```
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs
+DataContextChanged += (_, _) =>
+{
+    //Give the view model's SimpleDialog helpers a XamlRoot to attach dialogs to
+    (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
+
+    if (ViewModel != null)
+    {
+        //Raised on the decoding thread: hop to the user-interface thread and mark the canvas dirty
+        ViewModel.InvalidateVideoCanvas = () => DispatcherQueue?.TryEnqueue(InvalidateVideoCanvas);
+        ViewModel.PickSaveCubePathAsync = PickSaveCubePathAsync;
+    }
+};
+```
+
+The command on the other end treats a null as a decision rather than a failure,
+and a head that wired no delegate at all as its own case with its own sentence:
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs
+if (PickSaveCubePathAsync == null)
+{
+    //A head that cannot ask has nowhere to put the file, and this application never picks a
+    //  location on someone's behalf.
+    ShowMessage("This head has no save dialog, so there is nowhere to bake to.");
+    return;
+}
+
+var cubeFilePath = await PickSaveCubePathAsync(BakeLocations.CreateFileName(DateTime.Now));
+
+//Cancelled. Nothing is written and nothing is said: deciding not to save is not a failure.
+if (string.IsNullOrWhiteSpace(cubeFilePath)) { return; }
+```
+
+**Where to look.**
+`SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs`
+`SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs` and
+`src/libs/SimpleCbxVideoPlayer.SkiaVideo/Playback/BakeLocations.cs`
+
+**Sharp edges.**
+- Create the completion source with the run-continuations-asynchronously option.
+  Without it the command's continuation runs inline on the UI thread inside the
+  enqueued callback, which is exactly the reentrancy a dialog does not want.
+- Enqueueing can fail - no dispatcher, no window - and the return value says so.
+  Treat that as "no choice was made" and complete the task, or the command awaits
+  forever.
+- Catch inside the enqueued callback and set the exception on the task. An
+  exception thrown on the dispatcher queue with nobody watching takes the process
+  with it.
+- Never propose a folder unless you know the person wants one. Supplying only a
+  suggested file name lets the platform's dialog open where they last were.
+- A stamped suggested name stops two saves in a row from quietly proposing the
+  same file.
+- This application hands the delegate over as a plain settable property, so the
+  page has to name the view model's type. Declaring it as a one-member bridge
+  interface the view model implements keeps the page ignorant of the view model,
+  and is what the rest of the repository does.
+
+### Offer a typed path where a head has no folder dialog
+
+**When you want this.** Some of your heads have a native folder dialog and some
+do not, and you want the feature to keep working on the ones that do not rather
+than merely explaining itself. The one-delegate bridge and its null check are
+established by
+[Pick a file to open through a native dialog from the view model](BLUEPRINTS-PlatformServices.md#pick-a-file-to-open-through-a-native-dialog-from-the-view-model);
+what this recipe adds is what you put behind the failure - a bound, editable
+destination that exists whether or not a dialog does, so the picker is a
+convenience rather than the only way in.
+
+**The MVVM shape.** The bridge is the same one-property interface holding a
+delegate the page fills in from `DataContextChanged`. The command checks the
+delegate, calls it inside a try, and on either failure writes a status line that
+names the alternative. The destination itself is an ordinary two-way bound
+property, so the picker's only job is to write into it.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+/// <summary>
+/// Lets the hosting page give the view model a native "choose a folder…" dialog. The page
+/// wires this up with the CodeBrix.Platform <c>FolderPicker</c>; a head with no folder dialog
+/// leaves it null and the user types the path into the text box instead.
+/// </summary>
+public interface IFolderPickBridge
+{
+    /// <summary>Shows a folder picker and returns the chosen path, or null if cancelled.</summary>
+    Func<Task<string>> PickFolderPathAsync { get; set; }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+private async Task DoBrowseFolder()
+{
+    if (PickFolderPathAsync == null)
+    {
+        StatusText = "No folder dialog on this head - type the folder path into the text box.";
+        return;
+    }
+    try
+    {
+        var path = await PickFolderPathAsync();
+        if (!String.IsNullOrWhiteSpace(path))
+        {
+            FolderPath = path.Trim();
+            StatusText = $"Photos will be saved to: {FolderPath}";
+        }
+    }
+    catch (Exception e)
+    {
+        StatusText = $"Folder dialog failed: {e.Message} - type the folder path instead.";
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.UI/Views/MainPage.xaml.cs
+using System; //Required: the IAsyncOperation GetAwaiter extension (awaiting the FolderPicker) lives here
+
+// ...
+
+        DataContextChanged += (_, _) =>
+        {
+            // ...
+            if (DataContext is IFolderPickBridge folderPick)
+            {
+                folderPick.PickFolderPathAsync = PickFolderPathAsync;
+            }
+            // ...
+        };
+
+// ...
+
+    private static async Task<string> PickFolderPathAsync()
+    {
+        var picker = new FolderPicker
+        {
+            SuggestedStartLocation = PickerLocationId.PicturesLibrary
+        };
+        picker.FileTypeFilter.Add("*");
+
+        StorageFolder folder = await picker.PickSingleFolderAsync();
+        return folder?.Path;
+    }
+```
+
+**Where to look.**
+`WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs`
+`WebcamViewer/src/WebcamViewer.UI/Views/MainPage.xaml.cs` and
+`Views/MainPage.xaml`
+
+**Sharp edges.**
+- The page wires the delegate unconditionally, so in this application the null
+  branch never runs and the catch is the branch that matters. A head that
+  registers no picker fails inside the call, not before it, so both paths have to
+  say the same thing about the text box.
+- Three outcomes, not two: no delegate and a throwing delegate both deserve an
+  explanation, while a cancelled picker is silent and leaves the previous
+  destination alone.
+- Adding a filter is required on a folder picker even though it filters nothing.
+- The awaiter extension for the picker's return type lives in the `System`
+  namespace, so the page needs that using directive even when nothing else in the
+  file does. The file carries a comment saying so, which is worth copying.
+- Trim what the picker returns before storing it, because the same property is
+  typed into by hand and both routes land in the same validation.
+- A head that can opt into a picker on its host builder is a third case again; see
+  the framebuffer opt-in in the startup area.
 

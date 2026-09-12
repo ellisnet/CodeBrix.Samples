@@ -1,0 +1,71 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the PicoScope.Brix sample application, together with the licenses
+under which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here. That includes the font package that supplies the
+application's text font and its script fallbacks, and the chart-control add-in
+package that brings the plotting engine with it.
+
+------------------------------------------------------------------------
+Pico Technology C# examples  (derived: src/libs/PicoScope.Brix.ScopeData.Ps2000/**)
+------------------------------------------------------------------------
+The ps2000 interop layer in this application - the P/Invoke declarations in
+Interop/Ps2000Api.cs, the packed advanced-trigger structures, the callback
+signatures and the call sequences they are used in - derives from Pico
+Technology's published C# examples for the PicoScope SDK,
+picosdk-c-sharp-examples
+(https://github.com/picotech/picosdk-c-sharp-examples). The declarations
+follow the ps2000.h names and shapes that those examples establish.
+
+That project is licensed under the ISC license, whose copyright and
+permission notice is reproduced here verbatim:
+
+    Copyright (c) 2007-2018 Pico Technology Ltd.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose with or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+------------------------------------------------------------------------
+Pico Technology ps2000 driver  (NOT bundled; resolved at run time)
+------------------------------------------------------------------------
+The oscilloscope driver itself - ps2000.dll with picoipp.dll on Windows,
+libps2000.so with libpicoipp.so on Linux - is Pico Technology's proprietary
+software, supplied with the PicoSDK, with the PicoScope desktop application,
+or by the libps2000 package in Pico's apt repository.
+
+Pico's SDK terms permit the driver to be copied and distributed as long as
+Pico Technology's copyright statements are not removed, but the driver is not
+open-source software: it keeps a field-of-use restriction limiting it to use
+with Pico products or with data collected using Pico products, and a
+mission-critical-use exclusion.
+
+No Pico driver binary is committed to this repository or bundled with this
+application. The application locates whatever driver is installed on the
+machine at run time and loads it from there, so nothing proprietary is
+redistributed here and no driver version is pinned.
+
+------------------------------------------------------------------------
+Measurements (captured at run time)
+------------------------------------------------------------------------
+The application displays signals captured from an oscilloscope attached to
+the user's own machine, or synthesised by its own simulated device. Nothing
+captured is written to disk or redistributed as part of this repository.
+
+No further third-party attribution notices apply to this sample. Nothing
+third-party is vendored into this folder: no fonts, no images, no driver
+binaries, no data files.
