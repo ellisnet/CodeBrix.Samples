@@ -13,10 +13,10 @@
     <PackageReference Include="CodeBrix.Platform.Fonts.OpenSans.ApacheLicenseForever" Version="1.0.248.1181" />
     <!-- The Tk toolkit and its TkHostView XAML element, which the page hosts the
          whole DRAKON Editor UI inside -->
-    <PackageReference Include="CodeBrix.Platform.TkCanvas.BsdLicenseForever" Version="1.0.255.1024" />
+    <PackageReference Include="CodeBrix.Platform.TkCanvas.BsdLicenseForever" Version="1.0.256.1056" />
     <!-- The sqlite3 and pdf4tcl Tcl command shims DRAKON needs to read .drn
          files and export PDFs -->
-    <PackageReference Include="CodeBrix.Platform.TclTk.Extras.BsdLicenseForever" Version="1.0.255.1024" />
+    <PackageReference Include="CodeBrix.Platform.TclTk.Extras.BsdLicenseForever" Version="1.0.256.1056" />
   </ItemGroup>
 
   <ItemGroup>
