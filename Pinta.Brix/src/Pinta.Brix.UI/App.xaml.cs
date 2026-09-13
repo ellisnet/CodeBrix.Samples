@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Pinta.Brix.Helpers;
+using Pinta.Brix.Services;
 using System;
 using System.Linq;
 
@@ -20,7 +21,7 @@ public partial class App : Application
         SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
         {
             //Register the app's services here
-
+            services.AddPintaBrix();
         });
         SimpleViewModel.SetIsDesignMode(false);
 
@@ -84,7 +85,12 @@ public partial class App : Application
 
             try
             {
-                if (Views.MainPage.Current is { } page && await page.ConfirmCloseApplicationAsync())
+                //The shell installs its save-prompt loop on this service, so the
+                //window close reaches it without knowing which page is showing.
+                IShellCloseService closeService =
+                    SimpleServiceResolver.Instance?.GetService<IShellCloseService>();
+
+                if (closeService is not null && await closeService.ConfirmCloseAsync())
                 {
                     windowCloseConfirmed = true;
                     MainWindow.Close();

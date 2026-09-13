@@ -1,14 +1,18 @@
 using CodeBrix.Platform.Simple;
 using Microsoft.UI.Xaml.Controls;
 using PdfSideBySide.PdfRender;
+using PdfSideBySide.Services;
 using PdfSideBySide.ViewModels;
 using System;
+using System.ComponentModel;
+using System.Threading.Tasks;
+using Windows.Storage.Pickers;
 
 namespace PdfSideBySide.Views;
 
 public sealed partial class MainPage : Page
 {
-    private bool _isWiredToViewModel;
+    private MainViewModel _wiredViewModel;
 
     public MainPage()
     {
@@ -17,25 +21,24 @@ public sealed partial class MainPage : Page
             //Give the view model's SimpleDialog helpers a XamlRoot to attach dialogs to
             (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
 
-            //The view (zoom + pan) and each pane's image are laid out here, because only the
-            //  page knows how big the viewers are
-            if (DataContext is MainViewModel viewModel && !_isWiredToViewModel)
+            //Give the view model the file dialog only a head can show
+            if (DataContext is IPdfFileBridge fileBridge)
             {
-                _isWiredToViewModel = true;
-                viewModel.PropertyChanged += (_, args) =>
-                {
-                    if (args.PropertyName == nameof(MainViewModel.ViewVersion)) { ApplyViews(); }
-                };
-                viewModel.LeftPane.PropertyChanged += (_, args) =>
-                {
-                    if (args.PropertyName == nameof(DocumentPaneViewModel.PageImage)) { ApplyView(DocumentSide.Left); }
-                };
-                viewModel.RightPane.PropertyChanged += (_, args) =>
-                {
-                    if (args.PropertyName == nameof(DocumentPaneViewModel.PageImage)) { ApplyView(DocumentSide.Right); }
-                };
+                fileBridge.PickPdfPathAsync = PickPdfPathAsync;
             }
+
+            WireViewModel();
         };
+
+        //Anything the view model opens can fail, and an error dialog needs the XamlRoot that only
+        //  a loaded page has, so the startup documents are opened from here
+        Loaded += (_, _) =>
+        {
+            WireViewModel();
+            ViewModel?.OnPageReady();
+        };
+
+        Unloaded += (_, _) => UnwireViewModel();
 
         this.InitializeComponent(); //Leave this line last
 
@@ -45,6 +48,61 @@ public sealed partial class MainPage : Page
 
     private MainViewModel ViewModel => DataContext as MainViewModel;
 
+    #region | Watching the view model |
+
+    //One property to watch: the view model folds everything that moves the view - a zoom, a pan, a
+    //  page change, a newly rendered image - into ViewVersion
+    private void WireViewModel()
+    {
+        var viewModel = ViewModel;
+        if (ReferenceEquals(viewModel, _wiredViewModel)) { return; }
+
+        UnwireViewModel();
+        if (viewModel == null) { return; }
+
+        _wiredViewModel = viewModel;
+        _wiredViewModel.PropertyChanged += OnViewModelPropertyChanged;
+    }
+
+    private void UnwireViewModel()
+    {
+        if (_wiredViewModel == null) { return; }
+
+        _wiredViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        _wiredViewModel = null;
+    }
+
+    private void OnViewModelPropertyChanged(object sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(MainViewModel.ViewVersion)) { ApplyViews(); }
+    }
+
+    #endregion
+
+    #region | Head-capability bridges |
+
+    private static async Task<string> PickPdfPathAsync()
+    {
+        try
+        {
+            var picker = new FileOpenPicker
+            {
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+            };
+            picker.FileTypeFilter.Add(".pdf");
+
+            var file = await picker.PickSingleFileAsync();
+            return file?.Path;
+        }
+        catch (NotSupportedException)
+        {
+            //A head with no windowing system registers no picker
+            return null;
+        }
+    }
+
+    #endregion
+
     private void ApplyViews()
     {
         ApplyView(DocumentSide.Left);
@@ -52,8 +110,8 @@ public sealed partial class MainPage : Page
     }
 
     /// <summary>
-    /// Sizes side's image to zoom x fit-the-page (so 100% shows the whole page, centred, and
-    /// every level above it overflows the viewer) and scrolls the viewer to the pane's pan position.
+    /// Tells the view model how big side's viewer is and applies what it works out: the size
+    /// of the page image and the offset to scroll the viewer to.
     /// </summary>
     private void ApplyView(DocumentSide side)
     {
@@ -64,26 +122,15 @@ public sealed partial class MainPage : Page
         var scroller = side == DocumentSide.Left ? LeftScroller : RightScroller;
         var image = side == DocumentSide.Left ? LeftImage : RightImage;
 
-        var viewportWidth = scroller.ActualWidth;
-        var viewportHeight = scroller.ActualHeight;
-        if (pane.PagePixelWidth <= 0 || pane.PagePixelHeight <= 0 || viewportWidth <= 0 || viewportHeight <= 0)
-        {
-            image.Width = double.NaN;
-            image.Height = double.NaN;
-            return;
-        }
+        //Only the page knows how big the viewer is; the arithmetic belongs to the view model
+        viewModel.SetViewportSize(side, scroller.ActualWidth, scroller.ActualHeight);
 
-        var fit = Math.Min(viewportWidth / pane.PagePixelWidth, viewportHeight / pane.PagePixelHeight);
-        var factor = viewModel.View.Zoom.Factor;
-        image.Width = Math.Floor(pane.PagePixelWidth * fit * factor);
-        image.Height = Math.Floor(pane.PagePixelHeight * fit * factor);
+        image.Width = pane.ImageWidth;
+        image.Height = pane.ImageHeight;
+        if (double.IsNaN(pane.ImageWidth)) { return; }
 
         //Let the viewer measure the new extent before positioning it
         scroller.UpdateLayout();
-        var pan = viewModel.View.PanOf(side);
-        scroller.ChangeView(
-            pan.Horizontal * Math.Max(0, scroller.ScrollableWidth),
-            pan.Vertical * Math.Max(0, scroller.ScrollableHeight),
-            null, disableAnimation: true);
+        scroller.ChangeView(pane.ScrollOffsetX, pane.ScrollOffsetY, null, disableAnimation: true);
     }
 }

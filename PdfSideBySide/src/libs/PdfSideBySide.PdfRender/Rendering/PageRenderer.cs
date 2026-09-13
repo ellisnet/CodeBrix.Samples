@@ -13,9 +13,10 @@ namespace PdfSideBySide.PdfRender.Rendering;
 /// <summary>
 /// Rasterizes pages of <see cref="PdfPageDocument"/>s to PNG through CodeBrix.PdfRasterizer,
 /// keeping a small most-recently-used cache so stepping back and forth between neighbouring
-/// pages does not re-render them.
+/// pages does not re-render them. This is the <see cref="IPageRenderer"/> the application
+/// registers with its dependency-injection container.
 /// </summary>
-public sealed class PageRenderer : IDisposable
+public sealed class PageRenderer : IPageRenderer
 {
     /// <summary>The rendering resolution used when none is set: comfortable for on-screen comparison.</summary>
     public const int DefaultDpi = 150;

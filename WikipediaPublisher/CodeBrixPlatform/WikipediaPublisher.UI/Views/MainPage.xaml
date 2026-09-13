@@ -89,8 +89,9 @@
                 <TextBlock Text="Page size:"
                            VerticalAlignment="Center" Margin="0,0,12,0" />
                 <ComboBox Width="210" Height="36" VerticalAlignment="Center"
-                          ItemsSource="{d:Binding PageSizeNames}"
-                          SelectedItem="{d:Binding SelectedPageSizeName, Mode=TwoWay}" />
+                          ItemsSource="{d:Binding PageSizes}"
+                          DisplayMemberPath="DisplayName"
+                          SelectedItem="{d:Binding SelectedPageSize, Mode=TwoWay}" />
                 <Button Width="130" Height="40" Margin="16,0,0,0"
                         Style="{ThemeResource AccentButtonStyle}"
                         Content="Publish"

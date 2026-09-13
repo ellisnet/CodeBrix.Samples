@@ -18,8 +18,8 @@ It is a reference for rasterizing PDF pages with the CodeBrix.PdfRasterizer libr
 the result into a XAML `Image`: opening a document and reading its page count, rendering a chosen
 page to PNG off the UI thread with a latest-request-wins cancellation policy and a bounded
 most-recently-used cache, deriving the render resolution from the zoom level, and keeping all of
-that in a plain UI-free library plus a `SimpleViewModel`, while the page contributes only the
-layout arithmetic that it alone can do.
+that in a plain UI-free library plus a `SimpleViewModel`, while the page contributes only the one
+number it alone knows: how big each viewer is.
 
 ## What this sample shows a CodeBrix.Platform developer
 
@@ -33,16 +33,22 @@ layout arithmetic that it alone can do.
   resolution: [Cache rendered results with a bounded most recently used cache](../BLUEPRINTS-MVVM.md#cache-rendered-results-with-a-bounded-most-recently-used-cache).
 - Running one render per pane and letting a newer page request cancel the older one without
   painting a stale image: [Run one render per pane with latest request wins cancellation](../BLUEPRINTS-MVVM.md#run-one-render-per-pane-with-latest-request-wins-cancellation).
+- Canceling both in-flight renders and letting go of the renderer, its cache and the delegate the
+  page supplied when the view model is disposed: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 - Stepping two documents together while letting the reader offset one of them, with each cursor
   clamping at its own last page: [Keep two documents in step while letting the user offset one](../BLUEPRINTS-DocumentsAndData.md#keep-two-documents-in-step-while-letting-the-user-offset-one).
 - Splitting a two-region screen into a parent view model that owns the model and two child view
   models that own only their bound state: [Compose a page from a parent view model and child view models](../BLUEPRINTS-MVVM.md#compose-a-page-from-a-parent-view-model-and-child-view-models).
 - Signaling a change in an object graph (zoom, two pan positions, two page cursors) with a single
   incrementing property the page watches: [Signal a non property model change to the view with a version counter](../BLUEPRINTS-MVVM.md#signal-a-non-property-model-change-to-the-view-with-a-version-counter).
+- Keeping exactly one subscription to that property in the page, made from whichever of
+  `DataContextChanged` and `Loaded` arrives first and dropped from `Unloaded`:
+  [Subscribe to a view model once and unsubscribe when the page unloads](../BLUEPRINTS-ViewsAndControls.md#subscribe-to-a-view-model-once-and-unsubscribe-when-the-page-unloads).
 - Refreshing `CanExecute` for buttons whose enablement lives in a model object rather than in a
   bound property: [Refresh CanExecute when the gating state is not a bound property](../BLUEPRINTS-MVVM.md#refresh-canexecute-when-the-gating-state-is-not-a-bound-property).
-- Combining a view-model zoom factor and pan fraction with the viewport size that only the page
-  knows: [Let the page do the layout arithmetic only it can do](../BLUEPRINTS-ViewsAndControls.md#let-the-page-do-the-layout-arithmetic-only-it-can-do).
+- Combining a zoom factor and a pan fraction with the viewport size that only the page knows, with
+  the page reporting that size and applying what comes back:
+  [Let the page do the layout arithmetic only it can do](../BLUEPRINTS-ViewsAndControls.md#let-the-page-do-the-layout-arithmetic-only-it-can-do).
 - Decoding PNG bytes returned by a service into a `BitmapImage` that XAML binds to: [Turn image bytes into a bound BitmapImage](../BLUEPRINTS-ViewsAndControls.md#turn-image-bytes-into-a-bound-bitmapimage).
 - Driving a placeholder and a busy bar from `Visibility`-typed derived properties instead of
   registering a converter: [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties).
@@ -54,9 +60,13 @@ layout arithmetic that it alone can do.
   all, so it can be tested without a head: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS-DocumentsAndData.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface).
 - Reading file paths off the process command line so a comparison can be repeated from a script:
   [Load documents named on the command line during startup](../BLUEPRINTS-MVVM.md#load-documents-named-on-the-command-line-during-startup).
-- Starting async loading from the view-model constructor and catching everything inside it:
+- Starting the async startup load from the view model and catching everything inside it:
   [Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor).
-- Opening the operating system's file picker for a single `.pdf` and handling the cancel case:
+- Holding that first load until the page says it is on screen, so an error it reports has
+  somewhere to appear: [Start the first load when the page says it is ready](../BLUEPRINTS-MVVM.md#start-the-first-load-when-the-page-says-it-is-ready).
+- Reaching the operating system's file picker for a single `.pdf` through a one-delegate bridge the
+  page fills in, so a head with no dialog is a case the view model explains rather than an
+  exception it catches:
   [Pick a file to open through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#pick-a-file-to-open-through-a-native-dialog-from-the-view-model).
 - Handing the view model a `XamlRoot` getter so its `ShowError` dialogs have somewhere to appear:
   [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
@@ -76,6 +86,8 @@ layout arithmetic that it alone can do.
   [Create the main window and navigate to the first page](../BLUEPRINTS-AppStructureAndStartup.md#create-the-main-window-and-navigate-to-the-first-page).
 - Supplying a generic-host builder to `SimpleServiceResolver` from a small helper in the Core
   library: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+- Registering the domain library's comparison factory and page renderer with one `AddPdfRender()`
+  extension, and resolving the interfaces in the view model: [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
 - Wiring a console logger factory into the platform's ambient logging in Debug builds only:
   [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 - Making a bundled font the application-wide default and registering fallback faces for scripts it
@@ -136,9 +148,8 @@ dotnet run --project src/PdfSideBySide.LinuxX11 -- /path/left.pdf /path/right.pd
 Substitute the head you want: `src/PdfSideBySide.LinuxWayland`,
 `src/PdfSideBySide.LinuxFrameBuffer`, `src/PdfSideBySide.MacOS`, `src/PdfSideBySide.Win32Skia` or
 `src/PdfSideBySide.WinWpfSkia`. The framebuffer head is the exception to "just browse for a file":
-its picker is opt-in in `Program.cs`, and as configured there it starts in one fixed folder and is
-restricted to one directory tree, so it is the first thing to change when running that head
-somewhere else.
+its picker is opt-in in `Program.cs`, which starts it in the documents folder of whoever is running
+it and keeps it inside that user's home directory.
 
 The tests cover the `PdfSideBySide.PdfRender` library only; there is no test project for the Core
 view models or for any head. This application has no `global.json`, so the
@@ -170,6 +181,7 @@ PdfSideBySide/
       Views/MainPage.xaml(.cs)        The single page: two panes and the middle control column
     PdfSideBySide.Core/               View models; carries every non-head package reference
       Helpers/HostHelper.cs           The IHostBuilderProvider handed to SimpleServiceResolver
+      Services/IPdfFileBridge.cs      The file dialog the page fills in for the view model
       ViewModels/MainViewModel.cs     Owns the comparison, the renderer and every command
       ViewModels/DocumentPaneViewModel.cs   One pane's bindable state and its browse command
     PdfSideBySide.LinuxX11/           Head: Program.cs plus exactly one runtime package
@@ -182,12 +194,17 @@ PdfSideBySide/
       PdfSideBySide.PdfRender/        The domain library; no CodeBrix.Platform dependency at all
         DocumentSide.cs               Left / Right
         PdfComparison.cs              Two documents, the "both" moves and the "adjust right" moves
+        IPdfComparisonFactory.cs      What a view model asks for instead of constructing one
+        PdfComparisonFactory.cs       The registered factory: a fresh comparison each time
+        RegisterServices.cs           AddPdfRender(): the factory and the renderer in one line
         Documents/PdfPageDocument.cs  One opened PDF: bytes read once, page count, 1-based cursor
         Documents/DocumentPath.cs     Path normalization and same-file comparison (internal)
         Documents/DuplicateDocumentException.cs   The same file chosen on both sides
+        Rendering/IPageRenderer.cs    The rendering service a view model resolves
         Rendering/PageRenderer.cs     PDFium rasterization to PNG plus the bounded cache
         Rendering/RenderedPage.cs     Record: file, page number, pixel size, PNG bytes
         Viewing/ComparisonView.cs     One shared zoom plus one pan position per pane
+        Viewing/PaneLayout.cs         Image size and scroll offset worked out for one pane
         Viewing/ViewZoom.cs           The zoom ladder and the render-resolution rule
         Viewing/PanPosition.cs        One pane's pan fractions
         Viewing/PanDirection.cs       Up / Down / Left / Right
@@ -200,8 +217,9 @@ PdfSideBySide/
 ```
 
 Dependencies run one way. `PdfSideBySide.PdfRender` is the bottom of the stack: it references the
-CodeBrix.PdfRasterizer library and nothing else, and knows nothing about XAML, CodeBrix.Platform or
-view models. `PdfSideBySide.Core` project-references it and adds the CodeBrix.Platform, font and
+CodeBrix.PdfRasterizer library, plus the dependency-injection abstractions its one-line
+registration extension is written against, and knows nothing about XAML, CodeBrix.Platform or view
+models. `PdfSideBySide.Core` project-references it and adds the CodeBrix.Platform, font and
 generic-host packages; that is the only place a non-head package is declared. Each of the six heads
 project-references `PdfSideBySide.Core`, adds exactly one CodeBrix.Platform runtime package for its
 own backend, and **file-links** the shared UI by importing
@@ -220,7 +238,7 @@ inside an assembly called `PdfSideBySide.Core`. `MainPage.xaml` therefore has to
 
 | Library or add-in | What it does in this application | Where |
 | --- | --- | --- |
-| CodeBrix.Platform | The whole UI: `Application`, `Window`, `Frame`, `Page`, every control in `MainPage.xaml`, and the "Simple" toolkit — `SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`, `[AffectsAllCommands]`, `IXamlRootGetter`, the inherited `ShowError` helpers. It also supplies the `Windows.Storage.Pickers` file picker | `src/PdfSideBySide.Core/PdfSideBySide.Core.csproj`, `src/PdfSideBySide.UI/App.xaml.cs`, both view models, `src/PdfSideBySide.UI/Views/MainPage.xaml(.cs)` |
+| CodeBrix.Platform | The whole UI: `Application`, `Window`, `Frame`, `Page`, every control in `MainPage.xaml`, and the "Simple" toolkit — `SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`, `[AffectsAllCommands]`, `IXamlRootGetter`, the inherited `ShowInfo` and `ShowError` helpers, and the ambient logger factory the view model writes to. It also supplies the `Windows.Storage.Pickers` file picker the page shows | `src/PdfSideBySide.Core/PdfSideBySide.Core.csproj`, `src/PdfSideBySide.UI/App.xaml.cs`, both view models, `src/PdfSideBySide.UI/Views/MainPage.xaml(.cs)` |
 | CodeBrix.Platform runtime for each head | One rendering backend per head — X11, Wayland, framebuffer, macOS, Win32 and WPF — each selected by its own `Use…()` call on the host builder | the six `src/PdfSideBySide.<Head>/PdfSideBySide.<Head>.csproj` files and their `Program.cs` |
 | CodeBrix.Platform.Fonts.Roboto | Supplies Roboto as the application-wide default text font, the `RobotoFont` XAML resource, and the Armenian and Georgian Noto Sans faces registered as fallbacks | `src/PdfSideBySide.UI/App.xaml`, `src/PdfSideBySide.UI/App.xaml.cs`, `src/PdfSideBySide.Core/PdfSideBySide.Core.csproj` |
 | CodeBrix.PdfRasterizer | The PDF engine: `GetPageCount()` when a document is opened, and `RasterizeToImage()` to turn one page at a chosen resolution into an image. Bundles its own PDFium natives per runtime identifier | `src/libs/PdfSideBySide.PdfRender/Documents/PdfPageDocument.cs`, `src/libs/PdfSideBySide.PdfRender/Rendering/PageRenderer.cs`, `src/libs/PdfSideBySide.PdfRender/PdfSideBySide.PdfRender.csproj` |
@@ -233,7 +251,8 @@ Third-party libraries:
 | Library | What it does in this application | Where |
 | --- | --- | --- |
 | Microsoft.Extensions.Hosting | Supplies the generic-host builder that `SimpleServiceResolver` builds the container from | `src/PdfSideBySide.Core/Helpers/HostHelper.cs`, `src/PdfSideBySide.Core/PdfSideBySide.Core.csproj` |
-| Microsoft.Extensions.Logging.Console | The Debug-only console logger factory handed to the platform's ambient logging | `src/PdfSideBySide.UI/App.xaml.cs` |
+| Microsoft.Extensions.DependencyInjection.Abstractions | `IServiceCollection`, so the domain library can offer its own `AddPdfRender()` registration extension without depending on a container | `src/libs/PdfSideBySide.PdfRender/RegisterServices.cs`, `src/libs/PdfSideBySide.PdfRender/PdfSideBySide.PdfRender.csproj` |
+| Microsoft.Extensions.Logging.Console | The Debug-only console logger factory handed to the platform's ambient logging, which is where the view model's startup line goes | `src/PdfSideBySide.UI/App.xaml.cs`, `src/PdfSideBySide.Core/ViewModels/MainViewModel.cs` |
 | xUnit v3 (with its Visual Studio runner) and Microsoft.NET.Test.Sdk | The test framework and the Microsoft.Testing.Platform host | `tests/libs/PdfSideBySide.PdfRender.Tests/PdfSideBySide.PdfRender.Tests.csproj` |
 | PDFium (native) | The actual page rasterization; ships inside the CodeBrix.PdfRasterizer package under `runtimes/<rid>/native/` for each supported runtime identifier, each with its own license file beside it | pulled in by `src/libs/PdfSideBySide.PdfRender/PdfSideBySide.PdfRender.csproj` |
 
@@ -283,8 +302,8 @@ the operating system rather than hard-coding one, and trims the trailing separat
 
 ### Rendering a page: off the UI thread, cached, and at the zoom's resolution
 
-`Rendering/PageRenderer.cs` is the service the view model talks to, and it is the single most
-copyable file in the folder. It holds one long-lived `PageRasterizer` (created with the renderer,
+`Rendering/PageRenderer.cs` is the `IPageRenderer` the view model resolves and talks to, and it is
+the single most copyable file in the folder. It holds one long-lived `PageRasterizer` (created with the renderer,
 disposed with it, rather than one per render) and does the work inside `Task.Run` because, as its
 own comment records, PDFium renders synchronously — awaiting the rasterizer alone would still block
 the calling thread. Only encoded bytes and a pixel size escape that block; the image is disposed
@@ -332,10 +351,16 @@ concurrently with `Task.WhenAll` is safe precisely because `PageRenderer` locks 
 the rasterizer call inside `Task.Run`. When only Document 2 moved — an "adjust right" step — only
 the right pane is re-rendered; `StepAsync(move, renderLeft)` carries that flag.
 
-For a view model that is created and destroyed repeatedly, the shape to prefer is to implement
-`IDisposable` on it, canceling and disposing both token sources and the `PageRenderer` (which owns
-the `PageRasterizer` and the cache).
-[Run one render per pane with latest request wins cancellation](../BLUEPRINTS-MVVM.md#run-one-render-per-pane-with-latest-request-wins-cancellation)
+`previous?.Dispose()` disposes the older source, not the current one, so the latest source per pane
+is still live when the view model goes away. That is what `Dispose()` is for: it unsubscribes from
+both panes, drops the page's picker delegate (a delegate the page supplied keeps the page alive
+through the view model), cancels and disposes both token sources through one `CancelAndDispose`
+helper, and disposes the `IPageRenderer`, which owns the `PageRasterizer` and the cache. Each field
+is read into a local and nulled before the object is touched, so a callback arriving mid-teardown
+sees null rather than a disposed object.
+[Run one render per pane with latest request wins cancellation](../BLUEPRINTS-MVVM.md#run-one-render-per-pane-with-latest-request-wins-cancellation),
+[Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates),
+[Cancel one lifetime token from Dispose so in-flight work stops](../BLUEPRINTS-MVVM.md#cancel-one-lifetime-token-from-dispose-so-in-flight-work-stops)
 
 ### One version counter instead of a dozen notifications
 
@@ -346,10 +371,18 @@ private `ViewChanged()` method that also re-notifies the derived `ZoomLabel` and
 command. `MainPage` watches that one property name with
 `args.PropertyName == nameof(MainViewModel.ViewVersion)` and re-applies the whole view.
 
+A newly rendered page is the fourth thing that moves the view, and it arrives as a property change
+on a *child*. The parent folds it in rather than making the page subscribe to the children too: it
+subscribes to each pane's `PropertyChanged` in its constructor, calls `ViewChanged()` when
+`PageImage` changes, and unsubscribes in `Dispose()`. The page therefore holds exactly one
+subscription, made in `WireViewModel()`, dropped in `UnwireViewModel()` from `Unloaded`, and never
+made twice because the wire method compares against the view model it already wired.
+
 The value of the pattern is that adding a new kind of change means calling `ViewChanged()` and
 nothing else. A counter rather than a `bool` or an event means any increment reads as a change and
 it survives being read late.
-[Signal a non property model change to the view with a version counter](../BLUEPRINTS-MVVM.md#signal-a-non-property-model-change-to-the-view-with-a-version-counter)
+[Signal a non property model change to the view with a version counter](../BLUEPRINTS-MVVM.md#signal-a-non-property-model-change-to-the-view-with-a-version-counter),
+[Subscribe to a view model once and unsubscribe when the page unloads](../BLUEPRINTS-ViewsAndControls.md#subscribe-to-a-view-model-once-and-unsubscribe-when-the-page-unloads)
 
 ### Commands whose enablement lives in the model
 
@@ -379,8 +412,8 @@ file name, page label, the rendered `BitmapImage` and its pixel size, and the tw
 properties — plus the one command that belongs to it. The parent passes that command's body in as a
 `Func<Task>` at construction (`new DocumentPaneViewModel("Document 1", () => BrowseAsync(DocumentSide.Left))`)
 and pushes state in through `internal` methods: `ShowDocument()`, `UpdatePageLabel()`,
-`SetRendering()`, `ShowPageAsync()`. Bindings only ever read, and the parent's `LeftPane` and
-`RightPane` are get-only auto-properties that are never reassigned.
+`SetRendering()`, `ShowPageAsync()`, `SetLayout()`. Bindings only ever read, and the parent's
+`LeftPane` and `RightPane` are get-only auto-properties that are never reassigned.
 
 The XAML side is the other half: `MainPage.xaml` scopes each pane's `Grid` with
 `DataContext="{d:Binding LeftPane}"`, so every binding inside that region is written against one
@@ -418,32 +451,51 @@ follows. `ComparisonView.PanStepFraction` turns "a quarter of the visible area" 
 the scrollable range with the derivation spelled out in its doc comment: at zoom factor `f` the
 page is `f` viewports wide, so the scrollable range is `f - 1` viewports.
 
-Only the page knows how large the viewport actually is, so `MainPage.xaml.cs` combines the two in
-`ApplyView(side)`: it computes the fit-to-viewport scale, multiplies by the zoom factor, sizes the
-`Image`, then scrolls the `ScrollViewer` to the pane's pan fractions. Two lines there are worth
-copying. `scroller.UpdateLayout()` must run before `ChangeView(...)`, because `ScrollableWidth` and
-`ScrollableHeight` are stale until the viewer has measured the newly sized image;
-`Math.Max(0, scroller.ScrollableWidth)` guards the 100% case where nothing scrolls. The
-`ScrollViewer` sets `ZoomMode="Disabled"` so the control's own zoom cannot fight the application's
-ladder, and the `Image` uses `Stretch="Fill"` with an explicitly set `Width`/`Height`, which is what
-makes the zoom exact rather than letting the control choose a fit. The size and the pan have to be
-re-applied on `SizeChanged`, on `ViewVersion` changes and on each pane's `PageImage` change; missing
-any one leaves an image the wrong size.
+Only the page knows how large the viewport actually is, and that is the *only* part of the sum it
+contributes. `MainPage.ApplyView(side)` calls `MainViewModel.SetViewportSize(side, width, height)`
+with the viewer's measured size and then applies what the view model worked out: `ImageWidth` and
+`ImageHeight` onto the `Image`, `ScrollOffsetX` and `ScrollOffsetY` into one `ChangeView(...)` call.
+The arithmetic itself is in the library, in `PaneLayout.Create(...)`: it takes the fit-to-viewport
+scale, multiplies by the zoom factor, floors the two sizes, and turns each pan fraction into an
+offset of however much the image overflows the viewer. `ComparisonView.LayoutOf(side, …)` is the
+one-line wrapper that supplies the shared zoom and that pane's own pan position, and
+`MainViewModel.SetViewportSize()` hands the result to the pane with `SetLayout()`, which notifies
+the four computed properties.
 
-For a new application, the shape to prefer keeps the arithmetic in the view model: the page reports
-its viewport size through a small bridge method whenever it changes (a one-line `SizeChanged`
-handler per pane), and the view model exposes computed image size and scroll offsets per pane. That
-keeps the formula testable alongside `ComparisonViewTests` and `PanPositionTests`.
+Three details in the page are worth copying. `scroller.UpdateLayout()` must run before
+`ChangeView(...)`, because the viewer's extent is stale until it has measured the newly sized image.
+A `PaneLayout` with no page in it carries `NaN` sizes (what an `Image` wants when it is to size
+itself to its content), and the page returns early rather than scrolling a viewer with nothing in
+it. And the `ScrollViewer` sets `ZoomMode="Disabled"` so the control's own zoom cannot fight the
+application's ladder, while the `Image` uses `Stretch="Fill"` with an explicitly set
+`Width`/`Height`, which is what makes the zoom exact rather than letting the control choose a fit.
+The view has to be re-applied on `SizeChanged` and on every `ViewVersion` change; missing either
+leaves an image the wrong size.
+
+Because the formula is in the library, it is tested there rather than being untestable in a page:
+`PaneLayoutTests` covers fitting, zooming and the pan-to-offset conversion, and `ComparisonViewTests`
+covers the wrapper that gives each pane the shared zoom and its own pan.
 [Let the page do the layout arithmetic only it can do](../BLUEPRINTS-ViewsAndControls.md#let-the-page-do-the-layout-arithmetic-only-it-can-do)
 
 ### Choosing files: the picker, the XamlRoot, and the framebuffer head
 
-The browse buttons reach the operating system's file picker through
-`MainViewModel.PickPdfPathAsync()`, which configures a `FileOpenPicker` with
-`SuggestedStartLocation` and a `.pdf` entry in `FileTypeFilter` (extensions take the leading dot).
-`PickSingleFileAsync()` returns null when the reader cancels, and the null check sits inside the
-`try`/`finally` so the busy flag still clears. The picker type comes from `Windows.Storage.Pickers`,
-which the Core library already has from CodeBrix.Platform.
+The browse buttons reach the operating system's file picker through `IPdfFileBridge`, an interface
+in `src/PdfSideBySide.Core/Services/` holding one settable delegate. `MainViewModel` implements it;
+`MainPage` fills it in from `DataContextChanged` with `if (DataContext is IPdfFileBridge fileBridge)`,
+assigning through the interface rather than through the concrete view model. What it assigns is a
+private static
+`PickPdfPathAsync()` that configures a `FileOpenPicker` with `SuggestedStartLocation` and a `.pdf`
+entry in `FileTypeFilter` (extensions take the leading dot). The picker type comes from
+`Windows.Storage.Pickers`, which the shared UI project already has from CodeBrix.Platform, and it
+never crosses into the view model.
+
+There are two ways this can produce no file, and they are handled at different ends. The reader
+canceling gives a null path, which `BrowseAsync()` returns on silently, inside the `try`/`finally`
+so the busy flag still clears. A head with no picker at all throws `NotSupportedException` from
+`PickSingleFileAsync()`; the page catches that and returns null too, and a head that never wires the
+delegate leaves it null, which the view model checks before it sets the busy flag and answers with
+`ShowInfo` ("start it with the two PDF file paths on the command line instead") rather than with an
+error dialog.
 
 Dialogs need somewhere to attach, and only the page can supply that. `MainPage` hands the view model
 a *getter*, not a value, from `DataContextChanged`:
@@ -456,12 +508,14 @@ Not every head can show a picker at all. `PdfSideBySide.LinuxFrameBuffer/Program
 manager to ask, so it opts in explicitly with `EnableFileOpenPicker(new FilePickerOptions { … })` on
 the same builder lambda that sets orientation and auto-rotation, and the platform draws that picker
 itself. `RestrictToFolder` and `RequiredExtension` are the only guard rails a kiosk-style device
-has. Because a head can lack a picker, the shape to prefer moves the picker call behind a one-method
-bridge interface that the page or head implements, so the view model can show a clear message
-("pass the two PDF paths on the command line") instead of the absence being an exception it catches.
+has, so both are set: the picker starts in the documents folder of whoever is running the head and
+cannot leave that user's home directory. Both folders come from
+`Environment.GetFolderPath(...)` with a fallback for a machine that reports neither, because a path
+written into a head is a path that only works on the machine it was written on.
 [Pick a file to open through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#pick-a-file-to-open-through-a-native-dialog-from-the-view-model),
 [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show),
-[Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head)
+[Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head),
+[Compute the framebuffer picker's folders from the environment](../BLUEPRINTS-AppStructureAndStartup.md#compute-the-framebuffer-pickers-folders-from-the-environment)
 
 ### Startup: six heads, one App, and two paths off the command line
 
@@ -473,24 +527,32 @@ the logging adapter has to be in place before the platform starts writing to it,
 sits on `Main` in every head including the Linux and macOS ones.
 
 `App.xaml.cs` does four things in a fixed order before `InitializeComponent()`: sets the default
-font family and the fallback faces, creates the `SimpleServiceResolver` from `HostHelper.GetHost()`,
-and calls `SimpleViewModel.SetIsDesignMode(false)`. The last of those is the sharpest edge in the
-folder. `MainPage.xaml` instantiates `MainViewModel` from XAML, so `InitializeComponent()` is what
-runs the view-model constructor — a constructor whose first line is `if (IsDesignMode(true)) { return; }`.
+font family and the fallback faces, creates the `SimpleServiceResolver` from `HostHelper.GetHost()`
+and registers the domain library's services into it with `services.AddPdfRender()`, and calls
+`SimpleViewModel.SetIsDesignMode(false)`. The last of those is the sharpest edge in the folder.
+`MainPage.xaml` instantiates `MainViewModel` from XAML, so `InitializeComponent()` is what runs the
+view-model constructor — a constructor whose first line is `if (IsDesignMode(true)) { return; }`.
 Set design mode off too late and the view model returns from its constructor without ever building
-itself. The resolver must be created even though this application's registration block is empty.
+itself. Registering before `InitializeComponent()` matters for the same reason: the view model
+resolves its services while that call is running.
+
+`AddPdfRender()` lives in the library it registers (`src/libs/PdfSideBySide.PdfRender/RegisterServices.cs`)
+and puts two things in the container: `IPdfComparisonFactory`, a singleton that makes the
+`PdfComparison` a screen works with, and `IPageRenderer`, transient because each renderer owns a
+rasterizer and a page cache that its holder disposes. The view model asks for both with
+`GetService<T>()` and falls back to a concrete instance if neither is registered
+(`GetService<IPageRenderer>() ?? new PageRenderer()`), so it also runs with no container at all,
+which is what makes it constructible in a test. Neither interface names PDFium, and the view model
+never names `PageRenderer`.
 
 Startup document loading lives in the view model, not in `Main`:
 `OpenStartupDocumentsAsync()` reads `Environment.GetCommandLineArgs()` itself, so the two paths are
 at indices 1 and 2 and the guard is `arguments.Length < 3` — the heads never forward their
 `string[] args`. It is started as `_ = OpenStartupDocumentsAsync();`, discarded deliberately, with
-every exception caught inside so nothing is left unobserved. Because it runs from the constructor it
-can complete before the page has supplied a `XamlRoot`, so an error dialog raised that early has
-nowhere to attach; deferring the load until the page signals it is ready is the safer shape.
-
-Registering the renderer behind an interface with `SimpleServiceResolver` at startup, and resolving
-it in the view model, is the shape to prefer over the `new` in the field initializers here: it is
-also what would make `MainViewModel` itself testable.
+every exception caught inside so nothing is left unobserved. What starts it is the page rather than
+the constructor: `MainPage`'s `Loaded` handler calls `MainViewModel.OnPageReady()`, which runs once
+and ignores later calls. By then the page has handed over its `XamlRoot` getter, so an error from a
+file named on the command line has somewhere to appear.
 [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
 [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor),
 [Create the main window and navigate to the first page](../BLUEPRINTS-AppStructureAndStartup.md#create-the-main-window-and-navigate-to-the-first-page),
@@ -498,23 +560,29 @@ also what would make `MainViewModel` itself testable.
 [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds),
 [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks),
 [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head),
+[Register a factory and let the view model ask it for what it owns](../BLUEPRINTS-AppStructureAndStartup.md#register-a-factory-and-let-the-view-model-ask-it-for-what-it-owns),
 [Load documents named on the command line during startup](../BLUEPRINTS-MVVM.md#load-documents-named-on-the-command-line-during-startup),
-[Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor)
+[Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor),
+[Start the first load when the page says it is ready](../BLUEPRINTS-MVVM.md#start-the-first-load-when-the-page-says-it-is-ready),
+[Signal the view model when the page is on screen](../BLUEPRINTS-PlatformServices.md#signal-the-view-model-when-the-page-is-on-screen)
 
 ### A UI-free library, and the tests it makes possible
 
 The layout of this folder is the point of the previous sections. `PdfSideBySide.PdfRender` lives
-under `src/libs` and references one package; it has no CodeBrix.Platform reference at all, so
-`tests/libs/PdfSideBySide.PdfRender.Tests` never loads a UI package and the whole comparison model
-can be exercised without starting a head. `InternalsVisibleTo.cs` is its own file at the library
-root, holding nothing but the attribute and naming the `.Tests` assembly exactly, which is what
-makes `internal static class DocumentPath` testable.
+under `src/libs` and has no CodeBrix.Platform reference at all, so
+`tests/libs/PdfSideBySide.PdfRender.Tests` never loads a UI package and the whole comparison model,
+including the layout arithmetic a page would otherwise hide, can be exercised without starting a
+head. `InternalsVisibleTo.cs` is its own file at the library root, holding nothing but the attribute
+and naming the `.Tests` assembly exactly, which is what makes `internal static class DocumentPath`
+testable.
 
 The test classes are worth reading as a specification: `PdfPageDocumentTests` for opening and cursor
 clamping, `PdfComparisonTests` for the two-document rules, `PageRendererTests` for the PNG signature
-of the returned bytes and the cache behavior, and `ComparisonViewTests`, `PanPositionTests` and
-`ViewZoomTests` for the view arithmetic. `Helpers/TestPdfs.cs` holds both test-data sources: a
-synthetic-PDF writer built on CodeBrix.PdfDocuments, which gives each test exactly the page count it
+of the returned bytes and the cache behavior, `ComparisonViewTests`, `PaneLayoutTests`,
+`PanPositionTests` and `ViewZoomTests` for the view arithmetic, and `RegisterServicesTests` for what
+`AddPdfRender()` puts in a container and what it leaves alone when the application has registered
+its own. `Helpers/TestPdfs.cs` holds both test-data sources: a synthetic-PDF writer built on the
+CodeBrix.PdfDocuments library that arrives through CodeBrix.PdfRasterizer, which gives each test the page count it
 needs and draws a rectangle whose position derives from the page index (so "different pages render
 to different images" is actually testable), and the path of the committed `assets/Inanna.pdf`
 fixture, located with `AppContext.BaseDirectory` to pair with the csproj's

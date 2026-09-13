@@ -105,6 +105,12 @@ else is the guest.
 - How a suite drives real documents through the real code path without ever
   writing to the committed originals:
   [Copy a gold master fixture before a test that writes to it](../BLUEPRINTS-Testing.md#copy-a-gold-master-fixture-before-a-test-that-writes-to-it).
+- How the live application is driven from an environment variable and the answer
+  read in the log, with no mouse and no second build:
+  [Drive a running application from an environment variable and report to the log](../BLUEPRINTS-Testing.md#drive-a-running-application-from-an-environment-variable-and-report-to-the-log).
+- How a library keeps its public surface to one type with two members, with the
+  tests reaching past it through the internals attribute:
+  [Keep a library's public surface to the one type its host drives](../BLUEPRINTS-ProjectLayoutAndPackaging.md#keep-a-librarys-public-surface-to-the-one-type-its-host-drives).
 
 ## Building, running and testing
 
@@ -315,9 +321,10 @@ guest program, by the window closing, or by a page unload, that belt-and-braces
 guarding is cheap and worth copying. Read
 `src/libs/DRAKON.Brix.TclBridge/RuntimeHost.cs`, which is short, before
 `src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs`. See
-[Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project)
+[Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project),
+[Host an unmodified guest program in one page element](../BLUEPRINTS-ViewsAndControls.md#host-an-unmodified-guest-program-in-one-page-element)
 and
-[Host an unmodified guest program in one page element](../BLUEPRINTS-ViewsAndControls.md#host-an-unmodified-guest-program-in-one-page-element).
+[Keep a library's public surface to the one type its host drives](../BLUEPRINTS-ProjectLayoutAndPackaging.md#keep-a-librarys-public-surface-to-the-one-type-its-host-drives).
 
 ### One boot sequence, two ways of running it
 
@@ -485,6 +492,13 @@ walks up from `AppContext.BaseDirectory` until it finds the solution file and
 derives every path from there, so the suite survives a change of configuration,
 target framework or output layout.
 
+What a test host cannot reach at all - a layout that is only wrong on screen - has a
+hook of its own instead. When an environment variable is set, the hosted start posts
+a short script onto the interpreter's own thread once the boot sequence has returned,
+and the answer comes back through the same diagnostic sink every startup failure uses,
+so a live-only question is asked and answered in the log with no mouse and no second
+build. Nothing about the application changes when the variable is not set.
+
 The project file has two things to notice. It references the native Skia asset
 directly, because a test host has no head to supply it, and it turns parallelism
 off in `xunit.runner.json` because interpreters keep process-global state. Read
@@ -492,9 +506,10 @@ off in `xunit.runner.json` because interpreters keep process-global state. Read
 `tests/libs/DRAKON.Brix.TclBridge.Tests/Support/SampleLocations.cs`. See
 [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library),
 [Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project),
-[Add the native assets a head would have supplied](../BLUEPRINTS-Testing.md#add-the-native-assets-a-head-would-have-supplied)
+[Add the native assets a head would have supplied](../BLUEPRINTS-Testing.md#add-the-native-assets-a-head-would-have-supplied),
+[Copy a gold master fixture before a test that writes to it](../BLUEPRINTS-Testing.md#copy-a-gold-master-fixture-before-a-test-that-writes-to-it)
 and
-[Copy a gold master fixture before a test that writes to it](../BLUEPRINTS-Testing.md#copy-a-gold-master-fixture-before-a-test-that-writes-to-it).
+[Drive a running application from an environment variable and report to the log](../BLUEPRINTS-Testing.md#drive-a-running-application-from-an-environment-variable-and-report-to-the-log).
 
 ### The six-head skeleton around it all
 

@@ -23,6 +23,16 @@ public sealed class ComparisonView
     public PanPosition PanOf(DocumentSide side) => side == DocumentSide.Left ? LeftPan : RightPan;
 
     /// <summary>
+    /// How side's pane should lay its page out: a page pageWidth by pageHeight
+    /// pixels shown in a viewer viewportWidth by viewportHeight pixels, at the shared
+    /// zoom and this pane's pan position. <see cref="PaneLayout.None"/> when there is nothing to
+    /// show yet. See <see cref="PaneLayout.Create"/> for the arithmetic.
+    /// </summary>
+    public PaneLayout LayoutOf(DocumentSide side, double pageWidth, double pageHeight,
+        double viewportWidth, double viewportHeight) =>
+        PaneLayout.Create(pageWidth, pageHeight, viewportWidth, viewportHeight, Zoom.Factor, PanOf(side));
+
+    /// <summary>
     /// One pan step as a fraction of the scrollable range. At zoom factor <c>f</c> the page is
     /// <c>f</c> viewports wide, so the scrollable range is <c>f - 1</c> viewports and a quarter
     /// of a viewport is <c>0.25 / (f - 1)</c> of it. Zero at 100%, where nothing scrolls.

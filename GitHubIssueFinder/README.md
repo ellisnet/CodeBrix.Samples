@@ -73,6 +73,10 @@ follows the operating system until the user overrides it.
 - **A settings facade.** One small library wraps the settings store and is the only
   project in the application that references that add-in. The owner, the assignee, the
   closed-items switch and the chosen scheme survive a restart.
+- **A service disposed only when the view model built it.** The view model takes the
+  registered search service when there is one and constructs its own otherwise, records
+  which of the two happened in a `readonly bool` beside the field, and disposes the
+  service only in the second case - a container singleton is released, never disposed.
 
 ## Building, running and testing
 
@@ -237,8 +241,9 @@ request, then returns a private iterator method. A null request or a blank owner
 throws when the call is made rather than on the first `MoveNextAsync`, and a caller who
 edits the request object while enumerating cannot change the query underneath the walk.
 
-See [Build a typed REST client with source generated JSON and its own exceptions](../BLUEPRINTS-DocumentsAndData.md#build-a-typed-rest-client-with-source-generated-json-and-its-own-exceptions)
-and [Be a polite HTTP client to a public API](../BLUEPRINTS-DocumentsAndData.md#be-a-polite-http-client-to-a-public-api).
+See [Build a typed REST client with source generated JSON and its own exceptions](../BLUEPRINTS-DocumentsAndData.md#build-a-typed-rest-client-with-source-generated-json-and-its-own-exceptions),
+[Be a polite HTTP client to a public API](../BLUEPRINTS-DocumentsAndData.md#be-a-polite-http-client-to-a-public-api)
+and [Dispose only the service the view model built itself](../BLUEPRINTS-MVVM.md#dispose-only-the-service-the-view-model-built-itself).
 
 ### Two plans, because the search API is capped
 
@@ -357,6 +362,13 @@ The page also sets `RequestedTheme` on the root grid from the scheme's base them
 complementary rather than redundant: it governs everything the application does *not* re-key
 - focus visuals, the caret and selection highlight, tooltips and the popup layer.
 
+The seam between the two sides is a pair of interfaces declared beside the view model in
+`src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs`. The page implements
+`IColorSchemeApplier`, which is the walk of the map that only something holding the resource
+dictionaries can do; the view model implements `IManageColorScheme`, which is how the page
+hands that applier over in its `DataContextChanged` handler and how it reports the operating
+system's preference afterwards. Neither side ever names the other's concrete type.
+
 See [Model a color scheme as plain data in a UI free library](../BLUEPRINTS-ThemingAndStyling.md#model-a-color-scheme-as-plain-data-in-a-ui-free-library),
 [Choose a repaint mechanism that can carry more than two schemes](../BLUEPRINTS-ThemingAndStyling.md#choose-a-repaint-mechanism-that-can-carry-more-than-two-schemes),
 [Re-key every control brush family the platform ships](../BLUEPRINTS-ThemingAndStyling.md#re-key-every-control-brush-family-the-platform-ships)
@@ -372,12 +384,19 @@ scheme sets `Application.RequestedTheme` in the `App` constructor on the next la
 setting it at all is what makes the platform stop following the operating system - exactly the
 override the user asked for.
 
+Reading the preference and deciding what it means are two different jobs. The page asks
+`UISettings` for the color the desktop would paint a window with, because only a page can;
+`ColorSchemes.PrefersDark` turns that color into the one boolean the scheme table already
+takes, so the rule about what counts as a dark desktop sits beside the palettes it chooses
+between rather than in the page.
+
 The `UISettings` instance has to be a field, not a local: the platform holds only a weak
 reference to it, so a local one is collected and the notifications stop. And the "System
 default" entry is *replaced* rather than renamed when the operating system flips, because a
 picker's closed face reads its item once and does not listen for a rename.
 
-See [Follow or override the desktop appearance and check it from a shell](../BLUEPRINTS-ThemingAndStyling.md#follow-or-override-the-desktop-appearance-and-check-it-from-a-shell)
+See [Follow or override the desktop appearance and check it from a shell](../BLUEPRINTS-ThemingAndStyling.md#follow-or-override-the-desktop-appearance-and-check-it-from-a-shell),
+[Read the desktop preference in the page and decide what it means in the library](../BLUEPRINTS-ThemingAndStyling.md#read-the-desktop-preference-in-the-page-and-decide-what-it-means-in-the-library)
 and [Follow the operating system light and dark preference with a System default entry](../BLUEPRINTS-ViewsAndControls.md#follow-the-operating-system-light-and-dark-preference-with-a-system-default-entry).
 
 ### Label pills that keep their own color

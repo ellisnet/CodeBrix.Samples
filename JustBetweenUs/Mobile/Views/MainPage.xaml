@@ -27,7 +27,8 @@
                 VerticalOptions="Center"
                 WidthRequest="280"
                 ItemsSource="{Binding EncryptionModes}"
-                SelectedItem="{Binding SelectedEncryptionModeText, Mode=TwoWay}" />
+                ItemDisplayBinding="{Binding Description}"
+                SelectedItem="{Binding SelectedEncryptionMode, Mode=TwoWay}" />
 
         <HorizontalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                                HorizontalOptions="Center" VerticalOptions="Center">

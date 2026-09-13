@@ -44,7 +44,7 @@ public sealed class ModelFact
 /// preview the user can rotate and zoom).
 /// </summary>
 [Microsoft.UI.Xaml.Data.Bindable]
-public class MainViewModel : SimpleViewModel
+public class MainViewModel : SimpleViewModel, ICatalogGridBridge, IModelViewBridge
 {
     private const string SortMostPopular = "Most popular";
     private const string SortNewest = "Newest";
@@ -53,6 +53,7 @@ public class MainViewModel : SimpleViewModel
     private readonly ModelCatalogService _catalog;
     private readonly ModelDownloadService _downloads;
     private readonly DocumentBackdropService _backdrops;
+    private readonly IModelLoader _modelLoader;
 
     private IReadOnlyList<PolyHavenAsset> _allModels = [];
     private string _selectedSortOption = SortMostPopular;
@@ -72,6 +73,7 @@ public class MainViewModel : SimpleViewModel
         _catalog = GetService<ModelCatalogService>();
         _downloads = GetService<ModelDownloadService>();
         _backdrops = GetService<DocumentBackdropService>();
+        _modelLoader = GetService<IModelLoader>();
 
         _ = LoadCatalogAsync();
     }
@@ -85,15 +87,18 @@ public class MainViewModel : SimpleViewModel
         private set => SetProperty(ref field, value);
     }
 
+    /// <summary>
+    /// The page's catalog scroller, filled in by the page: a new cell collection means the
+    /// user re-searched or re-sorted, so the grid jumps back to the top.
+    /// </summary>
+    public Action ScrollCatalogToTop { get; set; }
+
     /// <summary>Whether the initial catalog fetch is still in flight.</summary>
+    [AffectsProperties(nameof(CatalogLoadingVisibility))]
     public bool IsCatalogLoading
     {
         get;
-        private set
-        {
-            SetProperty(ref field, value);
-            NotifyPropertyChanged(nameof(CatalogLoadingVisibility));
-        }
+        private set => SetProperty(ref field, value);
     } = true;
 
     /// <summary>The visibility of the initial catalog-loading indicator.</summary>
@@ -123,7 +128,7 @@ public class MainViewModel : SimpleViewModel
             if (newValue == field) { return; }
 
             SetProperty(ref field, newValue);
-            DebounceRebuild();
+            _ = DebounceRebuildAsync();
         }
     } = string.Empty;
 
@@ -166,7 +171,22 @@ public class MainViewModel : SimpleViewModel
         Cells = new ModelCellCollection(matching,
             asset => new ModelCellViewModel(asset, _catalog, DownloadAsync, () => !IsDownloading));
         ResultCountText = matching.Count == 1 ? "1 model" : $"{matching.Count:N0} models";
+
+        //The grid is showing a different set of models now, so start it at the first one.
+        ScrollCatalogToTop?.Invoke();
     }
+
+    /// <summary>
+    /// Tells the view model where the catalog grid has scrolled to, so the cell collection
+    /// can decide whether to materialize its next batch. The page supplies only the scroll
+    /// geometry it can see; how near the bottom is near enough, and how big a batch is, are
+    /// <see cref="ModelCellCollection"/>'s own policy.
+    /// </summary>
+    /// <param name="extentHeight">The full scrollable height of the grid.</param>
+    /// <param name="verticalOffset">How far down that extent the viewport currently sits.</param>
+    /// <param name="viewportHeight">The height of the visible part of the grid.</param>
+    public void NotifyCatalogScrolled(double extentHeight, double verticalOffset, double viewportHeight) =>
+        Cells?.RequestMoreIfNearEnd(extentHeight, verticalOffset, viewportHeight);
 
     private CatalogSortOrder SelectedSortOrder => _selectedSortOption switch
     {
@@ -175,8 +195,10 @@ public class MainViewModel : SimpleViewModel
         _ => CatalogSortOrder.MostPopular,
     };
 
-    //Waits a beat after the last keystroke before rebuilding, so typing stays smooth.
-    private async void DebounceRebuild()
+    //Waits a beat after the last keystroke before rebuilding, so typing stays smooth. It
+    //returns a Task rather than being `async void`, so a failure is captured in the task
+    //instead of escaping onto the UI thread from a property setter.
+    private async Task DebounceRebuildAsync()
     {
         _searchDebounce?.Cancel();
         var debounce = new CancellationTokenSource();
@@ -229,13 +251,13 @@ public class MainViewModel : SimpleViewModel
     #region | Downloading |
 
     /// <summary>Whether a model download is in flight (drives the bottom progress bar).</summary>
+    [AffectsProperties(nameof(DownloadBarVisibility))]
     public bool IsDownloading
     {
         get;
         private set
         {
             SetProperty(ref field, value);
-            NotifyPropertyChanged(nameof(DownloadBarVisibility));
 
             //The download gate lives on each cell's own command; tell every materialized
             //cell to re-query it. (Cells materialized later evaluate the gate fresh anyway.)
@@ -314,16 +336,26 @@ public class MainViewModel : SimpleViewModel
 
     #region | Model View |
 
+    /// <summary>
+    /// The page's Model View hook, filled in by the page: the view model invokes it as the
+    /// Model View opens so the page can report a 3D preview that could not initialize.
+    /// </summary>
+    public Action ModelViewOpened { get; set; }
+
     /// <summary>Whether the Model View is active (otherwise the Browsing View shows).</summary>
+    [AffectsCommands(nameof(DocumentCommand))]
+    [AffectsProperties(nameof(BrowsingViewVisibility), nameof(ModelViewVisibility))]
     public bool IsModelViewActive
     {
         get;
         private set
         {
+            var wasActive = field;
             SetProperty(ref field, value);
-            NotifyPropertyChanged(nameof(BrowsingViewVisibility));
-            NotifyPropertyChanged(nameof(ModelViewVisibility));
-            DocumentCommand.RaiseCanExecuteChanged();
+
+            //Only the page can see whether the preview canvas managed to initialize OpenGL,
+            //so it is told when there is something to look at.
+            if (value && !wasActive) { ModelViewOpened?.Invoke(); }
         }
     }
 
@@ -370,6 +402,47 @@ public class MainViewModel : SimpleViewModel
     /// <summary>How to drive the 3D preview, shown under the canvas.</summary>
     public string ViewerHint => "drag to rotate · scroll to zoom";
 
+    //The Model View's info pane is a fixed column beside the viewer while the window is
+    //  landscape, and half the height above it when the window is portrait.
+    private const double InfoPaneLandscapeWidth = 420d;
+    private const float InfoPaneStackedHeightBasis = 0.5f;
+
+    /// <summary>
+    /// Whether the window is taller than it is wide, so the Model View stacks its info pane
+    /// above the 3D viewer instead of placing the two side by side.
+    /// </summary>
+    [AffectsProperties(nameof(ModelInfoPaneWidth), nameof(ModelInfoPaneMargin))]
+    public bool IsModelViewStacked
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    }
+
+    /// <summary>
+    /// The Model View info pane's width: an explicit column while the panes sit side by side
+    /// (so the text inside measures - and wraps - against it), and automatic when they stack,
+    /// where the pane is sized by <see cref="ModelInfoPaneStackedHeightBasis"/> instead.
+    /// </summary>
+    public double ModelInfoPaneWidth => IsModelViewStacked ? double.NaN : InfoPaneLandscapeWidth;
+
+    /// <summary>The share of the Model View's height the info pane takes when the panes stack.</summary>
+    public float ModelInfoPaneStackedHeightBasis => InfoPaneStackedHeightBasis;
+
+    /// <summary>The gap the info pane leaves for the 3D viewer: below it when stacked, beside it otherwise.</summary>
+    public Thickness ModelInfoPaneMargin => IsModelViewStacked
+        ? new Thickness(0, 0, 0, 20)
+        : new Thickness(0, 0, 20, 0);
+
+    /// <summary>
+    /// Tells the view model the window's new size, so it can decide which way round the
+    /// Model View's panes belong. The page reads the pane properties back and applies them
+    /// to the layout panel.
+    /// </summary>
+    /// <param name="width">The window's new width.</param>
+    /// <param name="height">The window's new height.</param>
+    public void NotifyWindowSizeChanged(double width, double height) =>
+        IsModelViewStacked = width < height;
+
     /// <summary>Returns from the Model View to the Browsing View.</summary>
     public SimpleCommand BackCommand => field ??=
         new SimpleCommand((Func<object, Task>)(_ => { CloseModelView(); return Task.CompletedTask; }));
@@ -390,7 +463,7 @@ public class MainViewModel : SimpleViewModel
         //at first paint.
         var (model, stats) = await Task.Run(() =>
         {
-            var loaded = new GltfModelLoader().LoadFile(downloaded.GltfPath);
+            var loaded = _modelLoader.LoadFile(downloaded.GltfPath);
             return (loaded, ModelFileStats.FromLoadedModel(loaded, downloaded.ModelFolder));
         });
 
@@ -490,8 +563,6 @@ public class MainViewModel : SimpleViewModel
     private const uint GalleryShotWidth = 496;
     private const uint GalleryShotHeight = 416;
 
-    private bool _isCreatingDocument;
-
     /// <summary>The Model View footer's status line for document creation.</summary>
     public string DocumentStatusText
     {
@@ -499,7 +570,15 @@ public class MainViewModel : SimpleViewModel
         private set => SetProperty(ref field, value);
     } = string.Empty;
 
-    private bool CanCreateDocument() => IsModelViewActive && !_isCreatingDocument;
+    /// <summary>Whether a marketing one-sheet is being built right now (re-entry gate).</summary>
+    [AffectsCommands(nameof(DocumentCommand))]
+    public bool IsCreatingDocument
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    }
+
+    private bool CanCreateDocument() => IsModelViewActive && !IsCreatingDocument;
 
     private async Task CreateDocumentAsync()
     {
@@ -538,8 +617,7 @@ public class MainViewModel : SimpleViewModel
             return;
         }
 
-        _isCreatingDocument = true;
-        DocumentCommand.RaiseCanExecuteChanged();
+        IsCreatingDocument = true;
         var saved = false;
         try
         {
@@ -607,8 +685,7 @@ public class MainViewModel : SimpleViewModel
         }
         finally
         {
-            _isCreatingDocument = false;
-            DocumentCommand.RaiseCanExecuteChanged();
+            IsCreatingDocument = false;
         }
 
         if (saved)

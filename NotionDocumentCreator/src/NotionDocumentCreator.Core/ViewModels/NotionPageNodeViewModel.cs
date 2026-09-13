@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using NotionDocumentCreator.CreateDocument.Models;
+using NotionDocumentCreator.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -78,7 +79,9 @@ public class NotionPageNodeViewModel : SimpleViewModel
         set
         {
             SetProperty(ref field, value);
-            if (value) { _ = EnsureChildrenLoadedAsync(); }
+            //A setter cannot await, so the one-shot child load is started through a helper
+            //  that observes it rather than through a bare fire-and-forget discard.
+            if (value) { BackgroundWork.StartAndObserve(EnsureChildrenLoadedAsync, ReportChildLoadFailure); }
         }
     }
 
@@ -117,5 +120,14 @@ public class NotionPageNodeViewModel : SimpleViewModel
     {
         Children.Clear();
         foreach (var child in children) { Children.Add(child); }
+    }
+
+    //The load path reports its own failures on the status line; this is the last resort for
+    //  anything that gets past it, so an expand gesture can never surface an exception.
+    private void ReportChildLoadFailure(Exception error)
+    {
+        var owner = _owner;
+        if (owner is null) { return; }
+        InvokeOnMainThread(() => owner.StatusText = $"Could not load child pages: {error.Message}");
     }
 }

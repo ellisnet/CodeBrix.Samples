@@ -795,16 +795,16 @@ public class BlockRendererTests
     }
 
     [Fact]
-    public void transcription_block_renders_transcript_style()
+    public void meeting_notes_block_renders_transcript_style()
     {
         //Arrange
-        var transcription = N(new TranscriptionBlock
+        var meetingNotes = N(new MeetingNotesBlock
         {
-            Transcription = new TranscriptionBlockResponse { Title = Runs(T("Meeting notes")) }
+            MeetingNotes = new MeetingNotesBlockData { Title = Runs(T("Meeting notes")) }
         });
 
         //Act
-        var (section, _) = Render(transcription);
+        var (section, _) = Render(meetingNotes);
 
         //Assert
         var paragraph = TestDom.AllParagraphs(section).Single();

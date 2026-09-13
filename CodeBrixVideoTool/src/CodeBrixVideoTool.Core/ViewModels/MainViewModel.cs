@@ -182,18 +182,31 @@ public class MainViewModel : SimpleViewModel, IMediaFileBridge
         }
     }
 
+    /// <summary>
+    /// Adds a finished conversion's output to the list. This is an event handler, so it is
+    /// <c>async void</c> and has no caller to hand a failure back to: the whole body is wrapped so
+    /// that nothing can escape into the dispatcher, and what <see cref="AddAsync" /> does not already
+    /// turn into a sentence ends up in the status bar as one.
+    /// </summary>
     private async void OnConversionFinished(object sender, ConversionOutcome outcome)
     {
-        if (!outcome.Succeeded)
+        try
         {
-            StatusText = outcome.ToString();
-            return;
-        }
+            if (!outcome.Succeeded)
+            {
+                StatusText = outcome.ToString();
+                return;
+            }
 
-        //Every successful output joins the list, an exported .mp4 included: it can be re-imported, so
-        //it is a source like any other. Nothing here plays one, so its row is dimmed (see
-        //LibraryItemTemplate in MainPage.xaml) and selecting it makes the player say why.
-        await AddAsync(outcome.OutputPath, CancellationToken.None);
-        StatusText = outcome.ToString();
+            //Every successful output joins the list, an exported .mp4 included: it can be re-imported,
+            //so it is a source like any other. Nothing here plays one, so its row is dimmed (see
+            //LibraryItemTemplate in MainPage.xaml) and selecting it makes the player say why.
+            await AddAsync(outcome.OutputPath, CancellationToken.None);
+            StatusText = outcome.ToString();
+        }
+        catch (Exception exception)
+        {
+            StatusText = $"The conversion finished, but its result could not be listed: {exception.Message}";
+        }
     }
 }

@@ -15,9 +15,9 @@ public partial class MainWindow : Window
     {
         DataContextChanged += (sender, args) =>
         {
-            if (DataContext is IWebViewBridge bridge)
+            if (DataContext is IWebViewBridge browser)
             {
-                bridge.NavigateToUrl = url =>
+                browser.NavigateToUrl = url =>
                 {
                     if (!string.IsNullOrWhiteSpace(url))
                     {
@@ -40,6 +40,9 @@ public partial class MainWindow : Window
         Browser.NavigationCompleted += (sender, args) =>
             (DataContext as IWebViewBridge)?.SetCurrentBrowserUrl(
                 Browser.CoreWebView2?.Source ?? Browser.Source?.AbsoluteUri);
+
+        //The view model owns the start page too, so every navigation flows the same way.
+        (DataContext as IWebViewBridge)?.NotifyBrowserReady();
     }
 
     private Task<string> PickSavePdfPathAsync(string suggestedFileName)

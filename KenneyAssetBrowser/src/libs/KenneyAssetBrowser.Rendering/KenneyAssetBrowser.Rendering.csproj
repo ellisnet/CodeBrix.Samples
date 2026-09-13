@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.213.41" />
+    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.248.1113" />
 
     <!-- CodeBrix.Platform (base) supplies the FrameworkElement / DependencyProperty surface the
          GLCanvasElement subclass is built on. Graphics3DGL supplies GLCanvasElement itself and,
@@ -27,9 +27,9 @@
     <PackageReference Include="SharpGLTF.Runtime" Version="1.0.6" />
     <!-- Scene evaluation (EvaluateTriangles) - CPU-bakes animation clips for the preview -->
     <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.6" />
-    <PackageReference Include="SkiaSharp" Version="4.151.0" />
+    <PackageReference Include="SkiaSharp" Version="4.152.0" />
 
     <!-- Rasterizes the packs' SVG vector art for the 2D viewer (pins SkiaSharp 4.151.0 itself) -->
-    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.214.1201" />
+    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.252.363" />
   </ItemGroup>
 </Project>

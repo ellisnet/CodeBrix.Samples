@@ -28,7 +28,8 @@ rather than its audio.
 ## What this sample shows a CodeBrix.Platform developer
 
 - Start the engine loop against a canvas the page owns, by forwarding the canvas's
-  first real layout size to the view model through a one-method interface:
+  first real layout size to the view model through a small interface, and reading the
+  running demo back through the same one:
   [Hand the view model a game canvas at its first real layout size](../BLUEPRINTS-GameEngine.md#hand-the-view-model-a-game-canvas-at-its-first-real-layout-size).
 - Keep the whole engine lifecycle behind one class with `Start()`, `Stop()` and a
   pause toggle, so nothing else in the application touches the engine singleton:
@@ -219,7 +220,7 @@ GameEngineMusicDemo/
     GameEngineMusicDemo.Core/               Class library; carries every non-head package
       GameEngineMusicDemo.Core.csproj       RootNamespace GameEngineMusicDemo; framework, font, hosting and logging packages
       Helpers/HostHelper.cs                 The IHostBuilderProvider SimpleServiceResolver builds its container from
-      ViewModels/MainViewModel.cs           Owns the demo object; declares IManageGameCanvas
+      ViewModels/MainViewModel.cs           Owns the demo object; declares and implements IManageGameCanvas
     GameEngineMusicDemo.LinuxX11/           Head: Program.cs plus a csproj with one runtime package
     GameEngineMusicDemo.LinuxWayland/       Head: Program.cs plus a csproj with one runtime package
     GameEngineMusicDemo.LinuxFrameBuffer/   Head: Program.cs plus a csproj with one runtime package
@@ -282,10 +283,12 @@ on the demo object instead of binding a `SimpleCommand`, because what the sample
 for is showing the music API being called: one line per control, with nothing in
 between to read past. The view model stays a real `SimpleViewModel` with the
 design-mode guard as its first constructor line, and it owns the demo object; the
-page reads `Demo` directly rather than binding to it, which is why that property
-needs no change notification. Every handler is null-safe through a `Demo` property
-that returns null until the canvas has started, because every control is reachable
-before then.
+page reads `Demo` off the `IManageGameCanvas` interface rather than binding to it,
+which is why that property needs no change notification. The page names that
+interface and never the view model's concrete type, which is the family rule even
+where there is only one implementation. Every handler is null-safe through a `Demo`
+property that returns null until the canvas has started, because every control is
+reachable before then.
 
 Read `src/GameEngineMusicDemo.UI/Views/MainPage.xaml.cs` beside
 `src/GameEngineMusicDemo.Core/ViewModels/MainViewModel.cs`. If you are building an

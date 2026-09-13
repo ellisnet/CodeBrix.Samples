@@ -71,7 +71,9 @@ public static class SettingsService
     public static void Initialize(string directoryPath) =>
         AppSettingsService.Initialize(AppName, directoryPath);
 
-    /// <summary>Closes the store and permits a later Initialize() (test hosts).</summary>
+    /// <summary>
+    /// Closes the store and permits a later <see cref="Initialize()"/> (test hosts).
+    /// </summary>
     public static void Shutdown() => AppSettingsService.Shutdown();
 
     public static AppSettingProperty<T> Wrap<T>(string property, T defaultValue) =>
@@ -431,7 +433,7 @@ public static class InstanceLabels
     public const string Topology = Prefix + "topology";
 
     // ... the node role and index, the friendly name, the creation time, the published ports,
-    //     the image, the shared secret and the resource kind ...
+    // ... the image, the shared secret and the resource kind ...
 
     /// <summary>
     /// Gets a filter matching every resource this tool created, whatever its instance. A null value
@@ -466,7 +468,7 @@ internal Dictionary<string, string> BaseLabels(string resourceKind)
     };
 
     // ... the optional ones: the announced gateway, the shared password, the declared users
-    //     and the service name, each added only when the topology has one ...
+    // ... and the service name, each added only when the topology has one ...
 
     return labels;
 }

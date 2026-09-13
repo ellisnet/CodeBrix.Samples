@@ -19,11 +19,14 @@ model source without the CodeBrix.Platform UI stack.
 ## What this sample shows a CodeBrix.Platform developer
 
 - Compiling one `SimpleViewModel` into the Skia heads and into native WinUI 3 and WPF shells, with no second copy of the logic: [Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS-AppStructureAndStartup.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads).
+- Linking the shared source files into each head one at a time, with a symbol per UI stack deciding what they compile to: [Link shared source files into each head and select the stack with a symbol](../BLUEPRINTS-ProjectLayoutAndPackaging.md#link-shared-source-files-into-each-head-and-select-the-stack-with-a-symbol).
 - Creating a drawing session in the view model with three named, colored highlighter layers and switching the active one from a command: [Create a drawing session with named color layers](../BLUEPRINTS-GraphicsAndRendering.md#create-a-drawing-session-with-named-color-layers).
 - Forwarding mouse, pen and touch input from a canvas into a model that owns the stroke state, including capture-lost handling: [Forward pointer input from a canvas into a model](../BLUEPRINTS-ViewsAndControls.md#forward-pointer-input-from-a-canvas-into-a-model).
+- Wiring that canvas in the page constructor, before the `DataContext` exists, by handing the binder a getter rather than the session: [Wire a control before the DataContext arrives by passing a getter](../BLUEPRINTS-ViewsAndControls.md#wire-a-control-before-the-datacontext-arrives-by-passing-a-getter).
 - Exporting the finished artwork as a PNG at a fixed pixel size, independent of the on-screen canvas: [Export a drawing at a chosen pixel size](../BLUEPRINTS-GraphicsAndRendering.md#export-a-drawing-at-a-chosen-pixel-size).
 - Letting the view model repaint the canvas through a one-property bridge interface instead of touching a control: [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
-- Getting a save path from whatever picker the head has, through a delegate the page assigns: [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model).
+- Getting a save path from whatever picker the head has, through a delegate the page resolves from a registered service and assigns: [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model).
+- Building that head's own dialog behind an interface the head registers as a singleton, so the page resolves it instead of constructing it: [Build a head's native picker behind a registered service](../BLUEPRINTS-PlatformServices.md#build-a-heads-native-picker-behind-a-registered-service).
 - Making one XAML element name resolve to a different Skia canvas base class per head: [Select a canvas base class per head with conditional compilation](../BLUEPRINTS-ViewsAndControls.md#select-a-canvas-base-class-per-head-with-conditional-compilation).
 - Embedding one asset under the same logical resource name in every assembly that compiles the shared source, and loading it by reflection: [Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS-ProjectLayoutAndPackaging.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
 - Showing which mode is active in the button captions themselves, with computed properties and no converter: [Show selection state in button captions from computed properties](../BLUEPRINTS-MVVM.md#show-selection-state-in-button-captions-from-computed-properties).
@@ -127,11 +130,12 @@ PainDiagram/
   Shared/                                 Source that is file-linked into every head assembly
     ViewModels/MainViewModel.cs           The whole application: state, commands, drawing session, bridge interfaces
     Drawing/DrawingCanvas.cs              One canvas type name that resolves per head by conditional compilation
+    Drawing/DrawingCanvasBinder.cs        Wires a canvas's paint and pointer events to the drawing session, per UI stack
     Helpers/HostHelper.cs                 IHostBuilderProvider wrapper handed to SimpleServiceResolver
     Helpers/FileDialogHelper.cs           Cleanup for the placeholder file the WinRT save picker leaves behind
     Assets/body_map_master.png            The body-map background image
   CodeBrixPlatform/                       Everything built on CodeBrix.Platform
-    PainDiagram.UI/                       Shared XAML project (.shproj plus .projitems): App.xaml(.cs), Views/MainPage.xaml(.cs)
+    PainDiagram.UI/                       Shared XAML project (.shproj plus .projitems): App.xaml(.cs), Views/MainPage.xaml(.cs), Services/
     PainDiagram.Core/                     Library: links the Shared source, embeds the body map, carries the shared packages
     PainDiagram.Win32Skia/                Head: Program.cs plus one runtime package
     PainDiagram.WinWpfSkia/               Head: Program.cs plus one runtime package, net10.0-windows
@@ -152,16 +156,17 @@ declares the drawing library reference directly.
 
 `Shared/` is not a project. It is source compiled into `PainDiagram.Core`,
 `PainDiagram.WinUI` and `PainDiagram.Wpf` alike, which is exactly why the body-map image
-is embedded by each of those three projects under one logical resource name.
-`PainDiagram.Wpf` links the canvas, the host helper and the view model but not
-`FileDialogHelper.cs`, because the WPF `SaveFileDialog` creates no placeholder file to
-clean up.
+is embedded by each of those three projects under one logical resource name. Only
+`PainDiagram.Core` links `Helpers/FileDialogHelper.cs`: it is called from the WinRT save
+picker that the Skia heads use, and neither native head goes through that picker. The
+other four files - the canvas, its binder, the host helper and the view model - are
+linked by all three projects.
 
 ## CodeBrix libraries and add-ins used
 
 | Library or add-in | What it does in this application | Where |
 | --- | --- | --- |
-| CodeBrix.Imaging.Drawing | The subject of the sample. The view model creates a `DrawingSession`, adds three named color layers to it, hands it the body map as a `byte[]` background, and calls `ExportPng()` for the saved image; the page calls `Render()` in its paint handler and forwards pointer events to the session | `Shared/ViewModels/MainViewModel.cs` and each UI stack's page code-behind; referenced by `PainDiagram.Core`, `PainDiagram.WinUI` and `PainDiagram.Wpf` |
+| CodeBrix.Imaging.Drawing | The subject of the sample. The view model creates a `DrawingSession`, adds three named color layers to it, hands it the body map as a `byte[]` background, and calls `ExportPng()` for the saved image; the shared canvas binder calls `Render()` in the paint handler and forwards pointer events to the session | `Shared/ViewModels/MainViewModel.cs` and `Shared/Drawing/DrawingCanvasBinder.cs`; referenced by `PainDiagram.Core`, `PainDiagram.WinUI` and `PainDiagram.Wpf` |
 | CodeBrix.Platform | The XAML framework and the Simple MVVM toolkit: `SimpleViewModel`, `SimpleCommand`, `[AffectsCommands]`, `SimpleServiceResolver`, `IHostBuilderProvider`, `IXamlRootGetter`, the `ConfirmDialog()` and `ShowError()` helpers, and `CodeBrixPlatformHostBuilder` | `CodeBrixPlatform/PainDiagram.Core`, `CodeBrixPlatform/PainDiagram.UI`, every head `Program.cs`; the Simple toolkit is used by the two native heads as well |
 | CodeBrix.Platform SkiaSharp views | Supplies `SKXamlCanvas`, the Skia surface hosted in CodeBrix.Platform XAML, which `DrawingCanvas` derives from on the Skia heads | `Shared/Drawing/DrawingCanvas.cs`, `CodeBrixPlatform/PainDiagram.Core/PainDiagram.Core.csproj` |
 | CodeBrix.Platform Open Sans font | The bundled UI font, set both as the page `FontFamily` resource and as the platform default text font | `CodeBrixPlatform/PainDiagram.UI/App.xaml`, `CodeBrixPlatform/PainDiagram.UI/App.xaml.cs` |
@@ -202,7 +207,9 @@ Read `Shared/ViewModels/MainViewModel.cs` first, then the `<Compile Include>` bl
 `PainDiagram.Wpf/PainDiagram.Wpf.csproj`. The sharp edge is that file-linked source
 obliges every consuming assembly to supply what the source expects at run time - here, the
 embedded body-map resource. See
-[Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS-AppStructureAndStartup.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads).
+[Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS-AppStructureAndStartup.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads)
+and
+[Link shared source files into each head and select the stack with a symbol](../BLUEPRINTS-ProjectLayoutAndPackaging.md#link-shared-source-files-into-each-head-and-select-the-stack-with-a-symbol).
 
 ### The drawing session and its three highlighter layers
 
@@ -222,20 +229,31 @@ the view model passed. See
 
 ### Pointer input in, repaint requests out
 
-The page forwards press, move, release and capture-lost straight to the session, a few
-lines each, and captures the pointer while a stroke is in progress. The session decides
+Press, move, release and capture-lost are forwarded straight to the session, a few lines
+each, and the pointer is captured while a stroke is in progress. The session decides
 whether a press starts a stroke - `PointerPressed()` returns a bool - and tracks whether
-one is in flight through `IsPointerActive`, so the page holds no drawing state and the
+one is in flight through `IsPointerActive`, so the view holds no drawing state and the
 view model is not on the per-point path at all.
 
+All of that wiring lives in one linked file,
+`Shared/Drawing/DrawingCanvasBinder.cs`, so each page's entire contribution is
+`DrawCanvas.BindToSession(() => ViewModel?.Session);` after `InitializeComponent()`. The
+binder is an extension method on `DrawingCanvas` that takes a getter rather than a session,
+so the canvas can be wired before the page's `DataContext` has arrived and keeps working
+after the view model is disposed. Its two branches are chosen by the same
+`#if (HAS_CODEBRIXPLATFORM || HAS_WINUI)` test that picks the canvas base class: pointer
+events and a `SizeChanged` repaint on the Skia and WinUI heads,
+`MouseDown`/`MouseMove`/`MouseUp`/`LostMouseCapture` and `CaptureMouse()` on the WPF head,
+which repaints itself when it is resized.
+
 Two details are worth copying. Every point is passed together with the current view size
-from `DrawCanvas.GetViewSize()`, which is how the session keeps strokes in its own logical
-space rather than in device pixels; and `PointerCaptureLost` calls `PointerCanceled()`, or
-a stroke would stay half open when the window deactivates mid-drag. The WPF head does the
-same thing with `MouseDown`/`MouseMove`/`MouseUp`/`LostMouseCapture` and `CaptureMouse()`.
-Read `CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs` and then
-`PainDiagram.Wpf/Views/MainWindow.xaml.cs`. See
-[Forward pointer input from a canvas into a model](../BLUEPRINTS-ViewsAndControls.md#forward-pointer-input-from-a-canvas-into-a-model).
+from the canvas's `GetViewSize()`, which is how the session keeps strokes in its own logical
+space rather than in device pixels; and capture-lost calls `PointerCanceled()`, or a stroke
+would stay half open when the window deactivates mid-drag. Read
+`Shared/Drawing/DrawingCanvasBinder.cs` and then any of the three code-behinds. See
+[Forward pointer input from a canvas into a model](../BLUEPRINTS-ViewsAndControls.md#forward-pointer-input-from-a-canvas-into-a-model)
+and
+[Wire a control before the DataContext arrives by passing a getter](../BLUEPRINTS-ViewsAndControls.md#wire-a-control-before-the-datacontext-arrives-by-passing-a-getter).
 
 Repaint requests travel the other way. The session raises `RedrawRequested` as strokes
 arrive; the view model subscribes once, in its constructor, and forwards it to the
@@ -266,21 +284,31 @@ assigns the delegate in its `DataContextChanged` handler, backed by that head's 
 asks its own replace question through `ConfirmDialog()` when the file exists, sets `IsBusy`,
 exports and writes the PNG, then offers to clear.
 
+On the Skia heads the dialog itself is a service rather than page code.
+`CodeBrixPlatform/PainDiagram.UI/Services/IFileSavePicker.cs` declares one method with the
+same shape as the bridge delegate, `WinRtFileSavePicker` beside it builds and shows the
+WinRT `FileSavePicker`, and `App`'s constructor registers the pair with
+`SimpleServiceResolver`. The page's whole contribution is to resolve the service and hand
+its `PickSavePngPathAsync` method group to the bridge property. A head that needed a
+different dialog would register a different implementation and change no page code at all.
+
 Three things about it repay reading. The `DataContextChanged` subscription is made before
 `InitializeComponent()`, with a comment saying why: `InitializeComponent()` may be the call
-that sets the `DataContext`, so a handler attached afterwards would never fire. The shared
-page needs `using System;` for the awaiter extension that makes the WinRT picker awaitable,
-and carries a comment saying so, because the using looks unused and is easy to remove by
-mistake. And `DoSave()` catches `NotSupportedException` separately, reporting "File dialogs
-are not supported on this head" - that is the arm a head reaches when its page did assign a
-delegate but the underlying dialog cannot run there. The `GetDefaultSavePath()` branch above
+that sets the `DataContext`, so a handler attached afterwards would never fire.
+`WinRtFileSavePicker` needs `using System;` for the awaiter extension that makes the WinRT
+picker awaitable, and carries a comment saying so, because the using looks unused and is
+easy to remove by mistake. And `DoSave()` catches `NotSupportedException` separately,
+reporting "File dialogs are not supported on this head" - that is the arm a head reaches
+when its page did assign a delegate but the underlying dialog cannot run there. The `GetDefaultSavePath()` branch above
 it runs only when `PickSavePngPathAsync` is still null, which is the case for a head that
 deliberately leaves the delegate unset; the shared `MainPage` used by all six Skia heads
 always sets it.
 
 Read `Shared/ViewModels/MainViewModel.cs` (`DoSave()`), then
-`CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs`. See
-[Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model)
+`CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs`, then
+`CodeBrixPlatform/PainDiagram.UI/Services/WinRtFileSavePicker.cs`. See
+[Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model),
+[Build a head's native picker behind a registered service](../BLUEPRINTS-PlatformServices.md#build-a-heads-native-picker-behind-a-registered-service)
 and
 [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
 
@@ -296,10 +324,10 @@ cancel HRESULT as a null result, and releases its COM objects and the display-na
 in `finally` blocks. Because that dialog needs a window handle, `App` exposes the main
 window as a static `CurrentWindow` purely so the page can ask for its HWND.
 
-The Skia heads keep the WinRT picker, which creates an empty placeholder file at a
-brand-new path. `Shared/Helpers/FileDialogHelper.RemoveEmptyPlaceholder()` deletes that
-file - but only when it is genuinely zero length, so a real file with content is never
-removed before the user has confirmed - and a failure to delete is deliberately ignored,
+The Skia heads keep the WinRT picker, in `WinRtFileSavePicker`, which creates an empty
+placeholder file at a brand-new path. `Shared/Helpers/FileDialogHelper.RemoveEmptyPlaceholder()`
+deletes that file - but only when it is genuinely zero length, so a real file with content is
+never removed before the user has confirmed - and a failure to delete is deliberately ignored,
 since the application's own prompt covers it. Read the class comment in
 `Win32SaveFileDialog.cs` first; it records the whole reason. See
 [Suppress a native save dialog overwrite prompt so the view model owns confirmation](../BLUEPRINTS-PlatformServices.md#suppress-a-native-save-dialog-overwrite-prompt-so-the-view-model-owns-confirmation)
@@ -327,6 +355,8 @@ and WinUI heads need a `SKXamlCanvas` and the WPF head needs an `SKElement`.
 `Shared/Drawing/DrawingCanvas.cs` resolves that with one linked file: an empty subclass
 chosen by `#if (HAS_CODEBRIXPLATFORM || HAS_WINUI)`, plus `DrawCanvasHelper` extension
 methods that hide the per-stack `Point` type behind `GetPointFromPosition()`.
+`Shared/Drawing/DrawingCanvasBinder.cs` beside it uses the same test for the same reason,
+because the events the two base classes raise are named differently too.
 
 The file declares its type in the drawing library's namespace even though it compiles into
 the application assembly, which is what lets every head use one `xmlns` prefix - but the
@@ -335,7 +365,9 @@ Skia heads, the head's own assembly on WPF. `PainDiagram.Core` is the only proje
 defines `HAS_CODEBRIXPLATFORM`, and the native WPF head defines neither symbol, which is
 the `#else` path; if you add a head, decide which symbol it defines before anything else.
 See
-[Select a canvas base class per head with conditional compilation](../BLUEPRINTS-ViewsAndControls.md#select-a-canvas-base-class-per-head-with-conditional-compilation).
+[Select a canvas base class per head with conditional compilation](../BLUEPRINTS-ViewsAndControls.md#select-a-canvas-base-class-per-head-with-conditional-compilation)
+and
+[Link shared source files into each head and select the stack with a symbol](../BLUEPRINTS-ProjectLayoutAndPackaging.md#link-shared-source-files-into-each-head-and-select-the-stack-with-a-symbol).
 
 ### The shared XAML project, the Core library and the page markup
 
@@ -378,13 +410,15 @@ the backend `Use...()` call, `Build()` and `Run()`. `[STAThread]` is on `Main()`
 head, including the Linux ones.
 
 `App`'s constructor sets the platform's default text font family to the bundled Open Sans
-file, creates the service resolver from `HostHelper.GetHost()` with an empty registration
-callback that says so in a comment, and calls `SimpleViewModel.SetIsDesignMode(false)`
-before `InitializeComponent()` - it has to run before any view model is constructed, and
-the page's `DataContext` is created by the XAML. All three `App` classes, Skia, WinUI and
-WPF, make those same two Simple toolkit calls, which is why `HostHelper.cs` is linked into
-all three assemblies; the WPF one has no `InitializeComponent()` call of its own and the two
-calls are its entire constructor.
+file, creates the service resolver from `HostHelper.GetHost()`, registering the one service
+this head has - `IFileSavePicker`, as a singleton - and calls
+`SimpleViewModel.SetIsDesignMode(false)` before `InitializeComponent()` - it has to run
+before any view model is constructed, and the page's `DataContext` is created by the XAML.
+All three `App` classes, Skia, WinUI and WPF, make those same two Simple toolkit calls,
+which is why `HostHelper.cs` is linked into all three assemblies; the native heads build
+their save dialog in their own page instead, so their registration callbacks are empty and
+say so in a comment, and the WPF one has no `InitializeComponent()` call of its own, leaving
+the two calls as its entire constructor.
 
 `App.xaml` also declares a `FontFamily` resource keyed `OpenSansFont` that the page binds
 its own `FontFamily` to, and its comment records the gotcha: merging the font package's

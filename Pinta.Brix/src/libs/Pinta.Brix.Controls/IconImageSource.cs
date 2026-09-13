@@ -5,7 +5,6 @@
 // copy idiom (no per-icon stream wrapper).
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -16,8 +15,22 @@ namespace Pinta.Brix.Controls;
 
 public static class IconImageSource
 {
-	private static readonly Dictionary<(string, int), ImageSource> cache = [];
+	/// <summary>
+	/// Every command, tool and pad button asks for an icon at one of a handful
+	/// of sizes, so the working set is small and fixed; the bound is here so a
+	/// caller that asks for arbitrary sizes cannot grow the cache forever.
+	/// </summary>
+	private const int CacheCapacity = 512;
 
+	private static readonly BoundedCache<(string, int), ImageSource> cache = new (CacheCapacity);
+
+	/// <summary>
+	/// Renders the named icon at the given size as a XAML image source, or
+	/// returns null when no icon of that name exists so a caller can fall back
+	/// to a label rather than a blank square.
+	/// </summary>
+	/// <param name="iconName">The icon's name in the embedded icon set.</param>
+	/// <param name="size">The width and height to render at, in pixels.</param>
 	public static ImageSource? Create (string iconName, int size)
 	{
 		if (cache.TryGetValue ((iconName, size), out ImageSource? cached))
@@ -35,7 +48,7 @@ public static class IconImageSource
 		pixels.CopyTo (bitmap.PixelBuffer);
 		bitmap.Invalidate ();
 
-		cache[(iconName, size)] = bitmap;
+		cache.Set ((iconName, size), bitmap);
 		return bitmap;
 	}
 }

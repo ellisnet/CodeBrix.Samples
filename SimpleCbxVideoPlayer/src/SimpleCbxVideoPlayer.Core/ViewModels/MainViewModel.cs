@@ -17,11 +17,44 @@ using System.Threading.Tasks;
 namespace SimpleCbxVideoPlayer.ViewModels;
 
 /// <summary>
+/// Lets the hosting page hand the view model the invalidate (repaint) delegate for whichever video
+/// canvas it settled on.
+/// </summary>
+/// <remarks>
+/// Repaint requests are raised on the decoding thread, so the page's delegate is the thing responsible
+/// for marshalling them onto the user-interface thread.
+/// </remarks>
+public interface ICanvasBridge
+{
+    /// <summary>Asks the canvas that is showing to repaint; null until a page wires one up.</summary>
+    Action InvalidateVideoCanvas { get; set; }
+}
+
+/// <summary>
+/// Lets the hosting head give the view model a native "save the baked table as…" file dialog.
+/// </summary>
+/// <remarks>
+/// The page fills the delegate in when the data context arrives, and assigns it through this interface
+/// rather than through the view model's own type, so a head with a different dialog - or none at all -
+/// satisfies the same contract.
+/// </remarks>
+public interface IFileSaveBridge
+{
+    /// <summary>
+    /// Shows a "save .cube" dialog seeded with the suggested file name and hands back the full path the
+    /// person chose, or null when they cancelled. A head with no file dialog leaves this null, and the
+    /// Bake command says so rather than writing somewhere nobody chose.
+    /// Signature: <c>Func&lt;suggestedFileName, Task&lt;chosenPathOrNull&gt;&gt;</c>.
+    /// </summary>
+    Func<string, Task<string>> PickSaveCubePathAsync { get; set; }
+}
+
+/// <summary>
 /// The whole application: the corpus drop-down, the render-path drop-down, the transport and the
 /// lookup-table panel.
 /// </summary>
 [Microsoft.UI.Xaml.Data.Bindable]
-public class MainViewModel : SimpleViewModel
+public class MainViewModel : SimpleViewModel, ICanvasBridge, IFileSaveBridge
 {
     private readonly VideoPlaybackController controller;
     private readonly SmokeOptions smoke;
@@ -291,8 +324,15 @@ public class MainViewModel : SimpleViewModel
     /// <summary>Whether the host's GPU-Skia canvas started, and is the canvas being painted.</summary>
     public bool IsGpuCanvasAvailable { get; private set; }
 
-    /// <summary>Releases the player. Called by the page when the window closes.</summary>
-    public void Shutdown() => controller?.Dispose();
+    /// <summary>Releases the player and the page's seams. Called by the page when the window closes.</summary>
+    public void Shutdown()
+    {
+        controller?.Dispose();
+
+        //Dropping the delegates the page handed over is what breaks the page-to-view-model cycle.
+        InvalidateVideoCanvas = null;
+        PickSaveCubePathAsync = null;
+    }
 
     #endregion
 
@@ -374,8 +414,13 @@ public class MainViewModel : SimpleViewModel
 
         if (baked == null) { return; }
 
-        BakeStatusText = $"Baked {baked.TableCount} table(s) into a {baked.Size}-node table: {baked.FilePath}";
-        UpdateUiState();
+        //The picker's answer comes back on whichever thread completed it, and everything below this line
+        //  is bound state, so the hop is made rather than assumed.
+        InvokeOnMainThread(() =>
+        {
+            BakeStatusText = $"Baked {baked.TableCount} table(s) into a {baked.Size}-node table: {baked.FilePath}";
+            UpdateUiState();
+        });
     }
 
     #endregion

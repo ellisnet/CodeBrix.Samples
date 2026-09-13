@@ -320,8 +320,9 @@
                                Foreground="{StaticResource TextSecondaryBrush}"
                                VerticalAlignment="Center" />
                     <ComboBox Width="200" VerticalAlignment="Center" CornerRadius="8"
-                              ItemsSource="{d:Binding PageSizeNames}"
-                              SelectedItem="{d:Binding SelectedPageSizeName, Mode=TwoWay}" />
+                              ItemsSource="{d:Binding PageSizes}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedItem="{d:Binding SelectedPageSize, Mode=TwoWay}" />
                     <Button MinWidth="110" Style="{StaticResource PrimaryButtonStyle}"
                             VerticalAlignment="Center"
                             Content="Create!"

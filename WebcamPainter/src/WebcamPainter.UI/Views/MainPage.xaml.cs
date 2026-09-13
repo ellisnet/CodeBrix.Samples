@@ -3,8 +3,8 @@ using Microsoft.UI.Xaml.Controls;
 using System; //Required: the IAsyncOperation GetAwaiter extension (awaiting the FileSavePicker) lives here
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using WebcamPainter.Bridges;
 using WebcamPainter.Helpers;
-using WebcamPainter.Painting;
 using WebcamPainter.ViewModels;
 using WebcamPainter.Webcam;
 using Windows.Storage;
@@ -16,8 +16,9 @@ public sealed partial class MainPage : Page
 {
     private MainViewModel ViewModel => DataContext as MainViewModel;
 
-    //One frame renderer per canvas that shows live video (each caches its own buffers)
-    private readonly WebcamFrameRenderer _mainRenderer = new WebcamFrameRenderer();
+    //One frame renderer per canvas that shows live video (each caches its own buffers); the
+    //  main canvas's renderer is the view model's, because the view model is what decides
+    //  whether that canvas is showing video or the painting
     private readonly WebcamFrameRenderer _selfViewRenderer = new WebcamFrameRenderer();
 
     public MainPage()
@@ -42,23 +43,16 @@ public sealed partial class MainPage : Page
             }
         };
 
+        //Nothing else owns the view model - the XAML declares it - so the page is what runs its
+        //  teardown: the camera stopped, the tracking thread joined, the bridge delegates dropped
+        Unloaded += (_, _) => (DataContext as IDisposable)?.Dispose();
+
         InitializeComponent();
 
+        //Which of the two things the main canvas shows is application state, so the handler
+        //  forwards the surface and lets the view model draw (see ICanvasBridge)
         MainCanvas.PaintSurface += (_, e) =>
-        {
-            var viewModel = ViewModel;
-            if (viewModel == null) { return; }
-
-            if (viewModel.IsPaintMode && viewModel.PaintSession != null)
-            {
-                PaintCanvasHelper.Render(e.Surface, e.Info, viewModel.PaintSession,
-                    viewModel.CrosshairNormX, viewModel.CrosshairNormY, viewModel.IsBrushPainting);
-            }
-            else
-            {
-                _mainRenderer.Render(e.Surface, e.Info, viewModel.CaptureService, mirror: true);
-            }
-        };
+            (DataContext as ICanvasBridge)?.RenderMainCanvas(e.Surface, e.Info);
 
         SelfViewCanvas.PaintSurface += (_, e) =>
             _selfViewRenderer.Render(e.Surface, e.Info, ViewModel?.CaptureService, mirror: true);

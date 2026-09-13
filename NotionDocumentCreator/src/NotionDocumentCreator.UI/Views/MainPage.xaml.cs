@@ -46,10 +46,8 @@ public sealed partial class MainPage : Page
         if (file == null) { return null; }
 
         //Some heads percent-encode the path they return, which would save "My Book.pdf" as
-        //  "My%20Book.pdf"; decode it before anything touches the disk.
-        var path = FileDialogHelper.ToFileSystemPath(file.Path);
-
-        FileDialogHelper.RemoveEmptyPlaceholder(path);
-        return path;
+        //  "My%20Book.pdf"; decode it before anything touches the disk. That is the only thing
+        //  done to it here: what the chosen path then means is the view model's business.
+        return FileDialogHelper.ToFileSystemPath(file.Path);
     }
 }

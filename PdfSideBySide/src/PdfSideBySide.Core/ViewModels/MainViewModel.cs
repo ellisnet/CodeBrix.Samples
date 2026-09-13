@@ -1,23 +1,30 @@
+using CodeBrix.Platform.Extensions;
 using CodeBrix.Platform.Simple;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using PdfSideBySide.PdfRender;
 using PdfSideBySide.PdfRender.Documents;
 using PdfSideBySide.PdfRender.Rendering;
 using PdfSideBySide.PdfRender.Viewing;
+using PdfSideBySide.Services;
 using System;
-using System.Diagnostics;
+using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Storage.Pickers;
 
 namespace PdfSideBySide.ViewModels;
 
 [Microsoft.UI.Xaml.Data.Bindable]
-public class MainViewModel : SimpleViewModel
+public class MainViewModel : SimpleViewModel, IPdfFileBridge
 {
 
-    private readonly PdfComparison _comparison = new();
-    private readonly PageRenderer _renderer = new();
+    //A comparison is in place from the moment the view model exists, so a design-time binding has
+    //  one to read; at run time the constructor replaces it with the registered factory's
+    private PdfComparison _comparison = new();
+    private IPageRenderer _renderer;
+    private ILogger _log = NullLogger.Instance;
+    private bool _isPageReady;
 
     //One in-flight render per side; a newer page request cancels the older one
     private CancellationTokenSource _leftRender;
@@ -27,11 +34,21 @@ public class MainViewModel : SimpleViewModel
     {
         if (IsDesignMode(true)) { return; } //Leave as the first line of constructor
 
-        Debug.WriteLine("Main view model startup.");
+        //The logger factory App.InitializeLogging() wired into the platform, when there is one
+        var loggerFactory = LogExtensionPoint.AmbientLoggerFactory;
+        if (loggerFactory != null) { _log = loggerFactory.CreateLogger<MainViewModel>(); }
+        _log.LogInformation("Main view model startup.");
+
+        _comparison = (GetService<IPdfComparisonFactory>() ?? new PdfComparisonFactory()).Create();
+        _renderer = GetService<IPageRenderer>() ?? new PageRenderer();
 
         LeftPane = new DocumentPaneViewModel("Document 1", () => BrowseAsync(DocumentSide.Left));
         RightPane = new DocumentPaneViewModel("Document 2", () => BrowseAsync(DocumentSide.Right));
-        _ = OpenStartupDocumentsAsync();
+
+        //A newly rendered page is one more thing that moves the view, so each pane's image change
+        //  is folded into the one signal the page watches
+        LeftPane.PropertyChanged += OnPanePropertyChanged;
+        RightPane.PropertyChanged += OnPanePropertyChanged;
     }
 
     #region | Bindable properties |
@@ -172,6 +189,14 @@ public class MainViewModel : SimpleViewModel
     private async Task BrowseAsync(DocumentSide side)
     {
         if (IsBusy) { return; }
+        if (PickPdfPathAsync == null)
+        {
+            //This head has no file dialog, so the command line is the only way in
+            await ShowInfo("This head cannot browse for files. Start it with the two PDF file " +
+                "paths on the command line instead.");
+            return;
+        }
+
         IsBusy = true;
         try
         {
@@ -228,17 +253,47 @@ public class MainViewModel : SimpleViewModel
         }
     }
 
-    private static async Task<string> PickPdfPathAsync()
-    {
-        var picker = new FileOpenPicker
-        {
-            SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
-        };
-        picker.FileTypeFilter.Add(".pdf");
+    #endregion
 
-        var file = await picker.PickSingleFileAsync();
-        return file?.Path;
+    #region | What the page tells the view model |
+
+    /// <summary>
+    /// Called by the page once it is loaded, its <c>XamlRoot</c> getter is in place and its file
+    /// bridge is wired: opens the two documents named on the command line, if there are any. Later
+    /// calls do nothing, so the page can call it from every load.
+    /// </summary>
+    public void OnPageReady()
+    {
+        if (_isPageReady) { return; }
+        _isPageReady = true;
+
+        //Discarded deliberately: every failure is caught and reported inside
+        _ = OpenStartupDocumentsAsync();
     }
+
+    /// <summary>
+    /// Tells the view model how large side's viewer is, in pixels, so it can work out what
+    /// size the page image should be given and how far the viewer should be scrolled. Only the page
+    /// knows the viewport size, so it reports it whenever the viewer is resized or the view moves.
+    /// </summary>
+    /// <param name="side">The pane whose viewer was measured.</param>
+    /// <param name="viewportWidth">The width of that pane's viewer, in pixels.</param>
+    /// <param name="viewportHeight">The height of that pane's viewer, in pixels.</param>
+    public void SetViewportSize(DocumentSide side, double viewportWidth, double viewportHeight)
+    {
+        var pane = PaneFor(side);
+        if (pane == null) { return; }
+
+        pane.SetLayout(View.LayoutOf(side, pane.PagePixelWidth, pane.PagePixelHeight,
+            viewportWidth, viewportHeight));
+    }
+
+    #endregion
+
+    #region | Head-capability bridges |
+
+    /// <inheritdoc/>
+    public Func<Task<string>> PickPdfPathAsync { get; set; }
 
     #endregion
 
@@ -293,6 +348,12 @@ public class MainViewModel : SimpleViewModel
 
     private bool HasAnyDocument => _comparison.Left != null || _comparison.Right != null;
 
+    //A pane showing a different image has to be laid out again, exactly like a zoom or a pan
+    private void OnPanePropertyChanged(object sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(DocumentPaneViewModel.PageImage)) { ViewChanged(); }
+    }
+
     //Tell the page the view (zoom/pan/page) moved and refresh every button that depends on it
     private void ViewChanged()
     {
@@ -311,6 +372,47 @@ public class MainViewModel : SimpleViewModel
         ZoomOutCommand.RaiseCanExecuteChanged();
         ZoomResetCommand.RaiseCanExecuteChanged();
         PanCommand.RaiseCanExecuteChanged();
+    }
+
+    #endregion
+
+    #region | IDisposable implementation |
+
+    /// <inheritdoc/>
+    public override void Dispose()
+    {
+        if (LeftPane != null) { LeftPane.PropertyChanged -= OnPanePropertyChanged; }
+        if (RightPane != null) { RightPane.PropertyChanged -= OnPanePropertyChanged; }
+
+        //Releases the page: a delegate the page supplied holds it alive through the view model
+        PickPdfPathAsync = null;
+
+        CancelAndDispose(ref _leftRender);
+        CancelAndDispose(ref _rightRender);
+
+        //The renderer owns the rasterizer and the page cache
+        var renderer = _renderer;
+        _renderer = null;
+        renderer?.Dispose();
+
+        base.Dispose();
+    }
+
+    private static void CancelAndDispose(ref CancellationTokenSource source)
+    {
+        var cancellation = source;
+        source = null;
+        if (cancellation == null) { return; }
+
+        try
+        {
+            cancellation.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            //Already disposed as the "previous" of a later render
+        }
+        cancellation.Dispose();
     }
 
     #endregion

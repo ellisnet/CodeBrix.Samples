@@ -58,7 +58,7 @@ public sealed partial class MainPage : Page
             }
 
             //The console tabs are built in code-behind and mirror the view model's collection
-            AttachConsoles(DataContext as MainViewModel);
+            AttachConsoles(DataContext as IConsoleTabsBridge);
         };
 
         this.InitializeComponent(); //Leave this line last

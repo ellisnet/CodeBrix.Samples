@@ -147,6 +147,12 @@ to see how far the plain XAML surface goes before you reach for a canvas.
 - How each row of an instance card's CONNECT block masks, reveals and copies its
   value:
   [Show mask and copy a secret in a one-line row](../BLUEPRINTS-ViewsAndControls.md#show-mask-and-copy-a-secret-in-a-one-line-row).
+- How a tab strip's own close button ends up running the tab's command, rather than
+  closing anything itself:
+  [Route a container's chrome button to the item's own command](../BLUEPRINTS-ViewsAndControls.md#route-a-containers-chrome-button-to-the-items-own-command).
+- How the escape sequences a terminal understands stay inside the terminal library
+  instead of in a page:
+  [Keep terminal escape sequences in the terminal library](../BLUEPRINTS-TextEditing.md#keep-terminal-escape-sequences-in-the-terminal-library).
 
 ## Building, running and testing
 
@@ -256,6 +262,7 @@ RedisSetupTool/
     RedisSetupTool.Core/                The library every head references; carries the shared packages
       RegisterServices.cs               One AddRedisSetupTool() that composes the two library registrations and the shared state
       Bridges/ICopyToClipboard.cs       The clipboard bridge the page fills in
+      Bridges/IConsoleTabsBridge.cs     The console bridge: the tabs to mirror, the call that opens one, the input delegate
       Helpers/HostHelper.cs             The IHostBuilderProvider that SimpleServiceResolver builds its container from
       Services/AppState.cs              The shared daemon snapshot every section reads, refreshed once for all of them
       Services/ConnectionMapper.cs      The one place the Docker side and the Redis side meet
@@ -480,9 +487,20 @@ The application's answer is a named partial file,
 `Tabs` collection into a `TabView`: it watches `CollectionChanged`, creates a
 control and a body grid per tab, and keeps every body in the tree with the
 inactive ones collapsed so their terminals stay loaded and keep receiving output.
-The view model holds only the tab's status - the resolved shell, the grid size,
-the session state - and the page pushes what it learns back through a few `Apply`
-methods.
+What crosses between the two is one bridge interface,
+`src/RedisSetupTool.Core/Bridges/IConsoleTabsBridge.cs`, which is also how the
+page finds the console side of its data context without naming a view model type:
+the tabs to mirror, the call that opens a tab's shell, and one delegate the page
+fills in so a caller holding no terminal can still type into one. Finding a shell
+and opening the exec are the view model's work, and the page is left with the
+part that needs the control - building it, joining the session to it, showing a
+failure in it as a line the terminal library composes, so no escape sequence is
+spelled out in a page - while the grid size and the session state it learns there
+go back through the tab's `Apply` methods. The tab strip's own close button is
+chrome no binding reaches, so the page's close handler finds the tab it belongs to
+and executes that tab's own command rather than closing anything itself; the tab
+also carries a real bound close button, and one user action must not have two code
+paths.
 
 Under it, `RedisSetupTool.TerminalView` is the seam that makes the whole thing
 testable. The pump writes to an `ITerminalSink` rather than to a control;
@@ -500,7 +518,9 @@ a missing binary does not throw and does not hang - the daemon upgrades the
 connection, writes the runtime's complaint on the ordinary output stream, closes
 and reports 127. See
 [Split a page code-behind into named partial files](../BLUEPRINTS-ViewsAndControls.md#split-a-page-code-behind-into-named-partial-files),
-[Host a control with no dependency properties by mirroring a collection from code-behind](../BLUEPRINTS-ViewsAndControls.md#host-a-control-with-no-dependency-properties-by-mirroring-a-collection-from-code-behind)
+[Host a control with no dependency properties by mirroring a collection from code-behind](../BLUEPRINTS-ViewsAndControls.md#host-a-control-with-no-dependency-properties-by-mirroring-a-collection-from-code-behind),
+[Route a container's chrome button to the item's own command](../BLUEPRINTS-ViewsAndControls.md#route-a-containers-chrome-button-to-the-items-own-command),
+[Keep terminal escape sequences in the terminal library](../BLUEPRINTS-TextEditing.md#keep-terminal-escape-sequences-in-the-terminal-library)
 and
 [Make a byte pump testable by writing to a sink interface instead of a control](../BLUEPRINTS-Testing.md#make-a-byte-pump-testable-by-writing-to-a-sink-interface-instead-of-a-control).
 

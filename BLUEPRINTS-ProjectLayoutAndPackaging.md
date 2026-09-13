@@ -11,9 +11,12 @@ window. They also cover native payloads: fanning per-platform native packages
 out across the heads, embedding assets with explicit logical names, letting a
 Windows-targeting head restore on Linux and macOS, keeping separate solutions
 where some heads cannot build everywhere, and recording bundled content
-in a notices file. Reach for this file when a build error is coming from
-project configuration rather than from code, or when you are setting up a
-new application's projects and want the conventions the samples already follow.
+in a notices file. They finish with two rules about boundaries: the loose source
+files linked into each head with a symbol that picks its UI stack, and keeping a
+library's public surface down to the one type its host drives. Reach for this
+file when a build error is coming from project configuration rather than from
+code, or when you are setting up a new application's projects and want the
+conventions the samples already follow.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -40,6 +43,8 @@ conventions the code blocks follow.
 - [Keep a third-party API inside one library with PrivateAssets and a module initializer](#keep-a-third-party-api-inside-one-library-with-privateassets-and-a-module-initializer)
 - [Ship a data corpus as content items and find it under the application base directory](#ship-a-data-corpus-as-content-items-and-find-it-under-the-application-base-directory)
 - [Depend on a native runtime the user installs instead of shipping a package](#depend-on-a-native-runtime-the-user-installs-instead-of-shipping-a-package)
+- [Link shared source files into each head and select the stack with a symbol](#link-shared-source-files-into-each-head-and-select-the-stack-with-a-symbol)
+- [Keep a library's public surface to the one type its host drives](#keep-a-librarys-public-surface-to-the-one-type-its-host-drives)
 
 ## Related blueprints
 
@@ -260,7 +265,8 @@ with an assembly-qualified namespace.
     xmlns:d="clr-namespace:Microsoft.UI.Xaml.Data;assembly=CodeBrix.Platform.UI"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="clr-namespace:MediaPlayerDemo.ViewModels;assembly=MediaPlayerDemo.Core"
-    ...>
+    FontFamily="{StaticResource OpenSansFont}"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 ```
 
 A head that compiles linked shared source has the same problem and solves it the
@@ -369,7 +375,7 @@ referenced by the head projects.
   <!-- OpenCV 5 (managed binding): TFLite model inference via the DNN module.
        The native OpenCV library comes from the per-platform
        CodeBrix.VideoProcessing.OpenCV5.{Platform} packages referenced by each head. -->
-  <PackageReference Include="..." />
+  <!-- ... the one managed binding package, and nothing platform-specific ... -->
 </ItemGroup>
 ```
 
@@ -548,7 +554,7 @@ evaluate and restore it. It must not turn on the WPF build support.
   <!--
     The WPF-hosted head must target net10.0-windows (the runtime package flows a
     Microsoft.WindowsDesktop.App.WPF FrameworkReference). Do NOT set <UseWPF> here -
-    that would make the WPF build targets grab the CodeBrix.Platform XAML
+    ...
     Page items. EnableWindowsTargeting lets this head compile inside the cross-platform
     solution on Linux and macOS build hosts.
   -->
@@ -1543,3 +1549,204 @@ The application-side half is one catch, placed where the runtime is first needed
   head packaged as a bundle has to declare its own usage descriptions or be
   refused. Neither is visible in any project file.
 
+### Link shared source files into each head and select the stack with a symbol
+
+**When you want this.** An application with heads on more than one UI stack keeps
+some plain `.cs` files - a view model, a canvas subclass, a helper - in one folder
+and compiles them into every head, rather than shipping them as a library. This is
+the loose-file counterpart to
+[Share App xaml and the views across heads with a shared project](BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project),
+which carries the XAML: a shared project is all-or-nothing, while an explicit
+compile item is decided one file at a time, per project.
+
+**The MVVM shape.** The `Shared` folder holds the source; each project names the
+files it needs with a compile item and a link path, and defines the preprocessor
+symbol that says which UI stack it is. The files themselves branch on the symbol
+where the stacks genuinely differ and nowhere else.
+
+**Code.**
+
+```xml
+<!-- From CodeBrix.Samples/PainDiagram/CodeBrixPlatform/PainDiagram.Core/PainDiagram.Core.csproj -->
+<PropertyGroup>
+  <!-- CodeBrix.Platform needs this define for its internal conditional compilation;
+       HAS_CODEBRIXPLATFORM selects the SKXamlCanvas base for the shared DrawingCanvas -->
+  <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI;HAS_CODEBRIXPLATFORM</DefineConstants>
+</PropertyGroup>
+
+<ItemGroup>
+  <Compile Include="..\..\Shared\Drawing\DrawingCanvas.cs" Link="Drawing\DrawingCanvas.cs" />
+  <Compile Include="..\..\Shared\Drawing\DrawingCanvasBinder.cs" Link="Drawing\DrawingCanvasBinder.cs" />
+  <Compile Include="..\..\Shared\Helpers\FileDialogHelper.cs" Link="Helpers\FileDialogHelper.cs" />
+  <Compile Include="..\..\Shared\Helpers\HostHelper.cs" Link="Helpers\HostHelper.cs" />
+  <Compile Include="..\..\Shared\ViewModels\MainViewModel.cs" Link="ViewModels\MainViewModel.cs" />
+</ItemGroup>
+```
+
+The native WinUI head links four of those five files and defines a different
+symbol, because its own save path does not go through the file-dialog helper:
+
+```xml
+<!-- From CodeBrix.Samples/PainDiagram/PainDiagram.WinUI/PainDiagram.WinUI.csproj -->
+    <!-- HAS_WINUI selects the SKXamlCanvas base for the shared DrawingCanvas -->
+    <DefineConstants>$(DefineConstants);HAS_WINUI</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Drawing\DrawingCanvas.cs" Link="Drawing\DrawingCanvas.cs" />
+    <Compile Include="..\Shared\Drawing\DrawingCanvasBinder.cs" Link="Drawing\DrawingCanvasBinder.cs" />
+    <Compile Include="..\Shared\Helpers\HostHelper.cs" Link="Helpers\HostHelper.cs" />
+    <Compile Include="..\Shared\ViewModels\MainViewModel.cs" Link="ViewModels\MainViewModel.cs" />
+  </ItemGroup>
+```
+
+A linked file branches on the symbol only where the stacks disagree - here the
+event names, because the two canvas base classes raise different ones - and the
+branches are kept next to each other in one method so a change to one is made in
+sight of the other:
+
+```csharp
+// From CodeBrix.Samples/PainDiagram/Shared/Drawing/DrawingCanvasBinder.cs
+public static void BindToSession(this DrawingCanvas canvas, Func<DrawingSession> sessionGetter)
+{
+    if (canvas == null || sessionGetter == null) { return; }
+
+    canvas.PaintSurface += (_, e) => sessionGetter()?.Render(e.Surface, e.Info);
+
+#if (HAS_CODEBRIXPLATFORM || HAS_WINUI)
+    canvas.PointerPressed += (_, e) =>
+    {
+        // ...
+    };
+
+    // ... PointerMoved, PointerReleased, PointerCaptureLost and SizeChanged ...
+#else
+    canvas.MouseDown += (_, e) =>
+    {
+        // ...
+    };
+
+    // ... MouseMove, MouseUp and LostMouseCapture ...
+#endif
+}
+```
+
+**Where to look.**
+`PainDiagram/Shared/` and the compile items in
+`CodeBrixPlatform/PainDiagram.Core/PainDiagram.Core.csproj`,
+`PainDiagram.WinUI/PainDiagram.WinUI.csproj` and
+`PainDiagram.Wpf/PainDiagram.Wpf.csproj`
+`WikipediaPublisher/Shared/` and the same items in its Core, WinUI and Wpf projects
+
+**Also shown by.**
+`JustBetweenUs`, whose heads rewrite their own root namespace instead so the
+linked files land where the head expects them.
+
+**Sharp edges.**
+- Linked source has no transitive closure. When a shared file starts calling
+  another shared helper, every project that links the first has to link the second
+  as well, or that head alone stops compiling - and when a head stops calling one,
+  its link is dead weight worth removing.
+- The link path is what puts the file in a sensible folder in the editor; without
+  it the file appears at the project root, which is how duplicate-looking trees
+  start.
+- One symbol per stack, defined in exactly one project each, and written down in a
+  comment beside the definition. Adding a head means deciding which symbol it
+  defines before anything else.
+- A linked file compiles into every consuming assembly, so anything it reads at run
+  time - an embedded resource, a resource name - has to exist in each of them.
+- Keep the branch as small as the difference. A file where the whole body is
+  duplicated under `#if` is two files that have not admitted it yet.
+
+### Keep a library's public surface to the one type its host drives
+
+**When you want this.** A library wraps something large and unruly - an embedded
+interpreter, a device driver, a guest program - and you want the application to
+hold exactly one object with an obvious lifecycle, while the tests still reach
+everything inside.
+
+**The MVVM shape.** One public class with the two members its host needs, and
+everything else in the library internal. The page or the view model drives the
+facade; the test project reaches past it through the internals attribute, so
+testability costs nothing in public surface.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/RuntimeHost.cs
+/// <summary>
+/// The application-facing owner of the DRAKON Tcl runtime. UI code holds one of
+/// these and drives its <see cref="Start"/>/<see cref="Dispose"/> lifecycle, so
+/// ...
+/// </summary>
+public sealed class RuntimeHost : IDisposable
+{
+    private DrakonRuntime _runtime;
+
+    /// <summary>
+    /// Creates and starts the DRAKON runtime inside the given host view. Call
+    /// once, from the UI thread, after the host has loaded (its tree and
+    /// dispatcher exist). Subsequent calls are ignored.
+    /// </summary>
+    /// <param name="host">The loaded Tk host view.</param>
+    public void Start(TkHostView host)
+    {
+        if (host == null) { throw new ArgumentNullException(nameof(host)); }
+        if (_runtime != null) { return; }
+
+        _runtime = new DrakonRuntime();
+        _runtime.Start(host);
+    }
+
+    /// <summary>
+    /// Stops the Tcl thread and disposes the runtime. Safe to call more than
+    /// once, and safe to call when <see cref="Start"/> was never called.
+    /// </summary>
+    public void Dispose()
+    {
+        DrakonRuntime runtime = _runtime;
+        _runtime = null;
+        if (runtime != null) { runtime.Dispose(); }
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
+internal sealed class DrakonRuntime : IDisposable
+{
+    // ...
+    public void Start(TkHostView host)
+    // ...
+    internal void StartDirect(string assetsDirectory)
+    // ...
+    internal string EvaluateScriptForTest(string script)
+    // ...
+}
+```
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/InternalsVisibleTo.cs
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("DRAKON.Brix.TclBridge.Tests")]
+```
+
+**Where to look.**
+`DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/RuntimeHost.cs` and
+`src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs`
+`DRAKON.Brix/src/DRAKON.Brix.UI/Views/MainPage.xaml.cs` (the page holds one
+`RuntimeHost` field and calls the two members from its loaded and unloaded events)
+
+**Sharp edges.**
+- The facade is where the lifecycle rules live: a second start is ignored and a
+  second disposal is safe, so the page can wire both to events that may fire more
+  than once. The internal runtime behind it is written for one call of each.
+- The application code never names the internal type, which is what lets the
+  library change how the work is done without touching a head.
+- Tests reach the internal entry points through
+  [Expose library internals to its test project](BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project),
+  which is the whole reason a second public entry point is not needed for them.
+- Resist widening it early. Putting the facade behind an interface and a
+  registration method is the right move the moment a second implementation or a
+  second consumer exists, and premature before that - the note saying so belongs
+  in the library, not in a commit message.

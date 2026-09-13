@@ -1,5 +1,7 @@
 using CodeBrix.Platform.Simple;
 using PainDiagram.Helpers;
+using PainDiagram.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -21,7 +23,10 @@ public partial class App : Application
 
         SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
         {
-            //No custom services needed - the drawing session lives in the view model
+            //The one thing the view model cannot do for itself: this head's native save
+            //  dialog. The page resolves it and hands it to the view model's file-save
+            //  bridge; everything else, the drawing session included, lives in the view model
+            services.AddSingleton<IFileSavePicker, WinRtFileSavePicker>();
         });
         SimpleViewModel.SetIsDesignMode(false);
 

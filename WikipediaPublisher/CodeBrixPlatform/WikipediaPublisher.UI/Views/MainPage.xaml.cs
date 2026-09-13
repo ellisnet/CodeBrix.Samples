@@ -37,15 +37,17 @@ public sealed partial class MainPage : Page
 
     private void InitializeBrowser()
     {
-        if (_browserInitialized || DataContext is not MainViewModel viewModel) { return; }
+        //Reached through the bridge interface, not the concrete view model type: the page needs
+        //  nothing from the view model beyond the three members the browser contract names.
+        if (_browserInitialized || DataContext is not IWebViewBridge browser) { return; }
         _browserInitialized = true;
 
         //Use CoreWebView2.Source (the authoritative current URL after redirects / user
         //  navigation); the XAML Browser.Source property does not reliably reflect those.
         Browser.NavigationCompleted += (_, _) =>
-            viewModel.SetCurrentBrowserUrl(Browser.CoreWebView2?.Source ?? Browser.Source?.AbsoluteUri);
+            browser.SetCurrentBrowserUrl(Browser.CoreWebView2?.Source ?? Browser.Source?.AbsoluteUri);
 
-        viewModel.NavigateToUrl = url =>
+        browser.NavigateToUrl = url =>
         {
             if (!string.IsNullOrWhiteSpace(url))
             {
@@ -53,18 +55,16 @@ public sealed partial class MainPage : Page
             }
         };
 
-        Browser.Source = new Uri(MainViewModel.HomeUrl);
+        //The view model owns the start page too, so every navigation flows the same way.
+        browser.NotifyBrowserReady();
     }
 
     //Pressing Enter in the search box runs Search, just like clicking the button.
     private void SearchBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
-        if (e.Key == Windows.System.VirtualKey.Enter
-            && DataContext is MainViewModel { SearchCommand: var search }
-            && search.CanExecute(null))
+        if (e.Key == Windows.System.VirtualKey.Enter && DataContext is MainViewModel viewModel)
         {
-            search.Execute(null);
-            e.Handled = true;
+            e.Handled = viewModel.SubmitSearch();
         }
     }
 
@@ -82,10 +82,9 @@ public sealed partial class MainPage : Page
         if (file == null) { return null; }
 
         //Some heads percent-encode the path they return, which would save "My Article.pdf" as
-        //  "My%20Article.pdf"; decode it before anything touches the disk.
-        var path = FileDialogHelper.ToFileSystemPath(file.Path);
-
-        FileDialogHelper.RemoveEmptyPlaceholder(path);
-        return path;
+        //  "My%20Article.pdf"; decode it before anything touches the disk. Decoding is the only
+        //  thing the page does to the path: what to make of an empty file already sitting there
+        //  is application policy, and the view model applies it for every head.
+        return FileDialogHelper.ToFileSystemPath(file.Path);
     }
 }

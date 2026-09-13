@@ -70,6 +70,9 @@ gracefully when a head has no file dialog or the host has no ffmpeg.
   state: [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
 - Give each tree row its own small view model and load its children the first time it
   expands: [Load a tree lazily as the user expands it](../BLUEPRINTS-MVVM.md#load-a-tree-lazily-as-the-user-expands-it).
+- Start a load from a property setter that cannot await it, through a helper whose
+  only job is to observe how the task ends:
+  [Start work you cannot await through a helper that observes it](../BLUEPRINTS-MVVM.md#start-work-you-cannot-await-through-a-helper-that-observes-it).
 - Discard an async result that arrives after the user has moved on to another
   selection: [Ignore a stale async result when the selection moved on](../BLUEPRINTS-MVVM.md#ignore-a-stale-async-result-when-the-selection-moved-on).
 - Swap placeholders and content with computed `Visibility` properties instead of
@@ -205,8 +208,10 @@ NotionDocumentCreator/
                                             and Views/MainPage.xaml(.cs), compiled into every head
     NotionDocumentCreator.Core/             The class library every head references; it carries all
                                             the shared packages and the application's view models
-      Helpers/                              HostHelper (the host-builder provider) and
-                                            FileDialogHelper (picker path cleanup)
+      Helpers/                              HostHelper (the host-builder provider),
+                                            FileDialogHelper (picker path cleanup) and
+                                            BackgroundWork (start and observe, for callers
+                                            that cannot await)
       ViewModels/                           MainViewModel with its IFileSaveBridge, and
                                             NotionPageNodeViewModel for one tree row
     NotionDocumentCreator.LinuxX11/         Head: Program.cs plus one runtime package
@@ -287,7 +292,13 @@ preview, create the document. The implementation is registered as a singleton by
 method, and `src/NotionDocumentCreator.UI/App.xaml.cs` calls that inside `SimpleServiceResolver.CreateInstance()`
 at startup. `MainViewModel` then resolves `INotionDocumentService` with
 `GetService<T>()` and never touches a Notion type, a PDF type or an HTTP client
-itself. Read those two small files first, then `Services/NotionDocumentService.cs`
+itself. It has to resolve rather than receive: the page's XAML creates the view model
+(`<Page.DataContext><vm:MainViewModel /></Page.DataContext>`), so the parser calls a
+constructor that takes no arguments, which is also why the constructor opens with the
+design-mode guard and why everything a head must supply arrives afterwards, in the
+page's `DataContextChanged` handler. A view model that genuinely needed constructor
+injection could not be built this way and would have to be resolved from
+`SimpleServiceResolver` instead. Read those two small files first, then `Services/NotionDocumentService.cs`
 to see how much sits behind them. The payoff is visible in the tests: the test
 project references the library directly, with no head and no window, because there
 is nothing in it that needs one.
@@ -329,7 +340,11 @@ a single placeholder child when the node reports children, which is what keeps t
 expand chevron visible before anything has been fetched, and expanding the row asks
 the parent view model to fetch the real children exactly once. `MainViewModel.LoadChildrenForNodeAsync`
 does the call and marshals the replacement back with `InvokeOnMainThread`; a failure
-writes to the status line and leaves the row usable. Note that checking is fully
+writes to the status line and leaves the row usable. Expansion arrives as a property
+setter, which cannot await, so the load is handed to
+`src/NotionDocumentCreator.Core/Helpers/BackgroundWork.cs`: its one method starts the
+task and observes how it ends, so nothing is left unobserved and no failure can escape
+into the expand gesture. The same helper starts the preview load. Note that checking is fully
 independent per node, by design: a checked grandchild under an unchecked parent still
 becomes a chapter, and `SelectionFlattening.FlattenDepthFirst()` in the library
 produces the depth-first order that both the view model and the service use, so the
@@ -349,7 +364,8 @@ Blueprints: [Normalize a user entered ID or URL before calling an API](../BLUEPR
 [Load a tree lazily as the user expands it](../BLUEPRINTS-MVVM.md#load-a-tree-lazily-as-the-user-expands-it),
 [Bind a TreeView to a view model tree with checkboxes](../BLUEPRINTS-ViewsAndControls.md#bind-a-treeview-to-a-view-model-tree-with-checkboxes),
 [Ignore a stale async result when the selection moved on](../BLUEPRINTS-MVVM.md#ignore-a-stale-async-result-when-the-selection-moved-on),
-[Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties).
+[Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties),
+[Start work you cannot await through a helper that observes it](../BLUEPRINTS-MVVM.md#start-work-you-cannot-await-through-a-helper-that-observes-it).
 
 ### Being a good citizen of someone else's API
 
@@ -415,20 +431,24 @@ sees a null delegate and tells the user, through a dialog, to type the full path
 the box instead. A head that registers a picker but cannot host one throws
 `NotSupportedException`, which is caught separately and answered the same way. Either
 way the output path is an ordinary bound `TextBox`, so the application is fully usable
-with no dialog anywhere. The other sharp edge is the path itself: `src/NotionDocumentCreator.Core/Helpers/FileDialogHelper.cs`
+with no dialog anywhere. The other sharp edge is the path itself, and it is split
+deliberately. The page does the plumbing: `src/NotionDocumentCreator.Core/Helpers/FileDialogHelper.cs`
 decodes the percent-encoded path the Linux desktop-portal pickers return, so a file
 called `My Book.pdf` is not written to disk under a literal `My%20Book.pdf`, and it
 does so only when the text really carries escapes, leaving Win32 and WPF paths
-untouched. That file also removes the empty placeholder file the picker creates for a
-brand-new name, so the application's own "replace existing file?" prompt fires only
-for a real, non-empty file; a file with content in it is never deleted. Both of these
-are policy about the saved document, so in your own application let the page return
-the raw chosen path and put that policy in the view model or in the service that
-writes the file.
+untouched. That is all the page does; what it returns is the chosen path and nothing
+more. The policy is the view model's: `DoSelectOutputFile()` calls the same helper's
+`RemoveEmptyPlaceholder()` on the path it was handed, so the empty placeholder file
+the picker creates for a brand-new name is cleared away and the application's own
+"replace existing file?" prompt fires only for a real, non-empty file; a file with
+content in it is never deleted. Deciding what a chosen path means is application
+behavior, and it belongs on the same side of the bridge as the command that acts on
+it.
 
 Blueprints: [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model),
 [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show),
-[Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns).
+[Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns),
+[Keep picker plumbing in the page and picker policy in the view model](../BLUEPRINTS-PlatformServices.md#keep-picker-plumbing-in-the-page-and-picker-policy-in-the-view-model).
 
 ### Embedded fonts, exact coverage, and no empty boxes
 
@@ -581,8 +601,9 @@ run. Two of them add something, and both additions are instructive.
 `src/NotionDocumentCreator.LinuxFrameBuffer/Program.cs` opts into the save picker and the
 software keyboard, which are off by default on a head with no OS chrome; the comment
 there is blunt about why this application needs the keyboard badly, since the user has
-to type a long token. Copy that file with one change: it restricts the picker to a fixed
-folder path, and yours should compute a folder rather than name one.
+to type a long token. It also restricts the picker to one folder, and it works that
+folder out at run time from the current user's home directory rather than writing a
+path into the source, so the same head runs unchanged on whatever device it reaches.
 `src/NotionDocumentCreator.WinWpfSkia/Program.cs` reaches for the built host, checks it is
 the WPF host, and forces the software render surface before running. The remaining four
 are identical apart from the backend they name. That uniformity is the point: the head
@@ -592,7 +613,8 @@ behavior.
 Blueprints: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
 [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head),
 [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head),
-[Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
+[Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds),
+[Compute the framebuffer picker's folders from the environment](../BLUEPRINTS-AppStructureAndStartup.md#compute-the-framebuffer-pickers-folders-from-the-environment).
 
 ### Testing a document by reading the document, not the PDF
 

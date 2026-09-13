@@ -47,7 +47,8 @@ public sealed class AssetFact
 /// documents, beside a facts panel).
 /// </summary>
 [Microsoft.UI.Xaml.Data.Bindable]
-public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBridge
+public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBridge,
+    ICatalogGridBridge, IViewerPaneBridge
 {
     /// <summary>The settings.sqlite key holding the user's chosen assets folder.</summary>
     public const string AssetsFolderKey = "KenneyAssetBrowser.Settings.AssetsFolder";
@@ -86,6 +87,15 @@ public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBr
     private ViewerMode _viewerMode = ViewerMode.None;
     private SKBitmap _viewerBitmap;
     private LoadedModel _currentModel;
+
+    //Whether the current clip has run to its end. A finished clip leaves the transport parked
+    //at the end, where Play() has nothing left to play, so the next Play rewinds first.
+    private bool _audioPlaybackEnded;
+
+    //How close to the duration still counts as "parked at the end". The player refreshes its
+    //position on an interval (150 ms by default), so the last value it reports before ending
+    //can sit just short of the duration.
+    private static readonly TimeSpan AudioEndTolerance = TimeSpan.FromMilliseconds(250);
 
     /// <summary>Creates the view model and, when an assets folder is already configured, loads its catalog.</summary>
     public MainViewModel()
@@ -187,7 +197,22 @@ public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBr
     public SimpleCommand ShowLicenseCommand => field ??=
         new SimpleCommand((Func<object, Task>)(_ => ShowLicenseAsync()));
 
+    //The constructor starts this without awaiting it, so a failure has nowhere to surface:
+    //it becomes the sidebar's caption rather than an unobserved task.
     private async Task ReloadCatalogAsync()
+    {
+        try
+        {
+            await ReloadCatalogCoreAsync();
+        }
+        catch (Exception ex)
+        {
+            IsCatalogLoading = false;
+            BundleCountText = $"Could not read this folder: {ex.Message}";
+        }
+    }
+
+    private async Task ReloadCatalogCoreAsync()
     {
         IsCatalogLoading = true;
         CloseViewer();
@@ -366,17 +391,33 @@ public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBr
         {
             //Superseded by more typing.
         }
+        catch (Exception ex)
+        {
+            //An async void handler: nothing can catch a failure out here, so the rebuild's
+            //own failure becomes the grid's caption instead of escaping.
+            ResultCountText = $"Could not filter this bundle: {ex.Message}";
+        }
     }
 
     #endregion
 
     #region | Browsing grid |
 
+    /// <inheritdoc />
+    public Action ScrollCatalogToTop { get; set; }
+
     /// <summary>The lazily-loading asset cells the grid displays.</summary>
     public AssetCellCollection Cells
     {
         get;
-        private set => SetProperty(ref field, value);
+        private set
+        {
+            SetProperty(ref field, value);
+
+            //A fresh collection means the user switched bundle, searched or re-filtered:
+            //the grid goes back to the top.
+            ScrollCatalogToTop?.Invoke();
+        }
     }
 
     /// <summary>The result-count caption, e.g. <c>296 assets · Brick Kit</c>.</summary>
@@ -513,15 +554,23 @@ public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBr
 
     #region | Viewer |
 
+    /// <inheritdoc />
+    public Action ViewerOpened { get; set; }
+
     /// <summary>Whether the Viewer View is active (otherwise the Browsing View shows).</summary>
     public bool IsViewerActive
     {
         get;
         private set
         {
+            var wasActive = field;
             SetProperty(ref field, value);
             NotifyPropertyChanged(nameof(BrowsingViewVisibility));
             NotifyPropertyChanged(nameof(ViewerViewVisibility));
+
+            //The viewer has just opened: the page checks whether its 3D preview canvas can
+            //render at all, which is the one thing about this view only the view knows.
+            if (value && !wasActive) { ViewerOpened?.Invoke(); }
         }
     }
 
@@ -576,21 +625,82 @@ public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBr
     /// <inheritdoc />
     public Action<bool> SetAudioLooping { get; set; }
 
-    /// <summary>Starts (or resumes) audio playback.</summary>
-    public SimpleCommand PlayAudioCommand => field ??= new SimpleCommand(() => PlayAudio?.Invoke());
+    /// <inheritdoc />
+    public Func<bool> IsAudioPlaying { get; set; }
+
+    /// <inheritdoc />
+    public Func<TimeSpan> AudioPosition { get; set; }
+
+    /// <inheritdoc />
+    public Func<TimeSpan> AudioDuration { get; set; }
+
+    /// <inheritdoc />
+    public Action<TimeSpan> SeekAudio { get; set; }
+
+    /// <summary>Whether a clip is loaded in the player (the transport buttons gate on this).</summary>
+    [AffectsCommands(nameof(PlayAudioCommand), nameof(PauseAudioCommand),
+        nameof(StopAudioCommand), nameof(ToggleAudioLoopCommand))]
+    public bool HasAudioClip
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    }
+
+    /// <summary>Starts (or resumes) audio playback; a clip parked at its end replays instead.</summary>
+    public SimpleCommand PlayAudioCommand => field ??= new SimpleCommand(CanUseAudioTransport, DoPlayAudio);
 
     /// <summary>Pauses audio playback.</summary>
-    public SimpleCommand PauseAudioCommand => field ??= new SimpleCommand(() => PauseAudio?.Invoke());
+    public SimpleCommand PauseAudioCommand => field ??=
+        new SimpleCommand(CanUseAudioTransport, () => PauseAudio?.Invoke());
 
     /// <summary>Stops audio playback and rewinds.</summary>
-    public SimpleCommand StopAudioCommand => field ??= new SimpleCommand(() => StopAudio?.Invoke());
+    public SimpleCommand StopAudioCommand => field ??=
+        new SimpleCommand(CanUseAudioTransport, StopAudioPlayback);
 
     /// <summary>Toggles whether audio playback loops.</summary>
-    public SimpleCommand ToggleAudioLoopCommand => field ??= new SimpleCommand(() =>
+    public SimpleCommand ToggleAudioLoopCommand => field ??= new SimpleCommand(CanUseAudioTransport, () =>
     {
         IsAudioLooping = !IsAudioLooping;
         SetAudioLooping?.Invoke(IsAudioLooping);
     });
+
+    private bool CanUseAudioTransport() => HasAudioClip;
+
+    //Starts (or resumes) the audio clip. A clip that has played through to its end leaves the
+    //transport parked at the end, where Play() alone has nothing left to play - so rewind first
+    //and let one click replay the clip. Two things deliberately do NOT rewind: a player that is
+    //still going (a looping clip reports playback ended on every pass), and a clip the user has
+    //scrubbed away from the end since it finished - there, the thumb is the intent, so resume
+    //from where they left it.
+    private void DoPlayAudio()
+    {
+        if (!CanUseAudioTransport()) { return; }
+
+        if (_audioPlaybackEnded
+            && IsAudioPlaying?.Invoke() == false
+            && AudioDuration?.Invoke() > TimeSpan.Zero
+            && AudioPosition?.Invoke() >= AudioDuration.Invoke() - AudioEndTolerance)
+        {
+            SeekAudio?.Invoke(TimeSpan.Zero);
+        }
+
+        _audioPlaybackEnded = false;
+        PlayAudio?.Invoke();
+    }
+
+    //Stops the transport and forgets that the clip was parked at its end
+    private void StopAudioPlayback()
+    {
+        _audioPlaybackEnded = false;
+        StopAudio?.Invoke();
+    }
+
+    /// <summary>
+    /// Tells the view model that the clip has run through to its end, which is what makes the
+    /// next Play replay it rather than do nothing. The page forwards its player element's
+    /// playback-ended event here in one line.
+    /// </summary>
+    public void NotifyAudioPlaybackEnded() => _audioPlaybackEnded = true;
 
     /// <summary>Whether audio playback loops (drives the loop button's caption).</summary>
     public bool IsAudioLooping
@@ -723,6 +833,7 @@ public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBr
     public Visibility AudioViewerVisibility => _viewerMode == ViewerMode.Audio ? Visibility.Visible : Visibility.Collapsed;
 
     /// <summary>The zoom toolbar's visibility (2D viewer only).</summary>
+    [AffectsCommands(nameof(ZoomInCommand), nameof(ZoomOutCommand), nameof(ZoomResetCommand))]
     public Visibility ZoomBarVisibility => ImageViewerVisibility;
 
     /// <summary>The spritesheet region list's visibility.</summary>
@@ -740,7 +851,8 @@ public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBr
         if (cell == null) { return; }
 
         //Whatever was playing or animating stops before the next asset opens
-        StopAudio?.Invoke();
+        StopAudioPlayback();
+        HasAudioClip = false;
         ResetAnimationState();
 
         try
@@ -905,7 +1017,9 @@ public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBr
 
         IsAudioLooping = false;
         SetAudioLooping?.Invoke(false);
+        _audioPlaybackEnded = false;
         LoadAudioSource?.Invoke(audioStream);
+        HasAudioClip = LoadAudioSource != null;
         SetViewerMode(ViewerMode.Audio,
             LoadAudioSource == null ? "audio playback is not available on this head" : string.Empty);
     }
@@ -1050,7 +1164,8 @@ public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBr
     private void CloseViewer()
     {
         IsViewerActive = false;
-        StopAudio?.Invoke();
+        StopAudioPlayback();
+        HasAudioClip = false;
         ResetAnimationState();
         SetViewerMode(ViewerMode.None, string.Empty, activateViewer: false);
 
@@ -1171,18 +1286,22 @@ public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBr
     public string ZoomText => $"{ImagePainter.ZoomFactor * 100:0}%";
 
     /// <summary>Zooms the 2D viewer in one step.</summary>
-    public SimpleCommand ZoomInCommand => field ??= new SimpleCommand(() => AdjustZoom(1.25f));
+    public SimpleCommand ZoomInCommand => field ??= new SimpleCommand(CanZoom, () => AdjustZoom(1.25f));
 
     /// <summary>Zooms the 2D viewer out one step.</summary>
-    public SimpleCommand ZoomOutCommand => field ??= new SimpleCommand(() => AdjustZoom(0.8f));
+    public SimpleCommand ZoomOutCommand => field ??= new SimpleCommand(CanZoom, () => AdjustZoom(0.8f));
 
     /// <summary>Resets the 2D viewer's zoom to fit.</summary>
-    public SimpleCommand ZoomResetCommand => field ??= new SimpleCommand(() =>
+    public SimpleCommand ZoomResetCommand => field ??= new SimpleCommand(CanZoom, () =>
     {
         ImagePainter.ZoomFactor = 1f;
         NotifyPropertyChanged(nameof(ZoomText));
         InvalidateImageCanvas?.Invoke();
     });
+
+    //Only the 2D viewer has a zoom; the toolbar carrying these is shown with the same test,
+    //and SetViewerMode's notification for it is what refreshes them.
+    private bool CanZoom() => _viewerMode == ViewerMode.Image;
 
     /// <summary>
     /// Applies one wheel notch of zoom from the page's pointer-wheel handler.
@@ -1195,6 +1314,39 @@ public class MainViewModel : SimpleViewModel, IImageCanvasBridge, IAudioPlayerBr
         ImagePainter.ZoomFactor = Math.Clamp(ImagePainter.ZoomFactor * factor, 0.25f, 16f);
         NotifyPropertyChanged(nameof(ZoomText));
         InvalidateImageCanvas?.Invoke();
+    }
+
+    #endregion
+
+    #region | IDisposable implementation |
+
+    /// <inheritdoc />
+    public override void Dispose()
+    {
+        //Every bridge delegate captures the page, and would hold it alive through the view model
+        InvalidateImageCanvas = null;
+        ScrollCatalogToTop = null;
+        ViewerOpened = null;
+        LoadAudioSource = null;
+        PlayAudio = null;
+        PauseAudio = null;
+        StopAudio = null;
+        SetAudioLooping = null;
+        IsAudioPlaying = null;
+        AudioPosition = null;
+        AudioDuration = null;
+        SeekAudio = null;
+
+        //Both of these are released on every normal transition (bundle switch, catalog reload,
+        //viewer close); this is the one that closes the last of each at shutdown.
+        CloseViewer();
+        DisposeArchive();
+
+        var debounce = _searchDebounce;
+        _searchDebounce = null;
+        debounce?.Dispose();
+
+        base.Dispose();
     }
 
     #endregion

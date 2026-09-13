@@ -12,7 +12,7 @@ namespace PalmVisualizer.Camera;
 public class CameraCanvas : SkiaSharp.Views.Windows.SKXamlCanvas { }
 
 /// <summary>
-/// Renders a capture service's most recent webcam frame onto a Skia surface - aspect-fit,
+/// Renders a frame source's most recent webcam frame onto a Skia surface - aspect-fit,
 /// centered on a black background, and optionally mirrored (selfie-style). Create one
 /// renderer per canvas; the frame buffers it caches are reused across paints and are only
 /// touched on the UI thread.
@@ -27,15 +27,15 @@ public sealed class WebcamFrameRenderer
     /// </summary>
     /// <param name="surface">The Skia surface to render onto.</param>
     /// <param name="info">The image info describing the surface.</param>
-    /// <param name="service">The capture service to pull the frame from; nothing renders when null.</param>
+    /// <param name="frameSource">The frame source to pull the frame from; nothing renders when null.</param>
     /// <param name="mirror"><c>true</c> to flip the video left-to-right, like a mirror.</param>
-    public void Render(SKSurface surface, SKImageInfo info, WebcamCaptureService service, bool mirror)
+    public void Render(SKSurface surface, SKImageInfo info, IWebcamFrameSource frameSource, bool mirror)
     {
         SKCanvas canvas = surface.Canvas;
         canvas.Clear(SKColors.Black);
 
-        if (service == null
-            || !service.TryCopyLatestFrame(ref _frameBuffer, out int width, out int height)
+        if (frameSource == null
+            || !frameSource.TryCopyLatestFrame(ref _frameBuffer, out int width, out int height)
             || width <= 0 || height <= 0)
         {
             return;

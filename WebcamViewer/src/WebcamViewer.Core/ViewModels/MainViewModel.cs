@@ -35,6 +35,25 @@ public interface ICanvasInvalidator
     Action InvalidateCanvas { get; set; }
 }
 
+/// <summary>
+/// Lets the canvas renderer pull the most recent webcam frame without knowing which
+/// concrete view model produced it. The hosting page resolves its data context through this
+/// interface and hands it to the renderer from the paint handler.
+/// </summary>
+public interface IVideoFrameSource
+{
+    /// <summary>
+    /// Copies the most recent video frame (tightly packed BGRA) into <paramref name="buffer"/>,
+    /// which is (re)allocated when its length does not match the frame. Returns false when no
+    /// frame has arrived yet, which is a normal state rather than an error.
+    /// </summary>
+    /// <param name="buffer">The caller's pixel buffer; replaced when it is the wrong size.</param>
+    /// <param name="width">The frame width in pixels, or 0 when there is no frame.</param>
+    /// <param name="height">The frame height in pixels, or 0 when there is no frame.</param>
+    /// <returns>True when a frame was copied out.</returns>
+    bool TryGetLatestFrame(ref byte[] buffer, out int width, out int height);
+}
+
 /// <summary>One entry in the connected-cameras dropdown.</summary>
 public class CameraOption
 {
@@ -52,7 +71,7 @@ public class CameraOption
 }
 
 [Microsoft.UI.Xaml.Data.Bindable]
-public class MainViewModel : SimpleViewModel, IFolderPickBridge, ICanvasInvalidator
+public class MainViewModel : SimpleViewModel, IFolderPickBridge, ICanvasInvalidator, IVideoFrameSource
 {
     private WebcamSession _session;
 

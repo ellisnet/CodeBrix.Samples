@@ -4,7 +4,6 @@ using CodeBrix.Platform.WinUI.Graphics3DGL;
 using KenneyAssetBrowser.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Data;
 using System;
 using System.Threading.Tasks;
 
@@ -17,15 +16,6 @@ public sealed partial class MainPage : Page
     //Whether the "3D preview unavailable" dialog has been shown already (once per app run).
     private bool _renderingUnavailableReported;
 
-    //Whether the current clip has run to its end. A finished clip leaves the transport parked
-    //at the end, where Play() has nothing left to play, so the next Play rewinds first.
-    private bool _audioPlaybackEnded;
-
-    //How close to the duration still counts as "parked at the end". The player refreshes its
-    //position on an interval (150 ms by default), so the last value it reports before ending
-    //can sit just short of the duration.
-    private static readonly TimeSpan AudioEndTolerance = TimeSpan.FromMilliseconds(250);
-
     public MainPage()
     {
         DataContextChanged += (_, _) =>
@@ -36,57 +26,52 @@ public sealed partial class MainPage : Page
 
             if (DataContext is MainViewModel viewModel)
             {
+                //Each bridge is filled in through the interface the view model implements
+                //rather than through the concrete type, so what the page owes it is explicit.
+                IImageCanvasBridge canvasBridge = viewModel;
+                ICatalogGridBridge catalogBridge = viewModel;
+                IViewerPaneBridge viewerBridge = viewModel;
+                IAudioPlayerBridge audioBridge = viewModel;
+
                 //Marshal 2D-canvas invalidations from the view model onto the UI thread
-                viewModel.InvalidateImageCanvas = () => DispatcherQueue?.TryEnqueue(() => ImageCanvas?.Invalidate());
+                canvasBridge.InvalidateImageCanvas = () => DispatcherQueue?.TryEnqueue(() => ImageCanvas?.Invalidate());
+
+                //A new cell collection means the user switched bundle, searched or
+                //re-filtered: jump back to the top.
+                catalogBridge.ScrollCatalogToTop = () =>
+                    CatalogScroll.ChangeView(null, 0, null, disableAnimation: true);
+
+                //The user just opened the Viewer View: if the GL canvas already knows its
+                //OpenGL initialization failed, tell them why the preview pane is empty.
+                viewerBridge.ViewerOpened = () => _ = MaybeReportRenderingUnavailableAsync();
 
                 //Audio bridge: the view model hands over the clip's raw stream and transport
                 //calls; the AudioPlayer element does the decoding and playing (it takes
-                //stream ownership)
-                viewModel.LoadAudioSource = stream =>
-                {
-                    _audioPlaybackEnded = false;
-                    AudioElement?.SetSourceStream(stream);
-                };
-                viewModel.PlayAudio = PlayAudio;
-                viewModel.PauseAudio = () => AudioElement?.Pause();
-                viewModel.StopAudio = () =>
-                {
-                    _audioPlaybackEnded = false;
-                    AudioElement?.Stop();
-                };
-                viewModel.SetAudioLooping = looping =>
+                //stream ownership). The last four members are the transport facts the view
+                //model's replay policy reads back, plus the seek it uses to rewind.
+                audioBridge.LoadAudioSource = stream => AudioElement?.SetSourceStream(stream);
+                audioBridge.PlayAudio = () => AudioElement?.Play();
+                audioBridge.PauseAudio = () => AudioElement?.Pause();
+                audioBridge.StopAudio = () => AudioElement?.Stop();
+                audioBridge.SetAudioLooping = looping =>
                 {
                     if (AudioElement != null) { AudioElement.IsLooping = looping; }
                 };
-
-                viewModel.PropertyChanged += (_, args) =>
-                {
-                    //A new cell collection means the user switched bundle, searched or
-                    //re-filtered: jump back to the top.
-                    if (args.PropertyName == nameof(MainViewModel.Cells))
-                    {
-                        CatalogScroll.ChangeView(null, 0, null, disableAnimation: true);
-                    }
-
-                    //The user just opened the Viewer View: if the GL canvas already knows its
-                    //OpenGL initialization failed, tell them why the preview pane is empty.
-                    if (args.PropertyName == nameof(MainViewModel.IsViewerActive))
-                    {
-                        _ = MaybeReportRenderingUnavailableAsync();
-                    }
-                };
+                audioBridge.IsAudioPlaying = () => AudioElement?.IsPlaying ?? false;
+                audioBridge.AudioPosition = () => AudioElement?.Position ?? TimeSpan.Zero;
+                audioBridge.AudioDuration = () => AudioElement?.Duration ?? TimeSpan.Zero;
+                audioBridge.SeekAudio = position => AudioElement?.Seek(position);
             }
         };
 
         InitializeComponent();
 
-        //A clip that plays through to its end parks the transport at the end; remember that so
-        //the next Play can rewind instead of doing nothing. Looping clips raise this too, but
-        //they keep playing, and PlayAudio only rewinds a player that has actually stopped.
-        AudioElement.PlaybackEnded += (_, _) => _audioPlaybackEnded = true;
+        //A clip that plays through to its end parks the transport at the end; the view model
+        //remembers that so the next Play can rewind instead of doing nothing.
+        AudioElement.PlaybackEnded += (_, _) => ViewModel?.NotifyAudioPlaybackEnded();
 
         //The canvas may only attempt its OpenGL initialization when it loads into the visual
-        //tree, which can happen after IsViewerActive is set - so check at both moments.
+        //tree, which can happen after the viewer opens - so check at both moments.
         ModelCanvas.Loaded += (_, _) => _ = MaybeReportRenderingUnavailableAsync();
 
         //The 2D viewer: the view model's painter draws images and spritesheets (checkerboard,
@@ -115,7 +100,8 @@ public sealed partial class MainPage : Page
         };
 
         //Lazy grid loading: as the grid scrolls within two screens of its bottom edge,
-        //ask the cell collection to materialize the next batch.
+        //ask the cell collection to materialize the next batch (how big a batch is the
+        //collection's own policy).
         CatalogScroll.ViewChanged += (_, _) =>
         {
             var cells = ViewModel?.Cells;
@@ -124,31 +110,9 @@ public sealed partial class MainPage : Page
             var remaining = CatalogScroll.ExtentHeight - CatalogScroll.VerticalOffset - CatalogScroll.ViewportHeight;
             if (remaining < CatalogScroll.ViewportHeight * 2)
             {
-                cells.RequestMore(24);
+                cells.RequestMore(AssetCellCollection.ScrollBatch);
             }
         };
-    }
-
-    //Starts (or resumes) the audio clip. A clip that has played through to its end leaves the
-    //transport parked at the end, where Play() alone has nothing left to play - so rewind first
-    //and let one click replay the clip. Two things deliberately do NOT rewind: a player that is
-    //still going (a looping clip raises PlaybackEnded on every pass), and a clip the user has
-    //scrubbed away from the end since it finished - there, the thumb is the intent, so resume
-    //from where they left it.
-    private void PlayAudio()
-    {
-        if (AudioElement == null) { return; }
-
-        if (_audioPlaybackEnded
-            && !AudioElement.IsPlaying
-            && AudioElement.Duration > TimeSpan.Zero
-            && AudioElement.Position >= AudioElement.Duration - AudioEndTolerance)
-        {
-            AudioElement.Seek(TimeSpan.Zero);
-        }
-
-        _audioPlaybackEnded = false;
-        AudioElement.Play();
     }
 
     //When the Viewer View is active and the preview canvas reports failed OpenGL initialization,
@@ -167,21 +131,4 @@ public sealed partial class MainPage : Page
             await viewModel.ShowRenderingUnavailableAsync(state);
         }
     }
-}
-
-/// <summary>
-/// Formats an AudioPlayer position/duration <see cref="TimeSpan"/> for the audio scrubber's
-/// two timecode labels. The tenth of a second is deliberate: most of what an asset pack ships
-/// is a sound effect well under a second long, and a plain m:ss would show "0:00 / 0:00" for
-/// the whole clip.
-/// </summary>
-public sealed class TimecodeConverter : IValueConverter
-{
-    /// <inheritdoc />
-    public object Convert(object value, Type targetType, object parameter, string language)
-        => value is TimeSpan time ? $"{(int)time.TotalMinutes}:{time.Seconds:00}.{time.Milliseconds / 100}" : "0:00.0";
-
-    /// <inheritdoc />
-    public object ConvertBack(object value, Type targetType, object parameter, string language)
-        => throw new NotSupportedException();
 }

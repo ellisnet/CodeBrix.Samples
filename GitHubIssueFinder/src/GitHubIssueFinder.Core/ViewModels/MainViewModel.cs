@@ -33,12 +33,35 @@ public interface IColorSchemeApplier
 }
 
 /// <summary>
+/// The other half of the same bridge: what the page tells the view model about color schemes.
+/// The page hands over the thing that paints them and reports the operating system's preference,
+/// and reaches the view model through this interface rather than through its concrete type.
+/// </summary>
+public interface IManageColorScheme
+{
+    /// <summary>
+    /// Gives the view model the page that paints schemes, and the operating system's current
+    /// preference, then paints the chosen scheme once.
+    /// </summary>
+    /// <param name="applier">The page.</param>
+    /// <param name="osPrefersDark">True when the operating system prefers a dark appearance.</param>
+    void AttachSchemeApplier(IColorSchemeApplier applier, bool osPrefersDark);
+
+    /// <summary>
+    /// Tells the view model that the operating system's light or dark preference changed. It only
+    /// repaints when the user is following the operating system.
+    /// </summary>
+    /// <param name="osPrefersDark">True when the operating system now prefers a dark appearance.</param>
+    void OnSystemThemeChanged(bool osPrefersDark);
+}
+
+/// <summary>
 /// The page's view model: the two logins and the closed-issues switch, the scheme picker, the
 /// grouped results, and the search itself. Results arrive a page at a time while the search runs,
 /// and every one of them is folded into the groups on the UI thread.
 /// </summary>
 [Microsoft.UI.Xaml.Data.Bindable]
-public class MainViewModel : SimpleViewModel
+public class MainViewModel : SimpleViewModel, IManageColorScheme
 {
     private const string StillLoading = " · still loading";
     private const string UnknownRepository = "(unknown repository)";
@@ -46,6 +69,7 @@ public class MainViewModel : SimpleViewModel
     private static readonly TimeSpan QuotaRecoveryInterval = TimeSpan.FromSeconds(1);
 
     private readonly IGitHubIssueSearchService _searchService;
+    private readonly bool _ownsSearchService;
     private readonly Dictionary<string, RepositoryGroupViewModel> _groupsByRepository =
         new Dictionary<string, RepositoryGroupViewModel>(StringComparer.OrdinalIgnoreCase);
 
@@ -81,8 +105,14 @@ public class MainViewModel : SimpleViewModel
     {
         if (IsDesignMode(true)) { return; } //Leave as the first line of constructor
 
-        _searchService = GetService<IGitHubIssueSearchService>()
-            ?? new GitHubIssueSearchService(new GitHubSearchOptions());
+        _searchService = GetService<IGitHubIssueSearchService>();
+        if (_searchService == null)
+        {
+            //Nothing registered the service, so the view model builds its own and is then the
+            //thing that has to close its connection pool when it goes.
+            _searchService = new GitHubIssueSearchService(new GitHubSearchOptions());
+            _ownsSearchService = true;
+        }
 
         Groups = new ObservableCollection<RepositoryGroupViewModel>();
         StatusBrush = new SolidColorBrush();
@@ -499,12 +529,7 @@ public class MainViewModel : SimpleViewModel
 
     #region | Theming |
 
-    /// <summary>
-    /// Gives the view model the page that paints schemes, and the operating system's current
-    /// preference, then paints the chosen scheme once.
-    /// </summary>
-    /// <param name="applier">The page.</param>
-    /// <param name="osPrefersDark">True when the operating system prefers a dark appearance.</param>
+    /// <inheritdoc />
     public void AttachSchemeApplier(IColorSchemeApplier applier, bool osPrefersDark)
     {
         _schemeApplier = applier;
@@ -513,11 +538,7 @@ public class MainViewModel : SimpleViewModel
         ApplyCurrentScheme();
     }
 
-    /// <summary>
-    /// Tells the view model that the operating system's light or dark preference changed. It only
-    /// repaints when the user is following the operating system.
-    /// </summary>
-    /// <param name="osPrefersDark">True when the operating system now prefers a dark appearance.</param>
+    /// <inheritdoc />
     public void OnSystemThemeChanged(bool osPrefersDark)
     {
         if (_osPrefersDark == osPrefersDark) { return; }
@@ -979,6 +1000,13 @@ public class MainViewModel : SimpleViewModel
             }
 
             _groupsByRepository.Clear();
+
+            //Only the instance this view model built itself; a registered one belongs to the
+            //container that handed it over and is shared with whatever else resolved it.
+            if (_ownsSearchService && _searchService is IDisposable ownService)
+            {
+                ownService.Dispose();
+            }
         }
 
         base.Dispose(disposing);

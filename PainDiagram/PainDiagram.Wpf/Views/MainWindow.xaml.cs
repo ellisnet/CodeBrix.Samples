@@ -3,7 +3,6 @@ using PainDiagram.ViewModels;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
 
 namespace PainDiagram.Views;
 
@@ -31,45 +30,8 @@ public partial class MainWindow : Window
 
         InitializeComponent();
 
-        #region | Add event handling for our DrawCanvas element |
-
-        DrawCanvas.PaintSurface += (_, e) => ViewModel?.Session?.Render(e.Surface, e.Info);
-
-        DrawCanvas.MouseDown += (_, e) =>
-        {
-            var session = ViewModel?.Session;
-            if (session == null || e.ChangedButton != MouseButton.Left) { return; }
-
-            if (session.PointerPressed(DrawCanvasHelper.GetPointFromPosition(e.GetPosition(DrawCanvas)), DrawCanvas.GetViewSize()))
-            {
-                DrawCanvas.CaptureMouse();
-                e.Handled = true;
-            }
-        };
-
-        DrawCanvas.MouseMove += (_, e) =>
-        {
-            var session = ViewModel?.Session;
-            if (session is not { IsPointerActive: true }) { return; }
-
-            session.PointerMoved(DrawCanvasHelper.GetPointFromPosition(e.GetPosition(DrawCanvas)), DrawCanvas.GetViewSize());
-            e.Handled = true;
-        };
-
-        DrawCanvas.MouseUp += (_, e) =>
-        {
-            var session = ViewModel?.Session;
-            if (e.ChangedButton != MouseButton.Left || session is not { IsPointerActive: true }) { return; }
-
-            session.PointerReleased();
-            DrawCanvas.ReleaseMouseCapture();
-            e.Handled = true;
-        };
-
-        //If capture is lost mid-stroke (e.g. the window deactivates), discard the stroke
-        DrawCanvas.LostMouseCapture += (_, _) => ViewModel?.Session?.PointerCanceled();
-
-        #endregion
+        //Paint, press, move, release and capture-lost all go straight to the drawing session
+        DrawCanvas.BindToSession(() => ViewModel?.Session);
     }
 
     private void InvalidateDrawCanvas()

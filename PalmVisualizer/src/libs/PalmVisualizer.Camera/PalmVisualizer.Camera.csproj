@@ -5,9 +5,9 @@
 
   <ItemGroup>
     <!-- Webcam capture: device enumeration and live BGRA frames -->
-    <PackageReference Include="CodeBrix.Webcam.LgplLicenseForever" Version="3.0.209.207" />
+    <PackageReference Include="CodeBrix.Webcam.LgplLicenseForever" Version="3.0.252.10" />
 
     <!-- SKXamlCanvas - the SkiaSharp video surface hosted in CodeBrix.Platform XAML -->
-    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.151.0" />
+    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.152.0" />
   </ItemGroup>
 </Project>

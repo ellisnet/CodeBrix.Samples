@@ -141,6 +141,21 @@ public static class ColorSchemes
     ];
 
     /// <summary>
+    /// Reads the operating system's light or dark preference out of the color it says it would
+    /// paint a window with, which is the form every head reports that preference in. The weights
+    /// are the usual perceived-brightness ones, and a ground below the mid point is a dark one.
+    /// </summary>
+    /// <param name="red">The red component of the desktop's window background.</param>
+    /// <param name="green">The green component of the desktop's window background.</param>
+    /// <param name="blue">The blue component of the desktop's window background.</param>
+    /// <returns>True when the operating system prefers a dark appearance.</returns>
+    public static bool PrefersDark(byte red, byte green, byte blue)
+    {
+        var brightness = (red * 0.299d) + (green * 0.587d) + (blue * 0.114d);
+        return brightness < 128d;
+    }
+
+    /// <summary>
     /// Turns a choice into the scheme actually drawn. Every choice but
     /// <see cref="ColorScheme.SystemDefault"/> is itself; that one becomes Light or Dark.
     /// </summary>

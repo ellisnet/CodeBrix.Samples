@@ -9,6 +9,11 @@ namespace NotionDocumentCreator.CreateDocument.Internal;
 /// common punctuation). Characters outside those ranges — for example Cuneiform,
 /// CJK or Arabic glyphs quoted inline in a page — would otherwise render as
 /// "tofu" boxes in the PDF, which ruins a printed page.
+/// <para>
+/// This is the superseded, range-table approach, kept for reference only: nothing in the
+/// library calls it. The live path asks the embedded fonts what they actually cover, one
+/// code point at a time, in <see cref="RichTextWriter"/> and <see cref="FontCoverage"/>.
+/// </para>
 /// </summary>
 internal static class GlyphFilter
 {

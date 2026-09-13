@@ -84,6 +84,9 @@ work with progress and cancellation from a SimpleViewModel.
   [Notify a value typed bindable property by hand](../BLUEPRINTS-MVVM.md#notify-a-value-typed-bindable-property-by-hand).
 - Keep a view-model constructor safe for the XAML designer with one guard line:
   [Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
+- Wrap every `async void` the platform calls - a finished event, a page event - in
+  one `try` so a failure lands in the status line instead of on the dispatcher:
+  [Guard an async void handler the platform calls](../BLUEPRINTS-MVVM.md#guard-an-async-void-handler-the-platform-calls).
 - Ask a person which file to open from a command, through a bridge the head
   fills in and the view model degrades without:
   [Pick a file to open through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#pick-a-file-to-open-through-a-native-dialog-from-the-view-model).
@@ -140,6 +143,9 @@ work with progress and cancellation from a SimpleViewModel.
 - Drive the whole application end to end on a real head, from environment
   variables, through the view model's own commands:
   [Drive a scripted end-to-end run of the whole application](../BLUEPRINTS-Testing.md#drive-a-scripted-end-to-end-run-of-the-whole-application).
+- Keep the scripted run in the Core library and let the page answer only what the
+  screen knows, through one small interface:
+  [Move a scripted run into the library behind a surface interface](../BLUEPRINTS-Testing.md#move-a-scripted-run-into-the-library-behind-a-surface-interface).
 - Set up an xUnit v3 test project the way the family does, and know how to run
   it when a plain `dotnet test` finds nothing:
   [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library).
@@ -220,10 +226,10 @@ Substitute `CodeBrixVideoTool.LinuxWayland`, `CodeBrixVideoTool.MacOS` or
 ### The scripted run
 
 Any head will drive itself end to end when `CODEBRIXVIDEOTOOL_SMOKE` is set; the
-other three variables tune the run. They are read in
-`src/CodeBrixVideoTool.UI/Views/MainPage.xaml.cs`, and the run prints
-`CBVT-SMOKE:` lines and exits with 0 or 1. With the first variable unset the
-application behaves exactly as it always does.
+other three variables tune the run. They are read by `SmokeOptions` in
+`src/CodeBrixVideoTool.Core/Smoke/`, and the run prints `CBVT-SMOKE:` lines and
+exits with 0 or 1. With the first variable unset the application behaves exactly
+as it always does.
 
 | Variable | Meaning |
 | --- | --- |
@@ -283,12 +289,16 @@ CodeBrixVideoTool/
       CodeBrixVideoTool.UI.shproj         The shared project
       CodeBrixVideoTool.UI.projitems      The shared item list (Page and Compile items)
       App.xaml, App.xaml.cs               Palette, theme brushes, fonts, codecs, services, logging
-      Views/MainPage.xaml(.cs)            The one page, the player element, and the scripted run
+      Views/MainPage.xaml(.cs)            The one page, the player element, and what a scripted run reads off the screen
     CodeBrixVideoTool.Core/               The library that carries the application's packages
       Helpers/HostHelper.cs               The IHostBuilderProvider SimpleServiceResolver builds from
       Services/IMediaFileBridge.cs        The "pick a file to open" bridge
       ViewModels/MainViewModel.cs         The file list, the selection, and the two child view models
       Converters/TimecodeConverter.cs     TimeSpan to m:ss or h:mm:ss for the transport
+      Smoke/SmokeOptions.cs               What a scripted run was asked for, read from the environment
+      Smoke/ISmokeSurface.cs              The little a scripted run can only read off the screen
+      Smoke/SmokeFrameCounts.cs           The player element's frame counters at one moment
+      Smoke/SmokeRun.cs                   The scripted run: the sequence of checks and what it prints
     CodeBrixVideoTool.LinuxX11/           Head: Linux X11
     CodeBrixVideoTool.LinuxWayland/       Head: Linux Wayland
     CodeBrixVideoTool.MacOS/              Head: macOS
@@ -598,17 +608,26 @@ source, using the name the planner suggests, and carries on. The planner refuses
 a plan whose output path resolves to the source path, so even the fallback path
 is checked.
 
+Each bridge is handed over through the interface that declares it rather than
+through the view model's own type - the data context as `IMediaFileBridge`, the
+conversion view model as `IOutputPathBridge` - so what the page depends on is the
+contract and nothing more, and a page handed something else simply wires nothing.
+
 The page's own halves are small and defensive: each picker is wrapped in a
 `try`/`catch (NotSupportedException)` returning null, because a head with no
-windowing system registers no picker extensions. The page also hands the data
-context a `XamlRoot` **getter** - not the root itself, since the root is read
+windowing system registers no picker extensions. The label the save dialog puts
+on its file-type filter is not the page's to invent either: it comes from
+`MediaFormats.DescribeExtension()`, beside the rest of the format policy. The
+page also hands the data context a `XamlRoot` **getter** - not the root itself, since the root is read
 each time a dialog is shown - in the same `DataContextChanged` handler that
 wires the bridges, with `InitializeComponent()` left last in the constructor so
 the handler is subscribed before the XAML sets the data context. See
 [Pick a file to open through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#pick-a-file-to-open-through-a-native-dialog-from-the-view-model),
-[Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model)
+[Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model),
+[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show),
+[Assign every bridge through the interface that declares it](../BLUEPRINTS-PlatformServices.md#assign-every-bridge-through-the-interface-that-declares-it)
 and
-[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+[Build a file dialog's filter list in the format registry](../BLUEPRINTS-DocumentsAndData.md#build-a-file-dialogs-filter-list-in-the-format-registry).
 
 The bridges being delegate properties is also what makes the application
 scriptable: replacing the output-path delegate with one that returns a fixed
@@ -657,7 +676,9 @@ unknown one into three outcome values so its caller has a single exit path.
 `OperationCanceledException` is always caught before the general handlers,
 everywhere, so a cancel is never reported as a failure - and every message says
 what to do about the problem rather than only what went wrong. See
-[Report a domain rule violation as a typed exception the view model can catch](../BLUEPRINTS-MVVM.md#report-a-domain-rule-violation-as-a-typed-exception-the-view-model-can-catch).
+[Report a domain rule violation as a typed exception the view model can catch](../BLUEPRINTS-MVVM.md#report-a-domain-rule-violation-as-a-typed-exception-the-view-model-can-catch)
+and
+[Guard an async void handler the platform calls](../BLUEPRINTS-MVVM.md#guard-an-async-void-handler-the-platform-calls).
 
 ### What is unit-tested, and what the scripted run covers instead
 
@@ -670,18 +691,26 @@ methods over plain values, and the view models are thin observable wrappers that
 call them, keep the collections and raise the notifications.
 
 What is left - a real head, a real player element, a real visual tree - is
-covered by the scripted run instead. It drives the **view model's own commands
-and properties**: it substitutes the output-path bridge, executes `RunCommand`,
-awaits the `ConversionFinished` event through a `TaskCompletionSource`, and then
-polls with a bounded retry loop before asserting, because the library add and
-the player open both happen off that event. Only the parts that must read the
-visual tree touch the page directly - to prove the row dimming is real rather
-than merely configured, it lays out the list, gets the container for an item,
-walks the tree to the named row and compares the opacity of a dimmed row against
-a playable one. It also asserts that a standard MKV *fails* the streamable
-profile, because that is the expected result. See
+covered by the scripted run instead. The run is `SmokeRun` in
+`src/CodeBrixVideoTool.Core/Smoke/` rather than code-behind: it owns what a run
+asks for, the sequence of checks and the `CBVT-SMOKE:` reporting format, and it
+drives the **view models' own commands and properties**: it substitutes the
+output-path bridge, executes `RunCommand`, awaits the `ConversionFinished` event
+through a `TaskCompletionSource`, and then polls with a bounded retry loop before
+asserting, because the library add and the player open both happen off that
+event. The few facts that can only be read off the screen reach it through
+`ISmokeSurface`, which the page implements over its own controls: what the player
+element says about duration, position, chapters, caption tracks and frames, what
+the quality drop-down and the run-notes panel are showing, and the opacity a
+file's row is really being drawn at. That last one is why the visual-tree walk
+stays in the page - to prove the row dimming is real rather than merely
+configured, the page lays out the list, gets the container for an item, walks the
+tree to the named row and reads its opacity, and the run compares a dimmed row
+against a playable one. The run also asserts that a standard MKV *fails* the
+streamable profile, because that is the expected result. See
 [Keep view model rules in a plain class so they can be tested](../BLUEPRINTS-Testing.md#keep-view-model-rules-in-a-plain-class-so-they-can-be-tested),
 [Drive a scripted end-to-end run of the whole application](../BLUEPRINTS-Testing.md#drive-a-scripted-end-to-end-run-of-the-whole-application),
+[Move a scripted run into the library behind a surface interface](../BLUEPRINTS-Testing.md#move-a-scripted-run-into-the-library-behind-a-surface-interface),
 [Share one expensive fixture across every test class that needs it](../BLUEPRINTS-Testing.md#share-one-expensive-fixture-across-every-test-class-that-needs-it)
 and
 [Generate real media clips from a synthetic source](../BLUEPRINTS-Testing.md#generate-real-media-clips-from-a-synthetic-source).

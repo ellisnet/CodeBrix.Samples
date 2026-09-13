@@ -40,49 +40,7 @@ public sealed partial class MainPage : Page
 
         InitializeComponent();
 
-        #region | Add event handling for our DrawCanvas element |
-
-        DrawCanvas.PaintSurface += (_, e) => ViewModel?.Session?.Render(e.Surface, e.Info);
-
-        DrawCanvas.PointerPressed += (_, e) =>
-        {
-            var session = ViewModel?.Session;
-            if (session == null) { return; }
-
-            var pointerPoint = e.GetCurrentPoint(DrawCanvas);
-            if (!pointerPoint.Properties.IsLeftButtonPressed) { return; }
-
-            if (session.PointerPressed(DrawCanvasHelper.GetPointFromPosition(pointerPoint.Position), DrawCanvas.GetViewSize()))
-            {
-                DrawCanvas.CapturePointer(e.Pointer);
-                e.Handled = true;
-            }
-        };
-
-        DrawCanvas.PointerMoved += (_, e) =>
-        {
-            var session = ViewModel?.Session;
-            if (session is not { IsPointerActive: true }) { return; }
-
-            session.PointerMoved(DrawCanvasHelper.GetPointFromPosition(e.GetCurrentPoint(DrawCanvas).Position), DrawCanvas.GetViewSize());
-            e.Handled = true;
-        };
-
-        DrawCanvas.PointerReleased += (_, e) =>
-        {
-            var session = ViewModel?.Session;
-            if (session is not { IsPointerActive: true }) { return; }
-
-            session.PointerReleased();
-            DrawCanvas.ReleasePointerCapture(e.Pointer);
-            e.Handled = true;
-        };
-
-        //If capture is lost mid-stroke (e.g. the window deactivates), discard the stroke
-        DrawCanvas.PointerCaptureLost += (_, _) => ViewModel?.Session?.PointerCanceled();
-
-        DrawCanvas.SizeChanged += (_, _) => DrawCanvas.Invalidate();
-
-        #endregion
+        //Paint, press, move, release and capture-lost all go straight to the drawing session
+        DrawCanvas.BindToSession(() => ViewModel?.Session);
     }
 }

@@ -28,11 +28,16 @@ public sealed partial class MainPage : Page
             //Give the view model's SimpleDialog helpers a XamlRoot to attach dialogs to
             (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
 
-            if (ViewModel != null)
+            if (DataContext is ICanvasBridge canvasBridge)
             {
                 //Raised on the decoding thread: hop to the user-interface thread and mark the canvas dirty
-                ViewModel.InvalidateVideoCanvas = () => DispatcherQueue?.TryEnqueue(InvalidateVideoCanvas);
-                ViewModel.PickSaveCubePathAsync = PickSaveCubePathAsync;
+                canvasBridge.InvalidateVideoCanvas = () => DispatcherQueue?.TryEnqueue(InvalidateVideoCanvas);
+            }
+
+            if (DataContext is IFileSaveBridge fileSave)
+            {
+                //The bake's destination: this head has a picker, and a head without one wires nothing
+                fileSave.PickSaveCubePathAsync = PickSaveCubePathAsync;
             }
         };
 
@@ -48,16 +53,26 @@ public sealed partial class MainPage : Page
     {
         if (gpuCanvas != null) { return; }
 
-        //The GPU canvas is built here rather than in XAML because constructing it is what starts the
-        //  graphics API, and that must not happen inside InitializeComponent().
-        gpuCanvas = new SkiaGLCanvasElement();
-        gpuCanvas.PaintSurface += OnGpuPaintSurface;
-        VideoHost.Children.Insert(0, gpuCanvas);
+        try
+        {
+            //The GPU canvas is built here rather than in XAML because constructing it is what starts the
+            //  graphics API, and that must not happen inside InitializeComponent().
+            gpuCanvas = new SkiaGLCanvasElement();
+            gpuCanvas.PaintSurface += OnGpuPaintSurface;
+            VideoHost.Children.Insert(0, gpuCanvas);
 
-        CpuCanvas.SizeChanged += (_, _) => CpuCanvas.Invalidate();
+            CpuCanvas.SizeChanged += (_, _) => CpuCanvas.Invalidate();
 
-        //IsGpuInitialized reads null until the element has loaded and tried to start OpenGL.
-        await Task.Delay(600);
+            //IsGpuInitialized reads null until the element has loaded and tried to start OpenGL.
+            await Task.Delay(600);
+        }
+        catch (Exception exception)
+        {
+            //Nothing may escape an async void handler. A graphics API that refused to start is not a
+            //  crash here either: the settle below collapses the canvas that did not start, and the
+            //  view model is told it is on the processor.
+            Debug.WriteLine($"SimpleCbxVideoPlayer: the GPU canvas could not be started - {exception.Message}");
+        }
 
         DispatcherQueue?.TryEnqueue(SettleVideoSurface);
     }

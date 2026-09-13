@@ -27,4 +27,16 @@ public interface IAudioPlayerBridge
 
     /// <summary>Sets whether playback loops.</summary>
     Action<bool> SetAudioLooping { get; set; }
+
+    /// <summary>Whether the player is currently advancing.</summary>
+    Func<bool> IsAudioPlaying { get; set; }
+
+    /// <summary>The player's position within the clip.</summary>
+    Func<TimeSpan> AudioPosition { get; set; }
+
+    /// <summary>The loaded clip's duration.</summary>
+    Func<TimeSpan> AudioDuration { get; set; }
+
+    /// <summary>Moves the player to a position within the clip.</summary>
+    Action<TimeSpan> SeekAudio { get; set; }
 }

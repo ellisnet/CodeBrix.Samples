@@ -14,8 +14,9 @@ namespace WebcamViewer.Video;
 public class VideoCanvas : SkiaSharp.Views.Windows.SKXamlCanvas { }
 
 /// <summary>
-/// Renders the view model's most recent webcam frame onto a Skia surface, aspect-fit and
-/// centered on a black background. Called from the canvas PaintSurface handler (always on
+/// Renders the most recent webcam frame onto a Skia surface, aspect-fit and centered on a
+/// black background. The frame comes from an <see cref="IVideoFrameSource"/>, so nothing here
+/// knows which view model produced it. Called from the canvas PaintSurface handler (always on
 /// the UI thread, so the cached buffers need no locking of their own).
 /// </summary>
 public static class VideoCanvasHelper
@@ -28,14 +29,14 @@ public static class VideoCanvasHelper
     /// </summary>
     /// <param name="surface">The Skia surface to render onto.</param>
     /// <param name="info">The image info describing the surface.</param>
-    /// <param name="viewModel">The view model to pull the frame from; nothing renders when null.</param>
-    public static void RenderFrame(SKSurface surface, SKImageInfo info, MainViewModel viewModel)
+    /// <param name="frameSource">The frame source to pull from; nothing renders when null.</param>
+    public static void RenderFrame(SKSurface surface, SKImageInfo info, IVideoFrameSource frameSource)
     {
         SKCanvas canvas = surface.Canvas;
         canvas.Clear(SKColors.Black);
 
-        if (viewModel == null
-            || !viewModel.TryGetLatestFrame(ref _frameBuffer, out int width, out int height)
+        if (frameSource == null
+            || !frameSource.TryGetLatestFrame(ref _frameBuffer, out int width, out int height)
             || width <= 0 || height <= 0)
         {
             return;

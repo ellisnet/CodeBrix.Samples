@@ -19,9 +19,9 @@ public sealed partial class MainPage : Page
         {
             (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
 
-            if (DataContext is IWebViewBridge bridge)
+            if (DataContext is IWebViewBridge browser)
             {
-                bridge.NavigateToUrl = url =>
+                browser.NavigateToUrl = url =>
                 {
                     if (!string.IsNullOrWhiteSpace(url))
                     {
@@ -44,17 +44,17 @@ public sealed partial class MainPage : Page
         Browser.NavigationCompleted += (sender, args) =>
             (DataContext as IWebViewBridge)?.SetCurrentBrowserUrl(
                 sender.CoreWebView2?.Source ?? Browser.Source?.AbsoluteUri);
+
+        //The view model owns the start page too, so every navigation flows the same way.
+        (DataContext as IWebViewBridge)?.NotifyBrowserReady();
     }
 
     //Pressing Enter in the search box runs Search, just like clicking the button.
     private void SearchBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
-        if (e.Key == Windows.System.VirtualKey.Enter
-            && DataContext is MainViewModel { SearchCommand: var search }
-            && search.CanExecute(null))
+        if (e.Key == Windows.System.VirtualKey.Enter && DataContext is MainViewModel viewModel)
         {
-            search.Execute(null);
-            e.Handled = true;
+            e.Handled = viewModel.SubmitSearch();
         }
     }
 

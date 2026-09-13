@@ -19,8 +19,8 @@ internal class Program
                  .EnableSoftwareKeyboard(new SoftwareKeyboardOptions{
                     ShowDismissKey = true,  //default behavior = true
                     //ShowDismissKey = false,
-                    //KeyHeight = SoftwareKeyHeight.FullHeight,  //default behavior = FullHeight
-                    KeyHeight = SoftwareKeyHeight.HalfHeight,
+                    //KeyHeight = SoftwareKeyHeight.PortraitFullLandscapeFull,  //default behavior = FullHeight
+                    KeyHeight = SoftwareKeyHeight.PortraitHalfLandscapeHalf,
                 })           
             )
             .UseDirectSkiaCanvasMode()

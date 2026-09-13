@@ -44,6 +44,21 @@ pipeline for a different purpose.
 - Populate a camera dropdown asynchronously at startup, auto-start the first device, and
   switch devices without leaving two sessions running:
   [Enumerate cameras and start a live capture session](../BLUEPRINTS-MediaAndVision.md#enumerate-cameras-and-start-a-live-capture-session).
+- Open a camera on a worker thread from a selection setter, so a slow device cannot stall the
+  UI thread:
+  [Do blocking work in a service behind Task Run](../BLUEPRINTS-MVVM.md#do-blocking-work-in-a-service-behind-task-run).
+- Let a device that finishes opening late say nothing, because the user has already picked
+  another one:
+  [Ignore a stale async result when the selection moved on](../BLUEPRINTS-MVVM.md#ignore-a-stale-async-result-when-the-selection-moved-on).
+- Start the switch from the selection setter with a version number, and let only the newest
+  switch write the status line:
+  [Switch devices off the UI thread and let the newest switch report](../BLUEPRINTS-MVVM.md#switch-devices-off-the-ui-thread-and-let-the-newest-switch-report).
+- Open a capture device off the UI thread while the service that owns it keeps two devices
+  from being opened at once:
+  [Serialize a device's control calls inside the service that owns it](../BLUEPRINTS-MediaAndVision.md#serialize-a-devices-control-calls-inside-the-service-that-owns-it).
+- Let the page's frame renderer pull pixels through a one-call interface the camera library
+  declares, so no capture service and no view model type appears in the render path:
+  [Put the one call frame source in the camera library](../BLUEPRINTS-MediaAndVision.md#put-the-one-call-frame-source-in-the-camera-library).
 - Put live video inside a XAML layout with an `SKXamlCanvas` subclass and a renderer that
   aspect-fits, mirrors and reuses its buffers:
   [Show live video on an SKXamlCanvas subclass](../BLUEPRINTS-ViewsAndControls.md#show-live-video-on-an-skxamlcanvas-subclass).
@@ -118,6 +133,9 @@ pipeline for a different purpose.
 - Give `SimpleServiceResolver` a generic host builder from a single helper compiled once in
   the Core library:
   [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
+- Register the capture service, the palm tracker and the session factory behind interfaces
+  with one extension method the App constructor calls:
+  [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
 - Make a bundled font the default for every head by pointing at the `.ttf` through an
   `ms-appx:///` URI:
   [Set a bundled font as the default text font and register script fallbacks](../BLUEPRINTS-AppStructureAndStartup.md#set-a-bundled-font-as-the-default-text-font-and-register-script-fallbacks).
@@ -212,6 +230,7 @@ PalmVisualizer/
     PalmVisualizer.UI/                 Shared project (.shproj + .projitems): App.xaml(.cs), Views/MainPage.xaml(.cs)
     PalmVisualizer.Core/               The library every head references; carries the shared packages
       Helpers/HostHelper.cs            The host-builder provider SimpleServiceResolver builds its container from
+      RegisterServices.cs              AddPalmVisualizer(): binds the three service interfaces to their implementations
       ViewModels/MainViewModel.cs      All application logic; also declares ICanvasBridge and IManageGameCanvas
     PalmVisualizer.LinuxX11/           Head: X11. Program.cs plus its packages
     PalmVisualizer.LinuxWayland/       Head: Wayland
@@ -220,10 +239,10 @@ PalmVisualizer/
     PalmVisualizer.Win32Skia/          Head: Windows Win32
     PalmVisualizer.WinWpfSkia/         Head: Windows WPF host; net10.0-windows + EnableWindowsTargeting
     libs/
-      PalmVisualizer.Camera/           Webcam capture service, the CameraDevice wrapper, the canvas and its frame renderer
+      PalmVisualizer.Camera/           Webcam capture service and its interfaces, the CameraDevice wrapper, the canvas and its frame renderer
       PalmVisualizer.Vision/           Palm-tracking pipeline: worker thread, embedded models, OpenCV DNN inference
         Internal/                      PalmDetector, HandLandmarker, OpenPalmClassifier - not part of the public surface
-      PalmVisualizer.Rendering/        The Visualize Mode scene: engine session, SkSL backdrop, palm attractor smoothing
+      PalmVisualizer.Rendering/        The Visualize Mode scene: engine session and its factory, SkSL backdrop, palm attractor smoothing
   tests/
     libs/
       PalmVisualizer.Camera.Tests/     Mirrors src/libs/PalmVisualizer.Camera
@@ -263,7 +282,7 @@ Third-party libraries:
 | Library | What it does in this application | Where |
 | --- | --- | --- |
 | SkiaSharp | `SKSurface`, `SKCanvas`, `SKBitmap`, `SKPaint`, and the runtime-effect types that compile and feed the SkSL shader; its native-asset packages are referenced by the Rendering test project so the shader tests can run | `PalmVisualizer/src/libs/PalmVisualizer.Camera/CameraCanvas.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealBackdrop.cs`, `PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/PalmVisualizer.Rendering.Tests.csproj` |
-| Microsoft.Extensions.Hosting | `Host.CreateDefaultBuilder()`, wrapped by `HostHelper` and handed to `SimpleServiceResolver` | `PalmVisualizer/src/PalmVisualizer.Core/Helpers/HostHelper.cs` |
+| Microsoft.Extensions.Hosting | `Host.CreateDefaultBuilder()`, wrapped by `HostHelper` and handed to `SimpleServiceResolver`, and the `IServiceCollection` the application's services are registered into | `PalmVisualizer/src/PalmVisualizer.Core/Helpers/HostHelper.cs`, `PalmVisualizer/src/PalmVisualizer.Core/RegisterServices.cs` |
 | Microsoft.Extensions.Logging.Console | The Debug-only console logger factory installed in `App.InitializeLogging()` | `PalmVisualizer/src/PalmVisualizer.UI/App.xaml.cs` |
 | xUnit v3 and Microsoft.Testing.Platform | The test framework and the runner for all three test projects | The three test csproj files, `PalmVisualizer/global.json` |
 
@@ -286,58 +305,97 @@ region of `PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`. 
 and
 [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 
+### Three collaborators, resolved rather than constructed
+
+The view model drives a capture service, a palm tracker and a visualizer session, and it names
+none of their concrete types. The Camera library declares `IWebcamCaptureService`, the Vision
+library declares `IPalmTracker`, and the Rendering library declares `IVisualizerSessionFactory`
+alongside the `IVisualizerSession` it hands back. `RegisterServices.AddPalmVisualizer()` in the
+Core project binds each interface to its implementation, and the `App` constructor calls that
+one method inside the `SimpleServiceResolver.CreateInstance` callback, which is where the
+template leaves the registration block. `MainViewModel` resolves all three with
+`GetService<T>()` on its first working constructor lines, each with a plain `new` behind `??`
+so a head that registered nothing still runs. That is what makes the view model drivable
+without hardware: a capture service that replays recorded frames, a tracker that reports
+scripted palms and a factory that returns a session doing nothing all satisfy the same
+interfaces. Read `PalmVisualizer/src/PalmVisualizer.Core/RegisterServices.cs` and
+`PalmVisualizer/src/PalmVisualizer.UI/App.xaml.cs`, then the constructor of
+`PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`. See
+[Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method)
+and
+[Register a factory and let the view model ask it for what it owns](../BLUEPRINTS-AppStructureAndStartup.md#register-a-factory-and-let-the-view-model-ask-it-for-what-it-owns).
+
 ### Camera discovery, selection and the mirrored preview
 
-`WebcamCaptureService` in the Camera library is the whole capture model: a static discovery
-method, `Start()`, `Stop()`, `HasFrame`, `TryCopyLatestFrame()` and a `FrameArrived` event.
-The view model owns one, holds the discovered devices in an `ObservableCollection`, and
-switches cameras from the `SelectedCamera` setter. Discovery is kicked off from the
-constructor as fire-and-forget after setting a "Discovering cameras…" status, its results are
-marshaled with `InvokeOnMainThread`, and every failure path writes to the same status line
-rather than throwing out of the constructor. An empty device list is treated as a normal
-state, not an error. `Start()` calls `Stop()` first so switching cameras never leaves two
-sessions running, and `Stop()` unsubscribes before disposing and clears the frame flag so a
-stale frame from the previous camera cannot be drawn; the flag itself is `volatile` because
-the capture thread writes it and the UI thread reads it. The dropdown binds to `CameraDevice`,
+`WebcamCaptureService` in the Camera library is the whole capture model: camera discovery,
+`Start()`, `Stop()`, `HasFrame`, `TryCopyLatestFrame()` and a `FrameArrived` event, all of it
+reachable through `IWebcamCaptureService`. The view model resolves one, holds the discovered
+devices in an `ObservableCollection`, and starts a camera switch from the `SelectedCamera`
+setter. Discovery is kicked off from the constructor as fire-and-forget after setting a
+"Discovering cameras…" status, its results are marshaled with `InvokeOnMainThread`, and every
+failure path writes to the same status line rather than throwing out of the constructor. An
+empty device list is treated as a normal state, not an error. Opening a device can take long
+enough to be felt, so the setter only kicks the switch off: the start (or the stop, when the
+selection is cleared) runs on a worker thread, the capture service serializes its own start
+and stop so two devices are never opened at once, and a version counter means only the newest
+switch reports - a camera that finishes opening late cannot overwrite the status of the one
+the user has since chosen. `Start()` calls
+`Stop()` first so switching cameras never leaves two sessions running, and `Stop()`
+unsubscribes before disposing and clears the frame flag so a stale frame from the previous
+camera cannot be drawn; the flag itself is `volatile` because the capture thread writes it and
+the UI thread reads it. The dropdown binds to `CameraDevice`,
 a sealed wrapper with an internal constructor whose `ToString()` returns the friendly name,
 so no item template is needed and the view model never handles a capture-library type. Read
 `PalmVisualizer/src/libs/PalmVisualizer.Camera/WebcamCaptureService.cs`, then
 `PalmVisualizer/src/libs/PalmVisualizer.Camera/CameraDevice.cs`. See
 [Enumerate cameras and start a live capture session](../BLUEPRINTS-MediaAndVision.md#enumerate-cameras-and-start-a-live-capture-session),
-[Wrap a device library type so the view model never sees it](../BLUEPRINTS-MediaAndVision.md#wrap-a-device-library-type-so-the-view-model-never-sees-it)
+[Wrap a device library type so the view model never sees it](../BLUEPRINTS-MediaAndVision.md#wrap-a-device-library-type-so-the-view-model-never-sees-it),
+[Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor),
+[Do blocking work in a service behind Task Run](../BLUEPRINTS-MVVM.md#do-blocking-work-in-a-service-behind-task-run),
+[Ignore a stale async result when the selection moved on](../BLUEPRINTS-MVVM.md#ignore-a-stale-async-result-when-the-selection-moved-on),
+[Switch devices off the UI thread and let the newest switch report](../BLUEPRINTS-MVVM.md#switch-devices-off-the-ui-thread-and-let-the-newest-switch-report)
 and
-[Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor).
+[Serialize a device's control calls inside the service that owns it](../BLUEPRINTS-MediaAndVision.md#serialize-a-devices-control-calls-inside-the-service-that-owns-it).
 
 Displaying the video is deliberately split. `CameraCanvas` is a one-line `SKXamlCanvas`
 subclass that exists purely so the shared UI project's XAML can name the type from the
 library's namespace, and all the drawing lives in a separate `WebcamFrameRenderer` that takes
-a surface, an image info and the capture service. The renderer clears to black first, so "no
-frame yet" is a black panel rather than garbage; caches its pixel buffer and its `SKBitmap`
-and only recreates the bitmap when the frame size changes; and mirrors by a canvas transform
+a surface, an image info and an `IWebcamFrameSource`. That one-call interface is the whole
+dependency the painting code has: the view model implements it explicitly and forwards to the
+service it resolved, so the page pulls frames without naming a capture service at all. The
+renderer clears to black first, so "no frame yet" is a black panel rather than garbage; caches
+its pixel buffer and its `SKBitmap` and only recreates the bitmap when the frame size changes; and mirrors by a canvas transform
 between a save and a restore rather than by flipping pixels. Its doc comment states the
 ownership rule: one renderer per canvas, touched only on the UI thread. See
-[Show live video on an SKXamlCanvas subclass](../BLUEPRINTS-ViewsAndControls.md#show-live-video-on-an-skxamlcanvas-subclass).
+[Show live video on an SKXamlCanvas subclass](../BLUEPRINTS-ViewsAndControls.md#show-live-video-on-an-skxamlcanvas-subclass)
+and
+[Put the one call frame source in the camera library](../BLUEPRINTS-MediaAndVision.md#put-the-one-call-frame-source-in-the-camera-library).
 
 ### The bridge interfaces the page fills in
 
-`MainViewModel` declares both of its platform seams as interfaces in its own file and
-implements them. `ICanvasBridge` holds a single `Action InvalidatePreviewCanvas`, which the
-page assigns to a delegate that marshals through its own `DispatcherQueue`; the view model
-then calls it from whatever thread it happens to be on, and the null-conditional invocation is
-the graceful-degradation path when no page has supplied one. `IManageGameCanvas` has one
-method, described below. Both are wired in `DataContextChanged`, which
-`MainPage.xaml.cs` subscribes to *before* `InitializeComponent()` because
+`MainViewModel` declares its two page-facing seams as interfaces in its own file and
+implements them, and implements a third that the Camera library declares. `ICanvasBridge`
+holds a single `Action InvalidatePreviewCanvas`, which the page assigns to a delegate that
+marshals through its own `DispatcherQueue`; the view model then calls it from whatever thread
+it happens to be on, and the null-conditional invocation is the graceful-degradation path when
+no page has supplied one. `IManageGameCanvas` has one method, described below.
+`IWebcamFrameSource` is the third: one call that copies the newest frame, which the page's
+preview renderer pulls on every paint. All three are picked up in `DataContextChanged` with an
+`as` cast, which `MainPage.xaml.cs` subscribes to *before* `InitializeComponent()` because
 `InitializeComponent()` may be what sets the data context. The same handler hands the view
 model a `XamlRoot` getter through `IXamlRootGetter`, which costs one line and means
-`SimpleDialog` works the day a dialog is added. Inside the invalidate delegate both the
-dispatcher and the canvas are null-checked, so a repaint requested during teardown is a no-op
-instead of a crash. Read
+`SimpleDialog` works the day a dialog is added. Every one of those seams is assigned through
+the interface rather than the concrete view model type, so the page compiles against contracts
+and a design-time data context simply leaves them null. Inside the invalidate delegate both
+the dispatcher and the canvas are null-checked, so a repaint requested during teardown is a
+no-op instead of a crash. Read
 `PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs` beside the interface
 declarations at the top of
 `PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`. See
-[Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface)
+[Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface),
+[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show)
 and
-[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+[Put the one call frame source in the camera library](../BLUEPRINTS-MediaAndVision.md#put-the-one-call-frame-source-in-the-camera-library).
 
 ### One frame handler, two consumers, one mirror
 
@@ -440,22 +498,25 @@ test file. See
 This is the part most worth copying. The engine can only start against a surface that already
 has a non-zero size, and the game canvas here starts hidden behind the camera preview, so its
 first real size arrives the first time Visualize Mode is shown. The page forwards the canvas's
-`FirstStarted` event to the view model in a single line through `IManageGameCanvas`, and the
-view model builds its `VisualizerSession` and starts it. No engine code lives in the
-code-behind. Starting from the page's `Loaded` event, or from the command that switches modes,
-would run against a zero-sized surface. Order matters in the command as well: setting
+`FirstStarted` event to the view model in a single line through `IManageGameCanvas`, handing
+over itself as the `IGameCanvasHost` the Rendering library defines - one property, the canvas.
+The view model asks the registered `IVisualizerSessionFactory` for a session against that host
+and starts it, so the engine's canvas type stays on the page's side of the seam and the Core
+project names no view type at all. No engine code lives in the code-behind. Starting from the
+page's `Loaded` event, or from the command that switches modes, would run against a zero-sized
+surface. Order matters in the command as well: setting
 `IsCameraMode = false` makes the canvas visible, and therefore raises `FirstStarted` the first
 time through, so it comes *before* the resume call, which is null-safe because on the first
 pass the session does not exist yet. Read the command implementations in
-`PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs` alongside the three
+`PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs` alongside the
 canvas-related lines at the end of
 `PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs`. See
 [Hand the view model a game canvas at its first real layout size](../BLUEPRINTS-GameEngine.md#hand-the-view-model-a-game-canvas-at-its-first-real-layout-size).
 
 `VisualizerSession` owns everything else about the engine lifecycle and exposes `Start()`,
-`Pause()`, `Resume()`, `Stop()` and a thread-safe data-in method; nothing else in the
-application touches the engine singleton. `Start()` runs once per process and the doc comment
-says so: leaving and re-entering the mode is a pause and a resume, not a rebuild. Each of the
+`Pause()`, `Resume()`, `Stop()` and a thread-safe data-in method, which is exactly what
+`IVisualizerSession` declares; nothing else in the application touches the engine singleton.
+`Start()` runs once per process and the doc comment says so: leaving and re-entering the mode is a pause and a resume, not a rebuild. Each of the
 four methods is guarded, so double calls are harmless. The GPU-or-CPU choice must be made
 before the canvas's host is read for the first time, and the pause deliberately resets the
 attractor field first, so a resumed scene starts undisturbed rather than with a stale hand

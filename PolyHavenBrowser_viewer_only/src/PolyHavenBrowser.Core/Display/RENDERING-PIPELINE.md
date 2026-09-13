@@ -79,8 +79,9 @@ the platform gate:
     architecture (arm64 or x64); every other head is excluded.
 
   Both are policy lists, not driver probes, so an API is never even attempted on a platform that
-  has not been okayed. The head is detected once by scanning for the loaded
-  `CodeBrix.Platform.UI.Runtime.Skia.*` runtime assembly (the detection is shared).
+  has not been okayed. The head is detected once by scanning the loaded assemblies for a
+  `CodeBrix.Platform.UI.Runtime.Skia.*` assembly, which is not referenced by any project here
+  (the detection is shared).
 - `Create(kind, getXamlRoot)` → a fresh engine (the caller owns and disposes it). The
   `getXamlRoot` accessor is used only by the OpenGL engine, to create its offscreen native GL
   context from the hosting page's `XamlRoot`; the Vulkan and Metal engines ignore it.
@@ -167,8 +168,8 @@ cache.
 | `VulkanModelRenderEngine.cs` | Vulkan engine adapter (+ its factory) | **yes** |
 | `MetalModelRenderEngine.cs` | Metal engine adapter (+ its factory) | **yes** |
 
-(The off-screen GL context itself is `CodeBrix.Platform.WinUI.Graphics3DGL.OffscreenGLContext`,
-supplied by the CodeBrix.Platform.Graphics3DGL library — cross-platform,
+(The off-screen GL context type, `CodeBrix.Platform.WinUI.Graphics3DGL.OffscreenGLContext`, arrives through
+the cross-platform CodeBrix.Platform.Graphics3DGL library,
 so there is no app-owned EGL/WGL/GLX class here.)
 
 (The heavy lifting lives in the Rendering library:

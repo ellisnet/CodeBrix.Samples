@@ -8,6 +8,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:KenneyAssetBrowser.Views"
     xmlns:vm="clr-namespace:KenneyAssetBrowser.ViewModels;assembly=KenneyAssetBrowser.Core"
+    xmlns:conv="clr-namespace:KenneyAssetBrowser.Converters;assembly=KenneyAssetBrowser.Core"
     xmlns:flex="clr-namespace:CodeBrix.Platform.UI.FlexPanel;assembly=CodeBrix.Platform.UI.FlexPanel"
     xmlns:skia="clr-namespace:SkiaSharp.Views.Windows;assembly=CodeBrix.Platform.SkiaSharp.Views"
     xmlns:audio="clr-namespace:CodeBrix.Platform.UI.AudioPlayer.Skia;assembly=CodeBrix.Platform.UI.AudioPlayer.Skia"
@@ -72,7 +73,7 @@
 
         <!-- Formats the scrubber's elapsed/duration labels (m:ss.f — asset-pack clips are
              usually well under a second, so the tenth carries the information) -->
-        <local:TimecodeConverter x:Key="TimecodeConverter" />
+        <conv:TimecodeConverter x:Key="TimecodeConverter" />
 
         <!-- The primary (accent) button: the theme's accent style plus app shaping -->
         <ui:Style x:Key="PrimaryButtonStyle" TargetType="c:Button" BasedOn="{StaticResource AccentButtonStyle}">

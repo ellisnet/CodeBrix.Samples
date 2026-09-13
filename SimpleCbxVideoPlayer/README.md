@@ -321,7 +321,10 @@ waits briefly, because the element reports nothing until it has loaded and tried
 whichever canvas it did not settle on, and tells the view model which one it got exactly once. From then on
 one invalidate method repaints whichever canvas is visible, and both paint handlers call the same
 `DrawVideo` on the view model. The graphics context is handed to the presenter inside the GPU paint
-handler, because that is the one moment the context is current.
+handler, because that is the one moment the context is current. The page hands that invalidate over through
+`ICanvasBridge`, the interface the view model implements for it, in the same `DataContextChanged` handler
+that supplies the `XamlRoot` getter and the save dialog, so a head that supplies one of the three and not
+the others wires exactly what it has.
 
 The choice is also exposed to the person using the application, and that is deliberate: "GPU (auto)" takes
 the device when there is one, "CPU" never does, and "GPU only (no fallback)" insists - so when there is no
@@ -332,9 +335,10 @@ Read `src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs` beside the render-path
 [Offer a CPU fallback for a GPU rendering path behind one switch](../BLUEPRINTS-GraphicsAndRendering.md#offer-a-cpu-fallback-for-a-gpu-rendering-path-behind-one-switch),
 [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface),
 [Code to the higher-level graphics package and let the binding arrive transitively](../BLUEPRINTS-ProjectLayoutAndPackaging.md#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively),
-[Settle between a GPU canvas and a CPU canvas and tell the view model which one started](../BLUEPRINTS-GraphicsAndRendering.md#settle-between-a-gpu-canvas-and-a-cpu-canvas-and-tell-the-view-model-which-one-started)
+[Settle between a GPU canvas and a CPU canvas and tell the view model which one started](../BLUEPRINTS-GraphicsAndRendering.md#settle-between-a-gpu-canvas-and-a-cpu-canvas-and-tell-the-view-model-which-one-started),
+[Hand a video presenter the graphics context inside the paint handler that makes it current](../BLUEPRINTS-GraphicsAndRendering.md#hand-a-video-presenter-the-graphics-context-inside-the-paint-handler-that-makes-it-current)
 and
-[Hand a video presenter the graphics context inside the paint handler that makes it current](../BLUEPRINTS-GraphicsAndRendering.md#hand-a-video-presenter-the-graphics-context-inside-the-paint-handler-that-makes-it-current).
+[Guard an async void handler the platform calls](../BLUEPRINTS-MVVM.md#guard-an-async-void-handler-the-platform-calls).
 
 ### The lookup-table panel is a matrix, and the matrix is a testable class
 
@@ -369,13 +373,13 @@ bake a grade, feed the file back at full strength, compare the frames - a real c
 tautology.
 
 Second, the application never chooses a folder. `BakeLocations` supplies only a stamped file name, so two
-bakes in a row do not silently propose the same file, and the page opens the platform's own save dialog
-with no suggested start location, so the dialog opens where that person last was. A cancel writes nothing
-and says nothing, because deciding not to save is not a failure. The picker code is careful in two more
-ways: it marshals onto the user-interface thread first, because a `SimpleCommand` makes no promise about
-which thread runs its handler and a dialog belongs to the window it is shown over, and it deletes the empty
-placeholder the picker creates at a brand-new name, so a bake that fails leaves nothing behind that looks
-like a result. Read `PickSaveCubePathAsync` in `src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs` and
+bakes in a row do not silently propose the same file, and the page, through the `IFileSaveBridge` the view
+model implements, opens the platform's own save dialog with no suggested start location, so the dialog
+opens where that person last was. A cancel writes nothing and says nothing, because deciding not to save is
+not a failure. The picker code is careful in two more ways: it marshals onto the user-interface thread
+first, because a `SimpleCommand` makes no promise about which thread runs its handler and a dialog belongs
+to the window it is shown over, and it deletes the empty placeholder the picker creates at a brand-new
+name, so a bake that fails leaves nothing behind that looks like a result. Read `PickSaveCubePathAsync` in `src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs` and
 `BakeChain` in `src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs`. See
 [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model),
 [Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns),

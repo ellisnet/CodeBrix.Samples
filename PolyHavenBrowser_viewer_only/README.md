@@ -87,14 +87,25 @@ whole Poly Haven library instead of three curated samples.
 - Awaiting a network call and then decoding or mesh-building inside `Task.Run()` so the UI
   thread never blocks:
   [Do blocking work in a service behind Task Run](../BLUEPRINTS-MVVM.md#do-blocking-work-in-a-service-behind-task-run).
+- Handing the result of that background decode back to the UI thread before it reaches a painter,
+  a camera or bound state:
+  [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
+- Starting the first sample load from the view model constructor and naming the task, so a page
+  or a test can await the first display instead of racing it:
+  [Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor).
 - Driving a progress bar and a status line from bound state while a command downloads an asset:
   [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS-MVVM.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
 - Writing bound properties with the C# `field` keyword, `SimpleCommand` commands with a
   `CanExecute` lambda, and `[AffectsCommands]` to refresh them:
   [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
-- Showing and hiding the progress bar and the engine dropdown from computed properties the view
-  model raises by hand:
+- Showing and hiding the progress bar and the engine dropdown from computed `Visibility`
+  properties, one refreshed by `[AffectsProperties]` and one raised by hand:
   [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties).
+- Binding a dropdown straight to the members of an enum, with no label list and no converter:
+  [Bind a picker to enum values with or without friendly labels](../BLUEPRINTS-MVVM.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
+- Releasing the painters, rendering engines, commands and page delegate a view model owns, from
+  the page that created it:
+  [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 - Catching a failed download, decode or engine switch and writing it to the bound status line
   instead of letting it escape:
   [Report a failure as status text instead of throwing](../BLUEPRINTS-MVVM.md#report-a-failure-as-status-text-instead-of-throwing).
@@ -233,15 +244,17 @@ PolyHavenBrowser_viewer_only/
   src/
     PolyHavenBrowser.UI/                   Shared XAML UI (.shproj + .projitems), compiled into every head
       App.xaml / App.xaml.cs               Default font, DI bootstrap, logging, first navigation
-      Views/MainPage.xaml(.cs)             Buttons, engine dropdown, SKXamlCanvas, pointer wiring
+      Views/MainPage.xaml(.cs)             Buttons, engine dropdown, SKXamlCanvas, pointer
+                                             forwarding and coordinate conversion
     PolyHavenBrowser.Core/                 The app library that carries every package the heads need
       RegisterServices.cs                  The one AddPolyHavenBrowser() DI registration
       Helpers/HostHelper.cs                IHostBuilderProvider for SimpleServiceResolver
       Converters/                          BoolToAccentStyleConverter, the selected-button highlight
-      ViewModels/MainViewModel.cs          Sample selection, engine switching, ICanvasInvalidator
+      ViewModels/MainViewModel.cs          Sample selection, engine switching, canvas paint and
+                                             pointer policy, ICanvasInvalidator
       Display/                             The reusable "3D in a CodeBrix view" layer
         RENDERING-PIPELINE.md              In-repo architecture document for this folder
-        IScenePainter.cs                   The paint plus pointer contract the page talks to
+        IScenePainter.cs                   The paint plus pointer contract the view model drives
         IModelRenderEngine.cs              The swappable graphics-API seam, and RenderedFrame
         IModelRenderEngineFactory.cs       Per-backend factories; the OpenGL factory lives here
         IModelRenderEngineSelector.cs      RenderEngineKind, the platform gate, the dropdown source
@@ -334,12 +347,14 @@ below it is one class cluster per API.
 
 The choice is owned by a service, not by the page. `ModelRenderEngineSelector` is registered as a
 singleton in `RegisterServices.cs`, exposes `AvailableKinds` (OpenGL, Vulkan, Metal, in dropdown
-order), answers `IsSupported(kind)` and creates engines on demand. The view model resolves it,
-copies the kind names into a bound list, and binds the selection to a string property; the
-dropdown never sees an engine, a factory or a platform check. `Create()` hands back a fresh engine
-and the caller owns it, so the view model disposes the old painter (which disposes its engine)
-only after the new one is built. Read `IModelRenderEngine.cs`, then `IModelRenderEngineSelector.cs`,
-then `RENDERING-PIPELINE.md` for the diagram.
+order), answers `IsSupported(kind)` and creates engines on demand. The view model resolves it and
+exposes `AvailableKinds` as `RenderEngineKinds`, which the dropdown binds to directly, so the
+choices are the enum members themselves and the selected value is a `RenderEngineKind` rather than
+a parsed string; the dropdown never sees an engine, a factory or a platform check. `Create()`
+hands back a fresh engine and the caller owns it, so the view model disposes the old painter
+(which disposes its engine) only after the new one is built, and disposes the last one itself.
+Read `IModelRenderEngine.cs`, then `IModelRenderEngineSelector.cs`, then `RENDERING-PIPELINE.md`
+for the diagram.
 [Swap the 3D graphics backend at run time from a dropdown](../BLUEPRINTS-GraphicsAndRendering.md#swap-the-3d-graphics-backend-at-run-time-from-a-dropdown)
 
 ### Off-screen OpenGL that never disturbs the head's own renderer
@@ -429,15 +444,18 @@ purpose, tries both draw orders, and exists once per renderer.
 
 ### Switching engines safely: alert, revert, pre-warm
 
-`MainViewModel.SelectedRenderEngineName` is the model for any picker that can offer something the
+`MainViewModel.SelectedRenderEngine` is the model for any picker that can offer something the
 running machine cannot do. The dropdown deliberately lists every kind rather than filtering to the
 supported ones, so the user learns *why* an option is unavailable instead of never seeing it. The
-setter is optimistic: it shows the new selection at once, raises the change, and starts
-`SwitchEngineAsync`. That method asks the selector whether the kind is supported; when it is not,
-it shows a `SimpleDialog` alert built with `CreateDialog(...)` in a `using` block and reverts. The
-revert writes the backing field directly and raises the notification by hand, because going through
-the public setter would re-enter the switch, and its target is `_currentEngineKind`, the engine
-that is actually running, so a second failed switch returns to whatever is really live.
+setter is optimistic: it shows the new selection at once through `SetEnumProperty(...)`, then
+starts the switch. Because that task is discarded, it is started through a small wrapper,
+`RunSwitchEngineAsync`, whose only job is to catch anything `SwitchEngineAsync` lets escape and
+turn it into status text, so nothing is ever left unobserved. `SwitchEngineAsync` asks the selector
+whether the kind is supported; when it is not, it shows a `SimpleDialog` alert built with
+`CreateDialog(...)` in a `using` block and reverts. The revert writes the backing field directly
+and raises the notification by hand, because going through the public setter would re-enter the
+switch, and its target is `_currentEngineKind`, the engine that is actually running, so a second
+failed switch returns to whatever is really live.
 
 A supported platform can still have a missing or broken driver, so before the new engine is handed
 to a paint callback the view model renders one throwaway 1x1 frame inside `Task.Run()`. A failure
@@ -452,7 +470,7 @@ re-displayed from the local cache, so changing engines never touches the network
 
 ### Three sample kinds, one canvas, two painters
 
-`Display/IScenePainter.cs` is the contract the page talks to: `Paint(surface, info)` plus
+`Display/IScenePainter.cs` is the contract the view model drives: `Paint(surface, info)` plus
 `PointerDown`, `PointerDrag`, `PointerSkip`, `PointerUp` and `Zoom`. There are two implementations.
 `ModelScenePainter` wraps whichever `IModelRenderEngine` is current and serves both the texture and
 the model modes. `PanoramaScenePainter` is pure CPU: `EquirectPanoramaRenderer` ray-traces the
@@ -463,15 +481,18 @@ full canvas resolution and drops frames under load, while the panorama painter c
 resolution, with a lower cap while a drag is in progress and the full cap once the drag stops, then
 scales the result up.
 
-`MainViewModel.BuildPainter` is where the three modes differ, and it is worth reading for the
-framing decisions as much as the plumbing. The texture mode decodes the map once and uses it twice,
-as the cube's texture and as the darkened backdrop, then sets `FixedLightDirection` so the faces
-shade distinctly; the default is a camera headlight, which double-sides the lighting and makes a
-cube read as ambiguous because every face gets the same brightness. Camera framing must be set
-*before* `SetModel`, because framing is applied when the pending model is taken up at render time.
-The model mode clears the fixed light and the backdrop and reframes closer with a vertical bias so
-the model sits lower in view; `OrbitCamera.FitToModel` orbits around the vertex centroid when the
-model has one, so a model with one sparse extremity rotates in place.
+The three modes differ across a pair of methods, and both are worth reading for the framing
+decisions as much as the plumbing. `MainViewModel.DecodeSample` is the worker-thread half: it is
+`static`, it touches no painter, no camera and no bound state, and it returns a `DecodedSample`
+holding whichever of a bitmap, a `LoadedModel` and a `FloatImage` that kind produces. The texture
+mode decodes the map once and uses it twice, as the cube's texture and as the darkened backdrop.
+`MainViewModel.ApplyDecodedSample` is the UI-thread half that hands the decoded content to a
+painter: the texture mode sets `FixedLightDirection` so the faces shade distinctly, because the
+default is a camera headlight, which double-sides the lighting and makes a cube read as ambiguous
+since every face gets the same brightness. Camera framing must be set *before* the pending model is
+taken up at render time. The model mode clears the fixed light and the backdrop and reframes closer
+with a vertical bias so the model sits lower in view; `OrbitCamera.FitToModel` orbits around the
+vertex centroid when the model has one, so a model with one sparse extremity rotates in place.
 [Paint a CPU ray traced panorama into an SKBitmap](../BLUEPRINTS-GraphicsAndRendering.md#paint-a-cpu-ray-traced-panorama-into-an-skbitmap) ·
 [Build a textured cube mesh from a bitmap for previewing a flat material](../BLUEPRINTS-GraphicsAndRendering.md#build-a-textured-cube-mesh-from-a-bitmap-for-previewing-a-flat-material)
 
@@ -481,48 +502,64 @@ model has one, so a model with one sparse extremity rotates in place.
 re-entry with `IsBusy`, sets `IsBusy` (which carries `[AffectsCommands]` naming the three sample
 commands, so their `CanExecute` refreshes and the buttons disable), awaits the download with an
 `IProgress<string>` created on the UI thread as `new Progress<string>(message => StatusText =
-message)` so its callbacks post back there, does the decode or mesh build inside `Task.Run()`,
-assigns the painter, and in its `finally` always clears `IsBusy` and invalidates the canvas. A
-failure becomes a status line, never an escaping exception. Nothing GPU-related happens on the
-worker thread: the "safe from any thread" contract is enforced in the renderers, which take a lock,
-stash the model as pending, and upload it on the next render, on the render thread. All three
-renderers do this the same way.
+message)` so its callbacks post back there, does the decode or mesh build inside `Task.Run()`, and
+then marshals the result through `InvokeOnMainThread(...)`, which is where the painter and the
+status line are assigned. Its `finally` always clears `IsBusy` and requests a repaint. A failure
+becomes a status line, never an escaping exception. The token it passes down is the view model's
+own lifetime token, so an in-flight download stops when the view model is disposed and the
+resulting `OperationCanceledException` is caught separately and left silent. Nothing GPU-related
+happens on the worker thread: the "safe from any thread" contract is enforced in the renderers,
+which take a lock, stash the model as pending, and upload it on the next render, on the render
+thread. All three renderers do this the same way.
+
+The first load starts in the constructor and is kept as `MainViewModel.Initialization`, so a page
+or a test can await the first display rather than racing it; the task never faults, because
+`SelectAsync` turns every failure into status text. At the other end of the life cycle,
+`MainViewModel.Dispose()` cancels that token, disposes and nulls the three commands, clears the
+canvas delegate (which is what releases the page), and disposes the model painter and the panorama
+painter, each nulled before it is disposed so a paint arriving mid-teardown sees null instead of a
+disposed object. The container singletons it resolved are released, not disposed. `MainPage` calls
+it from its `Unloaded` handler, through `IDisposable`, because the XAML creates the view model and
+nothing else owns it.
 
 Repainting reaches the page through a one-property bridge. `ICanvasInvalidator` is declared beside
-the view model and holds an `Action`; `MainPage` assigns its own `RequestRender` method into it
-from `DataContextChanged`, and the view model calls `InvalidateCanvas?.Invoke()`, so it degrades
-gracefully when no page has wired it. The same handler hands the view model a `XamlRoot` accessor
-through `IXamlRootGetter`, which is what lets `CreateDialog(...)` attach an alert and what the view
-model passes on to the engine selector as a `Func<XamlRoot>` for the OpenGL context. Both are wired
-in `DataContextChanged` rather than the constructor, because with `<Page.DataContext>` declared in
-XAML the `DataContext` is not yet set when the constructor body runs.
+the view model and holds an `Action`; `MainPage` fills it in from `DataContextChanged` with a
+one-line invalidate of its canvas, and the view model calls it from `RequestRender()`, so it
+degrades gracefully when no page has wired it. The same handler hands the view model a `XamlRoot`
+accessor through `IXamlRootGetter`, which is what lets `CreateDialog(...)` attach an alert and what
+the view model passes on to the engine selector as a `Func<XamlRoot>` for the OpenGL context. Both
+are wired in `DataContextChanged` rather than the constructor, because with `<Page.DataContext>`
+declared in XAML the `DataContext` is not yet set when the constructor body runs.
 [Do blocking work in a service behind Task Run](../BLUEPRINTS-MVVM.md#do-blocking-work-in-a-service-behind-task-run) ·
 [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface) ·
-[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show)
+[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show) ·
+[Cancel one lifetime token from Dispose so in-flight work stops](../BLUEPRINTS-MVVM.md#cancel-one-lifetime-token-from-dispose-so-in-flight-work-stops) ·
+[Dispose a view model the XAML declared from the page Unloaded](../BLUEPRINTS-MVVM.md#dispose-a-view-model-the-xaml-declared-from-the-page-unloaded)
 
 ### Pointer input, coalesced repaints and backlog frames
 
-Every pointer handler on the canvas is a short forward to `ViewModel?.CurrentPainter`: convert the
-position, call one painter method, request a render, set `e.Handled = true`. Three details in
-`MainPage.xaml.cs` are the ones that bite. Pointer positions arrive in view units while the canvas
-renders in pixels, so `ToCanvasPixels` scales by `CanvasSize / ActualWidth` and the height
-equivalent, or input drifts from the image at any non-default DPI and after a resize. `PointerMoved`
-must set `e.Handled = true`, or an unhandled move bubbles to the window manager, which then drags
-the window instead of orbiting the scene. And the pointer must be captured on press, released on
-`PointerReleased`, and the drag also ended on `PointerCaptureLost`; `SizeChanged` requests a render
-too.
+Every pointer handler on the canvas is a short forward to the view model: convert the position,
+call one view-model method, and set `e.Handled = true` when it reports that a painter took the
+event. The page keeps only what needs the control itself. Pointer positions arrive in view units
+while the canvas renders in pixels, so `ToCanvasPixels` scales by `CanvasSize / ActualWidth` and
+the height equivalent, or input drifts from the image at any non-default DPI and after a resize.
+`PointerMoved` must set `e.Handled = true`, or an unhandled move bubbles to the window manager,
+which then drags the window instead of orbiting the scene. And the pointer must be captured on
+press, released on `PointerReleased`, and the drag also ended on `PointerCaptureLost` (both forward
+to the same `MainViewModel.PointerReleased()`); `SizeChanged` requests a render too.
 
-The interesting policy is what happens when a repaint costs more than the input stream allows.
-Two independent mechanisms handle it. Coalescing keeps at most one paint queued: `RequestRender`
-returns early when a paint is already pending, and the flag is cleared at the *top* of the
-`PaintSurface` handler so a request made during a paint still queues the next frame. Backlog
-detection compares the pointer event's own timestamp against a `Stopwatch` started at the beginning
-of the gesture; a frame that has fallen far enough behind real time is discarded through
-`painter.PointerSkip(x, y)`, which advances the drag anchor without applying the delta to the
-camera, so dropping a frame keeps the camera in sync with the cursor instead of making the model
-jump. `PointerSkip` exists on `IScenePainter` for exactly this purpose, which is where the policy
-belongs when you build this yourself: the view model owns the painter, and the page's handlers
-stay one-line forwards.
+The interesting policy is what happens when a repaint costs more than the input stream allows, and
+it lives on the view model, which is what owns the painter. Two independent mechanisms handle it.
+Coalescing keeps at most one paint queued: `MainViewModel.RequestRender()` returns early when a
+paint is already pending and otherwise calls the page's `InvalidateCanvas` delegate, and the flag
+is cleared at the *top* of `MainViewModel.PaintCanvas(...)`, which the page's `PaintSurface`
+handler forwards to, so a request made during a paint still queues the next frame. Backlog
+detection compares the pointer event's own timestamp, which the page passes along with the
+converted position, against a `Stopwatch` started at the beginning of the gesture; a frame that has
+fallen far enough behind real time is discarded through `painter.PointerSkip(x, y)`, which advances
+the drag anchor without applying the delta to the camera, so dropping a frame keeps the camera in
+sync with the cursor instead of making the model jump. `PointerSkip` exists on `IScenePainter` for
+exactly this purpose.
 [Forward pointer input from a canvas into a model](../BLUEPRINTS-ViewsAndControls.md#forward-pointer-input-from-a-canvas-into-a-model) ·
 [Coalesce repaints and drop backlogged pointer frames](../BLUEPRINTS-MVVM.md#coalesce-repaints-and-drop-backlogged-pointer-frames)
 

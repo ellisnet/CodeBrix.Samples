@@ -18,7 +18,7 @@ namespace PalmVisualizer.Vision;
 /// with latest-frame-wins semantics - submitting faster than the models can process simply
 /// drops stale frames, so the capture pipeline is never blocked.
 /// </summary>
-public sealed class PalmTracker : IDisposable
+public sealed class PalmTracker : IPalmTracker
 {
     private const string DetectorResourceName = "PalmVisualizer.Vision.Models.hand_detector.tflite";
     private const string LandmarkerResourceName = "PalmVisualizer.Vision.Models.hand_landmarks_detector.tflite";

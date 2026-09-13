@@ -5,9 +5,18 @@ using System.Diagnostics;
 
 namespace GameEngineMusicDemo.ViewModels;
 
-/// <summary>Lets the page hand the view model the game canvas once it has a size.</summary>
+/// <summary>
+/// Lets the page hand the view model the game canvas once it has a size, and read back the demo the
+/// view model starts against it, so the page never names the view model's concrete type.
+/// </summary>
 public interface IManageGameCanvas
 {
+    /// <summary>
+    /// The running demo, or null before the canvas has started. The page reads this rather than
+    /// binding to it, so it needs no change notification.
+    /// </summary>
+    GameEngineMusicDemoGame Demo { get; }
+
     /// <summary>Called once, when the canvas has started for the first time.</summary>
     /// <param name="canvas">The started canvas.</param>
     void CanvasFirstStart(GameSurfaceCanvas canvas);
@@ -30,15 +39,16 @@ public class MainViewModel : SimpleViewModel, IManageGameCanvas
 
     #region | Bindable properties |
 
-    /// <summary>
-    /// The running demo, or null before the canvas has started. The page reads this directly rather
-    /// than binding to it, so it needs no change notification.
-    /// </summary>
-    public GameEngineMusicDemoGame Demo { get; private set; }
+    //No bound properties, deliberately: every control on the page drives the music API through the
+    //  demo object rather than through bound state. An application that is not an API demonstration
+    //  should hold that state in SetProperty-backed properties here instead.
 
     #endregion
 
     #region | IManageGameCanvas implementation |
+
+    /// <inheritdoc/>
+    public GameEngineMusicDemoGame Demo { get; private set; }
 
     /// <inheritdoc/>
     public void CanvasFirstStart(GameSurfaceCanvas canvas)

@@ -105,7 +105,7 @@ public sealed class GltfModelLoader : IModelLoader
 
         return new LoadedModel
         {
-            Name = model.Asset?.Copyright is null ? model.DefaultScene?.Name : model.DefaultScene?.Name,
+            Name = model.DefaultScene?.Name,
             Primitives = primitives,
             Materials = materials,
             BoundsMin = boundsMin,

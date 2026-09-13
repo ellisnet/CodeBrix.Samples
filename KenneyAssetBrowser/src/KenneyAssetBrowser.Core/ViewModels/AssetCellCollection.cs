@@ -18,6 +18,13 @@ public class AssetCellCollection : ObservableCollection<AssetCellViewModel>
     //Enough cells to overfill the first screen even on a wide monitor.
     private const int InitialBatch = 36;
 
+    /// <summary>
+    /// How many further cells to materialize each time the grid asks for more. How near the
+    /// bottom edge counts as "near" is a measurement only the view can make, but how much to
+    /// add when it does is this collection's own policy, beside its initial batch.
+    /// </summary>
+    public const int ScrollBatch = 24;
+
     private readonly IReadOnlyList<AssetCellViewModel> _source;
 
     /// <summary>Creates the collection over an already filtered and ordered cell list.</summary>

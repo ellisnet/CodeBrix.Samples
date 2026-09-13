@@ -1,4 +1,5 @@
 using CodeBrix.Platform.Simple;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -18,8 +19,9 @@ public partial class App : Application
 
         SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
         {
-            //Register the app's services here
-
+            //Register the app's services here: webcam capture, palm tracking and the
+            //  visualizer session factory the view model resolves
+            services.AddPalmVisualizer();
         });
         SimpleViewModel.SetIsDesignMode(false);
 

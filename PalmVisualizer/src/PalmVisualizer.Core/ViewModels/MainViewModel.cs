@@ -1,4 +1,3 @@
-using CodeBrix.Platform.GameEngine.Host.Rendering;
 using CodeBrix.Platform.Simple;
 using PalmVisualizer.Camera;
 using PalmVisualizer.Rendering;
@@ -30,19 +29,23 @@ public interface ICanvasBridge
 public interface IManageGameCanvas
 {
     /// <summary>Called once, on the UI thread, at the canvas's FirstStarted event.</summary>
-    /// <param name="canvas">The game canvas the visualizer renders into.</param>
-    void CanvasFirstStart(GameSurfaceCanvas canvas);
+    /// <param name="host">The page that owns the game canvas the visualizer renders into.</param>
+    void CanvasFirstStart(IGameCanvasHost host);
 }
 
 [Microsoft.UI.Xaml.Data.Bindable]
-public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas
+public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas, IWebcamFrameSource
 {
-    private WebcamCaptureService _captureService;
-    private PalmTracker _tracker;
-    private VisualizerSession _visualizerSession;
+    private readonly IVisualizerSessionFactory _sessionFactory;
+
+    private IWebcamCaptureService _captureService;
+    private IPalmTracker _tracker;
+    private IVisualizerSession _visualizerSession;
 
     private byte[] _visionFrame;
     private int _reportedOpenPalmCount;
+
+    private int _cameraSwitchVersion;
 
     public MainViewModel()
     {
@@ -50,8 +53,14 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas
 
         Debug.WriteLine("PalmVisualizer view model startup.");
 
-        _captureService = new WebcamCaptureService();
+        //The three collaborators come from the container App registered them with, so this
+        //  view model can also be built against stand-ins that need no camera and no GPU
+        _captureService = GetService<IWebcamCaptureService>() ?? new WebcamCaptureService();
+        _tracker = GetService<IPalmTracker>() ?? new PalmTracker();
+        _sessionFactory = GetService<IVisualizerSessionFactory>() ?? new VisualizerSessionFactory();
+
         _captureService.FrameArrived += OnFrameArrived;
+        _tracker.TrackingUpdated += OnTrackingUpdated;
 
         StatusText = "Discovering cameras…";
         _ = InitializeAsync();
@@ -61,7 +70,7 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas
     {
         try
         {
-            var cameras = await WebcamCaptureService.GetCamerasAsync();
+            var cameras = await _captureService.DiscoverCamerasAsync();
             InvokeOnMainThread(() =>
             {
                 Cameras.Clear();
@@ -85,9 +94,6 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas
             InvokeOnMainThread(() => StatusText = $"Camera discovery failed: {e.Message}");
         }
     }
-
-    /// <summary>The capture service - the page's preview canvas pulls live frames from it.</summary>
-    public WebcamCaptureService CaptureService => _captureService;
 
     #region | Live frames and palm tracking |
 
@@ -149,6 +155,31 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas
 
     #endregion
 
+    #region | IWebcamFrameSource implementation |
+
+    /// <summary>
+    /// Hands the page's preview renderer the newest camera frame. Implemented explicitly:
+    /// the page pulls frames through the narrow <see cref="IWebcamFrameSource"/> seam and
+    /// never sees the capture service behind it.
+    /// </summary>
+    /// <param name="buffer">The renderer's frame buffer; replaced when the size does not match.</param>
+    /// <param name="width">The frame's width in pixels.</param>
+    /// <param name="height">The frame's height in pixels.</param>
+    /// <returns><c>true</c> when a frame was copied.</returns>
+    bool IWebcamFrameSource.TryCopyLatestFrame(ref byte[] buffer, out int width, out int height)
+    {
+        var service = _captureService;
+        if (service == null)
+        {
+            width = 0;
+            height = 0;
+            return false;
+        }
+        return service.TryCopyLatestFrame(ref buffer, out width, out height);
+    }
+
+    #endregion
+
     #region | Bindable properties |
 
     /// <summary>The connected cameras shown in the dropdown.</summary>
@@ -201,32 +232,65 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas
 
     private void SwitchCamera(CameraDevice camera)
     {
+        //The setter only kicks the switch off: opening a device can take long enough to
+        //  stall the UI thread, so the switch itself runs on a worker and the status line
+        //  carries the result
+        HasFrame = false;
+        _ = SwitchCameraAsync(camera, ++_cameraSwitchVersion);
+    }
+
+    /// <summary>
+    /// Starts (or stops) live capture off the UI thread - the capture service serializes its
+    /// own start and stop, so two devices are never opened at once - and lets only the newest
+    /// switch report: a camera that finishes opening late must not overwrite the status of
+    /// the one the user has since chosen.
+    /// </summary>
+    private async Task SwitchCameraAsync(CameraDevice camera, int version)
+    {
         try
         {
-            HasFrame = false;
+            var service = _captureService;
+            if (service == null) { return; }
+
+            await Task.Run(() =>
+            {
+                if (camera == null)
+                {
+                    service.Stop();
+                }
+                else
+                {
+                    service.Start(camera);
+                }
+            }).ConfigureAwait(false);
+
+            if (version != _cameraSwitchVersion) { return; } //a newer switch took over
+
             if (camera == null)
             {
-                _captureService.Stop();
+                //The page's delegate marshals the repaint itself
                 InvalidatePreviewCanvas?.Invoke();
                 return;
             }
-
-            _captureService.Start(camera);
-            StatusText = $"Live: {camera.FriendlyName}";
+            InvokeOnMainThread(() => StatusText = $"Live: {camera.FriendlyName}");
         }
         catch (Exception e)
         {
-            StatusText = $"Could not start '{camera?.FriendlyName}': {e.Message}";
+            if (version == _cameraSwitchVersion)
+            {
+                InvokeOnMainThread(() =>
+                    StatusText = $"Could not start '{camera?.FriendlyName}': {e.Message}");
+            }
         }
     }
 
     #region | IManageGameCanvas implementation |
 
-    public void CanvasFirstStart(GameSurfaceCanvas canvas)
+    public void CanvasFirstStart(IGameCanvasHost host)
     {
         //UI thread, the first time Visualize Mode is shown with a real size: build the
         //  shader scene and start the engine. Later mode switches pause and resume it.
-        _visualizerSession = new VisualizerSession(canvas);
+        _visualizerSession = _sessionFactory.CreateSession(host);
         _visualizerSession.Start();
     }
 
@@ -246,11 +310,7 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas
     {
         if (!CanVisualize()) { return Task.CompletedTask; }
 
-        if (_tracker == null)
-        {
-            _tracker = new PalmTracker();
-            _tracker.TrackingUpdated += OnTrackingUpdated;
-        }
+        //Starting the tracker is what loads the models, on its own worker thread
         _tracker.Start();
         _reportedOpenPalmCount = 0;
 

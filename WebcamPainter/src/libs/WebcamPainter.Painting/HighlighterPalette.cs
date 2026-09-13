@@ -1,4 +1,5 @@
 using CodeBrix.Imaging;
+using CodeBrix.Imaging.PixelFormats;
 using System.Collections.Generic;
 
 namespace WebcamPainter.Painting;
@@ -11,6 +12,7 @@ public sealed class HighlighterColor
     {
         Name = name;
         Color = color;
+        TextColor = GetReadableTextColor(color);
     }
 
     /// <summary>The color's display name; also the name of its drawing layer.</summary>
@@ -18,12 +20,30 @@ public sealed class HighlighterColor
 
     /// <summary>The ink color.</summary>
     public Color Color { get; }
+
+    /// <summary>
+    /// The caption color that reads on <see cref="Color"/>: white on the darker inks, black on
+    /// the lighter ones. Deciding it here, beside the ink, is what lets a button showing this
+    /// color take both values from the palette instead of repeating either of them.
+    /// </summary>
+    public Color TextColor { get; }
+
+    //BT.709 luminance is the perceptual measure, so yellow and green come out light at the
+    //  same byte values that leave blue and indigo dark; the midpoint is the switch.
+    private static Color GetReadableTextColor(Color color)
+    {
+        Rgba32 rgba = color.ToPixel<Rgba32>();
+        float luminance = (rgba.R * 0.2126f) + (rgba.G * 0.7152f) + (rgba.B * 0.0722f);
+        return luminance < 128f
+            ? Color.FromRgb(255, 255, 255)
+            : Color.FromRgb(0, 0, 0);
+    }
 }
 
 /// <summary>
 /// The set of highlighter colors a <see cref="PaintingSession"/> offers - one drawing layer
-/// per color. Tweak the color values here (and keep the hard-coded button backgrounds in
-/// MainPage.xaml in sync when you do).
+/// per color. Tweak the color values here; the Paint Mode buttons are templated over this
+/// list, so what the user sees follows.
 /// </summary>
 public static class HighlighterPalette
 {

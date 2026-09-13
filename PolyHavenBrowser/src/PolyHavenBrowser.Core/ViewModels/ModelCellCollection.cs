@@ -10,14 +10,19 @@ namespace PolyHavenBrowser.ViewModels;
 /// The Browsing View's lazily-loading item source: it holds the full (sorted, filtered)
 /// model list but only materializes <see cref="ModelCellViewModel"/> cells in batches - a
 /// first screenful up front, then more whenever the catalog grid scrolls near its bottom
-/// edge (the page watches the ScrollViewer and calls <see cref="RequestMore"/>) - so
-/// hundreds of cells and thumbnails are never created before they can be seen.
+/// edge (the page forwards its scroll geometry and <see cref="RequestMoreIfNearEnd"/>
+/// decides) - so hundreds of cells and thumbnails are never created before they can be seen.
 /// </summary>
 [Microsoft.UI.Xaml.Data.Bindable]
 public class ModelCellCollection : ObservableCollection<ModelCellViewModel>
 {
     //Enough cells to overfill the first screen even on a wide monitor.
     private const int InitialBatch = 30;
+
+    //One scroll-triggered batch, and how much unscrolled extent may remain before it is
+    //  asked for: both are this collection's policy, not the page's.
+    private const int ScrollBatch = 24;
+    private const double LookAheadViewports = 2d;
 
     private readonly IReadOnlyList<PolyHavenAsset> _source;
     private readonly Func<PolyHavenAsset, ModelCellViewModel> _cellFactory;
@@ -37,6 +42,26 @@ public class ModelCellCollection : ObservableCollection<ModelCellViewModel>
 
     /// <summary>Whether models remain that have no materialized cell yet.</summary>
     public bool HasMoreItems => Count < _source.Count;
+
+    /// <summary>
+    /// Materializes the next batch of cells when the grid has scrolled to within
+    /// <c>LookAheadViewports</c> viewports of the bottom of its extent, and does nothing
+    /// otherwise. The caller supplies only the scroll geometry a view can see; how near the
+    /// bottom is near enough, and how big a batch is, live here.
+    /// </summary>
+    /// <param name="extentHeight">The full scrollable height of the grid.</param>
+    /// <param name="verticalOffset">How far down that extent the viewport currently sits.</param>
+    /// <param name="viewportHeight">The height of the visible part of the grid.</param>
+    public void RequestMoreIfNearEnd(double extentHeight, double verticalOffset, double viewportHeight)
+    {
+        if (!HasMoreItems) { return; }
+
+        var remaining = extentHeight - verticalOffset - viewportHeight;
+        if (remaining < viewportHeight * LookAheadViewports)
+        {
+            RequestMore(ScrollBatch);
+        }
+    }
 
     /// <summary>
     /// Materializes up to <paramref name="count"/> further cells (each one starts fetching

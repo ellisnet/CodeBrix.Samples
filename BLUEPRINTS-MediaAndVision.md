@@ -10,9 +10,11 @@ file, tell two container formats apart from their first bytes, lift embedded
 chapters and captions into sidecar files, or run an encode from a settled
 plan with the quality and resolution choices written down and explained. The
 camera and vision recipes cover enumerating devices, starting and switching
-a capture session without leaking the device library into the view model,
-running a model over each frame, and turning raw model output into smoothed
-results with stable identities.
+a capture session without leaking the device library into the view model -
+off the UI thread, and serialized by the service that owns the device -
+handing the newest frame to a renderer through a one-call seam, running a
+model over each frame, and turning raw model output into smoothed results
+with stable identities.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -43,6 +45,8 @@ conventions the code blocks follow.
 - [Compose a chain of color lookup tables and write it back out as one file](#compose-a-chain-of-color-lookup-tables-and-write-it-back-out-as-one-file)
 - [Own one capture session in the view model and switch it from the selection setter](#own-one-capture-session-in-the-view-model-and-switch-it-from-the-selection-setter)
 - [Encode a device's raw BGRA still to PNG with the CodeBrix Imaging library](#encode-a-devices-raw-bgra-still-to-png-with-the-codebrix-imaging-library)
+- [Serialize a device's control calls inside the service that owns it](#serialize-a-devices-control-calls-inside-the-service-that-owns-it)
+- [Put the one call frame source in the camera library](#put-the-one-call-frame-source-in-the-camera-library)
 
 ## Related blueprints
 
@@ -146,8 +150,18 @@ private void WireViewModel()
 
     surface ??= new VideoPlayerSurface(Player);
     viewModel.Playback.AttachSurface(surface);
-    viewModel.PickMediaFileAsync = PickMediaFileAsync;
-    viewModel.Conversion.PickOutputPathAsync = PickOutputPathAsync;
+
+    //Each bridge is handed over through the interface that declares it rather than through the
+    //view model's own type, so what the page has to supply is the contract and nothing more.
+    if (DataContext is IMediaFileBridge mediaFile)
+    {
+        mediaFile.PickMediaFileAsync = PickMediaFileAsync;
+    }
+
+    if (viewModel.Conversion is IOutputPathBridge outputPath)
+    {
+        outputPath.PickOutputPathAsync = PickOutputPathAsync;
+    }
 }
 
 private void Player_MediaOpened(object sender, EventArgs e) => surface?.RaiseMediaOpened();
@@ -159,17 +173,16 @@ private void Player_MediaFailed(object sender, VideoPlayerFailedEventArgs e) => 
 
 ```xml
 <!-- From CodeBrix.Samples/CodeBrixVideoTool/src/CodeBrixVideoTool.UI/Views/MainPage.xaml -->
-<Page
-    xmlns:video="clr-namespace:CodeBrix.Platform.UI.VideoPlayer.Skia;assembly=CodeBrix.Platform.UI.VideoPlayer.Skia">
-  <!-- The stage. The player letterboxes whatever it is given inside it. -->
-  <Grid Grid.Row="0" Background="{StaticResource AppStageBrush}">
-      <video:VideoPlayer x:Name="Player"
-                         Stretch="Uniform"
-                         MediaOpened="Player_MediaOpened"
-                         PlaybackEnded="Player_PlaybackEnded"
-                         MediaFailed="Player_MediaFailed" />
-  </Grid>
-</Page>
+xmlns:video="clr-namespace:CodeBrix.Platform.UI.VideoPlayer.Skia;assembly=CodeBrix.Platform.UI.VideoPlayer.Skia"
+...
+<!-- The stage. The player letterboxes whatever it is given inside it. -->
+<Grid Grid.Row="0" Background="{StaticResource AppStageBrush}">
+    <video:VideoPlayer x:Name="Player"
+                       Stretch="Uniform"
+                       MediaOpened="Player_MediaOpened"
+                       PlaybackEnded="Player_PlaybackEnded"
+                       MediaFailed="Player_MediaFailed" />
+</Grid>
 ```
 
 **Where to look.**
@@ -187,6 +200,10 @@ private void Player_MediaFailed(object sender, VideoPlayerFailedEventArgs e) => 
   forwards each in one line to an internal raise method.
 - The wiring runs from the data-context-changed handler, not from the constructor,
   because the data context is created by the XAML.
+- The surface is handed to the playback view model by a method call, but the two
+  picker delegates are assigned through the interfaces that declare them rather
+  than through the view model's type, so the page's obligation is a list of
+  contracts rather than a class.
 - Codecs the add-in does not carry itself must be registered by the application at
   startup; see the startup area.
 
@@ -197,17 +214,18 @@ chosen by application logic rather than hard-coded in XAML, and standard play,
 pause and seek behavior without writing your own commands.
 
 **The MVVM shape.** The view model owns the address string and the resulting
-playback source; it builds the source and exposes it as a bound property with a
-private setter. The page declares the element with its source one-way bound and
-turns on the built-in transport controls. No bridge interface is needed for
-playback itself, because the add-in's element is a normal XAML control.
+playback source; it builds the source, exposes it as a bound property with a
+private setter, and releases the one it replaced. The page declares the element
+with its source one-way bound and turns on the built-in transport controls. No
+bridge interface is needed for playback itself, because the add-in's element is a
+normal XAML control.
 
 **Code.**
 
 ```csharp
 // From CodeBrix.Samples/MediaPlayerDemo/src/MediaPlayerDemo.Core/ViewModels/MainViewModel.cs
 using CodeBrix.Platform.Simple;
-using System;
+// ...
 using Windows.Media.Core;
 using Windows.Media.Playback;
 // ...
@@ -216,12 +234,27 @@ private void LoadMedia()
     try
     {
         var uri = new Uri(MediaAddress);
-        PlayerSource = MediaSource.CreateFromUri(uri);
+        SetPlayerSource(MediaSource.CreateFromUri(uri));
         StatusText = $"Loaded: {uri}";
     }
     catch (Exception ex)
     {
+        _log.LogWarning(ex, "Cannot load '{MediaAddress}'.", MediaAddress);
         StatusText = $"Cannot load '{MediaAddress}': {ex.Message}";
+    }
+}
+
+//The view model creates every source it hands to the element, so it also releases them. The
+//  new source is published first: the element follows the binding and moves off the old one
+//  before the old one is disposed.
+private void SetPlayerSource(IMediaPlaybackSource source)
+{
+    var previous = PlayerSource;
+    PlayerSource = source;
+
+    if (!ReferenceEquals(previous, source))
+    {
+        (previous as IDisposable)?.Dispose();
     }
 }
 
@@ -252,7 +285,8 @@ public IMediaPlaybackSource PlayerSource
   Without the add-in reference the element and the source type do not resolve.
 - Creating a source from a URI succeeds for any well-formed URI. Constructing the
   URI is the only validation here; an unreachable or unplayable address fails
-  silently at the element.
+  silently at the element, so the failure path logs through the application's
+  ambient logger as well as writing the status line.
 - Setting the source is what starts playback, because auto-play is on. If you do
   not want playback on launch, turn auto-play off rather than withholding the
   source.
@@ -260,8 +294,10 @@ public IMediaPlaybackSource PlayerSource
   playing, paused or ended. If your application needs to react to playback state,
   reach the underlying player behind an interface the view model consumes, as the
   video-player blueprint above does.
-- Assigning a new source replaces the old one; this sample never disposes the
-  previous source.
+- The view model created the source, so the view model releases it: publish the
+  new source first so the element's binding moves off the old one, then dispose
+  the old one, and dispose the last one in `Dispose()`. Disposing before
+  publishing hands the element a dead source.
 
 ### Play an audio clip straight from bytes with the AudioPlayer add-in
 
@@ -269,11 +305,11 @@ public IMediaPlaybackSource PlayerSource
 downloaded or generated - and want it played without writing a temporary file, on
 whichever heads can.
 
-**The MVVM shape.** The view model owns the transport commands and the loop state,
-and reaches the element through a bridge of settable delegates that it implements
-itself. The page fills the delegates in from its data-context-changed handler.
-Every call site is null-guarded, so a head with no player degrades to a viewer
-that says so.
+**The MVVM shape.** The view model owns the transport commands, the loop state and
+the replay policy, and reaches the element through a bridge of settable delegates
+that it implements itself - calls out to the player, and a few facts read back.
+The page fills the delegates in from its data-context-changed handler. Every call
+site is null-guarded, so a head with no player degrades to a viewer that says so.
 
 **Code.**
 
@@ -291,6 +327,11 @@ public interface IAudioPlayerBridge
     Action PauseAudio { get; set; }
     Action StopAudio { get; set; }
     Action<bool> SetAudioLooping { get; set; }
+    // ...
+    Func<bool> IsAudioPlaying { get; set; }
+    Func<TimeSpan> AudioPosition { get; set; }
+    Func<TimeSpan> AudioDuration { get; set; }
+    Action<TimeSpan> SeekAudio { get; set; }
 }
 ```
 
@@ -309,43 +350,75 @@ private async Task OpenAudioAsync(AssetEntry entry)
 
     IsAudioLooping = false;
     SetAudioLooping?.Invoke(false);
+    _audioPlaybackEnded = false;
     LoadAudioSource?.Invoke(audioStream);
+    HasAudioClip = LoadAudioSource != null;
     SetViewerMode(ViewerMode.Audio,
         LoadAudioSource == null ? "audio playback is not available on this head" : string.Empty);
 }
 
-public SimpleCommand PlayAudioCommand => field ??= new SimpleCommand(() => PlayAudio?.Invoke());
-public SimpleCommand PauseAudioCommand => field ??= new SimpleCommand(() => PauseAudio?.Invoke());
-public SimpleCommand StopAudioCommand => field ??= new SimpleCommand(() => StopAudio?.Invoke());
+// ...
 
-public SimpleCommand ToggleAudioLoopCommand => field ??= new SimpleCommand(() =>
+/// <summary>Whether a clip is loaded in the player (the transport buttons gate on this).</summary>
+[AffectsCommands(nameof(PlayAudioCommand), nameof(PauseAudioCommand),
+    nameof(StopAudioCommand), nameof(ToggleAudioLoopCommand))]
+public bool HasAudioClip
 {
-    IsAudioLooping = !IsAudioLooping;
-    SetAudioLooping?.Invoke(IsAudioLooping);
-});
+    get;
+    private set => SetProperty(ref field, value);
+}
+
+public SimpleCommand PlayAudioCommand => field ??= new SimpleCommand(CanUseAudioTransport, DoPlayAudio);
+// ...
+private bool CanUseAudioTransport() => HasAudioClip;
+
+//Starts (or resumes) the audio clip. A clip that has played through to its end leaves the
+//transport parked at the end, where Play() alone has nothing left to play - so rewind first
+//and let one click replay the clip. Two things deliberately do NOT rewind: a player that is
+//still going (a looping clip reports playback ended on every pass), and a clip the user has
+//scrubbed away from the end since it finished - there, the thumb is the intent, so resume
+//from where they left it.
+private void DoPlayAudio()
+{
+    if (!CanUseAudioTransport()) { return; }
+
+    if (_audioPlaybackEnded
+        && IsAudioPlaying?.Invoke() == false
+        && AudioDuration?.Invoke() > TimeSpan.Zero
+        && AudioPosition?.Invoke() >= AudioDuration.Invoke() - AudioEndTolerance)
+    {
+        SeekAudio?.Invoke(TimeSpan.Zero);
+    }
+
+    _audioPlaybackEnded = false;
+    PlayAudio?.Invoke();
+}
 ```
 
 ```csharp
 // From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs
+IAudioPlayerBridge audioBridge = viewModel;
+// ...
 //Audio bridge: the view model hands over the clip's raw stream and transport
 //calls; the AudioPlayer element does the decoding and playing (it takes
-//stream ownership)
-viewModel.LoadAudioSource = stream =>
-{
-    _audioPlaybackEnded = false;
-    AudioElement?.SetSourceStream(stream);
-};
-viewModel.PlayAudio = PlayAudio;
-viewModel.PauseAudio = () => AudioElement?.Pause();
-viewModel.StopAudio = () =>
-{
-    _audioPlaybackEnded = false;
-    AudioElement?.Stop();
-};
-viewModel.SetAudioLooping = looping =>
+//stream ownership). The last four members are the transport facts the view
+//model's replay policy reads back, plus the seek it uses to rewind.
+audioBridge.LoadAudioSource = stream => AudioElement?.SetSourceStream(stream);
+audioBridge.PlayAudio = () => AudioElement?.Play();
+audioBridge.PauseAudio = () => AudioElement?.Pause();
+audioBridge.StopAudio = () => AudioElement?.Stop();
+audioBridge.SetAudioLooping = looping =>
 {
     if (AudioElement != null) { AudioElement.IsLooping = looping; }
 };
+audioBridge.IsAudioPlaying = () => AudioElement?.IsPlaying ?? false;
+audioBridge.AudioPosition = () => AudioElement?.Position ?? TimeSpan.Zero;
+audioBridge.AudioDuration = () => AudioElement?.Duration ?? TimeSpan.Zero;
+audioBridge.SeekAudio = position => AudioElement?.Seek(position);
+// ...
+//A clip that plays through to its end parks the transport at the end; the view model
+//remembers that so the next Play can rewind instead of doing nothing.
+AudioElement.PlaybackEnded += (_, _) => ViewModel?.NotifyAudioPlaybackEnded();
 ```
 
 ```xml
@@ -368,8 +441,15 @@ viewModel.SetAudioLooping = looping =>
 - The interface documents the contract: the view model must behave sensibly when a
   delegate is null, and the pane's hint text is what the user sees on a head where
   the bridge was never filled in.
-- The scrubber binds straight to the element; see the views area. Replaying a
-  finished clip needs one extra rule; see the bridge area.
+- The scrubber binds straight to the element; see the views area.
+- A clip that has run to its end leaves the transport parked there, where another
+  play call has nothing left to play. The rule that turns the next click into a
+  replay lives in the view model, which is why the bridge carries the three facts
+  it has to read back as well as the calls it makes; the page's only part is
+  forwarding the element's playback-ended event in one line.
+- The transport commands gate on a "clip is loaded" property rather than on the
+  delegates, so on a head with no player the buttons are disabled rather than
+  silently doing nothing.
 
 ### Probe a media file behind an interface the view model resolves
 
@@ -526,8 +606,14 @@ private static MediaFormatKind SniffSignature(string path)
 
         return first.SequenceEqual(CbvFormat.EbmlMagic) ? MediaFormatKind.CodeBrixMode1 : MediaFormatKind.Unknown;
     }
-    catch (IOException) { return MediaFormatKind.Unknown; }
-    catch (UnauthorizedAccessException) { return MediaFormatKind.Unknown; }
+    catch (IOException)
+    {
+        return MediaFormatKind.Unknown;
+    }
+    catch (UnauthorizedAccessException)
+    {
+        return MediaFormatKind.Unknown;
+    }
 }
 ```
 
@@ -710,7 +796,17 @@ var processor = arguments
     .CancellableThrough(cancellationToken);
 
 var commands = new[] { "ffmpeg " + processor.Arguments };
-var succeeded = await processor.ProcessAsynchronously(false).ConfigureAwait(false);
+
+bool succeeded;
+try
+{
+    succeeded = await processor.ProcessAsynchronously(false).ConfigureAwait(false);
+}
+catch (OperationCanceledException)
+{
+    DeletePartialOutput(plan.OutputPath);
+    return ConversionOutcome.Cancelled(stopwatch.Elapsed, notes);
+}
 ```
 
 **Where to look.**
@@ -1284,11 +1380,12 @@ internal static class VideoPosterExtractor
 the first camera automatically, and switches cleanly when the user picks another.
 
 **The MVVM shape.** A capture service class wraps the webcam library and exposes a
-small surface: a static discovery method, start, stop, a "has a frame" flag, a
-copy-latest-frame method and a frame-arrived event. The view model owns the
-service, holds the devices in an observable collection, and switches cameras from
-the selected-item setter. Discovery is async and its results are marshalled onto
-the UI thread.
+small surface: discovery, start, stop, a "has a frame" flag, a copy-latest-frame
+method and a frame-arrived event. PalmVisualizer puts that surface behind an
+interface its view model resolves; WebcamPainter uses the class directly. Either
+way the view model holds the devices in an observable collection and switches
+cameras from the selected-item setter. Discovery is async and its results are
+marshalled onto the UI thread.
 
 **Code.**
 
@@ -1343,7 +1440,7 @@ private async Task InitializeAsync()
 {
     try
     {
-        var cameras = await WebcamCaptureService.GetCamerasAsync();
+        var cameras = await _captureService.DiscoverCamerasAsync();
         InvokeOnMainThread(() =>
         {
             Cameras.Clear();
@@ -1372,23 +1469,11 @@ private async Task InitializeAsync()
 
 private void SwitchCamera(CameraDevice camera)
 {
-    try
-    {
-        HasFrame = false;
-        if (camera == null)
-        {
-            _captureService.Stop();
-            InvalidatePreviewCanvas?.Invoke();
-            return;
-        }
-
-        _captureService.Start(camera);
-        StatusText = $"Live: {camera.FriendlyName}";
-    }
-    catch (Exception e)
-    {
-        StatusText = $"Could not start '{camera?.FriendlyName}': {e.Message}";
-    }
+    //The setter only kicks the switch off: opening a device can take long enough to
+    //  stall the UI thread, so the switch itself runs on a worker and the status line
+    //  carries the result
+    HasFrame = false;
+    _ = SwitchCameraAsync(camera, ++_cameraSwitchVersion);
 }
 ```
 
@@ -1402,7 +1487,8 @@ private void SwitchCamera(CameraDevice camera)
 
 **Where to look.**
 `WebcamPainter/src/libs/WebcamPainter.Webcam/WebcamCaptureService.cs`
-`PalmVisualizer/src/libs/PalmVisualizer.Camera/WebcamCaptureService.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Camera/IWebcamCaptureService.cs` and
+`WebcamCaptureService.cs`
 `PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`
 
 **Sharp edges.**
@@ -1416,12 +1502,19 @@ private void SwitchCamera(CameraDevice camera)
 - The service does not cache pixels itself; the underlying session does, and the
   copy method forwards to it with a caller-owned buffer reallocated only when the
   size changes.
-- Enumeration is a static method and works with no session running and no camera
-  present, so it is safe to call at startup, and an empty device list is a normal
-  state rather than an error.
+- Enumeration works with no session running and no camera present, so it is safe to
+  call at startup, and an empty device list is a normal state rather than an error.
+  PalmVisualizer keeps the static form and has the interface method forward to it,
+  so a caller that has a service uses the service and a caller that has none still
+  has a way to ask.
 - Discovery is kicked off from the constructor as a discarded task after setting a
   "discovering" status, and every failure path writes to the same status line
   rather than throwing into the constructor.
+- The selection setter does not open the device: opening can block long enough to
+  be felt, so the setter starts a worker and only the newest switch is allowed to
+  report - see
+  [Serialize a device's control calls inside the service that owns it](#serialize-a-devices-control-calls-inside-the-service-that-owns-it)
+  for the other half of that arrangement.
 
 ### Wrap a device library type so the view model never sees it
 
@@ -2021,8 +2114,13 @@ private async Task DoBakeAsync()
 
     if (baked == null) { return; }
 
-    BakeStatusText = $"Baked {baked.TableCount} table(s) into a {baked.Size}-node table: {baked.FilePath}";
-    UpdateUiState();
+    //The picker's answer comes back on whichever thread completed it, and everything below this line
+    //  is bound state, so the hop is made rather than assumed.
+    InvokeOnMainThread(() =>
+    {
+        BakeStatusText = $"Baked {baked.TableCount} table(s) into a {baked.Size}-node table: {baked.FilePath}";
+        UpdateUiState();
+    });
 }
 
 private List<LutChainEntry> BuildPanelChain()
@@ -2262,3 +2360,259 @@ package, referenced once, with a comment saying what it is for)
 - The file name is a timestamp to the millisecond, which is not a uniqueness
   guarantee; add a counter if two stills can be requested together.
 
+### Serialize a device's control calls inside the service that owns it
+
+**When you want this.** Opening a capture device takes long enough to be felt if
+it happens on the UI thread, so the open moves to a worker - and now two opens
+can be in flight at once, against a device library that allows its control calls
+from one thread at a time.
+
+**The MVVM shape.** The selection setter does not open anything: it clears the
+"has a frame" flag, bumps a version number and starts a worker. The service that
+owns the session serializes its own start and stop, because that rule belongs to
+the thing that holds the device rather than to every caller that might reach it.
+Only the newest switch is allowed to write the status line.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Camera/WebcamCaptureService.cs
+//The underlying session allows its control calls from one thread at a time; the
+//  application starts and stops cameras off the UI thread, so serialize them here
+private readonly object _controlLock = new object();
+
+// ...
+
+public void Start(CameraDevice camera)
+{
+    if (camera == null) { throw new ArgumentNullException(nameof(camera)); }
+
+    lock (_controlLock)
+    {
+        Stop();
+
+        _session = new WebcamSession(camera.Device);
+        _session.FrameReceived += OnFrameReceived;
+        _session.Start();
+    }
+}
+
+/// <summary>Stops the running capture session, when there is one.</summary>
+public void Stop()
+{
+    lock (_controlLock)
+    {
+        if (_session != null)
+        {
+            _session.FrameReceived -= OnFrameReceived;
+            _session.Dispose();
+            _session = null;
+        }
+        _hasFrame = false;
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs
+private void SwitchCamera(CameraDevice camera)
+{
+    //The setter only kicks the switch off: opening a device can take long enough to
+    //  stall the UI thread, so the switch itself runs on a worker and the status line
+    //  carries the result
+    HasFrame = false;
+    _ = SwitchCameraAsync(camera, ++_cameraSwitchVersion);
+}
+
+/// <summary>
+/// Starts (or stops) live capture off the UI thread - the capture service serializes its
+/// own start and stop, so two devices are never opened at once - and lets only the newest
+/// switch report: a camera that finishes opening late must not overwrite the status of
+/// the one the user has since chosen.
+/// </summary>
+private async Task SwitchCameraAsync(CameraDevice camera, int version)
+{
+    try
+    {
+        var service = _captureService;
+        if (service == null) { return; }
+
+        await Task.Run(() =>
+        {
+            if (camera == null)
+            {
+                service.Stop();
+            }
+            else
+            {
+                service.Start(camera);
+            }
+        }).ConfigureAwait(false);
+
+        if (version != _cameraSwitchVersion) { return; } //a newer switch took over
+
+        // ...
+
+        InvokeOnMainThread(() => StatusText = $"Live: {camera.FriendlyName}");
+    }
+    catch (Exception e)
+    {
+        if (version == _cameraSwitchVersion)
+        {
+            InvokeOnMainThread(() =>
+                StatusText = $"Could not start '{camera?.FriendlyName}': {e.Message}");
+        }
+    }
+}
+```
+
+**Where to look.**
+`PalmVisualizer/src/libs/PalmVisualizer.Camera/WebcamCaptureService.cs`
+`PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`
+
+**Also shown by.**
+`WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs`, which keeps the
+synchronous form on purpose - see
+[Own one capture session in the view model and switch it from the selection setter](#own-one-capture-session-in-the-view-model-and-switch-it-from-the-selection-setter),
+whose last sharp edge is exactly the hitch this recipe removes
+
+**Sharp edges.**
+- The lock belongs to the service, not to the view model or the setter. A caller
+  cannot be relied upon to hold it, and the device library's rule is the service's
+  rule to keep.
+- Start takes the lock and then calls stop inside it, so a switch is one atomic
+  teardown and start rather than two operations another thread can interleave.
+- The version number is bumped on the UI thread in the setter and compared after
+  the await, so a camera that finishes opening after the user has moved on reports
+  nothing at all - including its failure.
+- Everything after the worker is bound state, so it goes back through the
+  main-thread call; the flag the service raises from the capture thread is
+  `volatile` for the same reason.
+- The switch is started as a discarded task from a property setter, so the method
+  must not let an exception escape: it is the catch, not the caller, that turns a
+  refused device into a sentence.
+
+### Put the one call frame source in the camera library
+
+**When you want this.** More than one thing can hold the newest camera frame -
+the capture service that received it, a view model that mirrors or crops it - and
+the code that paints it should not have to know which of them it was handed.
+
+This is the seam rather than the cache. Where
+[Cache the newest frame in the view model and let the renderer pull it](BLUEPRINTS-MVVM.md#cache-the-newest-frame-in-the-view-model-and-let-the-renderer-pull-it)
+has the view model own the buffer and the lock and declare the interface beside
+itself, here the interface is declared in the camera library, the capture service
+implements it as part of its own contract, and the view model implements it
+explicitly and forwards - so the page can hand its renderer either end and the
+renderer cannot tell.
+
+**The MVVM shape.** The library declares the one-method interface and its
+renderer takes it. The capture service's own interface derives from it. The view
+model implements it explicitly, which keeps the method off its public surface, and
+forwards to the service. The page's paint handler holds the source as an
+interface, so no view model type appears in the render path.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Camera/IWebcamCaptureService.cs
+/// <summary>
+/// The narrowest possible "where the pixels come from" seam: one call that copies the most
+/// recent frame. A page hands its <see cref="WebcamFrameRenderer"/> one of these, so the
+/// painting code - and the page that owns it - never has to know what a capture service is
+/// or who owns one.
+/// </summary>
+public interface IWebcamFrameSource
+{
+    /// <summary>
+    /// Copies the most recent frame (tightly packed BGRA) into <paramref name="buffer"/>,
+    /// which is (re)allocated as needed. Returns <c>false</c> when no frame is available.
+    /// Safe to call from any thread.
+    /// </summary>
+    bool TryCopyLatestFrame(ref byte[] buffer, out int width, out int height);
+}
+
+// ...
+
+public interface IWebcamCaptureService : IWebcamFrameSource, IDisposable
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Camera/CameraCanvas.cs
+public void Render(SKSurface surface, SKImageInfo info, IWebcamFrameSource frameSource, bool mirror)
+{
+    SKCanvas canvas = surface.Canvas;
+    canvas.Clear(SKColors.Black);
+
+    if (frameSource == null
+        || !frameSource.TryCopyLatestFrame(ref _frameBuffer, out int width, out int height)
+        || width <= 0 || height <= 0)
+    {
+        return;
+    }
+
+    // ... size the cached bitmap, copy into it, aspect-fit and draw
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs
+/// <summary>
+/// Hands the page's preview renderer the newest camera frame. Implemented explicitly:
+/// the page pulls frames through the narrow <see cref="IWebcamFrameSource"/> seam and
+/// never sees the capture service behind it.
+/// </summary>
+bool IWebcamFrameSource.TryCopyLatestFrame(ref byte[] buffer, out int width, out int height)
+{
+    var service = _captureService;
+    if (service == null)
+    {
+        width = 0;
+        height = 0;
+        return false;
+    }
+    return service.TryCopyLatestFrame(ref buffer, out width, out height);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs
+//Where the preview renderer pulls frames from - the view model, seen as a frame source
+private IWebcamFrameSource _frameSource;
+
+//One frame renderer for the live-preview canvas (it caches its own buffers)
+private readonly WebcamFrameRenderer _previewRenderer = new WebcamFrameRenderer();
+
+// ...
+
+_frameSource = DataContext as IWebcamFrameSource;
+
+// ...
+
+PreviewCanvas.PaintSurface += (_, e) =>
+    _previewRenderer.Render(e.Surface, e.Info, _frameSource, mirror: true);
+```
+
+**Where to look.**
+`PalmVisualizer/src/libs/PalmVisualizer.Camera/IWebcamCaptureService.cs` and
+`CameraCanvas.cs`
+`PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`
+`PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs`
+
+**Also shown by.**
+`WebcamPainter/src/libs/WebcamPainter.Webcam/CameraCanvas.cs`, whose renderer
+takes the capture service itself - the same one call, without the interface in
+front of it, which is the smaller answer when only the service ever holds a frame
+
+**Sharp edges.**
+- The buffer belongs to the caller and is replaced only when the frame size
+  changes, so the renderer keeps one per canvas and the source writes into it.
+  Create one renderer per canvas and touch its buffers only on the UI thread.
+- Implement the method explicitly. It is not something a binding or a command
+  should reach, and an explicit implementation says so in the code rather than in
+  a comment.
+- Returning false rather than throwing when there is no session and no frame yet
+  is what lets the paint handler be one branch: clear to black and leave.
+- Deriving the capture service's interface from the frame source is what makes
+  both ends interchangeable; a page that has the service needs no view model in
+  its render path at all.

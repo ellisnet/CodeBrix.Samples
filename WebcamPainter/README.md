@@ -60,6 +60,12 @@ composed by a single view model that the six heads share.
 - Removing the empty placeholder file a save picker leaves behind, so your own
   overwrite prompt only fires for real content: [Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns).
 - Handing the view model a `XamlRoot` getter so it can raise its own dialogs: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+- Turning a library's own color values into brushes at binding time, so a palette is
+  written down in one place and the markup templates over it: [Format a value for display with an IValueConverter](../BLUEPRINTS-ViewsAndControls.md#format-a-value-for-display-with-an-ivalueconverter).
+- Building the row of ink buttons from the palette itself, with one item template over
+  a list of item view models: [Build a row of buttons from a palette with one item template](../BLUEPRINTS-ViewsAndControls.md#build-a-row-of-buttons-from-a-palette-with-one-item-template).
+- Letting the palette settle the caption color that reads on each ink, so a button takes
+  both colors from one object: [Let a domain object carry the caption color for its own ink](../BLUEPRINTS-ThemingAndStyling.md#let-a-domain-object-carry-the-caption-color-for-its-own-ink).
 - Asking for confirmation and reporting errors from inside a command, with the
   prompt conditional rather than unconditional: [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
 - Switching one page between two complete UI states with a single bool, a computed
@@ -69,6 +75,8 @@ composed by a single view model that the six heads share.
 - Setting bound state from a background thread with `InvokeOnMainThread`: [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
 - Disposing a view model that owns a camera, a worker thread, a native drawing
   session and delegates the page handed it: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+- Letting the page that declared the view model in its XAML be the one that disposes
+  it, from `Unloaded` and through `IDisposable`: [Dispose a view model the XAML declared from the page Unloaded](../BLUEPRINTS-MVVM.md#dispose-a-view-model-the-xaml-declared-from-the-page-unloaded).
 - Declaring a Skia page, mapping the platform namespaces, and binding with the
   platform's `Binding` markup extension: [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
 - Laying out an application as a shared UI project plus a Core library plus tested
@@ -199,7 +207,9 @@ WebcamPainter/
   src/
     WebcamPainter.UI/                   Shared project (.shproj + .projitems): App.xaml(.cs),
                                           Views/MainPage.xaml(.cs)
-    WebcamPainter.Core/                 The application library: ViewModels/MainViewModel.cs,
+    WebcamPainter.Core/                 The application library: ViewModels/ (MainViewModel and
+                                          the highlighter button item), Bridges/ (the two page
+                                          contracts), Converters/ColorToBrushConverter.cs,
                                           Helpers/HostHelper.cs, Helpers/FileDialogHelper.cs
     WebcamPainter.LinuxX11/             Head: Program.cs and a csproj
     WebcamPainter.LinuxWayland/         Head: Program.cs and a csproj
@@ -227,7 +237,8 @@ libraries know nothing about each other, nothing about `WebcamPainter.Core` and
 nothing about the view model; each carries only the packages it needs, and none of
 them references the CodeBrix.Platform application framework.
 `WebcamPainter.Core` project-references all three, adds CodeBrix.Platform and the
-bundled font, and contributes the view model plus two helpers. Each head
+bundled font, and contributes the view model, the two bridge contracts it implements,
+one value converter and two helpers. Each head
 project-references only `WebcamPainter.Core`, adds exactly one CodeBrix.Platform
 runtime package for its windowing system, and adds the native OpenCV packages for
 its runtime identifiers. Each test project project-references exactly one library.
@@ -376,13 +387,17 @@ which is why the seven color buttons can switch ink with a plain string command
 parameter and no enum plumbing. One layer per color is what makes the highlighter
 effect work: repeated passes of a single color over the same area do not compound
 where they cross. Read `src/libs/WebcamPainter.Painting/HighlighterPalette.cs` then
-`PaintingSession.cs`. The palette carries a comment asking you to keep the hard-coded
-button backgrounds in `MainPage.xaml` in sync with it, which is the one duplication
-in the application; a developer copying this would do better to expose the palette
-from the view model and template the buttons. The background fill is opaque white
+`PaintingSession.cs`. Each entry also settles the caption color that reads on its ink,
+from BT.709 luminance, which is what lets a button take both values from the palette:
+the view model exposes one `HighlighterColorViewModel` per entry, and `MainPage.xaml`
+templates the buttons over that list, resolving the two colors to brushes through
+`src/WebcamPainter.Core/Converters/ColorToBrushConverter.cs`. The colors are therefore
+written down in exactly one place, and adding an eighth ink is a palette edit. The background fill is opaque white
 because JPEG has no alpha, and the surface clear color is the letterbox color around
-the still. See [Create a drawing session with named color layers](../BLUEPRINTS-GraphicsAndRendering.md#create-a-drawing-session-with-named-color-layers)
-and [Export a drawing at a chosen pixel size](../BLUEPRINTS-GraphicsAndRendering.md#export-a-drawing-at-a-chosen-pixel-size).
+the still. See [Create a drawing session with named color layers](../BLUEPRINTS-GraphicsAndRendering.md#create-a-drawing-session-with-named-color-layers),
+[Export a drawing at a chosen pixel size](../BLUEPRINTS-GraphicsAndRendering.md#export-a-drawing-at-a-chosen-pixel-size),
+[Build a row of buttons from a palette with one item template](../BLUEPRINTS-ViewsAndControls.md#build-a-row-of-buttons-from-a-palette-with-one-item-template)
+and [Let a domain object carry the caption color for its own ink](../BLUEPRINTS-ThemingAndStyling.md#let-a-domain-object-carry-the-caption-color-for-its-own-ink).
 
 ### Strokes in normalized coordinates, and mirroring in three places
 
@@ -407,7 +422,7 @@ it drives a stroke. Each of the three is one line, each documented where it happ
 and the mirroring test uses an asymmetric fixture so the flip is actually observable
 in the exported image. See [Keep a mirrored preview and a mirrored drawing consistent](../BLUEPRINTS-GraphicsAndRendering.md#keep-a-mirrored-preview-and-a-mirrored-drawing-consistent).
 
-### Two canvases, two renderers, and the invalidate bridge
+### Two canvases, two renderers, and the canvas bridge
 
 The main viewer is a `PaintCanvas`; it shows the mirrored live preview in Capture
 Mode and the painting plus the crosshair in Paint Mode. The small self-view beside
@@ -416,22 +431,31 @@ subclasses that exist purely so the XAML can name the element; the drawing lives
 `WebcamFrameRenderer` and in the painting render helper, both declared alongside
 their canvas class. The crosshair helper takes the session plus three primitive
 values and draws a ring sized by the drawing session's own view scaling, with a dark
-halo underneath so it stays readable over bright and dark photo content. The view
-model owns none of this: it calls two `Action` delegates that the page assigns
-through `ICanvasBridge` on `DataContextChanged`, and the page's delegates are the
-ones that marshal onto the UI thread. Read `src/WebcamPainter.UI/Views/MainPage.xaml`,
-then `MainPage.xaml.cs`, then the two renderer classes. Three sharp edges: create one
+halo underneath so it stays readable over bright and dark photo content.
+
+`ICanvasBridge`, in `src/WebcamPainter.Core/Bridges/`, carries both directions of
+that arrangement. Page to view model: two `Action` delegates the page assigns on
+`DataContextChanged`, which the view model invokes to ask for a repaint and which
+marshal onto the UI thread themselves. View model to page: `RenderMainCanvas`, which
+the main canvas's `PaintSurface` handler forwards its surface to in one line, because
+which of the two things that canvas shows is application state rather than a view
+decision. The view model therefore owns the main canvas's `WebcamFrameRenderer` and
+the page owns the self-view's. Read `src/WebcamPainter.UI/Views/MainPage.xaml`, then
+`MainPage.xaml.cs`, then the two renderer classes. Three sharp edges: create one
 renderer per canvas, because each caches its own pixel buffer and bitmap; invalidate
 on `SizeChanged` or the frame keeps its old letterbox after a resize; and subscribe
 `DataContextChanged` before `InitializeComponent()`, because that call may be what
 sets the data context. See [Show live video on an SKXamlCanvas subclass](../BLUEPRINTS-ViewsAndControls.md#show-live-video-on-an-skxamlcanvas-subclass),
-[Draw a brush sized cursor over a rendered drawing session](../BLUEPRINTS-GraphicsAndRendering.md#draw-a-brush-sized-cursor-over-a-rendered-drawing-session)
-and [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
+[Draw a brush sized cursor over a rendered drawing session](../BLUEPRINTS-GraphicsAndRendering.md#draw-a-brush-sized-cursor-over-a-rendered-drawing-session),
+[Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface),
+[Send the paint call back to the view model through the canvas bridge](../BLUEPRINTS-PlatformServices.md#send-the-paint-call-back-to-the-view-model-through-the-canvas-bridge)
+and [Put the one call frame source in the camera library](../BLUEPRINTS-MediaAndVision.md#put-the-one-call-frame-source-in-the-camera-library).
 
 ### Saving, confirming, and degrading gracefully
 
-`IFileSaveBridge` is a single delegate property that the view model both declares and
-implements; the page assigns the shared picker method to it in the same
+`IFileSaveBridge` is a single delegate property, declared in
+`src/WebcamPainter.Core/Bridges/` and implemented by the view model; the page assigns
+the shared picker method to it, through the interface, in the same
 `DataContextChanged` handler that supplies the `XamlRoot` getter. `DoSave()` awaits
 the delegate when it is present, treats an empty result as a cancel, and falls back
 to a default path when the delegate is null, which is the pattern to copy for a head
@@ -462,10 +486,11 @@ unsubscribe from each event source before disposing it, and call the base last.
 **Back**. The ordering habit to copy appears in both: the field is nulled before the
 object is disposed, so a tracking callback arriving mid-teardown finds null rather
 than a disposed object. Both library classes cooperate by nulling their own event
-before stopping, which guarantees no handler runs during teardown. Note that this
-careful implementation is not currently invoked by anything, because the page
-declares its view model inline in XAML; an application copying this shape should
-resolve or own the view model in the page and dispose it on unload. See [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
+before stopping, which guarantees no handler runs during teardown. What runs it is the
+page: the view model is declared inline in XAML, so nothing else owns it, and the
+page's `Unloaded` handler disposes its data context through `IDisposable` rather than
+through the concrete type. See [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates)
+and [Dispose a view model the XAML declared from the page Unloaded](../BLUEPRINTS-MVVM.md#dispose-a-view-model-the-xaml-declared-from-the-page-unloaded).
 
 ### An application that ships three tested libraries
 

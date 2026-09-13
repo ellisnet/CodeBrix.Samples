@@ -33,7 +33,7 @@ the embedded-WebView bridge running on all eight heads.
 - Progress callbacks and browser-navigation callbacks arrive off the UI thread and are marshalled back with `InvokeOnMainThread`: [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread).
 - `Dispose()` disposes and nulls each command, nulls both bridge delegates so they stop holding the page alive, and releases the service reference without disposing it: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 - The whole view model constructor sits inside `if (!IsDesignMode(true))`, so the XAML designer never resolves a service or touches the network: [Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
-- The trim-size picker is filled from a typed option list owned by the library, so no library type is named in XAML: [Bind a picker to enum values with or without friendly labels](../BLUEPRINTS-MVVM.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
+- The trim-size picker binds the library's own option objects and shows them through `DisplayMemberPath`, so the selection is a typed value and no library type is named in XAML: [Bind a picker to enum values with or without friendly labels](../BLUEPRINTS-MVVM.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
 - The pipeline library exposes one `AddRenderArticle()` extension method, which is the only thing `App` knows about it: [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
 - `HostHelper` supplies the `IHostBuilderProvider` that `SimpleServiceResolver` builds its container from: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
 - The `App` constructor does the same four things every application in the family does: default font, service registration, design mode off, `InitializeComponent()`: [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
@@ -46,7 +46,7 @@ the embedded-WebView bridge running on all eight heads.
 - `App.InitializeLogging()` wires a console logger factory into the platform's ambient logger inside `#if DEBUG`, and is called before the host is built: [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 - The Skia page declares the platform's own control and data namespaces and binds with `{d:Binding ...}`, reaching its view model through an `assembly=WikipediaPublisher.Core` namespace: [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
 - The bottom bar is a wrapping `FlexPanel` whose two control groups split onto two rows in portrait: [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS-ViewsAndControls.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in).
-- Enter in the search box runs the Search command; the WPF head does it declaratively with a `KeyBinding`, which is the form to copy: [Run a command when the user presses Enter in a text box](../BLUEPRINTS-ViewsAndControls.md#run-a-command-when-the-user-presses-enter-in-a-text-box).
+- Enter in the search box runs the Search command; the WPF head does it declaratively with a `KeyBinding` and the Skia and WinUI pages forward the key to the view model in one line: [Run a command when the user presses Enter in a text box](../BLUEPRINTS-ViewsAndControls.md#run-a-command-when-the-user-presses-enter-in-a-text-box).
 - `ArticleParser` walks a CodeBrix.MarkupParse DOM into an ordered list of typed blocks, picking the real content container out of several candidates: [Parse messy HTML into structured blocks with the CodeBrix MarkupParse library](../BLUEPRINTS-DocumentsAndData.md#parse-messy-html-into-structured-blocks-with-the-codebrix-markupparse-library).
 - The same walk removes citation markers, edit links, navigation boxes and whole trailing sections, counting what it dropped: [Strip web only chrome while walking the DOM](../BLUEPRINTS-DocumentsAndData.md#strip-web-only-chrome-while-walking-the-dom).
 - `GlyphFilter` removes characters the embedded book fonts cannot render, then tidies the holes it leaves behind, rather than printing empty boxes: [Drop characters your embedded fonts cannot render](../BLUEPRINTS-DocumentsAndData.md#drop-characters-your-embedded-fonts-cannot-render).
@@ -65,7 +65,9 @@ the embedded-WebView bridge running on all eight heads.
 - The offline tests parse an article fixture embedded in the test assembly, read out through a shared helper: [Read a committed fixture from beside the test binary](../BLUEPRINTS-Testing.md#read-a-committed-fixture-from-beside-the-test-binary).
 - Generated PDFs are verified by their `%PDF-` signature and a page count rather than by a golden file: [Assert on a generated document without a golden file](../BLUEPRINTS-Testing.md#assert-on-a-generated-document-without-a-golden-file).
 - Live network tests sit in the same class as the offline ones, with the fast fetch-and-parse test split from the slow end-to-end render: [Make live tests opt in and keep them out of the default run](../BLUEPRINTS-Testing.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run).
-- The family's DI-backed test fixture file is linked into the test project, ready to resolve `IArticleRenderService` the way the container builds it: [Test a service the way the container builds it](../BLUEPRINTS-Testing.md#test-a-service-the-way-the-container-builds-it).
+- The family's DI-backed test fixture is subclassed in the test project and calls `AddRenderArticle()`, so a test resolves `IArticleRenderService` the way the container builds it: [Test a service the way the container builds it](../BLUEPRINTS-Testing.md#test-a-service-the-way-the-container-builds-it).
+- Proving the library's own `AddRenderArticle()` registers the service it promises, and as a singleton: [Prove a registration extension registers what it promises](../BLUEPRINTS-Testing.md#prove-a-registration-extension-registers-what-it-promises).
+- The shared source files are linked into each head one at a time, with a symbol per UI stack deciding what they compile to: [Link shared source files into each head and select the stack with a symbol](../BLUEPRINTS-ProjectLayoutAndPackaging.md#link-shared-source-files-into-each-head-and-select-the-stack-with-a-symbol).
 - The WinWpfSkia head sets `EnableWindowsTargeting` so a Windows-targeting head still compiles on Linux and macOS inside the cross-platform solution: [Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS-ProjectLayoutAndPackaging.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution).
 - `WikipediaPublisher.Windows.slnx` restricts its solution platforms to x86, x64 and ARM64 to match what the WinUI head declares: [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS-ProjectLayoutAndPackaging.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
 - Two solutions exist because the native heads need Windows-host-only build tooling, and both files carry a comment saying so: [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere).
@@ -219,10 +221,9 @@ the view model and the two helpers out of `Shared/` with
 `<Compile Include="..\..\Shared\..." Link="..." />`, and sets its `RootNamespace` to
 `WikipediaPublisher` (not `WikipediaPublisher.Core`) so the linked view model's namespace
 still matches. The two native heads project-reference RenderArticle directly and file-link
-what they need from `Shared/`: the WinUI head links the view model, the host helper and the
-file-dialog helper; the WPF head links only the first two, because the WPF `SaveFileDialog`
-returns a plain path and leaves no placeholder file behind. The test project file-links
-`SimpleTestFixture.cs` and `EmbeddedResourceHelper.cs` the same way.
+what they need from `Shared/`: both link the view model, the host helper and the
+file-dialog helper, the last of those because the view model itself calls into it. The test
+project file-links `SimpleTestFixture.cs` and `EmbeddedResourceHelper.cs` the same way.
 
 ## CodeBrix libraries and add-ins used
 
@@ -299,10 +300,11 @@ and [Register library services with one AddXxx extension method](../BLUEPRINTS-A
 the same file in all eight heads: compiled into `WikipediaPublisher.Core` for the six Skia
 heads, file-linked into the two native head projects. It derives from `SimpleViewModel` and
 implements two interfaces it declares itself, `IWebViewBridge` and `IFileSaveBridge`. Each
-is a small property bag of delegates the page assigns, which is the whole of its knowledge
-of the platform: it holds an `Action<string> NavigateToUrl` and a
-`Func<string, Task<string>> PickSavePdfPathAsync`, and it checks both for null before using
-them. Nothing in the file names a WebView type, a picker type, or a window type.
+is a small contract the page fills in, which is the whole of its knowledge of the platform:
+one delegate each, an `Action<string> NavigateToUrl` and a
+`Func<string, Task<string>> PickSavePdfPathAsync`, both checked for null before use, plus
+the two methods the page calls to say the browser is ready and where it has landed. Nothing
+in the file names a WebView type, a picker type, or a window type.
 
 Read the two interface declarations at the top of the file, then the `#region` for the
 commands, then the three page implementations in the order
@@ -328,9 +330,13 @@ browser to it; the user then browses freely, and Publish uses whatever article p
 displayed. That makes the browser the application's primary input, and it has to work on
 all eight heads.
 
-The view model side is two members of `IWebViewBridge`: the page sets `NavigateToUrl`, and
-the page calls `SetCurrentBrowserUrl(url)` whenever navigation completes. `DoSearch()`
-composes the search URL and marshals the navigation with `InvokeOnMainThread`;
+The view model side is three members of `IWebViewBridge`: the page sets `NavigateToUrl`,
+calls `NotifyBrowserReady()` once that delegate is in place, and calls
+`SetCurrentBrowserUrl(url)` whenever navigation completes. Every navigation the view model
+raises, the start page included, goes through one private `Navigate(url)` helper that checks
+the delegate for null and marshals the call with `InvokeOnMainThread`, so no page decides
+where the browser opens and all navigation flows one way. `DoSearch()` composes the search
+URL and hands it to that helper; `NotifyBrowserReady()` hands it `HomeUrl`;
 `SetCurrentBrowserUrl` writes `ArticleUrl` and a status line, and `ArticleUrl` carries
 `[AffectsCommands(nameof(PublishCommand))]` so Publish enables itself the moment the user
 lands on a printable article page. Whether a page is printable is decided by
@@ -338,11 +344,13 @@ lands on a printable article page. Whether a page is printable is decided by
 and the non-article namespace prefixes, so `CanExecute` stays cheap and is testable with no
 view model instance.
 
-Two sharp edges show up in all three page implementations. Read the current URL from
+Three sharp edges show up in the page implementations. Read the current URL from
 `CoreWebView2.Source`, not from the XAML `Source` property, which does not reliably reflect
-redirects or user navigation; all three carry the same comment saying so. And the Skia page
+redirects or user navigation; all three carry the same comment saying so. The Skia page
 wires the browser from a `Loaded` handler behind a `_browserInitialized` guard, because
-`Loaded` can fire more than once.
+`Loaded` can fire more than once. And each page reaches its view model through the
+`IWebViewBridge` interface rather than through the concrete view model type, so the page
+depends on the three members of the contract and nothing else.
 
 On the Linux Skia heads the browser itself comes from the CodeBrix.Platform.WebView add-in,
 referenced once in `CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.Core.csproj`
@@ -377,16 +385,23 @@ Each head then supplies the dialog its platform offers, and each has a wrinkle:
 - The Skia heads open the platform's `FileSavePicker`. That picker percent-encodes the path
   it returns on Linux, so `FileDialogHelper.ToFileSystemPath(...)` decodes it, guarded by a
   check for `%` followed by two hex digits so a legitimate name containing a percent sign
-  is left alone. The picker also creates an empty placeholder file at the chosen path, so
-  `FileDialogHelper.RemoveEmptyPlaceholder(...)` deletes it, but only when it is genuinely
-  zero-length, and swallows any failure. The worst case is one extra confirmation prompt,
-  never lost data.
+  is left alone. Decoding is the only thing the page does to the path, because decoding is
+  platform plumbing.
 - The WinUI head drops to the Win32 common item dialog through COM interop in
   `WikipediaPublisher.WinUI/Views/Win32SaveFileDialog.cs`, and its class comment gives both
   reasons: that dialog can be told not to prompt about overwriting, and it creates no
   placeholder file.
-- The WPF head uses `Microsoft.Win32.SaveFileDialog` with `OverwritePrompt = false`, and
-  does not link the path helper at all, because it already returns a plain path.
+- The WPF head uses `Microsoft.Win32.SaveFileDialog` with `OverwritePrompt = false`; it
+  returns a plain path, so nothing has to be decoded on that head.
+
+What to make of a file already sitting at the chosen path is application policy rather than
+plumbing, so it lives in the view model and every head therefore gets it identically.
+`DoSelectOutputFile()` hands the path it just accepted to
+`FileDialogHelper.RemoveEmptyPlaceholder(...)`, which deletes the file only when it is
+genuinely zero-length and swallows any failure: a dialog that creates an empty placeholder
+for a brand-new name leaves nothing behind that looks like the user's own work, and a file
+with content in it is never touched. The worst case is one extra confirmation prompt, never
+lost data.
 
 The single confirmation lives in the view model: `DoPublish()` checks `File.Exists` and
 calls `ConfirmDialog(...)` before anything is written. Doing it at publish time rather than
@@ -404,6 +419,7 @@ implementations.
 See [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model),
 [Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns),
 [Suppress a native save dialog overwrite prompt so the view model owns confirmation](../BLUEPRINTS-PlatformServices.md#suppress-a-native-save-dialog-overwrite-prompt-so-the-view-model-owns-confirmation),
+[Keep picker plumbing in the page and picker policy in the view model](../BLUEPRINTS-PlatformServices.md#keep-picker-plumbing-in-the-page-and-picker-policy-in-the-view-model),
 [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs)
 and [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 
@@ -605,11 +621,13 @@ the wrap point deterministic rather than content-dependent. Only the Skia UI use
 WinUI and WPF pages lay the same bar out with a `Grid`, so the reflow is a Skia-head
 behavior rather than an application-wide one.
 
-One deviation is worth naming. Enter in the search box is handled in the Skia and WinUI
-pages by a `KeyDown` handler in code-behind that checks `CanExecute` and calls `Execute`.
-The WPF head does the same job declaratively with `TextBox.InputBindings` and a `KeyBinding`
-pointed at `SearchCommand`, which is the form to prefer; where a key handler is unavoidable
-it should stay a one-line forward to the command.
+The three heads handle Enter in the search box in the two forms the family allows. The WPF
+head does it declaratively with `TextBox.InputBindings` and a `KeyBinding` pointed at
+`SearchCommand`, which is the form to prefer wherever the markup offers it. The Skia and
+WinUI dialects have no input bindings, so those pages keep a `KeyDown` handler, and the
+handler is one line: it forwards to `MainViewModel.SubmitSearch()`, which re-checks
+`CanExecute` and raises the command, and reports back whether the key was handled. No page
+reaches into a command of its own accord.
 
 See [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension),
 [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS-ViewsAndControls.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in),
@@ -655,7 +673,8 @@ See [Start each head from a Program Main and pick the platform backend](../BLUEP
 [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head),
 [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor),
 [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere),
-[Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS-ProjectLayoutAndPackaging.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution)
+[Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS-ProjectLayoutAndPackaging.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution),
+[Link shared source files into each head and select the stack with a symbol](../BLUEPRINTS-ProjectLayoutAndPackaging.md#link-shared-source-files-into-each-head-and-select-the-stack-with-a-symbol)
 and [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS-ProjectLayoutAndPackaging.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
 
 ### Testing a pipeline that talks to the internet
@@ -671,6 +690,15 @@ same fixture at two trim sizes entirely offline, verifying the produced file by 
 signature and a page count rather than against a golden file, which is what makes the
 assertion stable while the design is still being tuned.
 
+`RegisterServicesTests.cs` covers the other end of the library, its registration method:
+`RenderArticleTestingFixture` subclasses the family's `SimpleTestFixture` and calls
+`AddRenderArticle()` in `RegisterCustomServices`, and the tests resolve
+`IArticleRenderService` out of it and assert the implementation type and the singleton
+lifetime, which is `AddRenderArticle()` being exercised rather than described.
+`Models/PageSizeInfoTests.cs` pins the trim-size list the picker binds: the first entry is
+the default, every enum value appears exactly once, the display names are distinct, and
+`PageSizeInfo.For(...)` rejects a value that is not in the list.
+
 The live tests sit in the same class and use the public service exactly as the view model
 does: the same request record, the same `IProgress<T>`, and
 `TestContext.Current.CancellationToken` on every awaited call. The fast one fetches and
@@ -681,15 +709,17 @@ deliberately loose, because the articles change.
 
 All of this reaches the library's internals because
 `WikipediaPublisher.RenderArticle/InternalsVisibleTo.cs` names the test assembly. The
-family's `SimpleTestFixture.cs` is file-linked into the project as well, ready to resolve
-`IArticleRenderService` through the container; note that it is feature-gated by compilation
+family's `SimpleTestFixture.cs` is file-linked into the project as well, and
+`RenderArticleTestingFixture` is the subclass of it that the registration tests take as an
+`IClassFixture<T>`; note that `SimpleTestFixture.cs` is feature-gated by compilation
 constants, and the test csproj defines `SIMPLE_OUTPUT_LOGGING` for the Debug configuration.
 
 See [Read a committed fixture from beside the test binary](../BLUEPRINTS-Testing.md#read-a-committed-fixture-from-beside-the-test-binary),
 [Assert on a generated document without a golden file](../BLUEPRINTS-Testing.md#assert-on-a-generated-document-without-a-golden-file),
 [Make live tests opt in and keep them out of the default run](../BLUEPRINTS-Testing.md#make-live-tests-opt-in-and-keep-them-out-of-the-default-run),
-[Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project)
-and [Test a service the way the container builds it](../BLUEPRINTS-Testing.md#test-a-service-the-way-the-container-builds-it).
+[Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project),
+[Test a service the way the container builds it](../BLUEPRINTS-Testing.md#test-a-service-the-way-the-container-builds-it)
+and [Prove a registration extension registers what it promises](../BLUEPRINTS-Testing.md#prove-a-registration-extension-registers-what-it-promises).
 
 ## Third-party content
 

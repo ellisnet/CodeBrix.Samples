@@ -1,6 +1,7 @@
 using CodeBrix.Platform.UI.TerminalView;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using RedisSetupTool.Bridges;
 using RedisSetupTool.DockerManagement.Exec;
 using RedisSetupTool.TerminalView;
 using RedisSetupTool.ViewModels;
@@ -46,15 +47,14 @@ public sealed partial class MainPage
     }
 
     private readonly Dictionary<ConsoleTabViewModel, ConsoleHost> _consoleHosts = [];
-    private ConsolesViewModel _consoles;
+    private IConsoleTabsBridge _consoles;
 
-    private void AttachConsoles(MainViewModel viewModel)
+    private void AttachConsoles(IConsoleTabsBridge consoles)
     {
-        if (viewModel is null || _consoles is not null) { return; }
+        if (consoles is null || _consoles is not null) { return; }
 
-        _consoles = viewModel.Consoles;
+        _consoles = consoles;
         _consoles.Tabs.CollectionChanged += ConsoleTabs_ModelCollectionChanged;
-        _consoles.ReopenRequested += ReopenConsole;
         _consoles.SendInput = (model, text) =>
         {
             if (model is not null && _consoleHosts.TryGetValue(model, out var host))
@@ -146,25 +146,18 @@ public sealed partial class MainPage
     {
         if (host.Pump is not null) { return; }
 
+        //Finding a shell and opening the exec is the view model's work; what is left here is the
+        //  part that needs the control: joining the session to it and showing a failure in it.
+        var session = await _consoles.StartSessionAsync(host.Model, host.Terminal.Columns,
+            host.Terminal.Rows);
+        if (session is null)
+        {
+            host.Terminal.Feed(TerminalText.Error(host.Model.FailureMessage));
+            return;
+        }
+
         try
         {
-            var probe = await _consoles.ProbeAsync(host.Model.ContainerId);
-            if (!probe.Found)
-            {
-                host.Model.ApplyFailure(probe.Message ?? "No usable shell in this image.");
-                host.Terminal.Feed("\r\n\x1b[31m" + (probe.Message ?? "No usable shell.")
-                    + "\x1b[0m\r\n");
-                return;
-            }
-
-            host.Model.ApplyShell(probe.ShellPath);
-
-            var session = await _consoles.Docker.OpenShellAsync(host.Model.ContainerId,
-                new ExecSessionOptions
-                {
-                    Rows = host.Terminal.Rows,
-                    Columns = host.Terminal.Columns,
-                });
             host.Session = session;
 
             var pump = TerminalSessionFactory.Attach(session, host.Terminal, options);
@@ -175,9 +168,7 @@ public sealed partial class MainPage
             pump.StateChanged += state => DispatcherQueue?.TryEnqueue(() =>
             {
                 host.Model.ApplyState(state, pump.ExitCode);
-                host.Tab.Header = state == TerminalSessionState.Running
-                    ? host.Model.ContainerName
-                    : host.Model.ContainerName + " · " + host.Model.StateText;
+                host.Tab.Header = host.Model.TabHeaderText;
             });
             pump.GridChanged += (columns, rows) => DispatcherQueue?.TryEnqueue(
                 () => host.Model.ApplyGrid(columns, rows));
@@ -185,15 +176,11 @@ public sealed partial class MainPage
             pump.Start();
             host.Terminal.GrabFocus();
         }
-        catch (NoShellAvailableException exception)
-        {
-            host.Model.ApplyFailure(exception.Message);
-            host.Terminal.Feed("\r\n\x1b[31m" + exception.Message + "\x1b[0m\r\n");
-        }
         catch (Exception exception)
         {
+            //This runs unawaited from the control's Loaded event, so nothing may escape it.
             host.Model.ApplyFailure(exception.Message);
-            host.Terminal.Feed("\r\n\x1b[31m" + exception.Message + "\x1b[0m\r\n");
+            host.Terminal.Feed(TerminalText.Error(exception.Message));
         }
     }
 
@@ -216,16 +203,6 @@ public sealed partial class MainPage
         }
     }
 
-    private void ReopenConsole(ConsoleTabViewModel model)
-    {
-        if (model is null) { return; }
-
-        var containerId = model.ContainerId;
-        var containerName = model.ContainerName;
-        _consoles.CloseTab(model);
-        _consoles.OpenConsole(containerId, containerName);
-    }
-
     private void ConsoleTabs_TabCloseRequested(TabView sender,
         TabViewTabCloseRequestedEventArgs args)
     {
@@ -233,7 +210,9 @@ public sealed partial class MainPage
         {
             if (ReferenceEquals(pair.Value.Tab, args.Tab))
             {
-                _consoles.CloseTab(pair.Key);
+                //The strip's close button takes the same command the tab's own Close button
+                //  does, so there is one way to close a console rather than two.
+                pair.Key.CloseCommand.Execute(null);
                 return;
             }
         }

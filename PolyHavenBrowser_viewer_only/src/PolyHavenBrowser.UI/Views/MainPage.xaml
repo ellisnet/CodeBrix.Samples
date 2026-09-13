@@ -38,8 +38,8 @@
             <TextBlock Text="Rendering engine:" VerticalAlignment="Center" Margin="12,0,0,0"
                        Visibility="{d:Binding EngineSelectorVisibility}" />
             <ComboBox Width="130" Height="36" VerticalAlignment="Center"
-                      ItemsSource="{d:Binding RenderEngineNames}"
-                      SelectedItem="{d:Binding SelectedRenderEngineName, Mode=TwoWay}"
+                      ItemsSource="{d:Binding RenderEngineKinds}"
+                      SelectedItem="{d:Binding SelectedRenderEngine, Mode=TwoWay}"
                       IsEnabled="{d:Binding IsNotBusy}"
                       Visibility="{d:Binding EngineSelectorVisibility}" />
         </StackPanel>

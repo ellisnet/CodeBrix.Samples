@@ -1,4 +1,5 @@
 using PdfSideBySide.Helpers;
+using PdfSideBySide.PdfRender;
 using CodeBrix.Platform.Simple;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
@@ -26,7 +27,7 @@ public partial class App : Application
         SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
         {
             //Register the app's services here
-
+            services.AddPdfRender();
         });
         SimpleViewModel.SetIsDesignMode(false);
 

@@ -3,9 +3,11 @@
     xmlns="clr-namespace:Microsoft.UI.Xaml.Controls;assembly=CodeBrix.Platform.UI"
     xmlns:c="clr-namespace:CodeBrix.Platform.UI.Converters;assembly=CodeBrix.Platform.UI.Toolkit"
     xmlns:d="clr-namespace:Microsoft.UI.Xaml.Data;assembly=CodeBrix.Platform.UI"
+    xmlns:ui="clr-namespace:Microsoft.UI.Xaml;assembly=CodeBrix.Platform.UI"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:WebcamPainter.Views"
     xmlns:vm="clr-namespace:WebcamPainter.ViewModels;assembly=WebcamPainter.Core"
+    xmlns:conv="clr-namespace:WebcamPainter.Converters;assembly=WebcamPainter.Core"
     xmlns:webcam="clr-namespace:WebcamPainter.Webcam;assembly=WebcamPainter.Webcam"
     xmlns:painting="clr-namespace:WebcamPainter.Painting;assembly=WebcamPainter.Painting"
     FontFamily="{StaticResource RobotoFont}"
@@ -18,6 +20,17 @@
     <Page.Resources>
         <c:BoolToVisibilityConverter x:Key="VisibleWhenTrue" />
         <c:BoolToVisibilityConverter x:Key="VisibleWhenFalse" Invert="True" />
+        <conv:ColorToBrushConverter x:Key="ColorToBrush" />
+
+        <!-- One highlighter button: the palette entry supplies the caption, the ink color
+             and the caption color, and hands back the view model's own select command -->
+        <ui:DataTemplate x:Key="HighlighterColorTemplate">
+            <Button Content="{d:Binding Name}" HorizontalAlignment="Stretch" Margin="0,0,0,8"
+                    Background="{d:Binding Color, Converter={StaticResource ColorToBrush}}"
+                    Foreground="{d:Binding TextColor, Converter={StaticResource ColorToBrush}}"
+                    Command="{d:Binding SelectColorCommand}"
+                    CommandParameter="{d:Binding Name}" />
+        </ui:DataTemplate>
     </Page.Resources>
 
     <Grid Padding="12">
@@ -58,21 +71,10 @@
 
                 <TextBlock Text="{d:Binding ActiveColorText}" FontSize="13" TextWrapping="Wrap" />
 
-                <!-- Highlighter colors: keep these backgrounds in sync with HighlighterPalette -->
-                <Button Content="Red" HorizontalAlignment="Stretch" Background="#E61E1E" Foreground="White"
-                        Command="{d:Binding SelectColorCommand}" CommandParameter="Red" />
-                <Button Content="Orange" HorizontalAlignment="Stretch" Background="#FF8C14" Foreground="Black"
-                        Command="{d:Binding SelectColorCommand}" CommandParameter="Orange" />
-                <Button Content="Yellow" HorizontalAlignment="Stretch" Background="#F0DC14" Foreground="Black"
-                        Command="{d:Binding SelectColorCommand}" CommandParameter="Yellow" />
-                <Button Content="Green" HorizontalAlignment="Stretch" Background="#28C83C" Foreground="Black"
-                        Command="{d:Binding SelectColorCommand}" CommandParameter="Green" />
-                <Button Content="Blue" HorizontalAlignment="Stretch" Background="#285AEB" Foreground="White"
-                        Command="{d:Binding SelectColorCommand}" CommandParameter="Blue" />
-                <Button Content="Indigo" HorizontalAlignment="Stretch" Background="#552DB4" Foreground="White"
-                        Command="{d:Binding SelectColorCommand}" CommandParameter="Indigo" />
-                <Button Content="Violet" HorizontalAlignment="Stretch" Background="#BE3CDC" Foreground="White"
-                        Command="{d:Binding SelectColorCommand}" CommandParameter="Violet" />
+                <!-- Highlighter colors: one button per palette entry, so the palette is the
+                     only place the colors are written down -->
+                <ItemsControl ItemsSource="{d:Binding HighlighterColors}"
+                              ItemTemplate="{StaticResource HighlighterColorTemplate}" />
             </StackPanel>
         </Grid>
 

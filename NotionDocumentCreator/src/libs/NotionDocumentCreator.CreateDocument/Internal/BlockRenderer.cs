@@ -203,8 +203,8 @@ internal sealed class BlockRenderer
                     _context.Notes.Add("A template block was skipped (no print meaning).");
                     break;
 
-                case TranscriptionBlock transcription:
-                    RenderTranscription(target, node, transcription, indentLevel);
+                case MeetingNotesBlock meetingNotes:
+                    RenderMeetingNotes(target, node, meetingNotes, indentLevel);
                     break;
 
                 default:
@@ -521,12 +521,12 @@ internal sealed class BlockRenderer
             $"Equation rendered as its LaTeX source (no math typesetting): {Shorten(expression)}");
     }
 
-    private void RenderTranscription(IBlockTarget target, NotionBlockNode node,
-        TranscriptionBlock transcription, int indentLevel)
+    private void RenderMeetingNotes(IBlockTarget target, NotionBlockNode node,
+        MeetingNotesBlock meetingNotes, int indentLevel)
     {
         var paragraph = target.AddParagraph();
         paragraph.Style = "TranscriptText";
-        _richText.Append(paragraph, transcription.Transcription?.Title);
+        _richText.Append(paragraph, meetingNotes.MeetingNotes?.Title);
 
         if (node.Children.Count > 0)
         {

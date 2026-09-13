@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using NotionDocumentCreator.CreateDocument;
 using NotionDocumentCreator.CreateDocument.Models;
 using NotionDocumentCreator.CreateDocument.Services;
+using NotionDocumentCreator.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -40,15 +41,6 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge
         if (IsDesignMode(true)) { return; } //Leave as the first line of constructor
 
         _documentSvc = GetService<INotionDocumentService>();
-
-        PageSizeNames.Clear();
-        foreach (var info in PageSizeInfo.All)
-        {
-            PageSizeNames.Add(info.DisplayName);
-        }
-        _selectedPageSizeName = PageSizeInfo.All[0].DisplayName;
-        NotifyPropertyChanged(nameof(PageSizeNames));
-        NotifyPropertyChanged(nameof(SelectedPageSizeName));
 
         StatusText = "Paste your Notion integration token and a page or database ID, then click Connect.";
     }
@@ -134,14 +126,19 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge
     /// <summary>Set by the hosting head (see <see cref="IFileSaveBridge"/>); null on heads with no file dialog.</summary>
     public Func<string, Task<string>> PickSavePdfPathAsync { get; set; }
 
-    public List<string> PageSizeNames { get; } = new();
+    /// <summary>The trim sizes offered by the page-size picker, in the library's display order.</summary>
+    public IReadOnlyList<PageSizeInfo> PageSizes => PageSizeInfo.All;
 
-    private string _selectedPageSizeName = string.Empty; //Explicit backing field: other members read it
-    public string SelectedPageSizeName
+    /// <summary>
+    /// The chosen trim, two-way bound to the picker's SelectedItem. Binding the record itself
+    /// (the ComboBox shows its DisplayName) keeps the display strings in the library that owns
+    /// them and needs no mapping back from text.
+    /// </summary>
+    public PageSizeInfo SelectedPageSize
     {
-        get => _selectedPageSizeName;
-        set => SetProperty(ref _selectedPageSizeName, value ?? string.Empty);
-    }
+        get;
+        set => SetProperty(ref field, value ?? PageSizeInfo.All[0]);
+    } = PageSizeInfo.All[0];
 
     [AffectsCommands(nameof(ConnectCommand), nameof(LoadWholeTreeCommand),
         nameof(SelectOutputFileCommand), nameof(CreateCommand))]
@@ -314,7 +311,15 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge
             var chosenPath = await PickSavePdfPathAsync(GetSuggestedFileName());
             if (!string.IsNullOrWhiteSpace(chosenPath))
             {
-                OutputFilePath = chosenPath.Trim();
+                var destination = chosenPath.Trim();
+
+                //Deciding that a brand-new, still-empty file the picker created is a destination
+                //  rather than a document is this application's policy, so it lives here and not
+                //  in the page: the create-time "replace existing file?" prompt should fire only
+                //  for a file that really has content in it.
+                FileDialogHelper.RemoveEmptyPlaceholder(destination);
+
+                OutputFilePath = destination;
                 StatusText = $"Will save to: {OutputFilePath}";
             }
         }
@@ -376,15 +381,11 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge
                 .Select(n => n.Id)
                 .ToList();
 
-            var pageSize = PageSizeInfo.All
-                .FirstOrDefault(p => p.DisplayName == SelectedPageSizeName)?.Option
-                ?? PageSizeOption.EightByTen;
-
             var request = new CreateRequest
             {
                 PageIds = pageIds,
                 OutputFilePath = outputPath,
-                PageSize = pageSize
+                PageSize = SelectedPageSize.Option
             };
 
             var progress = new Progress<CreateProgress>(p => InvokeOnMainThread(() =>
@@ -462,7 +463,11 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge
     {
         if (node is null || node.IsPlaceholder) { return; }
         SelectedNode = node;
-        _ = LoadPreviewForNodeAsync(node);
+
+        //The selection has to take effect now, and the load cannot be awaited from here, so it
+        //  is started through a helper that observes it instead of a bare discard.
+        BackgroundWork.StartAndObserve(() => LoadPreviewForNodeAsync(node),
+            e => InvokeOnMainThread(() => StatusText = $"Preview failed: {e.Message}"));
     }
 
     private async Task LoadPreviewForNodeAsync(NotionPageNodeViewModel node)

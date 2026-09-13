@@ -29,6 +29,10 @@ public sealed partial class MainPage : Page
             }
         };
 
+        //The view model waits for this before it shows its startup dialog: a dialog needs a XamlRoot,
+        //  and the page does not have one until it is on screen.
+        Loaded += (sender, args) => (DataContext as IPageReadyNotifier)?.NotifyPageReady();
+
         InitializeComponent();
     }
 }

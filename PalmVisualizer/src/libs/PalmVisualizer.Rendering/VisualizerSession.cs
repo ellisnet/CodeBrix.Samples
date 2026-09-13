@@ -19,7 +19,7 @@ namespace PalmVisualizer.Rendering;
 /// Set the environment variable <c>PALMVISUALIZER_USE_CPU=1</c> to run the identical scene
 /// on the CpuRendering (CPU) render path.
 /// </summary>
-public sealed class VisualizerSession
+public sealed class VisualizerSession : IVisualizerSession
 {
     private readonly GameSurfaceCanvas _canvas;
     private readonly PalmAttractorField _attractorField = new PalmAttractorField();

@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
 using PdfSideBySide.PdfRender.Documents;
 using PdfSideBySide.PdfRender.Rendering;
+using PdfSideBySide.PdfRender.Viewing;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -19,6 +20,8 @@ namespace PdfSideBySide.ViewModels;
 public class DocumentPaneViewModel : SimpleViewModel
 {
     private const string NoDocumentText = "No document selected";
+
+    private PaneLayout _layout = PaneLayout.None;
 
     public DocumentPaneViewModel(string title, Func<Task> browse)
     {
@@ -102,6 +105,26 @@ public class DocumentPaneViewModel : SimpleViewModel
 
     #endregion
 
+    #region | The layout the page applies |
+
+    /// <summary>
+    /// The width in pixels to give the page image: the shared zoom multiplied by the scale that
+    /// fits the whole page in this pane's viewer. <c>NaN</c> - size to the content - while there is
+    /// no page to show.
+    /// </summary>
+    public double ImageWidth => _layout.ImageWidth;
+
+    /// <summary>The height in pixels to give the page image; <c>NaN</c> while there is no page to show.</summary>
+    public double ImageHeight => _layout.ImageHeight;
+
+    /// <summary>How far to scroll this pane's viewer from its left edge to show the pan position.</summary>
+    public double ScrollOffsetX => _layout.ScrollOffsetX;
+
+    /// <summary>How far to scroll this pane's viewer from its top edge to show the pan position.</summary>
+    public double ScrollOffsetY => _layout.ScrollOffsetY;
+
+    #endregion
+
     #region | Commands and their implementations |
 
     /// <summary>Opens the file picker for this pane; the main view model supplies the work.</summary>
@@ -129,6 +152,17 @@ public class DocumentPaneViewModel : SimpleViewModel
 
     /// <summary>Flags whether a render is in flight.</summary>
     internal void SetRendering(bool isRendering) => IsRendering = isRendering;
+
+    /// <summary>Takes the size and scroll offset the view worked out for this pane's viewer.</summary>
+    internal void SetLayout(PaneLayout layout)
+    {
+        if (_layout == layout) { return; }
+        _layout = layout;
+        NotifyPropertyChanged(nameof(ImageWidth));
+        NotifyPropertyChanged(nameof(ImageHeight));
+        NotifyPropertyChanged(nameof(ScrollOffsetX));
+        NotifyPropertyChanged(nameof(ScrollOffsetY));
+    }
 
     /// <summary>Decodes page's PNG into the pane's image. Must be called on the UI thread.</summary>
     internal async Task ShowPageAsync(RenderedPage page)

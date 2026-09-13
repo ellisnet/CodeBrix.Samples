@@ -4,6 +4,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- xUnit.net v3 test projects are self-executing binaries and
+         must build as Exe; run via Microsoft.Testing.Platform,
+         matching the CodeBrix family test convention. -->
+    <OutputType>Exe</OutputType>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <!-- xUnit1051: tests intentionally use CancellationToken.None-style defaults; live tests are trait-gated instead -->
     <NoWarn>$(NoWarn);xUnit1051</NoWarn>
   </PropertyGroup>
@@ -13,11 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeBrix.TestMocks.ApacheLicenseForever" Version="1.0.165.1173" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
+    <PackageReference Include="CodeBrix.TestMocks.ApacheLicenseForever" Version="1.0.248.1105" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
-    <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.164.180" />
+    <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

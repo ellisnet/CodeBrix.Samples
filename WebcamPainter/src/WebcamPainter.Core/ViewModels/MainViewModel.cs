@@ -1,44 +1,17 @@
 using CodeBrix.Platform.Simple;
+using SkiaSharp;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using WebcamPainter.Bridges;
 using WebcamPainter.Painting;
 using WebcamPainter.Vision;
 using WebcamPainter.Webcam;
 
 namespace WebcamPainter.ViewModels;
-
-/// <summary>
-/// Lets the hosting page give the view model a native "Save JPEG as…" file dialog. The
-/// Skia heads wire this up with the CodeBrix.Platform <c>FileSavePicker</c>; heads with no
-/// dialog (the Linux framebuffer head) leave it null and the image saves to a default
-/// Pictures-folder path instead.
-/// </summary>
-public interface IFileSaveBridge
-{
-    /// <summary>
-    /// Shows a "save JPEG" dialog seeded with the suggested file name and returns the full
-    /// path the user chose, or <c>null</c> if they cancelled.
-    /// Signature: <c>Func&lt;suggestedFileName, Task&lt;chosenPathOrNull&gt;&gt;</c>.
-    /// </summary>
-    Func<string, Task<string>> PickSaveJpegPathAsync { get; set; }
-}
-
-/// <summary>
-/// Lets the hosting page hand the view model the invalidate (repaint) delegates for the two
-/// Skia canvases. Frames and tracking results arrive on capture/worker threads; the page's
-/// delegates are responsible for marshalling their invalidates onto the UI thread.
-/// </summary>
-public interface ICanvasBridge
-{
-    /// <summary>Invalidates the main canvas (live preview in Capture Mode; the painting in Paint Mode).</summary>
-    Action InvalidateMainCanvas { get; set; }
-
-    /// <summary>Invalidates the small self-view canvas shown beside the painting in Paint Mode.</summary>
-    Action InvalidateSelfView { get; set; }
-}
 
 #if HAS_CODEBRIX
 [Microsoft.UI.Xaml.Data.Bindable]
@@ -50,6 +23,11 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
     private PaintingSession _paintSession;
 
     private byte[] _visionFrame;
+
+    //The main canvas's live-video renderer. It belongs here rather than in the page because the
+    //  view model is what decides whether that canvas shows video at all; its cached buffers are
+    //  still only ever touched from the paint handler, which runs on the UI thread.
+    private readonly WebcamFrameRenderer _mainRenderer = new WebcamFrameRenderer();
 
     public MainViewModel()
     {
@@ -63,6 +41,20 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
             StatusText = "Discovering cameras…";
             _ = InitializeAsync();
         }
+
+        HighlighterColors = BuildHighlighterColors();
+    }
+
+    //One button item per palette entry, each carrying this view model's own select command
+    private IReadOnlyList<HighlighterColorViewModel> BuildHighlighterColors()
+    {
+        var colors = new List<HighlighterColorViewModel>(HighlighterPalette.Colors.Count);
+        foreach (var color in HighlighterPalette.Colors)
+        {
+            colors.Add(new HighlighterColorViewModel(color, SelectColorCommand));
+        }
+
+        return colors;
     }
 
     private async Task InitializeAsync()
@@ -94,11 +86,43 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
         }
     }
 
-    /// <summary>The capture service - the page's canvases pull live frames from it.</summary>
+    /// <summary>The capture service - the page's self-view canvas pulls live frames from it.</summary>
     public WebcamCaptureService CaptureService => _captureService;
 
-    /// <summary>The Paint Mode session; null while in Capture Mode.</summary>
-    public PaintingSession PaintSession => _paintSession;
+    #region | What the main canvas draws |
+
+    /// <summary>
+    /// Draws the main canvas: the mirrored live preview in Capture Mode, the painting and its
+    /// hand crosshair in Paint Mode. The mode decision lives here, so the page's paint handler
+    /// is a single forward (see <see cref="ICanvasBridge"/>) and stays out of application state.
+    /// </summary>
+    /// <param name="surface">The Skia surface to render onto.</param>
+    /// <param name="info">The image info describing the surface.</param>
+    public void RenderMainCanvas(SKSurface surface, SKImageInfo info)
+    {
+        var session = _paintSession;
+        if (IsPaintMode && session != null)
+        {
+            PaintCanvasHelper.Render(surface, info, session,
+                CrosshairNormX, CrosshairNormY, IsBrushPainting);
+        }
+        else
+        {
+            _mainRenderer.Render(surface, info, _captureService, mirror: true);
+        }
+    }
+
+    /// <summary>The hand's horizontal position over the still, 0..1; null when no hand is tracked.
+    /// Read by <see cref="RenderMainCanvas"/> at frame rate, so it is state rather than a binding.</summary>
+    private float? CrosshairNormX { get; set; }
+
+    /// <summary>The hand's vertical position over the still, 0..1; null when no hand is tracked.</summary>
+    private float? CrosshairNormY { get; set; }
+
+    /// <summary>Indicates whether the open palm is actively painting right now.</summary>
+    private bool IsBrushPainting { get; set; }
+
+    #endregion
 
     #region | Live frames and hand tracking |
 
@@ -242,15 +266,8 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
         set => SetProperty(ref field, value ?? string.Empty);
     } = string.Empty;
 
-    /// <summary>The hand's horizontal position over the still, 0..1; null when no hand is tracked.
-    /// Read by the main canvas's paint handler (not a XAML binding).</summary>
-    public float? CrosshairNormX { get; private set; }
-
-    /// <summary>The hand's vertical position over the still, 0..1; null when no hand is tracked.</summary>
-    public float? CrosshairNormY { get; private set; }
-
-    /// <summary>Indicates whether the open palm is actively painting right now.</summary>
-    public bool IsBrushPainting { get; private set; }
+    /// <summary>The selectable highlighter colors, one button item per palette entry.</summary>
+    public IReadOnlyList<HighlighterColorViewModel> HighlighterColors { get; }
 
     /// <summary>Set by the hosting head (see <see cref="IFileSaveBridge"/>); null on heads with no file dialog.</summary>
     public Func<string, Task<string>> PickSaveJpegPathAsync { get; set; }
@@ -323,7 +340,6 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
             _tracker.Start();
 
             IsCaptureMode = false;
-            NotifyPropertyChanged(nameof(PaintSession));
             InvalidateMainCanvas?.Invoke();
             StatusText = "Show the camera your open palm to spread paint on the photo - " +
                          "close your hand (or hide it) to stop painting.";
@@ -381,7 +397,6 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasBridge
         ActiveColorText = string.Empty;
 
         IsCaptureMode = true;
-        NotifyPropertyChanged(nameof(PaintSession));
         InvalidateMainCanvas?.Invoke();
     }
 

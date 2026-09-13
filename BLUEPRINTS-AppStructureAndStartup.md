@@ -6,15 +6,17 @@ distinguishes one head from another, and the ordering contract inside
 the `App` constructor for fonts, the `SimpleServiceResolver` container,
 `SimpleViewModel.SetIsDesignMode(false)` and `InitializeComponent()`. They also
 cover the pieces that hang off that startup path - supplying a host builder,
-registering a library's services through a single `AddXxx` extension, wiring
+registering a library's services through a single `AddXxx` extension, registering
+a factory for the things a view model must own rather than share, wiring
 Debug-only console logging, creating the window, deciding what size it opens
 at and how small it may be dragged, and navigating to the first
 page. Reach for this file when you are starting a new application, adding a
 head to an existing one, or chasing a startup problem such as an application
 that launches and then does nothing, a head whose window renders blank,
-or a head that needs a picker or software keyboard opted in; the last few
-recipes deal with sharing one view model across native heads and detecting
-at run time which head is hosting you.
+or a head that needs a picker or software keyboard opted in and folders computed
+for it. Later recipes deal with sharing one view model across native heads,
+detecting at run time which head is hosting you, and letting each head register
+the hardware implementations it alone may reference.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -39,6 +41,8 @@ conventions the code blocks follow.
 - [Detect which platform head is running without referencing it](#detect-which-platform-head-is-running-without-referencing-it)
 - [Give a hosted guest program the environment it assumes with a bootstrap script](#give-a-hosted-guest-program-the-environment-it-assumes-with-a-bootstrap-script)
 - [Register hardware implementations from each head and ask a finder for the best one](#register-hardware-implementations-from-each-head-and-ask-a-finder-for-the-best-one)
+- [Compute the framebuffer picker's folders from the environment](#compute-the-framebuffer-pickers-folders-from-the-environment)
+- [Register a factory and let the view model ask it for what it owns](#register-a-factory-and-let-the-view-model-ask-it-for-what-it-owns)
 
 ## Related blueprints
 
@@ -237,9 +241,10 @@ constructor:
   does nothing. It has to run before the first view model is constructed, which
   in practice means before `InitializeComponent()`.
 - `SimpleServiceResolver.CreateInstance()` must be called even when there is
-  nothing to register. MediaPlayerDemo, PainDiagram, PalmVisualizer, PdfSideBySide,
-  Pinta.Brix and WebcamPainter all keep an empty, commented registration callback
-  rather than dropping the call.
+  nothing to register. MediaPlayerDemo, WebcamPainter, WebcamViewer,
+  SimpleCbxVideoPlayer, GameEngineMusicDemo and PainDiagram's two native heads all
+  keep an empty, commented registration callback rather than dropping the call, so
+  view models can still call `GetService<T>()` and get a null back.
 - Font configuration is set before `InitializeComponent()` so the first measured
   text already uses the right family.
 - The MAUI head in JustBetweenUs is the one place the order differs: it calls
@@ -267,7 +272,10 @@ protected Window MainWindow { get; private set; }
 
 protected override void OnLaunched(LaunchActivatedEventArgs args)
 {
-    MainWindow = new Window { Title = "MediaPlayerDemo" };
+    MainWindow = new Window
+    {
+        Title = "MediaPlayerDemo"
+    };
 
     if (MainWindow.Content is not Frame rootFrame)
     {
@@ -529,7 +537,7 @@ callback. View models then resolve services instead of constructing them.
 
 ```csharp
 // From CodeBrix.Samples/MediaPlayerDemo/src/MediaPlayerDemo.Core/Helpers/HostHelper.cs
-using CodeBrix.Platform.Simple;
+// ... using CodeBrix.Platform.Simple;
 using Microsoft.Extensions.Hosting;
 
 namespace MediaPlayerDemo.Helpers;
@@ -632,7 +640,10 @@ chains them, so `App` still calls one method:
 // From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.Core/RegisterServices.cs
 public static class RegisterServices
 {
-    /// <summary>Registers the Poly Haven API client, the catalog service and the download service.</summary>
+    /// <summary>
+    /// Registers the Poly Haven API client, the model loader, the catalog service, the
+    /// download service and the document backdrop service.
+    /// </summary>
     public static IServiceCollection AddPolyHavenBrowser(this IServiceCollection services)
     {
         if (services == null) { throw new ArgumentNullException(nameof(services)); }
@@ -642,6 +653,10 @@ public static class RegisterServices
             //Poly Haven asks API consumers to identify themselves.
             options.UserAgent = "PolyHavenBrowser/1.0 (CodeBrix.Platform sample; +https://polyhaven.com)";
         });
+
+        //The view model asks for the interface, so the loading technology can be swapped or
+        //mocked without touching it. The loader holds no state between calls.
+        services.AddSingleton<IModelLoader, GltfModelLoader>();
 
         services.AddSingleton<ModelCatalogService>();
         services.AddSingleton<ModelDownloadService>();
@@ -867,6 +882,7 @@ supplies neither.
 
 ```csharp
 // From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.LinuxFrameBuffer/Program.cs
+// ... startFolder and homeFolder are computed from the environment just above
 var host = CodeBrixPlatformHostBuilder.Create()
     .App(() => new App())
     .UseLinuxFrameBuffer(fb => fb
@@ -874,20 +890,23 @@ var host = CodeBrixPlatformHostBuilder.Create()
         .AutoRotationEnabled(true)
         .EnableFolderPicker(new FolderPickerOptions {
            AllowNewFolderCreate = true,
-           StartFolder = "/home/jeremy/Temp",
-           RestrictToFolder = "/home/jeremy",
+           //ShowHiddenFolders = true,
+           StartFolder = startFolder,
+           RestrictToFolder = homeFolder,
         })
         //The FrameBuffer head has no OS chrome, so the "Save PDF as…" picker the
         //  Document button pops is opt-in
         .EnableFileSavePicker(new FilePickerOptions {
            AllowNewFolderCreate = true,
-           StartFolder = "/home/jeremy/Temp",
-           RestrictToFolder = "/home/jeremy",
+           StartFolder = startFolder,
+           RestrictToFolder = homeFolder,
            RequiredExtension = ".pdf",
         })
         .EnableSoftwareKeyboard(new SoftwareKeyboardOptions{
             ShowDismissKey = true,  //default behavior = true
-            KeyHeight = SoftwareKeyHeight.FullHeight,  //default behavior = FullHeight
+            //ShowDismissKey = false,
+            KeyHeight = SoftwareKeyHeight.PortraitFullLandscapeFull,  //default behavior = FullHeight
+            //KeyHeight = SoftwareKeyHeight.PortraitHalfLandscapeHalf,
         })
     )
     .UseDirectSkiaCanvasMode()
@@ -920,8 +939,8 @@ themes:
 
 **Also shown by.**
 `JustBetweenUs/CodeBrixPlatform/JustBetweenUs.LinuxFrameBuffer/Program.cs`
-(software keyboard only, at `SoftwareKeyHeight.HalfHeight` so the keyboard leaves
-more of the page visible),
+(software keyboard only, at `SoftwareKeyHeight.PortraitHalfLandscapeHalf` so the
+keyboard leaves more of the page visible),
 `KenneyAssetBrowser/src/KenneyAssetBrowser.LinuxFrameBuffer/Program.cs` (folder
 picker with `AllowNewFolderCreate = false`),
 `NotionDocumentCreator/src/NotionDocumentCreator.LinuxFrameBuffer/Program.cs`
@@ -933,14 +952,20 @@ picker with `AllowNewFolderCreate = false`),
 - Both features are off unless you opt in, one builder call each, and only on
   this head. Code that assumes a picker exists gets a `NotSupportedException`
   instead of a dialog.
-- `StartFolder` and `RestrictToFolder` in the samples are the author's own machine
-  paths. Treat them as placeholders and compute them from the environment in your
-  own application; `RestrictToFolder` fences the picker so the user cannot
-  navigate above it.
+- `StartFolder` and `RestrictToFolder` are ordinary strings the head passes in, and
+  every application in this repository computes them from the environment rather
+  than writing a path in, so the head runs on any machine; `RestrictToFolder`
+  fences the picker so the user cannot navigate above it. See
+  [Compute the framebuffer picker's folders from the environment](BLUEPRINTS-AppStructureAndStartup.md#compute-the-framebuffer-pickers-folders-from-the-environment).
 - `RequiredExtension` on the picker and the application's own expectation about
   the file it will write have to agree.
-- `ShowDismissKey` defaults to true and `KeyHeight` defaults to `FullHeight`; the
-  samples record both defaults in comments next to the overrides.
+- `ShowDismissKey` defaults to true and `KeyHeight` defaults to full height; the
+  samples record both defaults in comments next to the overrides, and leave the
+  alternative they tried commented out beside them, because which key height suits
+  an application is a thing you settle by looking at it on the device.
+- The key-height values name both orientations
+  (`PortraitFullLandscapeFull`, `PortraitHalfLandscapeHalf`), so a head that
+  enables auto-rotation chooses once for both ways up.
 - Dialogs open in the popup layer, which follows the application's
   `RequestedTheme` rather than the theme of the grid they were raised from, so a
   dark application has to key the `ContentDialog` brushes at the
@@ -1146,6 +1171,7 @@ public class MainViewModel : SimpleViewModel, IFileSaveBridge, ICanvasInvalidato
 <!-- From CodeBrix.Samples/PainDiagram/PainDiagram.Wpf/PainDiagram.Wpf.csproj -->
 <ItemGroup>
   <Compile Include="..\Shared\Drawing\DrawingCanvas.cs" Link="Drawing\DrawingCanvas.cs" />
+  <Compile Include="..\Shared\Drawing\DrawingCanvasBinder.cs" Link="Drawing\DrawingCanvasBinder.cs" />
   <Compile Include="..\Shared\Helpers\HostHelper.cs" Link="Helpers\HostHelper.cs" />
   <Compile Include="..\Shared\ViewModels\MainViewModel.cs" Link="ViewModels\MainViewModel.cs" />
 </ItemGroup>
@@ -1455,6 +1481,19 @@ public static IScopeDataDevice FindBest(bool allowSimulatedFallback = true)
 // From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs
 public async Task InitializeAsync()
 {
+    try
+    {
+        await StartUpAsync().ConfigureAwait(false);
+    }
+    catch (Exception ex)
+    {
+        _log.LogError(ex, "Scope startup failed.");
+        SetStatus("Could not start: " + ex.Message);
+    }
+}
+
+private async Task StartUpAsync()
+{
     SetStatus("Looking for a scope...");
 
     //Opening a real device takes a second or two of USB traffic, which the
@@ -1503,9 +1542,217 @@ head projects under `PicoScope.Brix/src/`
 - The finder is process-global state. Tests must reset it around every case;
   the sample's finder test class resets in its constructor and again in
   `Dispose()`.
-- Open the device off the UI thread. A real instrument is seconds of USB traffic
-  at startup, which is why the call is wrapped in `Task.Run`.
+- Open the device off the UI thread. A real instrument takes seconds of USB
+  traffic at startup, which is why the call is wrapped in `Task.Run`.
+- The page starts this from an `async void` load handler, so the public entry
+  point is a guard: `InitializeAsync` is a try/catch around the private
+  `StartUpAsync` that does the work, and every failure an instrument can raise
+  becomes a line of status text instead of an unhandled exception.
 - Registering the simulator in the head, alongside the real device, is what makes
   it an equal citizen rather than a fallback bolted on afterwards - and it is
   what lets a head ship without the interop library at all.
 
+### Compute the framebuffer picker's folders from the environment
+
+**When you want this.** Your framebuffer head opts into a picker, and the picker
+needs a folder to open in and a folder it may not climb above. Writing those two
+paths into `Program.cs` is how a head stops running anywhere but the machine it
+was built on.
+[Enable a picker and the software keyboard on the Linux framebuffer head](BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head)
+is the opt-in itself; this is where the two paths it takes come from.
+
+**The MVVM shape.** Head configuration only, computed before the host builder
+runs. `Environment.GetFolderPath` answers for the signed-in user, a `Path.Combine`
+narrows it to a subfolder when that subfolder exists, and the fallback when it does
+not is the parent rather than a failure. Nothing about the view model changes:
+it still calls its picker bridge and still copes when there is no picker at all.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.LinuxFrameBuffer/Program.cs
+//Where the folder picker opens, and how far up it lets the user browse: the signed-in
+//user's home folder, and its "Assets" subfolder when there is one. Computed here rather
+//than written in, so this head carries no path from the machine it was built on.
+var homeFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+var assetsFolder = Path.Combine(homeFolder, "Assets");
+if (!Directory.Exists(assetsFolder)) { assetsFolder = homeFolder; }
+
+// ...
+
+        .EnableFolderPicker(new FolderPickerOptions {
+           AllowNewFolderCreate = false,
+           StartFolder = assetsFolder,
+           RestrictToFolder = homeFolder,
+        })
+```
+
+Where an application would rather start in a well-known folder than in one of its
+own, ask for that folder by name and fall back to the home folder when the
+platform has none:
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.LinuxFrameBuffer/Program.cs
+//The framebuffer picker draws its own file list, so it needs a folder to start in and a
+//  tree to stay inside: this user's documents folder, inside their home directory
+var homeFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+if (string.IsNullOrEmpty(homeFolder)) { homeFolder = Environment.CurrentDirectory; }
+var startFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+if (string.IsNullOrEmpty(startFolder) || !Directory.Exists(startFolder)) { startFolder = homeFolder; }
+```
+
+A head that needs the answer in more than one place puts it in a small method
+rather than in a variable:
+
+```csharp
+// From CodeBrix.Samples/NotionDocumentCreator/src/NotionDocumentCreator.LinuxFrameBuffer/Program.cs
+//The picker is restricted to one folder, and that folder is worked out at run time rather
+//  than written into the source, so this head behaves the same on every device it reaches.
+private static string GetPickerRootFolder()
+{
+    var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    return string.IsNullOrWhiteSpace(home) ? Directory.GetCurrentDirectory() : home;
+}
+```
+
+**Where to look.**
+`KenneyAssetBrowser/src/KenneyAssetBrowser.LinuxFrameBuffer/Program.cs`
+`PdfSideBySide/src/PdfSideBySide.LinuxFrameBuffer/Program.cs`
+`NotionDocumentCreator/src/NotionDocumentCreator.LinuxFrameBuffer/Program.cs`
+
+**Also shown by.**
+`PolyHavenBrowser/src/PolyHavenBrowser.LinuxFrameBuffer/Program.cs` (a `Temp`
+subfolder to start in, the home folder as the fence, and the same
+does-it-exist fallback)
+
+**Sharp edges.**
+- `GetFolderPath` can return an empty string on a machine with no such folder, and
+  an empty `RestrictToFolder` fences the picker into nothing. PdfSideBySide and
+  NotionDocumentCreator guard for it explicitly; a head that does not is relying on
+  a home folder always being there, which is true on a device you control and not
+  in general.
+- A subfolder that does not exist is not an error: fall back to its parent rather
+  than creating a folder the user did not ask for at startup.
+- `RestrictToFolder` is a fence, not a preference. Compute the start folder inside
+  it, or the picker opens somewhere it will not let the user return to.
+- An appliance is the case that inverts this. Where a device really does keep its
+  content in one fixed place, that path belongs in the head - but write it as a
+  named constant with a comment, not as a string in the middle of a builder call.
+
+### Register a factory and let the view model ask it for what it owns
+
+**When you want this.** A view model has to end up owning an object that takes
+real work to build - a rendering session bound to a page's canvas, a comparison
+that owns a rasterizer - and `new` in the constructor makes it untestable and
+makes the library it comes from non-substitutable.
+[Register library services with one AddXxx extension method](BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method)
+registers the services themselves; this is for the things a service cannot be,
+because each caller needs its own instance and must dispose it.
+
+**The MVVM shape.** The library declares a factory interface and one
+implementation, and its `AddXxx` extension registers the factory rather than the
+product. The view model resolves the factory once and asks it for an instance at
+the moment it has what the instance needs - which, for anything bound to a canvas,
+is not constructor time. The resolve falls back to the concrete factory with
+`?? new`, so the view model also runs in a test with no container at all.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/IVisualizerSessionFactory.cs
+/// <summary>
+/// Builds the Visualize Mode scene for a page's game canvas. Registered with the
+/// dependency-injection container at startup and resolved by the view model, which then owns
+/// the session it is handed without knowing how one is made.
+/// </summary>
+public interface IVisualizerSessionFactory
+{
+    /// <summary>
+    /// Creates the visualizer session that renders into the host's canvas. Call at the
+    /// canvas's first real layout size; the session is not started.
+    /// </summary>
+    /// <param name="host">The page that owns the game canvas.</param>
+    /// <returns>The session, ready to be started.</returns>
+    IVisualizerSession CreateSession(IGameCanvasHost host);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.Core/RegisterServices.cs
+public static IServiceCollection AddPalmVisualizer(this IServiceCollection services)
+{
+    if (services == null) { throw new ArgumentNullException(nameof(services)); }
+
+    services.AddSingleton<IWebcamCaptureService, WebcamCaptureService>();
+    services.AddSingleton<IPalmTracker, PalmTracker>();
+    services.AddSingleton<IVisualizerSessionFactory, VisualizerSessionFactory>();
+
+    return services;
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs
+//The three collaborators come from the container App registered them with, so this
+//  view model can also be built against stand-ins that need no camera and no GPU
+_captureService = GetService<IWebcamCaptureService>() ?? new WebcamCaptureService();
+_tracker = GetService<IPalmTracker>() ?? new PalmTracker();
+_sessionFactory = GetService<IVisualizerSessionFactory>() ?? new VisualizerSessionFactory();
+
+// ... later, when the page's canvas has a real size:
+
+public void CanvasFirstStart(IGameCanvasHost host)
+{
+    //UI thread, the first time Visualize Mode is shown with a real size: build the
+    //  shader scene and start the engine. Later mode switches pause and resume it.
+    _visualizerSession = _sessionFactory.CreateSession(host);
+    _visualizerSession.Start();
+}
+```
+
+Where the product owns disposable state of its own, register it transient and say
+so, because the holder is what disposes it:
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/src/libs/PdfSideBySide.PdfRender/RegisterServices.cs
+/// <summary>
+/// Registers everything a screen needs to compare two PDF documents: the
+/// <see cref="IPdfComparisonFactory"/> that makes a comparison, and the
+/// <see cref="IPageRenderer"/> that rasterizes its pages. The renderer is transient because
+/// each one owns a rasterizer and a page cache that its holder disposes.
+/// </summary>
+/// <param name="services">The service collection to register into.</param>
+/// <returns>The service collection, for chaining.</returns>
+public static IServiceCollection AddPdfRender(this IServiceCollection services)
+{
+    ArgumentNullException.ThrowIfNull(services);
+
+    services.TryAddSingleton<IPdfComparisonFactory, PdfComparisonFactory>();
+    services.TryAddTransient<IPageRenderer>(_ => new PageRenderer());
+
+    return services;
+}
+```
+
+**Where to look.**
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/IVisualizerSessionFactory.cs` and
+`VisualizerSessionFactory.cs`
+`PalmVisualizer/src/PalmVisualizer.Core/RegisterServices.cs`
+`PdfSideBySide/src/libs/PdfSideBySide.PdfRender/RegisterServices.cs` and
+`IPdfComparisonFactory.cs`
+`PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs`
+
+**Sharp edges.**
+- Register the factory, not the product, whenever the product needs an argument
+  the container cannot know - a canvas host, a page size, a file the user chose.
+- `?? new` after the resolve is what keeps the view model constructible in a test
+  with no container. It also means a missing registration fails as ordinary
+  behavior rather than as a null reference at first use.
+- Transient and singleton are a statement about ownership. A renderer that owns a
+  cache is transient because its holder disposes it; a stateless loader is a
+  singleton.
+- Ask the factory at the moment the inputs exist. For anything tied to a canvas
+  that is the first real layout, which is why the call sits in the page-driven
+  method and not in the constructor.
+- `TryAdd` rather than `Add` in a library extension lets an application register
+  its own implementation first and keeps a second call to the extension harmless.

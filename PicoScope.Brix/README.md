@@ -48,8 +48,9 @@ several places that the code names and handles.
 - How to give `SimpleServiceResolver` a generic-host builder from the shared Core
   library instead of duplicating it in six heads:
   [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
-- The family's property and command idiom, and `[AffectsCommands]` keeping four
-  buttons' enablement current from two bound flags:
+- The family's property and command idiom, `[AffectsCommands]` keeping every
+  button's enablement current from two bound flags, and `[AffectsProperties]`
+  keeping a computed status badge current from one of them:
   [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 - Why a view model constructed by the XAML designer needs a guard, and what it is
   paired with at startup:
@@ -117,6 +118,9 @@ several places that the code names and handles.
 - Why releasing the device is wired to two separate events, and what makes that
   safe:
   [Release an exclusive device handle from both the page unload and the window close](../BLUEPRINTS-PlatformServices.md#release-an-exclusive-device-handle-from-both-the-page-unload-and-the-window-close).
+- How a bound setter that pushes its value at the instrument reports a refusal in
+  the status line, and re-reads what the failed attempt may have changed:
+  [Fail a bound setter into the status line when a device refuses it](../BLUEPRINTS-MVVM.md#fail-a-bound-setter-into-the-status-line-when-a-device-refuses-it).
 
 ## Building, running and testing
 
@@ -347,11 +351,15 @@ and
 ### The view model: startup, commands, and failure as text
 
 `InitializeAsync` is called from the page's `Loaded` handler, not from the
-constructor, and the first thing it does is push the device open onto a worker
-thread with `Task.Run`, because opening a real instrument is a second or two of
-USB traffic the UI thread should not sit through. Once a device is open it reads
-the capability set, formats the header line from it, fills the two bound
-collections inside `InvokeOnMainThread` - a combo box cannot show a selection it
+constructor, and it is a guard wrapped around `StartUpAsync`, which is where the
+startup work is. A `Loaded` handler is `async void`, so a failure that escaped it
+would take the process down instead of reaching the user; here it becomes a line
+of status text like every other failure in the class. `StartUpAsync` pushes the
+device open onto a worker thread with `Task.Run`, because opening a real
+instrument is a second or two of USB traffic the UI thread should not sit
+through. Once a device is open it reads the capability set, formats the header
+line from it, fills the two bound collections inside `InvokeOnMainThread` - a
+combo box cannot show a selection it
 does not yet hold, so the selections are fixed on the worker thread first and
 re-announced only after the lists contain them - applies the channel settings,
 subscribes to `SamplesAvailable`, takes one capture so the chart is never empty,
@@ -362,8 +370,15 @@ flash the LED - are lazily created `SimpleCommand`s whose predicates read two
 bound flags, `IsReady` and `IsStreaming`, each carrying `[AffectsCommands]` so a
 change to either re-evaluates every button that depends on it. Every failure path is caught as
 `PicoScopeException` and turned into a line of `StatusText`; nothing throws at
-the user and no dialog is opened. The view model also logs the same line, so a
-Debug console run reads as a narration of what the instrument did.
+the user and no dialog is opened. That holds for the two seams the user does not
+click as well: `ApplyChannelSettings` runs from the range picker's own setter, so
+a range the device refuses reports itself rather than throwing out of a bound
+property, and it re-reads `IsStreaming` from the device afterwards so the
+buttons still say what is true. The capture command takes the asynchronous
+`SimpleCommand` overload through an explicit `(Func<Task>)` cast, which is what
+keeps the command from reporting itself finished while the capture is still
+running. The view model also logs the same line, so a Debug console run reads as
+a narration of what the instrument did.
 
 `Shutdown()` is the counterpart, and it matters more here than in most
 applications: a device handle left open keeps the instrument locked against every
@@ -377,9 +392,10 @@ Read `src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs` end to end, then
 [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread),
 [Report a domain rule violation as a typed exception the view model can catch](../BLUEPRINTS-MVVM.md#report-a-domain-rule-violation-as-a-typed-exception-the-view-model-can-catch),
 [Report a failure as status text instead of throwing](../BLUEPRINTS-MVVM.md#report-a-failure-as-status-text-instead-of-throwing),
-[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show)
+[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show),
+[Release an exclusive device handle from both the page unload and the window close](../BLUEPRINTS-PlatformServices.md#release-an-exclusive-device-handle-from-both-the-page-unload-and-the-window-close)
 and
-[Release an exclusive device handle from both the page unload and the window close](../BLUEPRINTS-PlatformServices.md#release-an-exclusive-device-handle-from-both-the-page-unload-and-the-window-close).
+[Guard an async void handler the platform calls](../BLUEPRINTS-MVVM.md#guard-an-async-void-handler-the-platform-calls).
 
 ### The two pickers
 
@@ -396,7 +412,9 @@ returns `+/-5 V`. A combo box with no item template displays each item's
 every head.
 
 Both are in `src/PicoScope.Brix.Core/ViewModels/`. See
-[Bind a picker to enum values with or without friendly labels](../BLUEPRINTS-MVVM.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
+[Bind a picker to enum values with or without friendly labels](../BLUEPRINTS-MVVM.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels)
+and
+[Fail a bound setter into the status line when a device refuses it](../BLUEPRINTS-MVVM.md#fail-a-bound-setter-into-the-status-line-when-a-device-refuses-it).
 
 ### The simulated device
 

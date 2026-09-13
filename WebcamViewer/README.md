@@ -294,11 +294,13 @@ it raises `HasFrame` once, through `InvokeOnMainThread` because that property is
 bound, and then invokes the invalidate delegate.
 
 The read side is `TryGetLatestFrame(ref byte[] buffer, out int width, out int
-height)`, which the renderer calls on the UI thread. It takes the same lock, grows
-the caller's buffer when needed, copies the pixels out and reports the dimensions,
-returning false when no frame has arrived yet. Two copies happen per displayed
-frame, and that is the deliberate trade: the lock is held only for the length of an
-`Array.Copy`, and neither thread ever touches the other's buffer.
+height)` - the single member of the `IVideoFrameSource` interface, and the whole
+surface the renderer is given - which the renderer calls on the UI thread. It
+takes the same lock, grows the caller's buffer when needed, copies the pixels out
+and reports the dimensions, returning false when no frame has arrived yet. Two
+copies happen per displayed frame, and that is the deliberate trade: the lock is
+held only for the length of an `Array.Copy`, and neither thread ever touches the
+other's buffer.
 
 Sharp edges met here. `HasFrame` is raised only on the transition, not per frame,
 because it is a bound property and re-raising it sixty times a second would churn
@@ -317,11 +319,18 @@ and
 hiding. `VideoCanvas` is an empty `SKXamlCanvas` subclass; it exists so the page can
 write `<video:VideoCanvas x:Name="VideoView" />` and so the canvas type lives in the
 library beside the code that paints it. `VideoCanvasHelper.RenderFrame` is the
-painter: it clears to black, asks the view model for the newest frame, keeps an
-`SKBitmap` in BGRA8888/Opaque sized to the frame, copies the pixels into it with
-`Marshal.Copy`, then computes an aspect-fit destination rectangle and draws with
-linear sampling. Letterboxing is nothing more than the smaller of the two scale
-factors and a centering offset.
+painter: it clears to black, asks an `IVideoFrameSource` for the newest frame,
+keeps an `SKBitmap` in BGRA8888/Opaque sized to the frame, copies the pixels into
+it with `Marshal.Copy`, then computes an aspect-fit destination rectangle and
+draws with linear sampling. Letterboxing is nothing more than the smaller of the
+two scale factors and a centering offset.
+
+The frame source is a parameter rather than a field, and it is typed as the
+`IVideoFrameSource` interface the view model implements, so neither the canvas nor
+the renderer names a view model type. The page's paint handler is one line that
+forwards the surface and `DataContext as IVideoFrameSource`, which is the same
+"reach the view model through the interface, never the concrete type" rule the two
+bridges follow in the other direction.
 
 The repaint itself comes from the view model, which never sees a control. It
 implements `ICanvasInvalidator`, a one-property interface holding an `Action`; the
@@ -340,9 +349,10 @@ steady-state painting allocates nothing. And `Marshal.Copy` writes exactly
 `width * height * 4` bytes into the bitmap's pixel block, which assumes the frames
 are tightly packed BGRA with no row padding - check that assumption before reusing
 this against a different capture source. See
-[Show live video on an SKXamlCanvas subclass](../BLUEPRINTS-ViewsAndControls.md#show-live-video-on-an-skxamlcanvas-subclass)
+[Show live video on an SKXamlCanvas subclass](../BLUEPRINTS-ViewsAndControls.md#show-live-video-on-an-skxamlcanvas-subclass),
+[Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface)
 and
-[Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
+[Send the paint call back to the view model through the canvas bridge](../BLUEPRINTS-PlatformServices.md#send-the-paint-call-back-to-the-view-model-through-the-canvas-bridge).
 
 ### A folder the page chooses and the view model validates
 

@@ -141,4 +141,51 @@ public class ComparisonViewTests
         view.LeftPan.Vertical.Should().Be(PanPosition.Centre);
         view.RightPan.Horizontal.Should().Be(PanPosition.Centre);
     }
+
+    [Fact]
+    public void LayoutOf_sizes_the_page_to_the_zoom_and_the_viewer()
+    {
+        //Arrange
+        var view = new ComparisonView();
+        while (view.Zoom.Percent < 200) { view.ZoomIn(); }
+
+        //Act
+        var layout = view.LayoutOf(DocumentSide.Left, 600, 800, 300, 300);
+
+        //Assert - 800 tall into 300 fits at 0.375, and 200% doubles it
+        layout.ImageWidth.Should().Be(450);
+        layout.ImageHeight.Should().Be(600);
+    }
+
+    [Fact]
+    public void LayoutOf_gives_each_side_its_own_pan_and_the_shared_zoom()
+    {
+        //Arrange
+        var view = new ComparisonView();
+        while (view.Zoom.Percent < 200) { view.ZoomIn(); }
+        view.Pan(DocumentSide.Left, PanDirection.Right);
+
+        //Act
+        var left = view.LayoutOf(DocumentSide.Left, 600, 800, 300, 300);
+        var right = view.LayoutOf(DocumentSide.Right, 600, 800, 300, 300);
+
+        //Assert - same size, but the left pane is a quarter viewport further across
+        left.ImageWidth.Should().Be(right.ImageWidth);
+        left.ScrollOffsetX.Should().BeApproximately(112.5, 1e-9);
+        right.ScrollOffsetX.Should().BeApproximately(75, 1e-9);
+    }
+
+    [Fact]
+    public void LayoutOf_has_nothing_to_lay_out_until_a_page_is_rendered()
+    {
+        //Arrange
+        var view = new ComparisonView();
+
+        //Act
+        var layout = view.LayoutOf(DocumentSide.Right, 0, 0, 300, 300);
+
+        //Assert
+        layout.Should().Be(PaneLayout.None);
+        layout.HasImage.Should().BeFalse();
+    }
 }

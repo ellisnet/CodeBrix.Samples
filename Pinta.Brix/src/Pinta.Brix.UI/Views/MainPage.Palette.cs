@@ -6,8 +6,6 @@
 // made the application unusable as a paint program.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Controls;
 using Pinta.Brix.Controls;
@@ -77,17 +75,18 @@ public sealed partial class MainPage
     {
         EditActions edit = PintaCore.Actions.Edit;
 
-        edit.LoadPalette.Activated += async (_, _) => await LoadPaletteAsync();
-        edit.SavePalette.Activated += async (_, _) => await SavePaletteAsync();
+        OnActivated(edit.LoadPalette, LoadPaletteAsync);
+        OnActivated(edit.SavePalette, SavePaletteAsync);
         edit.ResetPalette.Activated += (_, _) => ResetPalette();
-        edit.ResizePalette.Activated += async (_, _) => await ResizePaletteAsync();
+        OnActivated(edit.ResizePalette, ResizePaletteAsync);
     }
 
     private async Task LoadPaletteAsync()
     {
         FileOpenPicker picker = new() { SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
 
-        foreach (string extension in PaletteExtensions())
+        //The palette registry owns which extensions a load dialog accepts.
+        foreach (string extension in PintaCore.PaletteFormats.GetLoadExtensions())
         {
             picker.FileTypeFilter.Add(extension);
         }
@@ -97,9 +96,7 @@ public sealed partial class MainPage
 
         try
         {
-            var format = PintaCore.PaletteFormats.Formats
-                .FirstOrDefault(f => f.Loader is not null
-                    && f.Extensions.Any(x => string.Equals($".{x}", System.IO.Path.GetExtension(file.Path), StringComparison.OrdinalIgnoreCase)));
+            PaletteDescriptor format = PintaCore.PaletteFormats.GetFormatByFilename(file.Path);
 
             if (format?.Loader is null)
             {
@@ -126,14 +123,10 @@ public sealed partial class MainPage
             SuggestedFileName = "palette",
         };
 
-        foreach (var format in PintaCore.PaletteFormats.Formats.Where(f => f.Saver is not null))
+        //The palette registry owns which formats a save dialog offers.
+        foreach (FileDialogFilter filter in PintaCore.PaletteFormats.GetSaveFilters())
         {
-            List<string> extensions = [.. format.Extensions.Select(x => $".{x}")];
-
-            if (extensions.Count > 0)
-            {
-                picker.FileTypeChoices.Add(format.FilterName, extensions);
-            }
+            picker.FileTypeChoices.Add(filter.Name, [.. filter.Extensions]);
         }
 
         StorageFile file = await picker.PickSaveFileAsync();
@@ -141,9 +134,7 @@ public sealed partial class MainPage
 
         try
         {
-            var format = PintaCore.PaletteFormats.Formats
-                .FirstOrDefault(f => f.Saver is not null
-                    && f.Extensions.Any(x => string.Equals($".{x}", System.IO.Path.GetExtension(file.Path), StringComparison.OrdinalIgnoreCase)));
+            PaletteDescriptor format = PintaCore.PaletteFormats.GetFormatByFilename(file.Path);
 
             if (format?.Saver is null)
             {
@@ -191,10 +182,4 @@ public sealed partial class MainPage
 
         PintaCore.Palette.CurrentPalette.Resize((int)countBox.Value);
     }
-
-    private static IEnumerable<string> PaletteExtensions() => PintaCore.PaletteFormats.Formats
-        .Where(f => f.Loader is not null)
-        .SelectMany(f => f.Extensions)
-        .Select(x => $".{x}")
-        .Distinct();
 }

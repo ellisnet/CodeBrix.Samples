@@ -39,9 +39,8 @@
                     Command="{Binding SearchCommand}" />
         </Grid>
 
-        <!-- Embedded browser -->
-        <WebView2 Grid.Row="1" x:Name="Browser"
-                  Source="https://en.wikipedia.org/wiki/Main_Page" />
+        <!-- Embedded browser; the view model says which page it starts on -->
+        <WebView2 Grid.Row="1" x:Name="Browser" />
 
         <!-- Status line -->
         <Grid Grid.Row="2" Margin="0,12,0,0">
@@ -80,8 +79,9 @@
             <TextBlock Grid.Column="3" Text="Page size:"
                        VerticalAlignment="Center" Margin="16,0,12,0" />
             <ComboBox Grid.Column="4" Width="210" Height="36" VerticalAlignment="Center"
-                      ItemsSource="{Binding PageSizeNames}"
-                      SelectedItem="{Binding SelectedPageSizeName, Mode=TwoWay}" />
+                      ItemsSource="{Binding PageSizes}"
+                      DisplayMemberPath="DisplayName"
+                      SelectedItem="{Binding SelectedPageSize, Mode=TwoWay}" />
             <Button Grid.Column="5" Width="130" Height="40" Margin="16,0,0,0"
                     HorizontalAlignment="Right"
                     Style="{ThemeResource AccentButtonStyle}"

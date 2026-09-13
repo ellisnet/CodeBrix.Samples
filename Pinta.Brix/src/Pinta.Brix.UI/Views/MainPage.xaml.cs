@@ -6,6 +6,7 @@ using CodeBrix.Platform.Simple;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Pinta.Brix.Bridges;
 using Pinta.Brix.Controls;
 using Pinta.Brix.Engine;
 using Windows.Storage;
@@ -16,23 +17,22 @@ public sealed partial class MainPage : Page
 {
     private readonly Dictionary<Document, TabViewItem> documentTabs = new();
     private ToolBarRenderer toolOptionsRenderer;
-    private bool updatingZoomCombo;
     private bool updatingLayerSelection;
-
-    /// <summary>
-    /// The single MainPage instance. The App's window-close handler reaches
-    /// the save-prompt loop through this.
-    /// </summary>
-    internal static MainPage Current { get; private set; }
 
     public MainPage()
     {
-        Current = this;
-
         DataContextChanged += (_, _) =>
         {
             //Give the view model's SimpleDialog helpers a XamlRoot to attach dialogs to
             (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
+
+            //Hand over the save-prompt loop: it needs this page's XamlRoot and
+            //its file dialogs, so only a page can run it. The view model
+            //forwards it to the service the window close resolves.
+            if (DataContext is IShellCloseBridge shellClose)
+            {
+                shellClose.ConfirmCloseApplicationAsync = ConfirmCloseApplicationAsync;
+            }
         };
 
         this.InitializeComponent(); //Leave this line last
@@ -84,13 +84,8 @@ public sealed partial class MainPage : Page
         PintaCore.Workspace.LayerRemoved += (_, _) => OnDocumentStateChanged();
         PintaCore.Workspace.SelectedLayerChanged += (_, _) => OnDocumentStateChanged();
 
-        //Status bar
-        PintaCore.Chrome.LastCanvasCursorPointChanged += (_, _) =>
-        {
-            var p = PintaCore.Chrome.LastCanvasCursorPoint;
-            CursorPositionText.Text = $"{p.X}, {p.Y}";
-        };
-        PintaCore.Chrome.StatusBarTextChanged += (_, args) => StatusText.Text = args.Text;
+        //The status bar's three readouts and the zoom control follow the
+        //view model; see MainViewModel.
 
         //Adjustments/Effects menus follow the engine's registries
         PintaCore.Effects.AdjustmentsChanged += (_, _) => RebuildAdjustmentsMenu();
@@ -103,12 +98,6 @@ public sealed partial class MainPage : Page
         PintaCore.Tools.ToolRemoved += (_, _) => RefreshToolbox();
         PintaCore.Tools.ToolActivated += (_, _) => RefreshToolbox();
         RefreshToolbox();
-
-        //Zoom presets, matching the workspace's list
-        updatingZoomCombo = true;
-        foreach (double percent in DocumentWorkspace.ZoomPresets.Reverse())
-            ZoomComboBox.Items.Add($"{percent:0.#}%");
-        updatingZoomCombo = false;
 
         //The tool box re-flows into more or fewer columns as the window height
         //changes, so it has to be rebuilt on resize.
@@ -192,11 +181,7 @@ public sealed partial class MainPage : Page
         document.History.HistoryItemAdded += (_, _) => OnDocumentStateChanged();
         document.History.ActionUndone += (_, _) => OnDocumentStateChanged();
         document.History.ActionRedone += (_, _) => OnDocumentStateChanged();
-        document.SelectionChanged += (_, _) =>
-        {
-            UpdateActionSensitivity();
-            UpdateSelectionSizeText();
-        };
+        document.SelectionChanged += (_, _) => UpdateActionSensitivity();
 
         RebuildWindowMenu();
         UpdateActionSensitivity();
@@ -211,14 +196,24 @@ public sealed partial class MainPage : Page
         UpdateActionSensitivity();
     }
 
+    //An event handler, so it cannot return a task; the body is wrapped because
+    //an exception escaping an async void handler has nowhere to go but the
+    //process, and losing the application is worse than losing the close.
     private async void DocumentTabs_TabCloseRequested(TabView sender, TabViewTabCloseRequestedEventArgs args)
     {
-        Document document = documentTabs.FirstOrDefault(kv => kv.Value == args.Tab).Key;
-        if (document is null) { return; }
+        try
+        {
+            Document document = documentTabs.FirstOrDefault(kv => kv.Value == args.Tab).Key;
+            if (document is null) { return; }
 
-        //Prompt before discarding unsaved work - the tab close is the most
-        //likely way to lose a document.
-        await CloseDocumentAsync(document);
+            //Prompt before discarding unsaved work - the tab close is the most
+            //likely way to lose a document.
+            await CloseDocumentAsync(document);
+        }
+        catch (Exception ex)
+        {
+            await ReportHandlerFailure(ex);
+        }
     }
 
     private void DocumentTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -242,9 +237,6 @@ public sealed partial class MainPage : Page
             {
                 DocumentTabs.SelectedItem = tab;
             }
-            document.Workspace.ZoomChanged -= ActiveWorkspace_ZoomChanged;
-            document.Workspace.ZoomChanged += ActiveWorkspace_ZoomChanged;
-            ActiveWorkspace_ZoomChanged(null, EventArgs.Empty);
         }
         OnDocumentStateChanged();
     }
@@ -258,31 +250,6 @@ public sealed partial class MainPage : Page
         RefreshLayersPad();
         RefreshHistoryPad();
         UpdateActionSensitivity();
-        UpdateSelectionSizeText();
-    }
-
-    /// <summary>
-    /// Upstream shows the selection's size beside the cursor position; it is
-    /// blank when nothing is selected.
-    /// </summary>
-    private void UpdateSelectionSizeText()
-    {
-        if (!PintaCore.Workspace.HasOpenDocuments)
-        {
-            SelectionSizeText.Text = string.Empty;
-            return;
-        }
-
-        Document document = PintaCore.Workspace.ActiveDocument;
-
-        if (!document.Selection.Visible)
-        {
-            SelectionSizeText.Text = string.Empty;
-            return;
-        }
-
-        RectangleI bounds = document.Selection.GetBounds().ToInt();
-        SelectionSizeText.Text = $"{bounds.Width} x {bounds.Height}";
     }
 
     private async Task<bool> SaveDocumentAsync(Document document, bool saveAs)
@@ -297,16 +264,11 @@ public sealed partial class MainPage : Page
                 SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.PicturesLibrary,
                 SuggestedFileName = document.DisplayName,
             };
-            foreach (var format in PintaCore.ImageFormats.Formats.Where(f => f.IsExportAvailable()))
+            //The registry owns which formats a save dialog offers and under
+            //what name; the page just hands the list to the picker.
+            foreach (FileDialogFilter filter in PintaCore.ImageFormats.GetExportFilters())
             {
-                var extensions = format.Extensions
-                    .Where(x => x.All(char.IsLower))
-                    .Select(x => $".{x}")
-                    .ToList();
-                if (extensions.Count > 0)
-                {
-                    picker.FileTypeChoices.Add(format.FilterName, extensions);
-                }
+                picker.FileTypeChoices.Add(filter.Name, [.. filter.Extensions]);
             }
 
             StorageFile file = await picker.PickSaveFileAsync();
@@ -348,33 +310,6 @@ public sealed partial class MainPage : Page
         PintaCore.Tools.DoAfterSave(document);
         RebuildWindowMenu();
         return true;
-    }
-
-    // ---- Zoom --------------------------------------------------------------
-
-    private void ActiveWorkspace_ZoomChanged(object sender, EventArgs e)
-    {
-        if (!PintaCore.Workspace.HasOpenDocuments) { return; }
-        updatingZoomCombo = true;
-        ZoomComboBox.PlaceholderText = $"{PintaCore.Workspace.ActiveWorkspace.Scale * 100:0.#}%";
-        ZoomComboBox.SelectedIndex = -1;
-        updatingZoomCombo = false;
-    }
-
-    private void ZoomOutButton_Click(object sender, RoutedEventArgs e) =>
-        PintaCore.Actions.View.ZoomOut.Activate();
-
-    private void ZoomInButton_Click(object sender, RoutedEventArgs e) =>
-        PintaCore.Actions.View.ZoomIn.Activate();
-
-    private void ZoomComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (updatingZoomCombo || !PintaCore.Workspace.HasOpenDocuments) { return; }
-        if (ZoomComboBox.SelectedItem is not string text) { return; }
-        if (double.TryParse(text.TrimEnd('%'), out double percent))
-        {
-            PintaCore.Workspace.ActiveWorkspace.ZoomManually(percent / 100.0);
-        }
     }
 
     // ---- Toolbox -----------------------------------------------------------

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using WikipediaPublisher.Helpers;
 using WikipediaPublisher.RenderArticle.Models;
 using WikipediaPublisher.RenderArticle.Services;
 
@@ -19,6 +20,12 @@ public interface IWebViewBridge
 {
     /// <summary>Navigates the embedded browser to the given URL (null when no WebView).</summary>
     Action<string> NavigateToUrl { get; set; }
+
+    /// <summary>
+    /// Called by the page once its embedded browser exists and <see cref="NavigateToUrl"/> has
+    /// been set, so the view model decides which page the browser opens on.
+    /// </summary>
+    void NotifyBrowserReady();
 
     /// <summary>Called by the page whenever the embedded browser lands on a new URL.</summary>
     void SetCurrentBrowserUrl(string url);
@@ -68,14 +75,8 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge, IFileSaveBridge
 
             _renderSvc = GetService<IArticleRenderService>();
 
-            PageSizeNames.Clear();
-            foreach (var info in PageSizeInfo.All)
-            {
-                PageSizeNames.Add(info.DisplayName);
-            }
-            _selectedPageSizeName = PageSizeInfo.All[0].DisplayName;
-            base.NotifyPropertyChanged(nameof(PageSizeNames));
-            base.NotifyPropertyChanged(nameof(SelectedPageSizeName));
+            PageSizes = PageSizeInfo.All;
+            SelectedPageSize = PageSizes[0];
 
             StatusText = "Search for an article, browse to it, choose where to save the PDF, then click Publish.";
         }
@@ -134,13 +135,18 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge, IFileSaveBridge
     /// <summary>Set by the hosting head (see <see cref="IFileSaveBridge"/>); null on heads with no file dialog.</summary>
     public Func<string, Task<string>> PickSavePdfPathAsync { get; set; }
 
-    public List<string> PageSizeNames { get; } = new();
-
-    private string _selectedPageSizeName = string.Empty;
-    public string SelectedPageSizeName
+    /// <summary>The trim sizes the picker offers, in display order; the picker shows their DisplayName.</summary>
+    public IReadOnlyList<PageSizeInfo> PageSizes
     {
-        get => _selectedPageSizeName;
-        set => SetProperty(ref _selectedPageSizeName, value ?? string.Empty);
+        get;
+        private set => SetProperty(ref field, value);
+    } = [];
+
+    /// <summary>The trim size the book is rendered at; never null once the list has been filled.</summary>
+    public PageSizeInfo SelectedPageSize
+    {
+        get;
+        set => SetProperty(ref field, value ?? PageSizeInfo.All[0]);
     }
 
     [AffectsCommands(nameof(SearchCommand), nameof(PublishCommand), nameof(SelectOutputFileCommand))]
@@ -182,11 +188,24 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge, IFileSaveBridge
         {
             var searchUrl =
                 $"https://{WikiHost}/w/index.php?search={Uri.EscapeDataString(SearchTerms.Trim())}";
-            InvokeOnMainThread(() => NavigateToUrl(searchUrl));
+            Navigate(searchUrl);
             StatusText = "Browse to the article you want, then click Publish.";
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Runs the search exactly as the Search button does, for a page that forwards a key
+    /// gesture (Enter in the search box) instead of raising the command itself. Returns true
+    /// when the search ran, which is what such a handler reports as "handled".
+    /// </summary>
+    public bool SubmitSearch()
+    {
+        if (!SearchCommand.CanExecute(null)) { return false; }
+
+        SearchCommand.Execute(null);
+        return true;
     }
 
     #endregion
@@ -219,6 +238,13 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge, IFileSaveBridge
             if (!string.IsNullOrWhiteSpace(chosenPath))
             {
                 OutputFilePath = chosenPath.Trim();
+
+                //Application policy, applied identically on every head: an empty file that a
+                //  save dialog created as a placeholder for a brand-new name is not a file the
+                //  user already has, so remove it and let the publish-time "replace existing
+                //  file?" prompt speak only for a file with real content in it.
+                FileDialogHelper.RemoveEmptyPlaceholder(OutputFilePath);
+
                 StatusText = $"Will save to: {OutputFilePath}";
             }
         }
@@ -272,15 +298,11 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge, IFileSaveBridge
             IsBusy = true;
             ProgressValue = 0;
 
-            var pageSize = PageSizeInfo.All
-                .FirstOrDefault(p => p.DisplayName == SelectedPageSizeName)?.Option
-                ?? PageSizeOption.EightByTen;
-
             var request = new RenderRequest
             {
                 ArticleUrl = ArticleUrl.Trim(),
                 OutputFilePath = outputPath,
-                PageSize = pageSize
+                PageSize = SelectedPageSize.Option
             };
 
             var progress = new Progress<RenderProgress>(p => InvokeOnMainThread(() =>
@@ -332,7 +354,25 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge, IFileSaveBridge
 
     #region | IWebViewBridge implementation |
 
+    /// <summary>Set by the hosting head (see <see cref="IWebViewBridge"/>); null on heads with no WebView.</summary>
     public Action<string> NavigateToUrl { get; set; }
+
+    //Every navigation the view model raises goes through here, so the browser is only ever
+    //  driven from the UI thread and a head that wired no WebView simply does nothing.
+    private void Navigate(string url)
+    {
+        if (NavigateToUrl != null && (!string.IsNullOrWhiteSpace(url)))
+        {
+            InvokeOnMainThread(() => NavigateToUrl(url));
+        }
+    }
+
+    public void NotifyBrowserReady()
+    {
+        //The view model, not the page, decides where the browser starts, so every head opens
+        //  on the same page and all navigation flows one way.
+        Navigate(HomeUrl);
+    }
 
     public void SetCurrentBrowserUrl(string url)
     {

@@ -2,6 +2,7 @@ using CodeBrix.Platform.Simple;
 using Microsoft.UI.Xaml.Media;
 using RedisSetupTool.Bridges;
 using RedisSetupTool.DockerManagement;
+using RedisSetupTool.DockerManagement.Exec;
 using RedisSetupTool.Services;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,7 @@ namespace RedisSetupTool.ViewModels;
 /// half-filled create form — alive while another one is on screen.
 /// </summary>
 [Microsoft.UI.Xaml.Data.Bindable]
-public class MainViewModel : SimpleViewModel, ICopyToClipboard, IShellContext,
+public class MainViewModel : SimpleViewModel, ICopyToClipboard, IConsoleTabsBridge, IShellContext,
     IInstanceParameterSink
 {
     private readonly AppState _state;
@@ -195,6 +196,28 @@ public class MainViewModel : SimpleViewModel, ICopyToClipboard, IShellContext,
 
     /// <inheritdoc />
     public Action<string> CopyTextToClipboard { get; set; }
+
+    #endregion
+
+    #region | IConsoleTabsBridge implementation |
+
+    //Implemented explicitly, and forwarded to the Consoles section that really owns the tabs, so
+    //  that the page can pick the console bridge out of its DataContext without naming a view
+    //  model type, and the shell's own bound surface gains nothing the XAML would never use.
+
+    /// <inheritdoc />
+    ObservableCollection<ConsoleTabViewModel> IConsoleTabsBridge.Tabs => Consoles.Tabs;
+
+    /// <inheritdoc />
+    Action<ConsoleTabViewModel, string> IConsoleTabsBridge.SendInput
+    {
+        get => Consoles.SendInput;
+        set => Consoles.SendInput = value;
+    }
+
+    /// <inheritdoc />
+    Task<IExecSession> IConsoleTabsBridge.StartSessionAsync(ConsoleTabViewModel tab, int columns,
+        int rows) => Consoles.StartSessionAsync(tab, columns, rows);
 
     #endregion
 

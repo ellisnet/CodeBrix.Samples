@@ -50,6 +50,22 @@ public class PalmTrackerTests
     }
 
     [Fact]
+    public void Start_and_stop_work_through_the_tracker_interface()
+    {
+        //Arrange - the view model holds the tracker as IPalmTracker, resolved from the
+        //  service container
+        using var tracker = new PalmTracker();
+        IPalmTracker palmTracker = tracker;
+
+        //Act / Assert
+        palmTracker.IsRunning.Should().Be(false);
+        palmTracker.Start();
+        palmTracker.IsRunning.Should().Be(true);
+        palmTracker.Stop();
+        palmTracker.IsRunning.Should().Be(false);
+    }
+
+    [Fact]
     public void Pipeline_finds_an_open_palm_in_the_test_photo()
     {
         //Arrange - the full multi-palm detection + landmark pipeline against a real photograph

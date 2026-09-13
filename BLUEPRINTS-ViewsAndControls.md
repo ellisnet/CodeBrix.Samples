@@ -13,10 +13,15 @@ panels generated from a descriptor or by reflection. A last group assembles
 the shell of an editor from a command model rather than from markup - menus,
 toolbars, keyboard shortcuts, a tabbed document area with a toolbox and side
 pads - together with the wiring that forwards pointer, wheel and keyboard
-input from the view into a model that references no UI types. Reach for this
-file whenever you are writing markup or page code-behind, and when you need
-to know which small amount of work legitimately belongs in the view rather
-than in a SimpleViewModel.
+input from the view into a model that references no UI types. Running through
+all of it is one question about the page's own code: how little of it there
+can be. So the file also covers the wiring itself - subscribing to a view
+model once and unsubscribing when the page unloads, passing a getter rather
+than capturing an object that is not there yet, applying layout values the
+view model worked out, and routing a container control's own chrome back to
+the item's command. Reach for this file whenever you are writing markup or
+page code-behind, and when you need to know which small amount of work
+legitimately belongs in the view rather than in a SimpleViewModel.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -66,6 +71,12 @@ conventions the code blocks follow.
 - [Host a control with no dependency properties by mirroring a collection from code-behind](#host-a-control-with-no-dependency-properties-by-mirroring-a-collection-from-code-behind)
 - [Generate a form from a parameter list with one template and per-editor Visibility](#generate-a-form-from-a-parameter-list-with-one-template-and-per-editor-visibility)
 - [Show mask and copy a secret in a one-line row](#show-mask-and-copy-a-secret-in-a-one-line-row)
+- [Wire a control before the DataContext arrives by passing a getter](#wire-a-control-before-the-datacontext-arrives-by-passing-a-getter)
+- [Subscribe to a view model once and unsubscribe when the page unloads](#subscribe-to-a-view-model-once-and-unsubscribe-when-the-page-unloads)
+- [Decide portrait or landscape on the view model and apply it from the page](#decide-portrait-or-landscape-on-the-view-model-and-apply-it-from-the-page)
+- [Build a row of buttons from a palette with one item template](#build-a-row-of-buttons-from-a-palette-with-one-item-template)
+- [Route a container's chrome button to the item's own command](#route-a-containers-chrome-button-to-the-items-own-command)
+- [Report a control's load failure with an event and a log line](#report-a-controls-load-failure-with-an-event-and-a-log-line)
 
 ## Related blueprints
 
@@ -338,10 +349,10 @@ the application re-keys:
 ```csharp
 // From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/SchemeBrushMap.cs
 /// <summary>
-/// Which color role each keyed brush in App.xaml carries. Applying a scheme is walking this
-/// table, looking the key up in the resource dictionaries and assigning the role's color to the
+/// Which colour role each keyed brush in App.xaml carries. Applying a scheme is walking this
+/// table, looking the key up in the resource dictionaries and assigning the role's colour to the
 /// brush that is already there, which repaints every consumer without touching the markup.
-/// Keys whose color is the same in every scheme - the fully transparent faces and the dialog
+/// Keys whose colour is the same in every scheme - the fully transparent faces and the dialog
 /// scrim - are deliberately absent, because nothing needs to be done to them.
 /// </summary>
 public static class SchemeBrushMap
@@ -378,7 +389,7 @@ public interface IColorSchemeApplier
 ```csharp
 // From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml.cs
 /// <summary>
-/// Paints a color scheme: the element theme decides the chrome this application does not
+/// Paints a colour scheme: the element theme decides the chrome this application does not
 /// re-key, and every keyed brush the scheme drives is re-pointed in place, which repaints
 /// every consumer without a binding being raised.
 /// </summary>
@@ -413,7 +424,7 @@ Re-pointing is one assignment, and it is what makes every consumer repaint:
 ```csharp
 // From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/PaletteBrushes.cs
 /// <summary>
-/// Re-points an existing brush at another color, which repaints everything drawn with it.
+/// Re-points an existing brush at another colour, which repaints everything drawn with it.
 /// </summary>
 public static void Repoint(SolidColorBrush brush, uint argb)
 {
@@ -486,9 +497,13 @@ completely the moment the user picks something explicit.
 **The MVVM shape.** The choice is an enum value like any other, and a `Resolve` helper
 turns it into a real scheme using a single boolean the page supplies. The page owns the
 platform side: it reads the preference from `UISettings`, keeps that instance alive, and
-tells the view model when it changes. The one rule that decides everything else is that
-setting `Application.RequestedTheme` at all is what makes the platform stop following the
-operating system - so for the system choice it is never set.
+tells the view model when it changes - through `IManageColorScheme`, the matching half of
+the bridge the view model implements, rather than through the view model's own type.
+Reading the preference is the page's job; deciding what the number means is not, so the
+perceived-brightness rule sits beside the palettes in the shared library. The one rule
+that decides everything else is that setting `Application.RequestedTheme` at all is what
+makes the platform stop following the operating system - so for the system choice it is
+never set.
 
 **Code.**
 
@@ -511,6 +526,19 @@ public static string DisplayName(ColorScheme choice, bool osPrefersDark) => choi
     ColorScheme.DarkDimmed => "Dark Dimmed",
     _ => choice.ToString(),
 };
+
+// ...
+
+/// <summary>
+/// Reads the operating system's light or dark preference out of the color it says it would
+/// paint a window with, which is the form every head reports that preference in. The weights
+/// are the usual perceived-brightness ones, and a ground below the mid point is a dark one.
+/// </summary>
+public static bool PrefersDark(byte red, byte green, byte blue)
+{
+    var brightness = (red * 0.299d) + (green * 0.587d) + (blue * 0.114d);
+    return brightness < 128d;
+}
 ```
 
 The `App` constructor sets the application theme only for an explicit choice:
@@ -530,8 +558,8 @@ if (scheme != ColorScheme.SystemDefault)
 }
 ```
 
-The page watches the operating system and hands the answer to the view model. The
-`UISettings` instance has to be a field:
+The page watches the operating system, asks the scheme table what the reading means, and
+hands the answer to the view model. The `UISettings` instance has to be a field:
 
 ```csharp
 // From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml.cs
@@ -544,23 +572,23 @@ public MainPage()
     DataContextChanged += (_, _) =>
     {
         //Give the view model's dialog helpers a XamlRoot to attach to, and hand it the page
-        //as the thing that can paint a color scheme.
+        //as the thing that can paint a colour scheme.
         (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
-        (DataContext as MainViewModel)?.AttachSchemeApplier(this, SystemPrefersDark());
+        (DataContext as IManageColorScheme)?.AttachSchemeApplier(this, SystemPrefersDark());
     };
 
     _systemColors.ColorValuesChanged += (_, _) => DispatcherQueue.TryEnqueue(() =>
-        (DataContext as MainViewModel)?.OnSystemThemeChanged(SystemPrefersDark()));
+        (DataContext as IManageColorScheme)?.OnSystemThemeChanged(SystemPrefersDark()));
 
     this.InitializeComponent(); //Leave this line last
 }
 
-//The operating system reports its preference as the color it would paint a window with.
+//The operating system reports its preference as the colour it would paint a window with.
+//Reading it is the page's job; deciding what it means belongs with the scheme table.
 private bool SystemPrefersDark()
 {
     var background = _systemColors.GetColorValue(UIColorType.Background);
-    var brightness = (background.R * 0.299d) + (background.G * 0.587d) + (background.B * 0.114d);
-    return brightness < 128d;
+    return ColorSchemes.PrefersDark(background.R, background.G, background.B);
 }
 ```
 
@@ -621,6 +649,9 @@ private void RefreshSchemeNames()
   mechanism that stops it - there is no third state, and it cannot be changed later.
 - Replace the entry that names the resolved theme, do not rename it in place. A picker's
   closed face reads its item once and does not listen for a property change on it.
+- Keep the brightness arithmetic out of the page. The page reads a color from the
+  platform; the rule that turns that color into "this desktop is dark" is a decision, it
+  belongs beside the palettes, and once it is there a test can pin it without a window.
 - On Linux the preference comes from the desktop portal's appearance setting, and which
   desktop component serves that setting varies. On a Cinnamon session it is
   `org.x.apps.portal color-scheme` that the portal reports, not
@@ -969,10 +1000,11 @@ public sealed class TimecodeConverter : IValueConverter
 ```
 
 The same idea with a different precision, chosen for what the data actually looks
-like:
+like. It sits in the shared library too, so the page reaches it through an assembly
+qualified namespace:
 
 ```csharp
-// From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.Core/Converters/TimecodeConverter.cs
 /// <summary>
 /// Formats an AudioPlayer position/duration <see cref="TimeSpan"/> for the audio scrubber's
 /// two timecode labels. The tenth of a second is deliberate: most of what an asset pack ships
@@ -993,7 +1025,9 @@ public sealed class TimecodeConverter : IValueConverter
 
 **Where to look.**
 `CodeBrixVideoTool/src/CodeBrixVideoTool.Core/Converters/TimecodeConverter.cs`
-`KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs`
+`KenneyAssetBrowser/src/KenneyAssetBrowser.Core/Converters/TimecodeConverter.cs` and
+`KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml` (the `xmlns:conv`
+declaration and the `Page.Resources` entry)
 
 **Also shown by.**
 `PolyHavenBrowser/src/PolyHavenBrowser.Core/Converters/NullToVisibilityConverter.cs`
@@ -1008,6 +1042,10 @@ inverting it)
 - Use an invariant culture for anything with fixed separators.
 - A one-way formatter that throws from `ConvertBack` is correct for a label but
   would break if the same converter were ever attached to a two-way binding.
+- A converter that lives in the shared library rather than beside the page needs the
+  `clr-namespace:<Namespace>;assembly=<Assembly>` form in the page's `xmlns`. Without
+  the assembly part the markup compiler looks only in the head project and the key
+  silently fails to resolve.
 
 ### Highlight the selected button with a value converter
 
@@ -1312,14 +1350,18 @@ private void SetLastRunNotes(IReadOnlyList<string> lines)
 <!-- One line of what the last conversion had to say. The bound item IS the line, so this
      template binds the string itself rather than a property of it. -->
 <ui:DataTemplate x:Key="RunNoteTemplate">
-    <TextBlock Text="{d:Binding}" FontSize="11" TextWrapping="Wrap"
-               Margin="0,2,0,0" Foreground="{StaticResource AppMutedTextBrush}" />
+    <TextBlock Text="{d:Binding}"
+               FontSize="11"
+               TextWrapping="Wrap"
+               Margin="0,2,0,0"
+               Foreground="{StaticResource AppMutedTextBrush}" />
 </ui:DataTemplate>
 
 <!-- ... -->
 
 <Border Grid.Row="4"
         Background="{StaticResource AppRaisedPanelBrush}"
+        BorderBrush="{StaticResource AppDividerBrush}"
         BorderThickness="0,1,0,0"
         Padding="20,6,20,10"
         Visibility="{d:Binding Conversion.LastRunNotesVisibility}">
@@ -1422,15 +1464,29 @@ public sealed class EmbeddedImage : Image
 }
 ```
 
+A load that fails cannot throw out of a property-changed callback, so the control
+reports it twice instead - to the application log, and as a `LoadFailed` event.
+The page reaches the control through the image button in the next recipe, and keeps the
+bare form beside it as a commented example of the standalone control:
+
 ```xml
 <!-- From CodeBrix.Samples/JustBetweenUs/CodeBrixPlatform/JustBetweenUs.UI/Views/MainPage.xaml -->
-<controls:EmbeddedImage Margin="20,0,0,0" Width="60" Height="60"
+<controls:EmbeddedImageButton Margin="0,0,20,0" Width="140" Height="90"
+    VerticalAlignment="Center" HorizontalAlignment="Right"
+    Background="#FFB85555"
+    Command="{d:Binding EncryptCommand}"
+    ImageUriSource="embedded://JustBetweenUs.Core/JustBetweenUs.Assets.padlock-icon.svg"
+    Text="Encrypt" ImageWidth="40" ImageHeight="40" Spacing="6" ImagePosition="Top" />
+
+<!--Example of using EmbeddedImage standalone (not inside a button)-->
+<!--<controls:EmbeddedImage Margin="20,0,0,0" Width="60" Height="60"
     VerticalAlignment="Center"
-    UriSource="embedded://JustBetweenUs.Core/JustBetweenUs.Assets.padlock-icon.svg" />
+    UriSource="embedded://JustBetweenUs.Core/JustBetweenUs.Assets.padlock-icon.svg" />-->
 ```
 
 **Where to look.**
 `JustBetweenUs/CodeBrixPlatform/JustBetweenUs.Core/Controls/EmbeddedImage.cs`
+`JustBetweenUs/CodeBrixPlatform/JustBetweenUs.Core/Controls/EmbeddedImageFailedEventArgs.cs`
 `JustBetweenUs/CodeBrixPlatform/JustBetweenUs.UI/Views/MainPage.xaml`
 
 **Sharp edges.**
@@ -1442,9 +1498,10 @@ public sealed class EmbeddedImage : Image
 - The assembly is found by scanning already-loaded assemblies. If nothing has
   touched the assembly holding the resource it will not be loaded and the lookup
   throws; referencing a type from that assembly keeps it loaded.
-- Load failures are caught and written to the debug output, so a wrong resource
-  name shows an empty image with no visible error. Watch the debug output when an
-  icon does not appear.
+- A load failure leaves the image empty rather than throwing, so the control logs it
+  through the ambient logger factory and raises `LoadFailed` for anything that wants
+  to say so on screen. See
+  [Report a control's load failure with an event and a log line](#report-a-controls-load-failure-with-an-event-and-a-log-line).
 - The custom URI scheme is not understood by XAML designers; the sample keeps a
   comment in the page saying the tooling flags it but it works at run time.
 
@@ -1471,8 +1528,8 @@ public sealed class EmbeddedImageButton : Button
     }
 
     // ... ImageUriSource, Text, ImagePosition, Spacing, ImageWidth, ImageHeight,
-    //     TextVerticalAlignment and TextHorizontalAlignment dependency properties,
-    //     all registered with OnLayoutPropertyChanged ...
+    // ... TextVerticalAlignment and TextHorizontalAlignment dependency properties,
+    // ... every one of them registered with OnLayoutPropertyChanged ...
 
     protected override void OnContentChanged(object oldContent, object newContent)
     {
@@ -1496,7 +1553,11 @@ public sealed class EmbeddedImageButton : Button
             var hasImage = !string.IsNullOrWhiteSpace(ImageUriSource);
             var hasText = !string.IsNullOrWhiteSpace(Text);
 
-            if (!hasImage && !hasText) { Content = null; return; }
+            if (!hasImage && !hasText)
+            {
+                Content = null;
+                return;
+            }
 
             if (hasImage && hasText)
             {
@@ -1514,8 +1575,14 @@ public sealed class EmbeddedImageButton : Button
 
                 Content = panel;
             }
-            else if (hasImage) { Content = CreateImage(); }
-            else { Content = CreateTextBlock(); }
+            else if (hasImage)
+            {
+                Content = CreateImage();
+            }
+            else
+            {
+                Content = CreateTextBlock();
+            }
         }
         finally
         {
@@ -1538,7 +1605,7 @@ public sealed class EmbeddedImageButton : Button
     VerticalAlignment="Center" HorizontalAlignment="Center"
     Background="#FFB85555"
     Command="{d:Binding CopyToClipboardCommand}"
-    ImageUriSource="embedded://JustBetweenUs.Core/JustBetweenUs.Assets.clipboard.svg">
+    ImageUriSource="embedded://JustBetweenUs.Core/JustBetweenUs.Assets.clipboard.svg"><!--ImagePosition="Right"-->
     Copy to Clipboard
 </controls:EmbeddedImageButton>
 ```
@@ -1566,12 +1633,12 @@ while the window is wide and fold onto a second line when it is not, or a two-pa
 layout that should be side by side on a wide window and stacked on a tall one -
 without a breakpoint or a converter.
 
-**The MVVM shape.** Pure layout. Each group is one child of the panel;
+**The MVVM shape.** Mostly pure layout. Each group is one child of the panel;
 `FlexPanel.Grow` decides who absorbs the slack and `FlexPanel.Basis` makes the
-wrap point deterministic. Flipping the main axis on `SizeChanged` is one line of
-layout plumbing rather than application logic; if the orientation matters to
-anything else, put an `IsPortrait` property on the view model and set it from the
-same handler.
+wrap point deterministic, and a header that only wraps needs no code at all. Where
+the axis itself flips, the page still owns the assignment to the panel - but which
+way round the window is, and what the pane's width, basis and margin should then
+be, are answers the view model can give, which is how PolyHavenBrowser does it.
 
 **Code.**
 
@@ -1640,33 +1707,46 @@ Flipping the main axis turns a side-by-side split into a stack:
 <!-- From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.UI/Views/MainPage.xaml -->
 <flex:FlexPanel x:Name="ModelContentFlex" Grid.Row="1" Padding="24,20,24,8"
                 Direction="Row">
-  <!-- Explicit Width (not FlexPanel.Basis) in landscape: the pane's content is
-       measured against it, so the text inside wraps at the pane width -->
-  <ScrollViewer x:Name="ModelInfoPane" VerticalScrollBarVisibility="Auto"
-                Margin="0,0,20,0" Width="420"> <!-- ... --> </ScrollViewer>
 
-  <!-- Grow=1: the viewer takes whatever main-axis space the info pane leaves -->
-  <Grid RowSpacing="8" flex:FlexPanel.Grow="1"> <!-- ... --> </Grid>
+    <!-- Explicit Width (not FlexPanel.Basis) in landscape: the pane's content is
+         measured against it, so the text inside wraps at the pane width -->
+    <ScrollViewer x:Name="ModelInfoPane" VerticalScrollBarVisibility="Auto"
+                  Margin="0,0,20,0" Width="420">
+        <!-- ... the fact cards ... -->
+    </ScrollViewer>
+
+    <!-- ...
+         Grow=1: the viewer takes whatever main-axis space the info pane leaves -->
+    <Grid RowSpacing="8" flex:FlexPanel.Grow="1">
+        <!-- ... the GL canvas and its hint line ... -->
+    </Grid>
 </flex:FlexPanel>
 ```
 
+The page applies the axis, the width, the basis and the margin; it does not work
+any of them out:
+
 ```csharp
 // From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs
-//The Model View's content panes: side-by-side while the window is landscape. In
-//portrait the FlexPanel's main axis flips so the 3D viewer drops below the info
-//panes, and the info panes trade their fixed-width column (an explicit Width, so
-//their content measures - and wraps - against it) for half the height as a flex
-//basis, still scrolling internally.
 SizeChanged += (_, args) =>
 {
-    var portrait = args.NewSize.Width < args.NewSize.Height;
-    ModelContentFlex.Direction = portrait ? FlexDirection.Column : FlexDirection.Row;
-    ModelInfoPane.Width = portrait ? double.NaN : 420;
-    FlexPanel.SetBasis(ModelInfoPane,
-        portrait ? new FlexBasis(0.5f, isRelative: true) : FlexBasis.Auto);
-    ModelInfoPane.Margin = portrait ? new Thickness(0, 0, 0, 20) : new Thickness(0, 0, 20, 0);
+    var viewModel = ViewModel;
+    if (viewModel == null) { return; }
+
+    viewModel.NotifyWindowSizeChanged(args.NewSize.Width, args.NewSize.Height);
+
+    var stacked = viewModel.IsModelViewStacked;
+    ModelContentFlex.Direction = stacked ? FlexDirection.Column : FlexDirection.Row;
+    ModelInfoPane.Width = viewModel.ModelInfoPaneWidth;
+    FlexPanel.SetBasis(ModelInfoPane, stacked
+        ? new FlexBasis(viewModel.ModelInfoPaneStackedHeightBasis, isRelative: true)
+        : FlexBasis.Auto);
+    ModelInfoPane.Margin = viewModel.ModelInfoPaneMargin;
 };
 ```
+
+The properties it reads back are in
+[Decide portrait or landscape on the view model and apply it from the page](#decide-portrait-or-landscape-on-the-view-model-and-apply-it-from-the-page).
 
 **Where to look.**
 `KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml` and
@@ -1674,6 +1754,8 @@ SizeChanged += (_, args) =>
 `NotionDocumentCreator/src/NotionDocumentCreator.UI/Views/MainPage.xaml`
 `PolyHavenBrowser/src/PolyHavenBrowser.UI/Views/MainPage.xaml` and
 `Views/MainPage.xaml.cs`
+`PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs` (the pane
+width, basis and margin the handler reads)
 
 **Also shown by.**
 `WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml`
@@ -1860,52 +1942,73 @@ private async Task DoConnect()
 **When you want this.** You want strokes, orbit or pan to follow the pointer, work
 with a pen or a finger, and not break when the window loses focus mid-gesture.
 
-**The MVVM shape.** The page (or the canvas element itself) forwards four pointer
-events straight into the model in a few lines each, and captures the pointer while
-a gesture is in progress. The model decides whether a press starts anything and
-tracks whether a gesture is active, so the page holds no state of its own and the
-view model is not on the per-point path at all.
+**The MVVM shape.** The forwarding is four handlers of a few lines each, plus a
+pointer capture while a gesture is in progress. The model decides whether a press
+starts anything and tracks whether a gesture is active, so the view holds no state
+of its own and the view model is not on the per-point path at all. Where an
+application has more than one head, the four handlers belong in one shared helper
+that every head calls rather than in each code-behind.
 
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/PainDiagram/CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs
-DrawCanvas.PointerPressed += (_, e) =>
+// From CodeBrix.Samples/PainDiagram/Shared/Drawing/DrawingCanvasBinder.cs
+public static void BindToSession(this DrawingCanvas canvas, Func<DrawingSession> sessionGetter)
 {
-    var session = ViewModel?.Session;
-    if (session == null) { return; }
+    if (canvas == null || sessionGetter == null) { return; }
 
-    var pointerPoint = e.GetCurrentPoint(DrawCanvas);
-    if (!pointerPoint.Properties.IsLeftButtonPressed) { return; }
+    canvas.PaintSurface += (_, e) => sessionGetter()?.Render(e.Surface, e.Info);
 
-    if (session.PointerPressed(DrawCanvasHelper.GetPointFromPosition(pointerPoint.Position), DrawCanvas.GetViewSize()))
+// ...
+    canvas.PointerPressed += (_, e) =>
     {
-        DrawCanvas.CapturePointer(e.Pointer);
+        var session = sessionGetter();
+        if (session == null) { return; }
+
+        var pointerPoint = e.GetCurrentPoint(canvas);
+        if (!pointerPoint.Properties.IsLeftButtonPressed) { return; }
+
+        if (session.PointerPressed(DrawCanvasHelper.GetPointFromPosition(pointerPoint.Position), canvas.GetViewSize()))
+        {
+            canvas.CapturePointer(e.Pointer);
+            e.Handled = true;
+        }
+    };
+
+    canvas.PointerMoved += (_, e) =>
+    {
+        var session = sessionGetter();
+        if (session is not { IsPointerActive: true }) { return; }
+
+        session.PointerMoved(DrawCanvasHelper.GetPointFromPosition(e.GetCurrentPoint(canvas).Position), canvas.GetViewSize());
         e.Handled = true;
-    }
-};
+    };
 
-DrawCanvas.PointerMoved += (_, e) =>
-{
-    var session = ViewModel?.Session;
-    if (session is not { IsPointerActive: true }) { return; }
+    canvas.PointerReleased += (_, e) =>
+    {
+        var session = sessionGetter();
+        if (session is not { IsPointerActive: true }) { return; }
 
-    session.PointerMoved(DrawCanvasHelper.GetPointFromPosition(e.GetCurrentPoint(DrawCanvas).Position), DrawCanvas.GetViewSize());
-    e.Handled = true;
-};
+        session.PointerReleased();
+        canvas.ReleasePointerCapture(e.Pointer);
+        e.Handled = true;
+    };
 
-DrawCanvas.PointerReleased += (_, e) =>
-{
-    var session = ViewModel?.Session;
-    if (session is not { IsPointerActive: true }) { return; }
+    //If capture is lost mid-stroke (e.g. the window deactivates), discard the stroke
+    canvas.PointerCaptureLost += (_, _) => sessionGetter()?.PointerCanceled();
 
-    session.PointerReleased();
-    DrawCanvas.ReleasePointerCapture(e.Pointer);
-    e.Handled = true;
-};
+    //SKXamlCanvas does not repaint itself when it is resized
+    canvas.SizeChanged += (_, _) => canvas.Invalidate();
+// ... the native WPF head's mouse-event branch does the same five things ...
+}
+```
 
-//If capture is lost mid-stroke (e.g. the window deactivates), discard the stroke
-DrawCanvas.PointerCaptureLost += (_, _) => ViewModel?.Session?.PointerCanceled();
+Every head's code-behind is then one line:
+
+```csharp
+// From CodeBrix.Samples/PainDiagram/CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs
+//Paint, press, move, release and capture-lost all go straight to the drawing session
+DrawCanvas.BindToSession(() => ViewModel?.Session);
 ```
 
 An element that owns its own camera does the same thing inside itself:
@@ -1941,31 +2044,29 @@ private void OnPointerWheelChanged(object sender, PointerRoutedEventArgs e)
 ```
 
 Where the canvas renders in pixels and the pointer reports device-independent
-units, convert before forwarding:
+units, the page converts before forwarding - and here the view model itself owns
+the gesture, so the handler passes the point and the timestamp on and does nothing
+with them:
 
 ```csharp
 // From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs
 DisplayCanvas.PointerPressed += (_, e) =>
 {
-    var painter = ViewModel?.CurrentPainter;
-    if (painter == null) { return; }
-
     var point = e.GetCurrentPoint(DisplayCanvas);
     if (!point.Properties.IsLeftButtonPressed) { return; }
 
     var (x, y) = ToCanvasPixels(point.Position);
-    painter.PointerDown(x, y);
-    _gestureStartTimestamp = point.Timestamp;
-    _gestureClock.Restart();
+    if (ViewModel?.PointerPressed(x, y, point.Timestamp) != true) { return; }
+
     DisplayCanvas.CapturePointer(e.Pointer);
-    RequestRender();
     e.Handled = true;
 };
 
 // ...
 
 // Maps a pointer position (in view/DIP units) to the canvas's pixel space, so pointer
-// input stays aligned with the rendered pixels at any DPI and after any window resize
+// input stays aligned with the rendered pixels at any DPI and after any window resize -
+// the coordinate robustness the PainDiagram sample demonstrates.
 private (double X, double Y) ToCanvasPixels(Point position)
 {
     var canvasSize = DisplayCanvas.CanvasSize;
@@ -1978,13 +2079,16 @@ private (double X, double Y) ToCanvasPixels(Point position)
 ```
 
 **Where to look.**
+`PainDiagram/Shared/Drawing/DrawingCanvasBinder.cs`
 `PainDiagram/CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs`
 `PolyHavenBrowser/src/libs/PolyHavenBrowser.Rendering/GL/ModelSceneGlCanvas.cs`
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs`
 
 **Also shown by.**
-`PainDiagram/PainDiagram.Wpf/Views/MainWindow.xaml.cs` (the same shape with the
-WPF event names: mouse down, move, up and lost-capture, with `CaptureMouse()`)
+`PainDiagram/Shared/Drawing/DrawingCanvasBinder.cs` again, in its `#else` branch:
+the same five subscriptions with the WPF event names - mouse down, move, up and
+lost-capture, with `CaptureMouse()` - so the native WPF window's code-behind is
+the same single `BindToSession` call as every other head's.
 
 **Sharp edges.**
 - Set `e.Handled = true` on pointer moves. An unhandled move bubbles to the window
@@ -1999,6 +2103,9 @@ WPF event names: mouse down, move, up and lost-capture, with `CaptureMouse()`)
   in pixels; scale by canvas size over actual size or the input drifts from the
   image at non-100% display scaling.
 - `SizeChanged` also has to request a render.
+- A shared binder must take the session as a getter rather than as a value: the
+  wiring runs before the `DataContext` arrives. See
+  [Wire a control before the DataContext arrives by passing a getter](#wire-a-control-before-the-datacontext-arrives-by-passing-a-getter).
 
 ### Translate platform pointer and key events into a headless input model
 
@@ -2135,9 +2242,12 @@ mirrored like a selfie camera, with no per-frame allocation.
 
 **The MVVM shape.** The library declares a one-line `SKXamlCanvas` subclass purely
 so the XAML can name the element, plus a separate renderer class that takes a
-surface, its image info and the capture service. The page owns one renderer per
-canvas and wires the paint event to it in a single line; the view model exposes
-the capture service and never touches Skia.
+surface, its image info and the frame source. There is one renderer per canvas,
+and it is owned by whoever decides what that canvas shows: the page owns the
+self-view's renderer, because a mirrored preview is all that canvas ever shows,
+while the main canvas can show either the live preview or the painting, so its
+renderer belongs to the view model and the page's paint handler is one forward
+through a bridge.
 
 **Code.**
 
@@ -2189,22 +2299,31 @@ public sealed class WebcamFrameRenderer
 
 ```xml
 <!-- From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml -->
-<Page xmlns:webcam="clr-namespace:WebcamPainter.Webcam;assembly=WebcamPainter.Webcam" ...>
-  <Border BorderBrush="Gray" BorderThickness="1" Background="Black" Height="150">
+xmlns:webcam="clr-namespace:WebcamPainter.Webcam;assembly=WebcamPainter.Webcam"
+
+<!-- ... -->
+
+<Border BorderBrush="Gray" BorderThickness="1" Background="Black" Height="150">
     <webcam:CameraCanvas x:Name="SelfViewCanvas" />
-  </Border>
+</Border>
 ```
 
 ```csharp
 // From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml.cs
-//One frame renderer per canvas that shows live video (each caches its own buffers)
-private readonly WebcamFrameRenderer _mainRenderer = new WebcamFrameRenderer();
+//One frame renderer per canvas that shows live video (each caches its own buffers); the
+//  main canvas's renderer is the view model's, because the view model is what decides
+//  whether that canvas is showing video or the painting
 private readonly WebcamFrameRenderer _selfViewRenderer = new WebcamFrameRenderer();
 // ...
+//Which of the two things the main canvas shows is application state, so the handler
+//  forwards the surface and lets the view model draw (see ICanvasBridge)
+MainCanvas.PaintSurface += (_, e) =>
+    (DataContext as ICanvasBridge)?.RenderMainCanvas(e.Surface, e.Info);
+
 SelfViewCanvas.PaintSurface += (_, e) =>
     _selfViewRenderer.Render(e.Surface, e.Info, ViewModel?.CaptureService, mirror: true);
 
-SelfViewCanvas.SizeChanged += (_, _) => SelfViewCanvas.Invalidate();
+MainCanvas.SizeChanged += (_, _) => MainCanvas.Invalidate();
 ```
 
 **Where to look.**
@@ -2213,12 +2332,19 @@ SelfViewCanvas.SizeChanged += (_, _) => SelfViewCanvas.Invalidate();
 
 **Also shown by.**
 `PalmVisualizer/src/libs/PalmVisualizer.Camera/CameraCanvas.cs` and
-`PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs`
+`PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs` - the same renderer
+shape, except that it takes an `IWebcamFrameSource` rather than the capture
+service, so the view model can implement the one method the renderer needs and
+keep the device to itself.
 
 **Sharp edges.**
 - Create one renderer per canvas. The cached framebuffer and bitmap are reused
   across paints and are only touched on the UI thread, so sharing one renderer
   between two canvases would race.
+- Put the renderer where the decision is. A canvas that always shows the same
+  thing can keep its renderer in the page; a canvas whose content depends on
+  application state should be painted by the view model through a bridge, or the
+  page ends up reading mode flags in a paint handler.
 - The mirror is a canvas transform around the destination rectangle's horizontal
   center, applied inside a save and restore, not a pixel flip. That is why tracked
   positions have to be mirrored separately before they reach anything that draws
@@ -2292,70 +2418,103 @@ nothing else.
 only the page knows how large the viewport actually is, so somebody has to combine
 them.
 
-**The MVVM shape (adapted).** The sample computes the fit-to-viewport scale, sizes
-the image and scrolls the viewer inside the page's code-behind, reading the view
-model's state directly. The shape to prefer keeps the arithmetic in the view
-model: the page reports its viewport size through a bridge method whenever it
-changes, and binds the image size and scroll offsets to computed view-model
-properties. The adapted block shows the page side reduced to two forwarding calls;
-the formula itself is unchanged.
+**The MVVM shape.** Only one number in the whole calculation belongs to the page:
+how big the viewer is. So the page measures that, hands it over, and applies the
+four values it gets back - an image width and height, and a horizontal and
+vertical scroll offset. Everything between those two ends is a static method on a
+record in the library, which is why it can be checked without a window.
 
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs
-    /// <summary>
-    /// Sizes side's image to zoom x fit-the-page (so 100% shows the whole page, centred, and
-    /// every level above it overflows the viewer) and scrolls the viewer to the pane's pan position.
-    /// </summary>
-    private void ApplyView(DocumentSide side)
-    {
-        // ...
-        var fit = Math.Min(viewportWidth / pane.PagePixelWidth, viewportHeight / pane.PagePixelHeight);
-        var factor = viewModel.View.Zoom.Factor;
-        image.Width = Math.Floor(pane.PagePixelWidth * fit * factor);
-        image.Height = Math.Floor(pane.PagePixelHeight * fit * factor);
-
-        //Let the viewer measure the new extent before positioning it
-        scroller.UpdateLayout();
-        var pan = viewModel.View.PanOf(side);
-        scroller.ChangeView(
-            pan.Horizontal * Math.Max(0, scroller.ScrollableWidth),
-            pan.Vertical * Math.Max(0, scroller.ScrollableHeight),
-            null, disableAnimation: true);
-    }
-```
-
-```csharp
-// Adapted from CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs
-// The page forwards viewport size and applies computed values; the view model owns the maths.
-public MainPage()
+// From CodeBrix.Samples/PdfSideBySide/src/libs/PdfSideBySide.PdfRender/Viewing/PaneLayout.cs
+public static PaneLayout Create(double pageWidth, double pageHeight, double viewportWidth,
+    double viewportHeight, double zoomFactor, PanPosition pan)
 {
-    // ...
-    LeftScroller.SizeChanged += (_, _) =>
-        ViewModel?.SetViewportSize(DocumentSide.Left, LeftScroller.ActualWidth, LeftScroller.ActualHeight);
-    RightScroller.SizeChanged += (_, _) =>
-        ViewModel?.SetViewportSize(DocumentSide.Right, RightScroller.ActualWidth, RightScroller.ActualHeight);
+    if (pan == null || zoomFactor <= 0 || pageWidth <= 0 || pageHeight <= 0
+        || viewportWidth <= 0 || viewportHeight <= 0)
+    {
+        return None;
+    }
+
+    var fit = Math.Min(viewportWidth / pageWidth, viewportHeight / pageHeight);
+    var imageWidth = Math.Floor(pageWidth * fit * zoomFactor);
+    var imageHeight = Math.Floor(pageHeight * fit * zoomFactor);
+
+    //Whatever the image overflows its viewer by is the scrollable range the fractions apply to
+    return new PaneLayout(
+        imageWidth,
+        imageHeight,
+        pan.Horizontal * Math.Max(0, imageWidth - viewportWidth),
+        pan.Vertical * Math.Max(0, imageHeight - viewportHeight));
 }
 ```
 
+The view supplies the two values that are its own - the shared zoom and this
+pane's pan - and the same file keeps the other piece of view arithmetic, how far
+one pan step moves:
+
 ```csharp
 // From CodeBrix.Samples/PdfSideBySide/src/libs/PdfSideBySide.PdfRender/Viewing/ComparisonView.cs
-    /// <summary>How much of the visible area one pan step moves: a quarter of it.</summary>
-    public const double PanStepOfViewport = 0.25;
+public PaneLayout LayoutOf(DocumentSide side, double pageWidth, double pageHeight,
+    double viewportWidth, double viewportHeight) =>
+    PaneLayout.Create(pageWidth, pageHeight, viewportWidth, viewportHeight, Zoom.Factor, PanOf(side));
 
-    /// <summary>
-    /// One pan step as a fraction of the scrollable range. At zoom factor f the page is
-    /// f viewports wide, so the scrollable range is f - 1 viewports and a quarter
-    /// of a viewport is 0.25 / (f - 1) of it. Zero at 100%, where nothing scrolls.
-    /// </summary>
-    public double PanStepFraction => Zoom.IsZoomedIn ? PanStepOfViewport / (Zoom.Factor - 1) : 0;
+/// <summary>
+/// One pan step as a fraction of the scrollable range. At zoom factor <c>f</c> the page is
+/// <c>f</c> viewports wide, so the scrollable range is <c>f - 1</c> viewports and a quarter
+/// of a viewport is <c>0.25 / (f - 1)</c> of it. Zero at 100%, where nothing scrolls.
+/// </summary>
+public double PanStepFraction => Zoom.IsZoomedIn ? PanStepOfViewport / (Zoom.Factor - 1) : 0;
+```
+
+The view model takes the viewport size and stores the answer on the pane, whose
+four bindable values notify as a set:
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs
+public void SetViewportSize(DocumentSide side, double viewportWidth, double viewportHeight)
+{
+    var pane = PaneFor(side);
+    if (pane == null) { return; }
+
+    pane.SetLayout(View.LayoutOf(side, pane.PagePixelWidth, pane.PagePixelHeight,
+        viewportWidth, viewportHeight));
+}
+```
+
+And the page measures and applies, with no arithmetic left in it:
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs
+private void ApplyView(DocumentSide side)
+{
+    var viewModel = ViewModel;
+    if (viewModel == null) { return; }
+
+    var pane = side == DocumentSide.Left ? viewModel.LeftPane : viewModel.RightPane;
+    var scroller = side == DocumentSide.Left ? LeftScroller : RightScroller;
+    var image = side == DocumentSide.Left ? LeftImage : RightImage;
+
+    //Only the page knows how big the viewer is; the arithmetic belongs to the view model
+    viewModel.SetViewportSize(side, scroller.ActualWidth, scroller.ActualHeight);
+
+    image.Width = pane.ImageWidth;
+    image.Height = pane.ImageHeight;
+    if (double.IsNaN(pane.ImageWidth)) { return; }
+
+    //Let the viewer measure the new extent before positioning it
+    scroller.UpdateLayout();
+    scroller.ChangeView(pane.ScrollOffsetX, pane.ScrollOffsetY, null, disableAnimation: true);
+}
 ```
 
 **Where to look.**
-`PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs`
+`PdfSideBySide/src/libs/PdfSideBySide.PdfRender/Viewing/PaneLayout.cs`
 `PdfSideBySide/src/libs/PdfSideBySide.PdfRender/Viewing/ComparisonView.cs`
 `PdfSideBySide/src/libs/PdfSideBySide.PdfRender/Viewing/PanPosition.cs`
+`PdfSideBySide/src/PdfSideBySide.Core/ViewModels/DocumentPaneViewModel.cs`
+`PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs`
 
 **Sharp edges.**
 - Call `UpdateLayout()` before changing the view: the scrollable extents are stale
@@ -2366,8 +2525,14 @@ public MainPage()
 - Guard the fully-zoomed-out case where nothing scrolls at all.
 - Disable the scroll viewer's own zoom when the application has its own zoom
   ladder; two zooms fight.
-- Re-apply the size and the pan on size changes, on the view-version change, and
-  on each pane's image change; missing any one leaves the image the wrong size.
+- Re-apply the size and the pan on size changes and on the view-version change;
+  missing either one leaves the image the wrong size. The pane folds its own
+  changes into that one version counter, so the page has one thing to watch.
+- Return the offsets rather than the fractions. The fraction is the durable form
+  to store, but the page would have to ask the viewer for its scrollable range to
+  use one, and that range is stale until the new content has been measured.
+- Make the layout a value type and compare before notifying, or every resize
+  raises four property changes whether anything moved or not.
 
 ### Build menus and toolbars from a command model instead of XAML
 
@@ -2462,13 +2627,16 @@ it.
 // From CodeBrix.Samples/Pinta.Brix/src/libs/Pinta.Brix.Controls/Input/CommandAcceleratorTable.cs
 // Pinta.Brix note: XAML KeyboardAccelerators are declared on the menu items
 // (so the shortcut is visible where the user looks for it) but they do NOT
-// fire on the Skia heads - verified on X11 by driving the running
+// ...
 // application: typing reaches a TextBox normally, while Ctrl+Z, Ctrl+Y and
 // Ctrl+H registered on a Page or on a MenuFlyoutItem never invoke.
 //
 // So the shortcuts are dispatched here instead, from a single KeyDown handler
-// on the page.
+// ...
 ```
+
+The elided line records how that was established: by driving the running
+application on an X11 head and watching which keys arrived.
 
 ```csharp
 // From CodeBrix.Samples/Pinta.Brix/src/libs/Pinta.Brix.Controls/Input/CommandAcceleratorTable.cs
@@ -2609,7 +2777,10 @@ does.
 
 **The MVVM shape.** Prefer the declarative form: an input binding in XAML pointing
 at the command, with no code-behind at all. Where a key handler is unavoidable, it
-stays a one-line forward to the command and checks `CanExecute` first.
+forwards the gesture to a view-model method that decides what it means and
+returns whether it did anything - which is exactly what the handler needs to
+report back as "handled". The `CanExecute` check goes with the decision, in the
+view model, not in the page.
 
 **Code.**
 
@@ -2629,13 +2800,29 @@ stays a one-line forward to the command and checks `CanExecute` first.
 //Pressing Enter in the search box runs Search, just like clicking the button.
 private void SearchBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
 {
-    if (e.Key == Windows.System.VirtualKey.Enter
-        && DataContext is MainViewModel { SearchCommand: var search }
-        && search.CanExecute(null))
+    if (e.Key == Windows.System.VirtualKey.Enter && DataContext is MainViewModel viewModel)
     {
-        search.Execute(null);
-        e.Handled = true;
+        e.Handled = viewModel.SubmitSearch();
     }
+}
+```
+
+The page recognizes the key; the view model decides whether the gesture means
+anything right now. Eight heads share that method, and a test can call it:
+
+```csharp
+// From CodeBrix.Samples/WikipediaPublisher/Shared/ViewModels/MainViewModel.cs
+/// <summary>
+/// Runs the search exactly as the Search button does, for a page that forwards a key
+/// gesture (Enter in the search box) instead of raising the command itself. Returns true
+/// when the search ran, which is what such a handler reports as "handled".
+/// </summary>
+public bool SubmitSearch()
+{
+    if (!SearchCommand.CanExecute(null)) { return false; }
+
+    SearchCommand.Execute(null);
+    return true;
 }
 ```
 
@@ -2685,12 +2872,15 @@ private void OnRootKeyDown(object sender, KeyRoutedEventArgs e)
 **Where to look.**
 `WikipediaPublisher/WikipediaPublisher.Wpf/Views/MainWindow.xaml`
 `WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml.cs`
+`WikipediaPublisher/Shared/ViewModels/MainViewModel.cs`
 `GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml.cs`
 `GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml`
 
 **Sharp edges.**
 - Check `CanExecute` before invoking; a key handler bypasses the disabled state a
-  button would have honored.
+  button would have honored. Put that check in the view-model method the handler
+  forwards to, so every head gets it, and let the method's return value be what
+  the handler assigns to `e.Handled`.
 - Enter means "do the default thing for this box", so it stays on the boxes. A key
   that means the same thing everywhere - Escape for cancel - goes on the root
   element's `KeyDown` instead, and then works whatever has focus.
@@ -2943,7 +3133,8 @@ it like a dialog. The content is supplied by the caller.
 // draggable header, shown in a non-dimming Popup. Upstream's effect and
 // adjustment dialogs are small utility WINDOWS floating over the canvas, so
 // the live preview stays fully visible and interactive; ContentDialog dims
-// and blocks the whole window, which defeats the preview.
+// and blocks the whole window, which defeats the preview. Every effect
+// configuration dialog in the port goes through this host.
 
 public static async Task<bool> ShowAsync (string title, UIElement content, XamlRoot xamlRoot, double maxWidth = 460)
 {
@@ -3114,21 +3305,27 @@ public void Show ()
 **When you want this.** The overall window shape of an editor: menus, toolbars, a
 tool palette, a tabbed document area, dockable side panes, a status bar.
 
-**The MVVM shape.** The XAML declares the grid and the named hosts; everything
-inside the hosts is built at load time from model state. In a view-model shape the
-lists bind to observable collections instead of being refilled by hand, but the
-container layout is identical.
+**The MVVM shape.** The XAML declares the grid and the named hosts; the panels
+inside the hosts are built at load time from the engine's action model. What is
+plain text or a plain command, though, is bound: the status bar's three readouts
+and the zoom controls are view-model properties and commands, not named elements
+the code-behind writes to. In a fuller view-model shape the toolbox and pad lists
+would bind to observable collections as well, but the container layout would be
+identical.
 
 **Code.**
+
+Five rows: the menu bar, the icon toolbar, the tool options bar, the row that
+carries the toolbox, the tabs, the splitter and the pads, and the status bar.
 
 ```xml
 <!-- From CodeBrix.Samples/Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.xaml -->
 <Grid.RowDefinitions>
-    <RowDefinition Height="Auto" />   <!-- menu bar -->
-    <RowDefinition Height="Auto" />   <!-- icon toolbar -->
-    <RowDefinition Height="Auto" />   <!-- tool options -->
-    <RowDefinition Height="*" />      <!-- toolbox | tabs | splitter | pads -->
-    <RowDefinition Height="Auto" />   <!-- status bar -->
+    <RowDefinition Height="Auto" />
+    <RowDefinition Height="Auto" />
+    <RowDefinition Height="Auto" />
+    <RowDefinition Height="*" />
+    <RowDefinition Height="Auto" />
 </Grid.RowDefinitions>
 
 <!-- In-app icon toolbar row. Deliberately NOT an OS header bar: the
@@ -3148,11 +3345,19 @@ container layout is identical.
          SelectionChanged="DocumentTabs_SelectionChanged" />
 ```
 
+The status bar is bound rather than named and written to: the view model keeps
+the three texts, fed from the engine's own events.
+
 ```xml
 <!-- From CodeBrix.Samples/Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.xaml -->
 <!-- MaxLines keeps the bar one line tall: the shape tools carry
      many-line StatusBarText and would otherwise grow the bar. -->
-<TextBlock x:Name="StatusText" Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="1" />
+<TextBlock Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="1"
+           Text="{d:Binding StatusText}" />
+<TextBlock Grid.Column="2" VerticalAlignment="Center" MinWidth="80"
+           Text="{d:Binding CursorPositionText}" />
+<TextBlock Grid.Column="3" VerticalAlignment="Center" MinWidth="80"
+           Text="{d:Binding SelectionSizeText}" />
 ```
 
 **Where to look.**
@@ -3166,6 +3371,9 @@ container layout is identical.
   toolbar row.
 - Status text sourced from a model can be multi-line; `MaxLines="1"` plus trimming
   keeps the bar from growing.
+- A named `TextBlock` the code-behind assigns to is the shape to grow out of
+  first. Binding it costs one property on the view model and removes a page field,
+  a null check and an ordering rule.
 - A toolbox that re-flows into more or fewer columns as the window height changes
   is rebuilt from a size-changed handler with a small threshold, to avoid
   thrashing.
@@ -3454,10 +3662,10 @@ public sealed class RuntimeHost : IDisposable
   `clr-namespace:...;assembly=...` form as the platform's own namespaces; the
   `using:` form is only for the application's own types.
 - Dispose reads the field into a local, nulls the field and only then disposes, so
-  a second unload or a concurrent teardown cannot double-dispose. The runtime one
-  level down repeats the guard with its own started flag, which is cheap insurance
-  in an application whose teardown can be started by the guest, by the window
-  closing or by a page unload.
+  a second unload or a concurrent teardown cannot double-dispose. That guard is
+  the facade's job and it matters: the runtime one level down guards its start
+  with a started flag but not its dispose, and teardown here can be begun by the
+  guest, by the window closing or by a page unload.
 - Keep the empty view model rather than deleting it. It costs nothing, it keeps
   the data context shape every other page in a repository uses, and it is where
   the first real bound property will go.
@@ -3568,10 +3776,13 @@ that turning into the page owning the state as well.
 **The MVVM shape.** The view model still owns the list and each item's status as
 ordinary bound properties, and the commands that add and remove items. The page
 subscribes to the collection's change notification and mirrors it: one control per
-item, created in code, torn down on removal. What the page learns while the item
-lives - the resolved session, the grid size, the state - it pushes back through a
-few `Apply` methods on the item view model, so the status strip beside the control
-is still plain bound XAML.
+item, created in code, torn down on removal. Everything that crossing takes is one
+interface the view model implements, so the page never names the view-model type:
+the collection to mirror, the call that opens the work behind a new item, and a
+delegate the page fills in for what only it can do. What the page learns while the
+item lives - the grid size, the state, a failure - it pushes back through a few
+`Apply` methods on the item view model, so the status strip beside the control is
+still plain bound XAML.
 
 **Code.**
 
@@ -3591,15 +3802,35 @@ is still plain bound XAML.
 ```
 
 ```csharp
-// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.UI/Views/MainPage.Consoles.cs
-private void AttachConsoles(MainViewModel viewModel)
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/Bridges/IConsoleTabsBridge.cs
+public interface IConsoleTabsBridge
 {
-    if (viewModel is null || _consoles is not null) { return; }
+    /// <summary>The open console tabs, which the page mirrors into its tab strip.</summary>
+    ObservableCollection<ConsoleTabViewModel> Tabs { get; }
 
-    _consoles = viewModel.Consoles;
-    _consoles.Tabs.CollectionChanged += ConsoleTabs_ModelCollectionChanged;
-    _consoles.ReopenRequested += ReopenConsole;
     // ...
+    Action<ConsoleTabViewModel, string> SendInput { get; set; }
+
+    // ...
+    Task<IExecSession> StartSessionAsync(ConsoleTabViewModel tab, int columns, int rows);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.UI/Views/MainPage.Consoles.cs
+private void AttachConsoles(IConsoleTabsBridge consoles)
+{
+    if (consoles is null || _consoles is not null) { return; }
+
+    _consoles = consoles;
+    _consoles.Tabs.CollectionChanged += ConsoleTabs_ModelCollectionChanged;
+    _consoles.SendInput = (model, text) =>
+    {
+        if (model is not null && _consoleHosts.TryGetValue(model, out var host))
+        {
+            host.Pump?.OnInput(text);
+        }
+    };
 }
 
 private void ConsoleTabs_ModelCollectionChanged(object sender,
@@ -3689,7 +3920,7 @@ public ObservableCollection<ConsoleTabViewModel> Tabs { get; } = [];
 
 /// <summary>
 /// Opens a console tab on a container. The page notices the new tab through the collection
-/// and does the rest: it probes for a shell, opens the exec and starts the pump.
+/// and does the rest: it builds a terminal, asks for the tab's session and starts the pump.
 /// </summary>
 public ConsoleTabViewModel OpenConsole(string containerId, string containerName)
 {
@@ -3726,6 +3957,10 @@ status strip's data template)
   both the strip and the host grid, unhook the handlers, and dispose the session.
   Key the page's bookkeeping on the item's view model rather than on the control,
   because that is what every one of those lookups starts from.
+- Draw the line at "needs the control". Finding the shell and opening the session
+  is the view model's work even though the page is what asks for it; what stays in
+  the page is the grid size to open at, joining the session to the control, and
+  writing a failure into it.
 
 ### Generate a form from a parameter list with one template and per-editor Visibility
 
@@ -4081,3 +4316,518 @@ beside it is part of the design.
 - The copy delegate can be null on a head with no clipboard. Invoke it
   conditionally and let the row do nothing rather than reporting a failure the
   user cannot act on.
+
+### Wire a control before the DataContext arrives by passing a getter
+
+**When you want this.** A page wires a control to something the view model owns -
+a drawing session, a document, a scene - in its constructor, but the
+`DataContext` is set afterwards, and it can be replaced or disposed while the
+page is still alive.
+
+**The MVVM shape.** Do not hand the wiring the object; hand it a function that
+returns the object. Every event then asks for the current one, so the order the
+page and its data context are built in stops mattering, nothing is captured that
+has to be released, and a helper shared by several heads needs no knowledge of
+which view-model type any of them uses.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PainDiagram/Shared/Drawing/DrawingCanvasBinder.cs
+/// <summary>
+/// Subscribes the canvas's paint and pointer (or mouse) events to the drawing session the
+/// getter returns. The getter is called on every event rather than captured once, so the
+/// canvas can be wired before the page's <c>DataContext</c> has arrived and keeps working
+/// after the view model is disposed.
+/// </summary>
+public static void BindToSession(this DrawingCanvas canvas, Func<DrawingSession> sessionGetter)
+{
+    if (canvas == null || sessionGetter == null) { return; }
+
+    canvas.PaintSurface += (_, e) => sessionGetter()?.Render(e.Surface, e.Info);
+
+// ...
+    canvas.PointerMoved += (_, e) =>
+    {
+        var session = sessionGetter();
+        if (session is not { IsPointerActive: true }) { return; }
+// ...
+    };
+}
+```
+
+The page's constructor then wires the canvas without having to know whether the
+data context has arrived - here `InitializeComponent` may be the thing that sets
+it - because the getter is not called until an event arrives:
+
+```csharp
+// From CodeBrix.Samples/PainDiagram/CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs
+//I tend to like to declare/define private methods above the constructor, in C# classes
+private MainViewModel ViewModel => DataContext as MainViewModel;
+
+public MainPage()
+{
+    //Doing this before InitializeComponent() - in case InitializeComponent()
+    //  is the thing that sets the data context.
+    DataContextChanged += (_, _) =>
+    {
+        // ...
+    };
+
+    InitializeComponent();
+
+    //Paint, press, move, release and capture-lost all go straight to the drawing session
+    DrawCanvas.BindToSession(() => ViewModel?.Session);
+}
+```
+
+**Where to look.**
+`PainDiagram/Shared/Drawing/DrawingCanvasBinder.cs`
+`PainDiagram/CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs`
+
+**Also shown by.**
+`PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs` and
+`WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml.cs` (the same idea without
+a delegate: each handler starts from a `ViewModel` property, or from a
+`DataContext as <interface>` cast, so it reads the current data context every
+time rather than one captured in the constructor)
+
+**Sharp edges.**
+- A captured reference is a lifetime decision. The getter form makes the wiring
+  outlive a replaced or disposed view model without the page having to unhook
+  anything.
+- Null-check inside the handler, not once at wiring time. `sessionGetter()` can
+  legitimately return null before the first document exists.
+- The getter is also what keeps a shared helper free of the application's view
+  model type: it takes a function returning a model type the helper already knows.
+- This is for wiring a control to a model. It is not a substitute for a bridge
+  interface where the traffic goes the other way, from the view model to the page.
+
+### Subscribe to a view model once and unsubscribe when the page unloads
+
+**When you want this.** The page has to watch the view model for something a
+binding cannot express - a version counter, a "the view moved" signal - and the
+data context can arrive, change, or be missing when the page is built.
+
+**The MVVM shape.** Give the page one private field holding the view model it is
+wired to, and two methods: one that wires if it is not already wired to that
+instance, one that unwires. Call the first from both `DataContextChanged` and
+`Loaded`, because either can come first; call the second from `Unloaded`. One
+handler, one subscription, and nothing left behind when the page goes away.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs
+private MainViewModel _wiredViewModel;
+
+public MainPage()
+{
+    DataContextChanged += (_, _) =>
+    {
+        // ...
+        WireViewModel();
+    };
+
+    //Anything the view model opens can fail, and an error dialog needs the XamlRoot that only
+    //  a loaded page has, so the startup documents are opened from here
+    Loaded += (_, _) =>
+    {
+        WireViewModel();
+        ViewModel?.OnPageReady();
+    };
+
+    Unloaded += (_, _) => UnwireViewModel();
+
+    this.InitializeComponent(); //Leave this line last
+    // ...
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs
+//One property to watch: the view model folds everything that moves the view - a zoom, a pan, a
+//  page change, a newly rendered image - into ViewVersion
+private void WireViewModel()
+{
+    var viewModel = ViewModel;
+    if (ReferenceEquals(viewModel, _wiredViewModel)) { return; }
+
+    UnwireViewModel();
+    if (viewModel == null) { return; }
+
+    _wiredViewModel = viewModel;
+    _wiredViewModel.PropertyChanged += OnViewModelPropertyChanged;
+}
+
+private void UnwireViewModel()
+{
+    if (_wiredViewModel == null) { return; }
+
+    _wiredViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+    _wiredViewModel = null;
+}
+
+private void OnViewModelPropertyChanged(object sender, PropertyChangedEventArgs args)
+{
+    if (args.PropertyName == nameof(MainViewModel.ViewVersion)) { ApplyViews(); }
+}
+```
+
+**Where to look.**
+`PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs`
+`PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs`
+
+**Related.**
+[Signal a non property model change to the view with a version counter](BLUEPRINTS-MVVM.md#signal-a-non-property-model-change-to-the-view-with-a-version-counter)
+is what this subscription is watching for, and why one property is enough.
+
+**Sharp edges.**
+- Wiring from `DataContextChanged` alone is not enough, and neither is wiring from
+  `Loaded` alone: which arrives first depends on how the page got its data
+  context. Call the same idempotent method from both.
+- Compare against the instance you are already wired to before subscribing. A data
+  context that is set twice with the same object would otherwise leave two
+  subscriptions and run every handler twice.
+- Unwire on `Unloaded`, not only in a disposer. The page can outlive its view
+  model or be taken out of the tree and put back.
+- A lambda subscription cannot be removed. Use a named method so the minus-equals
+  can find it.
+
+### Decide portrait or landscape on the view model and apply it from the page
+
+**When you want this.** A two-pane view should sit side by side on a wide window
+and stack on a tall one, and more than the panel's axis depends on which way
+round it is: a pane's width, its flex basis and its margin all change with it.
+
+**The MVVM shape.** The page measures - it is the only thing that can - and
+reports the new size in one call. The view model decides what that size means and
+publishes the answers as ordinary bindable properties, one per value the page has
+to apply. The orientation itself is a bindable property too, so anything else that
+cares about it (a visibility, a caption) follows without the page being involved.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+//The Model View's info pane is a fixed column beside the viewer while the window is
+//  landscape, and half the height above it when the window is portrait.
+private const double InfoPaneLandscapeWidth = 420d;
+private const float InfoPaneStackedHeightBasis = 0.5f;
+
+/// <summary>
+/// Whether the window is taller than it is wide, so the Model View stacks its info pane
+/// above the 3D viewer instead of placing the two side by side.
+/// </summary>
+[AffectsProperties(nameof(ModelInfoPaneWidth), nameof(ModelInfoPaneMargin))]
+public bool IsModelViewStacked
+{
+    get;
+    private set => SetProperty(ref field, value);
+}
+
+/// <summary>
+/// The Model View info pane's width: an explicit column while the panes sit side by side
+/// (so the text inside measures - and wraps - against it), and automatic when they stack,
+/// where the pane is sized by <see cref="ModelInfoPaneStackedHeightBasis"/> instead.
+/// </summary>
+public double ModelInfoPaneWidth => IsModelViewStacked ? double.NaN : InfoPaneLandscapeWidth;
+
+/// <summary>The share of the Model View's height the info pane takes when the panes stack.</summary>
+public float ModelInfoPaneStackedHeightBasis => InfoPaneStackedHeightBasis;
+
+/// <summary>The gap the info pane leaves for the 3D viewer: below it when stacked, beside it otherwise.</summary>
+public Thickness ModelInfoPaneMargin => IsModelViewStacked
+    ? new Thickness(0, 0, 0, 20)
+    : new Thickness(0, 0, 20, 0);
+
+/// <summary>
+/// Tells the view model the window's new size, so it can decide which way round the
+/// Model View's panes belong. The page reads the pane properties back and applies them
+/// to the layout panel.
+/// </summary>
+/// <param name="width">The window's new width.</param>
+/// <param name="height">The window's new height.</param>
+public void NotifyWindowSizeChanged(double width, double height) =>
+    IsModelViewStacked = width < height;
+```
+
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs
+SizeChanged += (_, args) =>
+{
+    var viewModel = ViewModel;
+    if (viewModel == null) { return; }
+
+    viewModel.NotifyWindowSizeChanged(args.NewSize.Width, args.NewSize.Height);
+
+    var stacked = viewModel.IsModelViewStacked;
+    // ... assign the axis, the width, the basis and the margin to the panel ...
+};
+```
+
+**Where to look.**
+`PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`
+`PolyHavenBrowser/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs`
+
+**Related.**
+[Wrap and reflow a layout with the FlexPanel add-in](#wrap-and-reflow-a-layout-with-the-flexpanel-add-in)
+is the panel these values are applied to, and the cases that need no code at all.
+
+**Also shown by.**
+`KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs` keeps the
+same decision in its size-changed handler instead, which is defensible where
+nothing but the panel cares - and is the shape to move first when something else
+starts to.
+
+**Sharp edges.**
+- A property whose value follows the orientation must be notified when the
+  orientation changes. An attribute that names the dependent properties is the
+  cheap way to get that right; a hand-written setter has to raise them all.
+- Report the size, do not report "portrait". The threshold is a decision, and
+  decisions belong with the state they affect - which is also what makes it
+  testable without a window.
+- Some of these values are platform types (a thickness, a flex basis number). That
+  is not a layering violation in a view model that already references the UI
+  types the bindings need, but keep the arithmetic behind named constants so the
+  numbers are readable.
+- Size-changed handlers fire during layout. Keep the work in them to assignments,
+  and never start anything that can recurse into a new layout pass.
+
+### Build a row of buttons from a palette with one item template
+
+**When you want this.** A panel holds one button per entry in a small fixed set -
+a color palette, a tool list, a set of presets - and hand-writing them means the
+set is written down twice: once in the model and once in the markup.
+
+**The MVVM shape.** The view model turns the palette into a read-only list of item
+view models, one per entry, each carrying what the button shows and the owner's
+own command with its own parameter. The markup becomes one `ItemsControl` and one
+`DataTemplate` that binds only to an item. Add a color to the palette and a button
+appears; nothing in the page changes.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.Core/ViewModels/HighlighterColorViewModel.cs
+/// <summary>
+/// One highlighter button in the Paint Mode side panel: a palette entry's name, its ink color
+/// and the caption color that reads on it, plus the command the button invokes. Each item
+/// carries the owning view model's own <c>SelectColorCommand</c> and its name as the command
+/// parameter, so the template binds to its item only, the palette decides how many buttons
+/// there are, and one <c>[AffectsCommands]</c> refresh still reaches every button at once.
+/// </summary>
+#if HAS_CODEBRIX
+[Microsoft.UI.Xaml.Data.Bindable]
+#endif
+public sealed class HighlighterColorViewModel
+{
+    // ... Name, Color, TextColor and SelectColorCommand, all set in the constructor ...
+}
+```
+
+```csharp
+// From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.Core/ViewModels/MainViewModel.cs
+//One button item per palette entry, each carrying this view model's own select command
+private IReadOnlyList<HighlighterColorViewModel> BuildHighlighterColors()
+{
+    var colors = new List<HighlighterColorViewModel>(HighlighterPalette.Colors.Count);
+    foreach (var color in HighlighterPalette.Colors)
+    {
+        colors.Add(new HighlighterColorViewModel(color, SelectColorCommand));
+    }
+
+    return colors;
+}
+```
+
+```xml
+<!-- From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml -->
+<!-- One highlighter button: the palette entry supplies the caption, the ink color
+     and the caption color, and hands back the view model's own select command -->
+<ui:DataTemplate x:Key="HighlighterColorTemplate">
+    <Button Content="{d:Binding Name}" HorizontalAlignment="Stretch" Margin="0,0,0,8"
+            Background="{d:Binding Color, Converter={StaticResource ColorToBrush}}"
+            Foreground="{d:Binding TextColor, Converter={StaticResource ColorToBrush}}"
+            Command="{d:Binding SelectColorCommand}"
+            CommandParameter="{d:Binding Name}" />
+</ui:DataTemplate>
+
+<!-- ... -->
+
+<!-- Highlighter colors: one button per palette entry, so the palette is the
+     only place the colors are written down -->
+<ItemsControl ItemsSource="{d:Binding HighlighterColors}"
+              ItemTemplate="{StaticResource HighlighterColorTemplate}" />
+```
+
+**Where to look.**
+`WebcamPainter/src/WebcamPainter.Core/ViewModels/HighlighterColorViewModel.cs`
+`WebcamPainter/src/WebcamPainter.Core/ViewModels/MainViewModel.cs`
+`WebcamPainter/src/WebcamPainter.Core/Converters/ColorToBrushConverter.cs`
+`WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml`
+
+**Sharp edges.**
+- The item carries the owner's command, not a command of its own, with the item's
+  identity as the parameter. One `CanExecute` refresh on the owner then reaches
+  every button at once.
+- The template binds to its item and nothing else. Reaching back to the page's
+  data context from inside a template is what makes generated items stop working
+  when they are recycled.
+- An item view model that is built once and never changes needs no change
+  notification, but it still has to be visible to the binding engine - the family
+  marks such a type bindable behind the platform's own compilation symbol.
+- A color is not a brush. Convert in a value converter rather than putting a
+  platform brush type on the item, and the palette stays a plain list of numbers.
+
+### Route a container's chrome button to the item's own command
+
+**When you want this.** A container control draws chrome you cannot bind - a tab
+strip's close button, a header's menu - and it reports the gesture as an event on
+the container rather than as a command on the item.
+
+**The MVVM shape.** The event handler's whole job is to find the item the chrome
+belongs to and execute that item's command. It must not close, remove or dispose
+anything itself, because the item also carries a real bound button that does the
+same thing, and two code paths for one user action drift apart.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.UI/Views/MainPage.Consoles.cs
+private void ConsoleTabs_TabCloseRequested(TabView sender,
+    TabViewTabCloseRequestedEventArgs args)
+{
+    foreach (var pair in _consoleHosts)
+    {
+        if (ReferenceEquals(pair.Value.Tab, args.Tab))
+        {
+            //The strip's close button takes the same command the tab's own Close button
+            //  does, so there is one way to close a console rather than two.
+            pair.Key.CloseCommand.Execute(null);
+            return;
+        }
+    }
+}
+```
+
+The command it reaches is the same one the status strip binds to in markup:
+
+```xml
+<!-- From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.UI/Views/MainPage.xaml -->
+<Button Grid.Column="5" Content="Close"
+        Style="{StaticResource SmallButtonStyle}"
+        Command="{d:Binding CloseCommand}" />
+```
+
+```csharp
+// From CodeBrix.Samples/RedisSetupTool/src/RedisSetupTool.Core/ViewModels/ConsolesViewModel.cs
+/// <summary>Closes this console.</summary>
+public SimpleCommand CloseCommand => field ??= new SimpleCommand(() => _close?.Invoke(this));
+```
+
+**Where to look.**
+`RedisSetupTool/src/RedisSetupTool.UI/Views/MainPage.Consoles.cs`
+`RedisSetupTool/src/RedisSetupTool.Core/ViewModels/ConsolesViewModel.cs`
+`RedisSetupTool/src/RedisSetupTool.UI/Views/MainPage.xaml`
+
+**Related.**
+[Host a control with no dependency properties by mirroring a collection from code-behind](#host-a-control-with-no-dependency-properties-by-mirroring-a-collection-from-code-behind)
+is why this page has a dictionary from item to chrome to look the item up in.
+
+**Sharp edges.**
+- Look the item up from the chrome, not the other way round. The event gives you
+  the container's own object, so the page needs a map from that object back to the
+  item it was built for.
+- Do the work in the command, never in the handler. The tear-down that follows -
+  removing the item, disposing what it owns - belongs to whoever owns the
+  collection, and the chrome handler should not know about any of it.
+- The container may act on the gesture itself. A tab strip that removes its own
+  tab on a close request would fight the collection mirror; take the item out in
+  one place only.
+
+### Report a control's load failure with an event and a log line
+
+**When you want this.** A custom control loads something asynchronously - an
+image, a document, a font - and it cannot throw, because the load was started
+from a dependency-property callback that nothing is awaiting. A silent empty
+control is the usual result, and it is the worst of the options.
+
+**The MVVM shape.** The control reports the failure twice: once to the
+application's log through the ambient logger factory, which needs no
+collaborator and is always there, and once as an event carrying what was asked
+for and what went wrong, which an application can handle to say something in its
+own voice. Neither reaches the view model directly, because the control is a view
+type; a page that subscribes decides what, if anything, the user is told.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/JustBetweenUs/CodeBrixPlatform/JustBetweenUs.Core/Controls/EmbeddedImage.cs
+/// <summary>
+/// Raised when the image named by <see cref="UriSource"/> could not be loaded - a misspelled
+/// resource name, an assembly that is not loaded, or an image the decoder rejected. Without a
+/// handler the control is left empty, so anything that cares about a missing image should
+/// subscribe; the failure is written to the application log either way.
+/// </summary>
+public event EventHandler<EmbeddedImageFailedEventArgs> LoadFailed;
+
+// ...
+
+catch (Exception ex)
+{
+    // ...
+    LogExtensionPoint.AmbientLoggerFactory
+        .CreateLogger<EmbeddedImage>()
+        .LogError(ex, "EmbeddedImage failed to load from '{UriSource}'.", uri);
+
+    image.LoadFailed?.Invoke(image, new EmbeddedImageFailedEventArgs(uri, ex));
+}
+```
+
+The arguments carry both halves of the answer - what was asked for and why it
+failed - so a handler never has to guess which of several images went missing:
+
+```csharp
+// From CodeBrix.Samples/JustBetweenUs/CodeBrixPlatform/JustBetweenUs.Core/Controls/EmbeddedImageFailedEventArgs.cs
+/// <summary>
+/// Describes an image that an <see cref="EmbeddedImage"/> could not load. A page (or a control that
+/// composes an <see cref="EmbeddedImage"/>) handles <see cref="EmbeddedImage.LoadFailed"/> to show
+/// the failure instead of leaving an empty image behind.
+/// </summary>
+public sealed class EmbeddedImageFailedEventArgs : EventArgs
+{
+    // ...
+
+    /// <summary>The URI the control was asked to load.</summary>
+    public string UriSource { get; }
+
+    /// <summary>The exception that stopped the load.</summary>
+    public Exception Error { get; }
+}
+```
+
+The sample itself subscribes to neither: its icons are embedded in the same
+assembly and cannot go missing between builds. The log line is what it relies on,
+and the event is what an application with a fallback icon would use.
+
+**Where to look.**
+`JustBetweenUs/CodeBrixPlatform/JustBetweenUs.Core/Controls/EmbeddedImage.cs`
+`JustBetweenUs/CodeBrixPlatform/JustBetweenUs.Core/Controls/EmbeddedImageFailedEventArgs.cs`
+
+**Related.**
+[Load an SVG or bitmap from an embedded resource with a custom URI scheme](#load-an-svg-or-bitmap-from-an-embedded-resource-with-a-custom-uri-scheme)
+is the control this failure path belongs to.
+
+**Sharp edges.**
+- Catch everything on that path. An exception from an asynchronous
+  property-changed callback has nowhere to go and can take the process with it.
+- Log through the ambient logger factory rather than a logger the control is
+  given. A control cannot be constructed with dependencies by the markup that
+  creates it, and a null logger is the harmless default when nothing configured
+  one.
+- Do not raise the event on a background thread and then touch the tree in a
+  handler. This one is raised from the load path, which is already on the UI
+  thread; if yours is not, marshal first.
+- Debug output is not a report. It is invisible in a published build, which is
+  exactly where a missing resource shows up.

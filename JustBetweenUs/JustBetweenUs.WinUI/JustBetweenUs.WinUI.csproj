@@ -33,10 +33,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.WinUI.ApacheLicenseForever" Version="1.0.193.1013" />
-    <PackageReference Include="CodeBrix.Platform.WinUI.Lottie.ApacheLicenseForever" Version="1.0.193.1013" />
-    <PackageReference Include="CodeBrix.Platform.WinUI.Skia.ApacheLicenseForever" Version="1.0.193.1013" />
-    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.214.1201" />
+    <PackageReference Include="CodeBrix.Platform.WinUI.ApacheLicenseForever" Version="1.0.254.253" />
+    <PackageReference Include="CodeBrix.Platform.WinUI.Lottie.ApacheLicenseForever" Version="1.0.254.253" />
+    <PackageReference Include="CodeBrix.Platform.WinUI.Skia.ApacheLicenseForever" Version="1.0.254.253" />
+    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.252.363" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2526" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
     <Manifest Include="$(ApplicationManifest)" />

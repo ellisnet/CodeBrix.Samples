@@ -38,7 +38,8 @@
                 VerticalAlignment="Center"
                 Width="300"
                 ItemsSource="{Binding EncryptionModes}"
-                SelectedItem="{Binding SelectedEncryptionModeText, Mode=TwoWay}" />
+                DisplayMemberPath="Description"
+                SelectedItem="{Binding SelectedEncryptionMode, Mode=TwoWay}" />
             <TextBlock Margin="20, 0, 20, 0" VerticalAlignment="Center">Encryption Key:</TextBlock>
             <TextBox Height="40" Width="180" VerticalAlignment="Center" VerticalContentAlignment="Center"
                      Text="{Binding EncryptionKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></TextBox>

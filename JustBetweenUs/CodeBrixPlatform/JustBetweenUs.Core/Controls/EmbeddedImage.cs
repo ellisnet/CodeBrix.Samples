@@ -1,3 +1,5 @@
+using CodeBrix.Platform.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -17,6 +19,14 @@ namespace JustBetweenUs.Controls;
 /// </summary>
 public sealed class EmbeddedImage : Image
 {
+    /// <summary>
+    /// Raised when the image named by <see cref="UriSource"/> could not be loaded - a misspelled
+    /// resource name, an assembly that is not loaded, or an image the decoder rejected. Without a
+    /// handler the control is left empty, so anything that cares about a missing image should
+    /// subscribe; the failure is written to the application log either way.
+    /// </summary>
+    public event EventHandler<EmbeddedImageFailedEventArgs> LoadFailed;
+
     public static readonly DependencyProperty UriSourceProperty =
         DependencyProperty.Register(
             nameof(UriSource), typeof(string), typeof(EmbeddedImage),
@@ -110,6 +120,12 @@ public sealed class EmbeddedImage : Image
         {
             System.Diagnostics.Debug.WriteLine(
                 $"[EmbeddedImage] Failed to load from '{uri}': {ex.Message}");
+
+            LogExtensionPoint.AmbientLoggerFactory
+                .CreateLogger<EmbeddedImage>()
+                .LogError(ex, "EmbeddedImage failed to load from '{UriSource}'.", uri);
+
+            image.LoadFailed?.Invoke(image, new EmbeddedImageFailedEventArgs(uri, ex));
         }
     }
 }

@@ -5,13 +5,17 @@ palette is written down as plain data in a library that owns no drawing type, ho
 a whole application repaints itself when the user picks a different scheme, how
 the stock control families are re-keyed so nothing is left wearing the theme's own
 colors, and how the brushes that belong to an item rather than to the application
-are computed and re-tinted. They also cover the parts of a house style that are
-decisions rather than code: a type and radius scale, depth done with a surface and
-a hairline instead of a shadow, icons taken only from the shipped symbols font, and
-the habit of proving a capability on a real head with a throwaway page before a
-design leans on it. Reach for this file when you are choosing colors, offering the
-user more than one scheme, following the desktop's light and dark preference, or
-deciding what an application should look like before you write the markup.
+are computed and re-tinted. Two of them are about where a color decision belongs
+rather than what the color is: reading the desktop's preference in the page but
+deciding what it means in the library, and letting a domain object settle the
+caption color that reads on its own ink. They also cover the parts of a house
+style that are decisions rather than code: a type and radius scale, depth done
+with a surface and a hairline instead of a shadow, icons taken only from the
+shipped symbols font, and the habit of proving a capability on a real head with a
+throwaway page before a design leans on it. Reach for this file when you are
+choosing colors, offering the user more than one scheme, following the desktop's
+light and dark preference, or deciding what an application should look like before
+you write the markup.
 
 The markup side of the same subject lives in
 [BLUEPRINTS-ViewsAndControls.md](BLUEPRINTS-ViewsAndControls.md): the keys to
@@ -37,6 +41,8 @@ conventions the code blocks follow.
 - [Prove a platform capability with a throwaway page before designing around it](#prove-a-platform-capability-with-a-throwaway-page-before-designing-around-it)
 - [Drive a status line color and glyph from a small enum](#drive-a-status-line-color-and-glyph-from-a-small-enum)
 - [Keep a text box's own colors while it is hovered or focused](#keep-a-text-boxs-own-colors-while-it-is-hovered-or-focused)
+- [Read the desktop preference in the page and decide what it means in the library](#read-the-desktop-preference-in-the-page-and-decide-what-it-means-in-the-library)
+- [Let a domain object carry the caption color for its own ink](#let-a-domain-object-carry-the-caption-color-for-its-own-ink)
 
 ## Related blueprints
 
@@ -206,7 +212,7 @@ application theme is the switch that decides whether the platform follows the de
 at all, and it may be set only in the `App` constructor. The element theme on the root
 element is the run-time switch for everything the application has not re-keyed. The
 live report comes from `UISettings`, which the page owns and forwards to the view
-model.
+model through the scheme-management interface the view model implements.
 
 **Code.**
 
@@ -229,19 +235,24 @@ if (scheme != ColorScheme.SystemDefault)
 }
 ```
 
-The desktop reports its preference as the color it would paint a window with, and the
-page turns that into the one boolean the palette table wants:
+The desktop reports its preference as the color it would paint a window with. The page
+reads that color, because only a page can, and the scheme table decides what it means,
+so the one boolean the palette table wants is produced in a library with no platform
+types in it:
 
 ```csharp
 // From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml.cs
 //The operating system reports its preference as the colour it would paint a window with.
+//Reading it is the page's job; deciding what it means belongs with the scheme table.
 private bool SystemPrefersDark()
 {
     var background = _systemColors.GetColorValue(UIColorType.Background);
-    var brightness = (background.R * 0.299d) + (background.G * 0.587d) + (background.B * 0.114d);
-    return brightness < 128d;
+    return ColorSchemes.PrefersDark(background.R, background.G, background.B);
 }
 ```
+
+Where that line is drawn is a recipe of its own:
+[Read the desktop preference in the page and decide what it means in the library](#read-the-desktop-preference-in-the-page-and-decide-what-it-means-in-the-library).
 
 On Linux the preference arrives through the desktop portal's appearance setting, and
 which component of the desktop serves that setting is not the same everywhere. Two
@@ -1240,3 +1251,251 @@ is how this recipe was established.
   instead; the template prefers it over both keys.
 - The small clear button that appears in a focused `TextBox` is the template's delete
   button, not a state color; it is unaffected by any of this.
+
+### Read the desktop preference in the page and decide what it means in the library
+
+**When you want this.** Only a page can ask the platform what the desktop looks like, but
+"is that a dark desktop?" is a rule you want stated once, beside the palettes it chooses
+between, where nothing platform-shaped can reach it.
+[Follow or override the desktop appearance and check it from a shell](#follow-or-override-the-desktop-appearance-and-check-it-from-a-shell)
+is the mechanism in full; this recipe is only about where its two halves live, and the
+same split applies to any platform reading that arrives as a raw value somebody has to
+interpret.
+
+**The MVVM shape.** The page owns the platform object and reads the raw value out of it.
+The UI-free library owns the arithmetic and answers with the one boolean the rest of the
+application works from. The view model touches neither: it is handed the answer through
+the interface it implements, once when it is attached and again whenever the desktop
+changes underneath it.
+
+**Code.**
+
+The rule sits in the scheme table, next to `Resolve`, which is the only thing that
+consumes it:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/ColorSchemes.cs
+    /// <summary>
+    /// Reads the operating system's light or dark preference out of the color it says it would
+    /// paint a window with, which is the form every head reports that preference in. The weights
+    /// are the usual perceived-brightness ones, and a ground below the mid point is a dark one.
+    /// </summary>
+    /// <param name="red">The red component of the desktop's window background.</param>
+    /// <param name="green">The green component of the desktop's window background.</param>
+    /// <param name="blue">The blue component of the desktop's window background.</param>
+    /// <returns>True when the operating system prefers a dark appearance.</returns>
+    public static bool PrefersDark(byte red, byte green, byte blue)
+    {
+        var brightness = (red * 0.299d) + (green * 0.587d) + (blue * 0.114d);
+        return brightness < 128d;
+    }
+```
+
+The page's half makes no decision at all, and the platform object stays in the page as a
+field, because the platform holds only a weak reference to it:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml.cs
+    //Kept in a field on purpose: the platform holds only a weak reference to a UISettings, so a
+    //local one would be collected and the operating system's theme changes would stop arriving.
+    private readonly UISettings _systemColors = new UISettings();
+    // ...
+    //The operating system reports its preference as the colour it would paint a window with.
+    //Reading it is the page's job; deciding what it means belongs with the scheme table.
+    private bool SystemPrefersDark()
+    {
+        var background = _systemColors.GetColorValue(UIColorType.Background);
+        return ColorSchemes.PrefersDark(background.R, background.G, background.B);
+    }
+```
+
+The answer reaches the view model through the interface the view model implements, so the
+page never names the view-model type and the two arrivals - attachment and a live change -
+are the same one line twice:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml.cs
+        DataContextChanged += (_, _) =>
+        {
+            //Give the view model's dialog helpers a XamlRoot to attach to, and hand it the page
+            //as the thing that can paint a colour scheme.
+            (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
+            (DataContext as IManageColorScheme)?.AttachSchemeApplier(this, SystemPrefersDark());
+        };
+
+        _systemColors.ColorValuesChanged += (_, _) => DispatcherQueue.TryEnqueue(() =>
+            (DataContext as IManageColorScheme)?.OnSystemThemeChanged(SystemPrefersDark()));
+```
+
+The view model's side of the interface does the only thing it can do with a boolean: it
+repaints when the user is following the desktop, and otherwise remembers it for the
+picker's "System default" label:
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+    public void OnSystemThemeChanged(bool osPrefersDark)
+    {
+        if (_osPrefersDark == osPrefersDark) { return; }
+
+        _osPrefersDark = osPrefersDark;
+        RefreshSchemeNames();
+
+        if (_selectedScheme != null && _selectedScheme.Scheme == ColorScheme.SystemDefault)
+        {
+            ApplyCurrentScheme();
+        }
+    }
+```
+
+**Where to look.**
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/Theming/ColorSchemes.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.UI/Views/MainPage.xaml.cs`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs` (the
+`IManageColorScheme` interface is declared above the view model that implements it)
+
+**Related.**
+[Model a color scheme as plain data in a UI free library](#model-a-color-scheme-as-plain-data-in-a-ui-free-library)
+is the table this rule belongs to, and
+[Follow the operating system light and dark preference with a System default entry](BLUEPRINTS-ViewsAndControls.md#follow-the-operating-system-light-and-dark-preference-with-a-system-default-entry)
+is the picker entry the boolean names.
+
+**Sharp edges.**
+- Draw the line where the value stops being platform-shaped. The page's method takes no
+  arguments and makes no decisions; the library's method takes three bytes and makes one.
+  Everything above it can then be reasoned about, and asserted on, without a head.
+- Take the components, not the platform's color type. A library that names a platform
+  type has a platform dependency however small the method is.
+- Keep the weights and the threshold in one place. A second copy in a page is the one
+  nobody re-reads when the rule changes.
+- Hand the view model the answer rather than the source. A view model holding the
+  platform's settings object cannot be constructed in a test, and it starts deciding
+  things a view model should not be deciding.
+- The live report does not arrive on the UI thread, so the page marshals before it calls
+  through the interface. That is the page's job too.
+
+### Let a domain object carry the caption color for its own ink
+
+**When you want this.** A set of colors that belongs to the application's subject matter,
+not to its design, is drawn as a row of buttons each wearing its own color, and the text
+on every one of them has to stay readable - white on the dark inks, black on the light
+ones - without anybody writing that down a second time.
+[Give each item its own brushes and re-tint them on a scheme change](#give-each-item-its-own-brushes-and-re-tint-them-on-a-scheme-change)
+is the same instinct where several schemes are in play; this recipe is for one fixed
+palette owned by a domain library, and it puts no drawing type on a view model at all.
+
+**The MVVM shape.** The palette entry settles both colors when it is constructed: the
+ink, and the caption color that reads on it. An item view model carries the pair through
+unchanged, and a value converter turns each one into a brush at the last possible moment.
+The colors are written down once, in the library that owns the subject, and adding an
+entry adds a button.
+
+**Code.**
+
+The decision lives on the entry, with the arithmetic that made it:
+
+```csharp
+// From CodeBrix.Samples/WebcamPainter/src/libs/WebcamPainter.Painting/HighlighterPalette.cs
+/// <summary>One selectable highlighter color: a layer name and its ink color.</summary>
+public sealed class HighlighterColor
+{
+    /// <summary>Creates a highlighter color entry.</summary>
+    public HighlighterColor(string name, Color color)
+    {
+        Name = name;
+        Color = color;
+        TextColor = GetReadableTextColor(color);
+    }
+    // ...
+    /// <summary>
+    /// The caption color that reads on <see cref="Color"/>: white on the darker inks, black on
+    /// the lighter ones. Deciding it here, beside the ink, is what lets a button showing this
+    /// color take both values from the palette instead of repeating either of them.
+    /// </summary>
+    public Color TextColor { get; }
+
+    //BT.709 luminance is the perceptual measure, so yellow and green come out light at the
+    //  same byte values that leave blue and indigo dark; the midpoint is the switch.
+    private static Color GetReadableTextColor(Color color)
+    {
+        Rgba32 rgba = color.ToPixel<Rgba32>();
+        float luminance = (rgba.R * 0.2126f) + (rgba.G * 0.7152f) + (rgba.B * 0.0722f);
+        return luminance < 128f
+            ? Color.FromRgb(255, 255, 255)
+            : Color.FromRgb(0, 0, 0);
+    }
+}
+```
+
+The item view model is a carrier. It adds the command the button runs and nothing else
+about how the button looks:
+
+```csharp
+// From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.Core/ViewModels/HighlighterColorViewModel.cs
+    /// <summary>The ink color; the button's background, through the color-to-brush converter.</summary>
+    public Color Color { get; }
+
+    /// <summary>The caption color that reads on <see cref="Color"/>; the button's foreground.</summary>
+    public Color TextColor { get; }
+
+    /// <summary>The owning view model's command, invoked with <see cref="Name"/> as its parameter.</summary>
+    public SimpleCommand SelectColorCommand { get; }
+```
+
+One converter turns the imaging library's color into a brush, so the library keeps its
+own color type and the markup still gets what it needs:
+
+```csharp
+// From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.Core/Converters/ColorToBrushConverter.cs
+    /// <inheritdoc />
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is Color color)
+        {
+            Rgba32 rgba = color.ToPixel<Rgba32>();
+            return new SolidColorBrush(Windows.UI.Color.FromArgb(rgba.A, rgba.R, rgba.G, rgba.B));
+        }
+
+        return null;
+    }
+```
+
+The template is then the whole visual design of a button, written once:
+
+```xml
+<!-- From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml -->
+        <ui:DataTemplate x:Key="HighlighterColorTemplate">
+            <Button Content="{d:Binding Name}" HorizontalAlignment="Stretch" Margin="0,0,0,8"
+                    Background="{d:Binding Color, Converter={StaticResource ColorToBrush}}"
+                    Foreground="{d:Binding TextColor, Converter={StaticResource ColorToBrush}}"
+                    Command="{d:Binding SelectColorCommand}"
+                    CommandParameter="{d:Binding Name}" />
+        </ui:DataTemplate>
+```
+
+**Where to look.**
+`WebcamPainter/src/libs/WebcamPainter.Painting/HighlighterPalette.cs`
+`WebcamPainter/src/WebcamPainter.Core/ViewModels/HighlighterColorViewModel.cs` and
+`Converters/ColorToBrushConverter.cs`
+`WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml`
+`WebcamPainter/tests/libs/WebcamPainter.Painting.Tests/HighlighterPaletteTests.cs`
+
+**Related.**
+[Give each item its own brushes and re-tint them on a scheme change](#give-each-item-its-own-brushes-and-re-tint-them-on-a-scheme-change)
+is what this becomes when the ground can move, and
+[Build a grouped list from group and row view models](BLUEPRINTS-ViewsAndControls.md#build-a-grouped-list-from-group-and-row-view-models)
+is the same items-over-view-models shape in a larger list.
+
+**Sharp edges.**
+- Use a perceptual luminance rather than the average of three channels. Yellow and green
+  read as light at byte values that leave blue and indigo dark, and the average gets both
+  of those wrong.
+- Settle the caption color once, when the entry is built. Computing it in a converter or
+  a binding puts the same arithmetic on every layout pass and hides it from tests.
+- Let the domain library keep its own color type and convert at the boundary. A palette
+  that returns brushes is a palette that cannot be used by the code that actually draws
+  the ink.
+- Two colors from one object is the point. The moment a button's background comes from
+  the palette and its foreground from a literal in the markup, the two can disagree, and
+  the eighth entry somebody adds later is where they will.
+- This is a fixed palette, not a theme. If the application later follows a color scheme,
+  the ink stays where it is and only the ground it is drawn on moves.

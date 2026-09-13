@@ -13,8 +13,8 @@ namespace PolyHavenBrowser.Display;
 /// texture behind, the rendered model on top. Pointer drag orbits; the wheel zooms.
 /// <para>
 /// It always renders at full canvas resolution so the model stays crisp even when maximized;
-/// smoothness under load comes from dropping frames (the page coalesces paints and skips stale
-/// pointer frames), not from lowering resolution.
+/// smoothness under load comes from dropping frames (the view model coalesces paints and skips
+/// stale pointer frames), not from lowering resolution.
 /// </para>
 /// </summary>
 public sealed class ModelScenePainter : IScenePainter

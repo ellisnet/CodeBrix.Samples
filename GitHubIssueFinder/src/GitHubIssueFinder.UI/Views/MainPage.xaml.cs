@@ -22,11 +22,11 @@ public sealed partial class MainPage : Page, IColorSchemeApplier
             //Give the view model's dialog helpers a XamlRoot to attach to, and hand it the page
             //as the thing that can paint a colour scheme.
             (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
-            (DataContext as MainViewModel)?.AttachSchemeApplier(this, SystemPrefersDark());
+            (DataContext as IManageColorScheme)?.AttachSchemeApplier(this, SystemPrefersDark());
         };
 
         _systemColors.ColorValuesChanged += (_, _) => DispatcherQueue.TryEnqueue(() =>
-            (DataContext as MainViewModel)?.OnSystemThemeChanged(SystemPrefersDark()));
+            (DataContext as IManageColorScheme)?.OnSystemThemeChanged(SystemPrefersDark()));
 
         this.InitializeComponent(); //Leave this line last
     }
@@ -62,11 +62,11 @@ public sealed partial class MainPage : Page, IColorSchemeApplier
     }
 
     //The operating system reports its preference as the colour it would paint a window with.
+    //Reading it is the page's job; deciding what it means belongs with the scheme table.
     private bool SystemPrefersDark()
     {
         var background = _systemColors.GetColorValue(UIColorType.Background);
-        var brightness = (background.R * 0.299d) + (background.G * 0.587d) + (background.B * 0.114d);
-        return brightness < 128d;
+        return ColorSchemes.PrefersDark(background.R, background.G, background.B);
     }
 
     //Pressing Enter in either box runs Search, exactly as clicking the button does. The

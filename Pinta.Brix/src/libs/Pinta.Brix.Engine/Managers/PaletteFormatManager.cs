@@ -23,6 +23,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -57,6 +58,47 @@ public sealed class PaletteFormatManager
 				pspHandler,
 				pspHandler),
 		];
+	}
+
+	/// <summary>
+	/// The filter entries a "load palette" dialog should offer: one per format
+	/// that can be read.
+	/// </summary>
+	public IReadOnlyList<FileDialogFilter> GetLoadFilters ()
+		=> BuildFilters (f => f.Loader is not null);
+
+	/// <summary>
+	/// The filter entries a "save palette as" dialog should offer: one per
+	/// format that can be written.
+	/// </summary>
+	public IReadOnlyList<FileDialogFilter> GetSaveFilters ()
+		=> BuildFilters (f => f.Saver is not null);
+
+	/// <summary>
+	/// Every extension a "load palette" dialog should accept, with no
+	/// duplicates. Both spellings of each extension are offered, because the
+	/// descriptors list both and a dialog filter is matched literally.
+	/// </summary>
+	public IReadOnlyList<string> GetLoadExtensions ()
+		=> [.. GetLoadFilters ().SelectMany (f => f.Extensions).Distinct ()];
+
+	/// <summary>
+	/// Builds one filter entry per matching format, carrying every extension
+	/// spelling the descriptor lists.
+	/// </summary>
+	private List<FileDialogFilter> BuildFilters (Func<PaletteDescriptor, bool> isAvailable)
+	{
+		List<FileDialogFilter> filters = [];
+
+		foreach (PaletteDescriptor format in Formats.Where (isAvailable)) {
+
+			List<string> extensions = [.. format.Extensions.Select (x => $".{x}")];
+
+			if (extensions.Count > 0)
+				filters.Add (new FileDialogFilter (format.FilterName, extensions));
+		}
+
+		return filters;
 	}
 
 	public PaletteDescriptor? GetFormatByFilename (string fileName)

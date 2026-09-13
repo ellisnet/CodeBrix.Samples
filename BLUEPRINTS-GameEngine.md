@@ -32,7 +32,7 @@ conventions the code blocks follow.
 
 ## Related blueprints
 
-- [BLUEPRINTS-PlatformServices.md](BLUEPRINTS-PlatformServices.md) - the one-method bridge interface a page implements to hand a canvas to its view model
+- [BLUEPRINTS-PlatformServices.md](BLUEPRINTS-PlatformServices.md) - the one-method bridge interface a page implements to hand its game canvas host to its view model
 - [BLUEPRINTS-GraphicsAndRendering.md](BLUEPRINTS-GraphicsAndRendering.md) - drawing on Skia canvases outside the engine loop, and gating or falling back when a GPU backend is unavailable
 - [BLUEPRINTS-MVVM.md](BLUEPRINTS-MVVM.md) - the commands and Dispose path that drive the session class
 - [BLUEPRINTS-ProjectLayoutAndPackaging.md](BLUEPRINTS-ProjectLayoutAndPackaging.md) - writing the audio, instrument and stems assets the music system plays from arithmetic on first run, rather than committing them
@@ -49,10 +49,12 @@ inside an ordinary page, and the engine can only be started against a surface th
 already has a non-zero size - which, for a canvas that starts hidden, is the first
 time it is shown.
 
-**The MVVM shape.** The view model declares an interface with one method taking
-the canvas. The page forwards the canvas's first-started event to it in a single
-line. The view model builds its scene object and starts it; no engine code lives
-in the code-behind.
+**The MVVM shape.** The view model declares an interface with one method, and the
+page implements a second interface whose only member is the canvas. The page
+forwards the canvas's first-started event in a single line, handing itself over as
+that host; the view model asks a registered factory for a session built around the
+host and starts it. No engine code lives in the code-behind, and no view type
+appears anywhere in the view model.
 
 **Code.**
 
@@ -66,25 +68,33 @@ in the code-behind.
 public interface IManageGameCanvas
 {
     /// <summary>Called once, on the UI thread, at the canvas's FirstStarted event.</summary>
-    /// <param name="canvas">The game canvas the visualizer renders into.</param>
-    void CanvasFirstStart(GameSurfaceCanvas canvas);
+    /// <param name="host">The page that owns the game canvas the visualizer renders into.</param>
+    void CanvasFirstStart(IGameCanvasHost host);
 }
 ```
+
+The host interface lives in the rendering library, beside the session it feeds: one
+get-only `Canvas` property, which the page implements explicitly so the property
+does not join its public surface. That is the whole seam, and it is why the view
+model can name the host without naming a control.
 
 ```csharp
 // From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs
 //Fires once, at the canvas's first non-zero layout size - i.e. the first time
 //  Visualize Mode is shown - which is when the engine can start
-VisualizerCanvas.FirstStarted += (_, _) => _gameCanvasManager?.CanvasFirstStart(VisualizerCanvas);
+VisualizerCanvas.FirstStarted += (_, _) => _gameCanvasManager?.CanvasFirstStart(this);
+// ...
+//The one thing the visualizer session needs from this page (see IGameCanvasHost)
+GameSurfaceCanvas IGameCanvasHost.Canvas => VisualizerCanvas;
 ```
 
 ```csharp
 // From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs
-public void CanvasFirstStart(GameSurfaceCanvas canvas)
+public void CanvasFirstStart(IGameCanvasHost host)
 {
     //UI thread, the first time Visualize Mode is shown with a real size: build the
     //  shader scene and start the engine. Later mode switches pause and resume it.
-    _visualizerSession = new VisualizerSession(canvas);
+    _visualizerSession = _sessionFactory.CreateSession(host);
     _visualizerSession.Start();
 }
 ```
@@ -99,6 +109,8 @@ xmlns:game="clr-namespace:CodeBrix.Platform.GameEngine.Host.Rendering;assembly=C
 
 **Where to look.**
 `PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/IGameCanvasHost.cs` and
+`IVisualizerSessionFactory.cs`
 `PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs` and
 `Views/MainPage.xaml`
 
@@ -109,9 +121,10 @@ xmlns:game="clr-namespace:CodeBrix.Platform.GameEngine.Host.Rendering;assembly=C
 - The order inside the command matters: making the canvas visible - which is what
   raises the event the first time - comes before resuming the session, and the
   resume is null-safe because on the first pass the session does not exist yet.
-- Passing the canvas type through a view-model interface keeps the sample short
-  but does put a view type in the view model's signature; a bridge that hands over
-  only what the session needs is the cleaner shape.
+- The method takes the host page rather than the canvas, so the canvas type is named
+  only inside the rendering library; the session itself is built by a factory the
+  view model resolves, which keeps a view-bound object out of the view model's
+  constructor.
 - The page captures the interface in its data-context-changed handler and calls it
   null-safely.
 
@@ -122,8 +135,10 @@ screen and cost nothing while the user is elsewhere, without tearing the scene
 down and rebuilding it.
 
 **The MVVM shape.** A session class owns the engine lifecycle and exposes start,
-pause, resume, stop and a thread-safe data-in method. The view model calls those
-from its commands and from `Dispose()`. Nothing else touches the engine instance.
+pause, resume, stop and a thread-safe data-in method, all of them on an interface
+the rendering library declares. The view model holds the session as that
+interface, built for it by a registered factory, and calls those members from its
+commands and from `Dispose()`. Nothing else touches the engine instance.
 
 **Code.**
 
@@ -194,11 +209,7 @@ private Task DoVisualize()
 {
     if (!CanVisualize()) { return Task.CompletedTask; }
 
-    if (_tracker == null)
-    {
-        _tracker = new PalmTracker();
-        _tracker.TrackingUpdated += OnTrackingUpdated;
-    }
+    //Starting the tracker is what loads the models, on its own worker thread
     _tracker.Start();
     _reportedOpenPalmCount = 0;
 
@@ -229,7 +240,8 @@ private Task DoGoBack()
 ```
 
 **Where to look.**
-`PalmVisualizer/src/libs/PalmVisualizer.Rendering/VisualizerSession.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/VisualizerSession.cs` and
+`IVisualizerSession.cs`
 `PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`
 
 **Sharp edges.**

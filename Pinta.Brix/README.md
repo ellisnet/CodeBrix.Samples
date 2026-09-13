@@ -45,6 +45,8 @@ coverage drawn from CodeBrix libraries and add-ins.
   `KeyDown` handler: [Dispatch keyboard shortcuts from one page KeyDown handler](../BLUEPRINTS-ViewsAndControls.md#dispatch-keyboard-shortcuts-from-one-page-keydown-handler).
 - How to recompute the enabled state of dozens of commands in one pass from the
   facts they all depend on: [Refresh command enablement in one pass from a headless command model](../BLUEPRINTS-MVVM.md#refresh-command-enablement-in-one-pass-from-a-headless-command-model).
+- How to write the shell's own bound properties and commands the family way, so
+  a status bar and a zoom control need no code-behind: [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
 - How to render a per-tool options row from descriptors a UI-free library
   appends to a list: [Render a tool options toolbar from a descriptor model](../BLUEPRINTS-ViewsAndControls.md#render-a-tool-options-toolbar-from-a-descriptor-model).
 - How to run an expensive transform on worker threads, show partial results as
@@ -88,6 +90,8 @@ coverage drawn from CodeBrix libraries and add-ins.
   element can show: [Turn raw pixel surfaces into XAML image sources](../BLUEPRINTS-GraphicsAndRendering.md#turn-raw-pixel-surfaces-into-xaml-image-sources).
 - How to carry an icon set as embedded resources and rasterize its scalable art
   at any requested size: [Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS-GraphicsAndRendering.md#rasterize-svg-art-with-the-codebrix-skiasvg-library).
+- How to keep the rasterized results without letting the cache grow forever:
+  [Cache rendered results with a bounded most recently used cache](../BLUEPRINTS-MVVM.md#cache-rendered-results-with-a-bounded-most-recently-used-cache).
 - How to give a large body of ported drawing code an immediate-mode facade so
   only one namespace knows SkiaSharp: [Give a headless library a drawing facade over SkiaSharp](../BLUEPRINTS-GraphicsAndRendering.md#give-a-headless-library-a-drawing-facade-over-skiasharp).
 - How to do boolean geometry on user-drawn regions: [Combine selection polygons with the CodeBrix PolygonTools library](../BLUEPRINTS-GraphicsAndRendering.md#combine-selection-polygons-with-the-codebrix-polygontools-library).
@@ -98,6 +102,8 @@ coverage drawn from CodeBrix libraries and add-ins.
 - How to decode photographs upright: [Honor EXIF orientation when decoding with SkiaSharp codecs](../BLUEPRINTS-GraphicsAndRendering.md#honor-exif-orientation-when-decoding-with-skiasharp-codecs).
 - How to run a Save As through a native picker whose filters come from the format
   registry, warning before a lossy conversion: [Save a document through a native picker with format filters](../BLUEPRINTS-DocumentsAndData.md#save-a-document-through-a-native-picker-with-format-filters).
+- How to let the format registry, not a page, say what a save or open dialog
+  offers: [Build a file dialog's filter list in the format registry](../BLUEPRINTS-DocumentsAndData.md#build-a-file-dialogs-filter-list-in-the-format-registry).
 - How to let a codec ask the UI one optional question without taking a UI
   dependency: [Raise a UI hook from a codec through a static event](../BLUEPRINTS-DocumentsAndData.md#raise-a-ui-hook-from-a-codec-through-a-static-event).
 - How to put one application-named facade in front of the settings backend so
@@ -216,7 +222,9 @@ src/Pinta.Brix.UI/                   Shared items project (.shproj + .projitems)
 src/Pinta.Brix.UI/Views/             MainPage.xaml plus its code-behind partials (Menus, Actions, Dialogs, Palette)
 src/Pinta.Brix.UI/Dialogs/           Hand-built dialogs: Alignment, Curves, Levels, Posterize
 src/Pinta.Brix.Core/                 The library every head references; carries the platform and font packages
-src/Pinta.Brix.Core/ViewModels/      MainViewModel, derived from SimpleViewModel
+src/Pinta.Brix.Core/ViewModels/      MainViewModel: the status bar readouts, the zoom control and the close prompt
+src/Pinta.Brix.Core/Services/        IShellCloseService, registered by RegisterServices.cs, asked by the window close
+src/Pinta.Brix.Core/Bridges/         IShellCloseBridge, the save-prompt loop the page hands the view model
 src/Pinta.Brix.Core/Helpers/         HostHelper, the IHostBuilderProvider SimpleServiceResolver builds from
 src/Pinta.Brix.LinuxX11/             LinuxX11 head: a Program.cs and a csproj, nothing else
 src/Pinta.Brix.LinuxWayland/         LinuxWayland head
@@ -297,14 +305,17 @@ one degrades instead of failing. `Pinta.Brix.Controls` implements them in
 `PlatformServices.cs` and `SkiaResourceService.cs`, and the application installs
 them once at startup.
 
-This is the shape to copy. In a view-model version of this application the view
-model owns the document state (open documents, active document, dirty flags,
-zoom, status text) as bound properties and the shell operations as
-`SimpleCommand` commands; the page's contribution is to construct or resolve the
-view model, hand it a `XamlRoot` getter, and install the bridge implementations
-the engine asked for. Read `Services/ICanvasView.cs` first, then
-`PlatformServices.cs`, then `Services/NullServices.cs` to see the degradation
-path. The blueprints are [Put a platform service behind an interface with a no-op default](../BLUEPRINTS-PlatformServices.md#put-a-platform-service-behind-an-interface-with-a-no-op-default),
+This is the shape to copy. `MainViewModel` owns the part of that state the shell
+chrome shows - the status bar's message, the cursor position, the selection size,
+the zoom presets and the current zoom - as bound properties, with the zoom
+buttons as `SimpleCommand` commands gated by an `[AffectsCommands]` property. The
+rest of the shell's operations are still handled in the page's partials, driven
+by the engine's own command model rather than by `SimpleCommand`; in a fuller
+view-model version the open documents, the active document, the dirty flags and
+the pads would join them as bound state, and the page's contribution would narrow
+to a `XamlRoot` getter, a file-picker bridge and a clipboard bridge. Read
+`Services/ICanvasView.cs` first, then `PlatformServices.cs`, then
+`Services/NullServices.cs` to see the degradation path. The blueprints are [Put a platform service behind an interface with a no-op default](../BLUEPRINTS-PlatformServices.md#put-a-platform-service-behind-an-interface-with-a-no-op-default),
 [Marshal a repeating timer into a headless model](../BLUEPRINTS-PlatformServices.md#marshal-a-repeating-timer-into-a-headless-model)
 and [Install UI dialogs into a headless model through handler delegates](../BLUEPRINTS-PlatformServices.md#install-ui-dialogs-into-a-headless-model-through-handler-delegates).
 
@@ -456,6 +467,14 @@ anything parked there would be unreachable. And the status text, which comes fro
 the model and can be several lines for the shape tools, is pinned to one line
 with `MaxLines` and trimming so the bar cannot grow.
 
+The status bar itself is the view model's: its three readouts bind to
+`StatusText`, `CursorPositionText` and `SelectionSizeText`, which follow the
+chrome and workspace events, and the zoom control binds its two buttons to
+`ZoomInCommand` and `ZoomOutCommand`, its list to `ZoomPresets` and its
+placeholder to `ZoomDisplayText`. Nothing stays selected in that list, which is
+why the placeholder is what shows the current zoom, and a flag around the
+programmatic clear is what stops the clear from zooming again.
+
 Each open document gets a `TabViewItem` holding a `PintaCanvasView`, tracked in a
 dictionary. Model events add and remove tabs and rename their headers; the tab's
 own selection change pushes the choice back into the model only when the index
@@ -482,10 +501,19 @@ re-entrancy guard so the confirmed close does not prompt again, and with the
 whole body wrapped so a failed prompt leaves the veto standing rather than
 dropping the user's work.
 
+Nothing in that path is reached by holding a page. The loop needs a `XamlRoot`
+and the page's own file dialogs, so the page owns it and hands it over as
+`IShellCloseBridge.ConfirmCloseApplicationAsync` from its `DataContextChanged`
+handler, alongside the `XamlRoot` getter. The view model forwards it to
+`IShellCloseService`, a singleton registered in the `SimpleServiceResolver`
+callback, and `App`'s `Closed` handler resolves that service and asks it; with no
+loop installed the service answers "go ahead", because there is then no shell
+holding unsaved work.
+
 Because there is no quit path, nothing can be flushed at exit either. Read
-`MainPage.Dialogs.cs` and the `Closed` handler in `App.xaml.cs`. In the MVVM
-shape the prompt loop is a method on the view model that `App` resolves from
-`SimpleServiceResolver`. See [Prompt before discarding unsaved work](../BLUEPRINTS-MVVM.md#prompt-before-discarding-unsaved-work)
+`Bridges/IShellCloseBridge.cs`, then `Services/ShellCloseService.cs`, then
+`MainPage.Dialogs.cs` and the `Closed` handler in `App.xaml.cs`. See
+[Prompt before discarding unsaved work](../BLUEPRINTS-MVVM.md#prompt-before-discarding-unsaved-work)
 and [Veto a window close until unsaved work is handled](../BLUEPRINTS-PlatformServices.md#veto-a-window-close-until-unsaved-work-is-handled).
 
 ### File formats: one registry, several codec libraries
@@ -506,16 +534,19 @@ edges get dark halos. And the SkiaSharp importer honors the encoded EXIF origin,
 which means allocating the destination surface with swapped dimensions for the
 four transposing origins before drawing through the matching matrix.
 
-The Save As path builds the picker's filter list from the export-capable formats
-only, and from the lowercase extension of each, because the registry lists both
-cases for matching; a cancelled picker must return false all the way out or a
-cancelled save would mark the document clean. Read
-`Registration/FileFormats.cs`, then `SkiaCodecFormat.cs`, then
+The registry, not the page, decides what a file dialog offers: `GetExportFilters`,
+`GetImportFilters` and `GetImportExtensions` on `ImageConverterManager` hand back
+a display name and a list of extensions per format, dropping the upper case
+spellings the registry keeps for case-insensitive matching. The page passes that
+straight to the picker. A cancelled picker must return false all the way out or a
+cancelled save would mark the document clean. Read `Registration/FileFormats.cs`,
+then `Managers/ImageConverterManager.cs`, then `SkiaCodecFormat.cs`, then
 `CodeBrixImagingFormat.cs`, then the save handler in `MainPage.xaml.cs`. See
 [Register import and export formats at startup through one entry point](../BLUEPRINTS-DocumentsAndData.md#register-import-and-export-formats-at-startup-through-one-entry-point),
 [Add codec coverage beyond SkiaSharp with the CodeBrix Imaging library](../BLUEPRINTS-DocumentsAndData.md#add-codec-coverage-beyond-skiasharp-with-the-codebrix-imaging-library),
 [Honor EXIF orientation when decoding with SkiaSharp codecs](../BLUEPRINTS-GraphicsAndRendering.md#honor-exif-orientation-when-decoding-with-skiasharp-codecs),
-[Save a document through a native picker with format filters](../BLUEPRINTS-DocumentsAndData.md#save-a-document-through-a-native-picker-with-format-filters)
+[Save a document through a native picker with format filters](../BLUEPRINTS-DocumentsAndData.md#save-a-document-through-a-native-picker-with-format-filters),
+[Build a file dialog's filter list in the format registry](../BLUEPRINTS-DocumentsAndData.md#build-a-file-dialogs-filter-list-in-the-format-registry)
 and [Raise a UI hook from a codec through a static event](../BLUEPRINTS-DocumentsAndData.md#raise-a-ui-hook-from-a-codec-through-a-static-event).
 
 ### One settings store for everything remembered
@@ -585,8 +616,11 @@ Font family enumeration is answered by SkiaSharp directly.
 
 Icons live as embedded resources in `Pinta.Brix.Controls` - PNG at fixed sizes
 and scalable SVG - and `SkiaResourceService` resolves a name to an exact-size PNG
-when one exists and rasterizes the SVG through CodeBrix.SkiaSvg when it does not,
-caching by name and size. It never fails: an unknown name returns a blank
+when one exists and rasterizes the SVG through CodeBrix.SkiaSvg when it does not.
+Both it and `IconImageSource`, which turns the result into a XAML image source,
+cache by name and size in a `BoundedCache` - one lock around a dictionary and a
+capacity that evicts the least recently used entry - so a long session cannot
+grow either cache without limit. It never fails: an unknown name returns a blank
 surface, which is why the interface also carries a "has icon" query for callers
 that want a text fallback.
 
@@ -636,10 +670,11 @@ and [Compare rendered images pixel by pixel](../BLUEPRINTS-Testing.md#compare-re
 ### Startup, in order
 
 `App.xaml.cs` is short and every line in it is ordered on purpose: set the
-default text font family, open the settings store, read the remembered window
-size into the platform's preferred launch size, create the resolver and turn off
-design mode, then `InitializeComponent()`. After the window exists, the engine
-bootstrap installs the resource service and the timer service and calls the three
+default text font family, create the resolver - registering the application's
+services through `AddPintaBrix()` - turn off design mode, open the settings store
+before anything can read a setting, read the remembered window size into the
+platform's preferred launch size, then `InitializeComponent()`. After the window
+exists, the engine bootstrap installs the resource service and the timer service and calls the three
 registration entry points for file formats, effects and tools - the timer service
 needs the window's dispatcher queue, which is why it is not earlier. Each head's
 `Program.cs` is a handful of lines and differs only in the head extension

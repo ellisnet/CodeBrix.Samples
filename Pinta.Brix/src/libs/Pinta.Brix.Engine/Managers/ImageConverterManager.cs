@@ -50,6 +50,52 @@ public sealed class ImageConverterManager
 		=> formats;
 
 	/// <summary>
+	/// The filter entries an "open image" dialog should offer: one per format
+	/// that can be imported, carrying the lower case extensions it reads.
+	/// </summary>
+	public IReadOnlyList<FileDialogFilter> GetImportFilters ()
+		=> BuildFilters (f => f.IsImportAvailable ());
+
+	/// <summary>
+	/// The filter entries a "save image as" dialog should offer: one per
+	/// format that can be exported, carrying the lower case extensions it
+	/// writes.
+	/// </summary>
+	public IReadOnlyList<FileDialogFilter> GetExportFilters ()
+		=> BuildFilters (f => f.IsExportAvailable ());
+
+	/// <summary>
+	/// Every lower case extension an "open image" dialog should accept, in
+	/// registration order and with no duplicates.
+	/// </summary>
+	public IReadOnlyList<string> GetImportExtensions ()
+		=> [.. GetImportFilters ().SelectMany (f => f.Extensions).Distinct ()];
+
+	/// <summary>
+	/// Builds one filter entry per available format. The registry lists every
+	/// extension in both cases so that matching is case-insensitive; a dialog
+	/// only wants one of each, so the upper case spellings are dropped here
+	/// rather than by every caller.
+	/// </summary>
+	private List<FileDialogFilter> BuildFilters (Func<FormatDescriptor, bool> isAvailable)
+	{
+		List<FileDialogFilter> filters = [];
+
+		foreach (FormatDescriptor format in formats.Where (isAvailable)) {
+
+			List<string> extensions = [
+				.. format.Extensions
+					.Where (x => x.All (char.IsLower))
+					.Select (x => $".{x}")];
+
+			if (extensions.Count > 0)
+				filters.Add (new FileDialogFilter (format.FilterName, extensions));
+		}
+
+		return filters;
+	}
+
+	/// <summary>
 	/// Registers a new file format.
 	/// </summary>
 	public void RegisterFormat (FormatDescriptor fd)

@@ -95,14 +95,11 @@ public class MainViewModel : SimpleViewModel
     private bool _isSimulated = true;
 
     /// <summary>Whether the active scope is a simulator rather than real hardware.</summary>
+    [AffectsProperties(nameof(SimulatedBadge))]
     public bool IsSimulated
     {
         get => _isSimulated;
-        private set
-        {
-            SetProperty(ref _isSimulated, value, notifyOnMainThread: true);
-            NotifyPropertyChanged(nameof(SimulatedBadge), true);
-        }
+        private set => SetProperty(ref _isSimulated, value, notifyOnMainThread: true);
     }
 
     /// <summary>
@@ -225,11 +222,32 @@ public class MainViewModel : SimpleViewModel
     /// </summary>
     /// <returns>A task that completes once the scope is ready.</returns>
     /// <remarks>
+    /// <para>
     /// Each head registers its own implementations with
     /// <see cref="ScopeDeviceFinder"/> before the application starts, which is
     /// what keeps this view model free of any device-specific reference.
+    /// </para>
+    /// <para>
+    /// The view starts this from an <c>async void</c> load handler, so nothing
+    /// may escape it. Opening and interrogating an instrument has more failure
+    /// modes than any one caller can enumerate, and every one of them becomes a
+    /// line of status text here, the way the rest of this view model reports.
+    /// </para>
     /// </remarks>
     public async Task InitializeAsync()
+    {
+        try
+        {
+            await StartUpAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Scope startup failed.");
+            SetStatus("Could not start: " + ex.Message);
+        }
+    }
+
+    private async Task StartUpAsync()
     {
         SetStatus("Looking for a scope...");
 
@@ -268,7 +286,13 @@ public class MainViewModel : SimpleViewModel
         VoltageRangeOption[] rangeOptions = c.SupportedRanges.Select(r => new VoltageRangeOption(r)).ToArray();
         VoltageRange preferredRange = c.Supports(VoltageRange.Range5V) ? VoltageRange.Range5V : c.SupportedRanges[^1];
         _selectedRangeOption = rangeOptions.First(o => o.Range == preferredRange);
-        if (!c.SupportedWaveTypes.Contains(_selectedWaveType)) { _selectedWaveType = c.SupportedWaveTypes[0]; }
+        //A model with no signal generator - a 2104 or a 2105 - reports no
+        //  waveforms at all, so there is nothing to move the selection to and
+        //  the default simply stays.
+        if (c.SupportedWaveTypes.Count > 0 && !c.SupportedWaveTypes.Contains(_selectedWaveType))
+        {
+            _selectedWaveType = c.SupportedWaveTypes[0];
+        }
 
         InvokeOnMainThread(() =>
         {
@@ -298,15 +322,27 @@ public class MainViewModel : SimpleViewModel
     {
         if (_scope == null || !_scope.IsOpen) { return; }
 
-        bool wasStreaming = _scope.IsStreaming;
-        if (wasStreaming) { _scope.StopStreaming(); }
-
-        foreach (ChannelId channel in _scope.Capabilities.SupportedChannels)
+        try
         {
-            _scope.SetChannel(channel, new ChannelSettings(true, Coupling.Dc, SelectedRange));
-        }
+            bool wasStreaming = _scope.IsStreaming;
+            if (wasStreaming) { _scope.StopStreaming(); }
 
-        if (wasStreaming) { DoStartStreaming(); }
+            foreach (ChannelId channel in _scope.Capabilities.SupportedChannels)
+            {
+                _scope.SetChannel(channel, new ChannelSettings(true, Coupling.Dc, SelectedRange));
+            }
+
+            if (wasStreaming) { DoStartStreaming(); }
+        }
+        catch (PicoScopeException ex)
+        {
+            //One of the two callers is the range picker's setter, so a range the
+            //  device refuses must not throw out of a bound property. The stream
+            //  may have been stopped before the refusal, so the flag the buttons
+            //  read is re-read from the device rather than assumed.
+            IsStreaming = _scope.IsStreaming;
+            SetStatus("Could not apply the channel settings: " + ex.Message);
+        }
     }
 
     private void OnSamplesAvailable(object sender, StreamingSamplesEventArgs e)
@@ -329,10 +365,13 @@ public class MainViewModel : SimpleViewModel
     private SimpleCommand _captureCommand;
 
     /// <summary>Captures a single block and displays it.</summary>
+    /// <remarks>
+    /// The cast picks the asynchronous overload. Without it a task-returning
+    /// body binds to the synchronous one, and the command reports itself
+    /// finished while the capture is still running unobserved.
+    /// </remarks>
     public SimpleCommand CaptureCommand =>
-        _captureCommand ??= new SimpleCommand(() => IsReady && !IsStreaming, DoCapture);
-
-    private void DoCapture() => _ = CaptureOnceAsync();
+        _captureCommand ??= new SimpleCommand(() => IsReady && !IsStreaming, (Func<Task>)CaptureOnceAsync);
 
     private async Task CaptureOnceAsync()
     {
@@ -357,6 +396,14 @@ public class MainViewModel : SimpleViewModel
         }
         catch (PicoScopeException ex)
         {
+            SetStatus("Capture failed: " + ex.Message);
+        }
+        catch (Exception ex)
+        {
+            //The command runs this body through an async void execute path, so
+            //  anything the device layer did not turn into a PicoScopeException
+            //  still has to stop here.
+            _log.LogError(ex, "Unexpected capture failure.");
             SetStatus("Capture failed: " + ex.Message);
         }
     }
@@ -464,8 +511,17 @@ public class MainViewModel : SimpleViewModel
 
     private void DoFlashLed()
     {
-        _scope?.FlashLed();
-        SetStatus("Flashing the device LED.");
+        if (_scope == null) { return; }
+
+        try
+        {
+            _scope.FlashLed();
+            SetStatus("Flashing the device LED.");
+        }
+        catch (PicoScopeException ex)
+        {
+            SetStatus("Could not flash the LED: " + ex.Message);
+        }
     }
 
     #endregion

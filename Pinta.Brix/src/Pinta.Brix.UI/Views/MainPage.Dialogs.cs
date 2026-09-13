@@ -90,14 +90,16 @@ public sealed partial class MainPage
     }
 
     /// <summary>
-    /// Runs the save-prompt loop over every dirty document. The window-close
-    /// path calls this; a false result means the close should be abandoned.
+    /// Runs the save-prompt loop over every dirty document. The page hands this
+    /// to the view model as <c>IShellCloseBridge.ConfirmCloseApplicationAsync</c>,
+    /// which is how the window close reaches it; a false result means the close
+    /// should be abandoned.
     /// </summary>
     /// <remarks>
     /// There is deliberately no File &gt; Quit command to reach this from - on
     /// a chrome-less head there is no way out of the application by design.
     /// </remarks>
-    internal async Task<bool> ConfirmCloseApplicationAsync() => await CloseAllAsync();
+    private async Task<bool> ConfirmCloseApplicationAsync() => await CloseAllAsync();
 
     // ---- Image dialogs -----------------------------------------------------
 
@@ -358,12 +360,10 @@ public sealed partial class MainPage
 
         FileOpenPicker picker = new() { SuggestedStartLocation = PickerLocationId.PicturesLibrary };
 
-        foreach (var format in PintaCore.ImageFormats.Formats.Where(f => f.IsImportAvailable()))
+        //The registry owns which extensions an open dialog accepts.
+        foreach (string extension in PintaCore.ImageFormats.GetImportExtensions())
         {
-            foreach (string extension in format.Extensions.Where(x => x.All(char.IsLower)))
-            {
-                picker.FileTypeFilter.Add($".{extension}");
-            }
+            picker.FileTypeFilter.Add(extension);
         }
 
         StorageFile file = await picker.PickSingleFileAsync();

@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.WPF.ApacheLicenseForever" Version="1.0.193.1013" />
+    <PackageReference Include="CodeBrix.Platform.WPF.ApacheLicenseForever" Version="1.0.254.253" />
   </ItemGroup>
 
 </Project>

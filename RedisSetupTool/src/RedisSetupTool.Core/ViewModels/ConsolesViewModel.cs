@@ -1,20 +1,23 @@
 using CodeBrix.Platform.Simple;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
+using RedisSetupTool.Bridges;
 using RedisSetupTool.DockerManagement;
+using RedisSetupTool.DockerManagement.Exec;
 using RedisSetupTool.Services;
 using RedisSetupTool.TerminalView;
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Threading.Tasks;
 
 namespace RedisSetupTool.ViewModels;
 
 /// <summary>
 /// One console tab's status. The terminal control and the exec pump live in the page's
-/// code-behind — <c>TerminalControl</c> declares no dependency properties, so it cannot be bound
-/// or placed in a data template — and the page pushes what it learns back through the three
-/// <c>Apply</c> methods here.
+/// code-behind - <c>TerminalControl</c> declares no dependency properties, so it cannot be bound
+/// or placed in a data template - and the grid size and session state the page learns there come
+/// back through the <c>Apply</c> methods here.
 /// </summary>
 [Microsoft.UI.Xaml.Data.Bindable]
 public class ConsoleTabViewModel : SimpleViewModel
@@ -61,11 +64,26 @@ public class ConsoleTabViewModel : SimpleViewModel
     } = "—";
 
     /// <summary>The session state in words.</summary>
+    [AffectsProperties(nameof(TabHeaderText))]
     public string StateText
     {
         get;
         private set => SetProperty(ref field, value);
     } = "starting";
+
+    /// <summary>
+    /// The caption the tab strip carries: the container's name on its own while the session is
+    /// running, and the name with the state beside it once it is not.
+    /// </summary>
+    public string TabHeaderText =>
+        IsRunning ? ContainerName : ContainerName + " · " + StateText;
+
+    /// <summary>Why the console could not be opened, or an empty string while nothing has failed.</summary>
+    public string FailureMessage
+    {
+        get;
+        private set => SetProperty(ref field, value ?? string.Empty);
+    } = string.Empty;
 
     /// <summary>The status strip's dot colour.</summary>
     public Brush StateBrush
@@ -76,6 +94,7 @@ public class ConsoleTabViewModel : SimpleViewModel
 
     /// <summary>Whether the session is still running.</summary>
     [AffectsAllCommands]
+    [AffectsProperties(nameof(TabHeaderText))]
     public bool IsRunning
     {
         get;
@@ -139,6 +158,7 @@ public class ConsoleTabViewModel : SimpleViewModel
     /// <param name="message">Why it could not.</param>
     public void ApplyFailure(string message)
     {
+        FailureMessage = message;
         ShellPath = message;
         IsRunning = false;
         StateText = "failed";
@@ -154,8 +174,10 @@ public class ConsoleTabViewModel : SimpleViewModel
 /// themselves and mirrors this collection into the <c>TabView</c>.
 /// </summary>
 [Microsoft.UI.Xaml.Data.Bindable]
-public class ConsolesViewModel : SectionViewModel
+public class ConsolesViewModel : SectionViewModel, IConsoleTabsBridge
 {
+    private const string NoShellMessage = "No usable shell in this image.";
+
     private readonly IDockerManager _docker;
 
     /// <summary>Creates the consoles section.</summary>
@@ -222,9 +244,6 @@ public class ConsolesViewModel : SectionViewModel
 
     #endregion
 
-    /// <summary>Raised when a tab needs a fresh session started on the same container.</summary>
-    public event Action<ConsoleTabViewModel> ReopenRequested;
-
     /// <inheritdoc />
     public override void ApplySnapshot()
     {
@@ -236,7 +255,7 @@ public class ConsolesViewModel : SectionViewModel
 
     /// <summary>
     /// Opens a console tab on a container. The page notices the new tab through the collection
-    /// and does the rest: it probes for a shell, opens the exec and starts the pump.
+    /// and does the rest: it builds a terminal, asks for the tab's session and starts the pump.
     /// </summary>
     /// <param name="containerId">The container to open a shell in.</param>
     /// <param name="containerName">The name to put on the tab.</param>
@@ -265,27 +284,51 @@ public class ConsolesViewModel : SectionViewModel
         NotifyPropertyChanged(nameof(TabsVisibility));
     }
 
-    /// <summary>Probes a container for a usable shell, without opening one.</summary>
-    /// <param name="containerId">The container to probe.</param>
-    /// <returns>What the probe found.</returns>
-    public System.Threading.Tasks.Task<DockerManagement.Exec.ShellProbeResult> ProbeAsync(
-        string containerId) => _docker.ProbeShellAsync(containerId);
+    /// <inheritdoc />
+    public async Task<IExecSession> StartSessionAsync(ConsoleTabViewModel tab, int columns,
+        int rows)
+    {
+        if (tab is null) { return null; }
 
-    /// <summary>The Docker facade, which the page needs to open the exec session itself.</summary>
-    public IDockerManager Docker => _docker;
+        try
+        {
+            var probe = await _docker.ProbeShellAsync(tab.ContainerId).ConfigureAwait(true);
+            if (!probe.Found)
+            {
+                tab.ApplyFailure(probe.Message ?? NoShellMessage);
+                return null;
+            }
 
-    /// <summary>
-    /// Sends text to the selected console's shell, as though it had been typed. The page fills
-    /// this in, because only the page holds the terminal pump. It exists for the unattended
-    /// verification script; nothing in the UI uses it.
-    /// </summary>
+            tab.ApplyShell(probe.ShellPath);
+            return await _docker.OpenShellAsync(tab.ContainerId, new ExecSessionOptions
+            {
+                Rows = rows,
+                Columns = columns,
+            }).ConfigureAwait(true);
+        }
+        catch (Exception exception)
+        {
+            //Nothing here is worth a dialog: the tab's own status strip carries the reason and
+            //  the page writes it into the terminal the user is already looking at.
+            tab.ApplyFailure(exception.Message);
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>It exists for the unattended verification script; nothing in the UI uses it.</remarks>
     public Action<ConsoleTabViewModel, string> SendInput { get; set; }
 
     private void Reopen(ConsoleTabViewModel tab)
     {
         if (tab is null) { return; }
 
-        ReopenRequested?.Invoke(tab);
+        //Closing and opening is the whole of it: the page is watching the collection, so it
+        //  tears the old terminal down and builds a fresh one from these two moves alone.
+        var containerId = tab.ContainerId;
+        var containerName = tab.ContainerName;
+        CloseTab(tab);
+        OpenConsole(containerId, containerName);
     }
 
     private void RebuildPicker()

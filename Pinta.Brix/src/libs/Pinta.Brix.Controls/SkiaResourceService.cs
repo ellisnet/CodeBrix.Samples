@@ -19,7 +19,14 @@ namespace Pinta.Brix.Controls;
 public sealed class SkiaResourceService : IResourceService
 {
 	private readonly Assembly assembly = typeof (SkiaResourceService).Assembly;
-	private readonly Dictionary<(string, int), ImageSurface> cache = [];
+	/// <summary>
+	/// Bounded so that a long session asking for many icon sizes cannot grow
+	/// the cache without limit; every icon the application actually uses fits
+	/// several times over.
+	/// </summary>
+	private const int CacheCapacity = 512;
+
+	private readonly BoundedCache<(string, int), ImageSurface> cache = new (CacheCapacity);
 	private readonly List<string> resource_names;
 
 	public SkiaResourceService ()
@@ -33,7 +40,7 @@ public sealed class SkiaResourceService : IResourceService
 			return cached;
 
 		ImageSurface icon = LoadIcon (name, size) ?? new ImageSurface (Format.Argb32, size, size);
-		cache[(name, size)] = icon;
+		cache.Set ((name, size), icon);
 		return icon;
 	}
 

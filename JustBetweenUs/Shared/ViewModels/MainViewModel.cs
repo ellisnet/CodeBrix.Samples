@@ -12,14 +12,27 @@ namespace JustBetweenUs.ViewModels;
 
 public interface ICopyToClipboard { Action<string> CopyTextToClipboard { get; set; }}
 
+/// <summary>
+/// Lets the hosting page tell the view model that its UI is on screen and can host a dialog. Each
+/// head calls <see cref="NotifyPageReady"/> from its page's loaded event, and that is what releases
+/// the startup dialog; a head that never calls it simply never shows that dialog.
+/// </summary>
+public interface IPageReadyNotifier
+{
+    /// <summary>Tells the view model that the page is loaded and can host a dialog.</summary>
+    void NotifyPageReady();
+}
+
 #if HAS_CODEBRIX
 [Microsoft.UI.Xaml.Data.Bindable]
 #endif
-public class MainViewModel : SimpleViewModel, ICopyToClipboard
+public class MainViewModel : SimpleViewModel, ICopyToClipboard, IPageReadyNotifier
 {
     private IEncryptionService _encryptSvc;
     private bool _copyMessageShown;
     private SimpleOsInfo _osInfo;
+
+    private readonly TaskCompletionSource _pageReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public MainViewModel()
     {
@@ -29,40 +42,44 @@ public class MainViewModel : SimpleViewModel, ICopyToClipboard
 
             _encryptSvc = GetService<IEncryptionService>();
 
-            EncryptionModes.Clear();
-            foreach (var kvp in _encryptionModeDictionary)
-            {
-                EncryptionModes.Add(kvp.Value.Description);
-            }
-            var selection = _encryptionModeDictionary.First();
-            _selectedEncryptionMode = selection.Key;
-            _selectedEncryptionModeText = selection.Value.Description;
-            base.NotifyPropertyChanged(nameof(EncryptionModes));
-            base.NotifyPropertyChanged(nameof(SelectedEncryptionModeText));
+            EncryptionModes = _encryptionModeDictionary.Values
+                .Where(w => w != null)
+                .ToArray();
+            SelectedEncryptionMode = EncryptionModes.FirstOrDefault();
 
-            // ReSharper disable once AsyncVoidLambda
-            new Task(async () => //intentionally a fire-and-forget task
-            {
-                var defaultKey = await _encryptSvc.GetDefaultKey();
-                //We can't set a value to EncryptionKey except on the main (UI) thread, because this causes problems on Linux and macOS
-                InvokeOnMainThread(() => EncryptionKey = defaultKey);
-#if HAS_WINUI
-                //Give it a bit more time on WinUI (native) because the Lottie animation stuff can take a little longer for the UI to be
-                //  ready, especially when the solution has recently been cloned and Visual Studio is setting things up for the first time.
-                await Task.Delay(3000);  //This time can be adjusted to longer, if need be, for testing the JustBetweenUs.WinUI version.
-#else
-                await Task.Delay(2000);
-#endif
-                //IMPORTANT NOTE: If you get an exception here about a missing XamlRoot when you are first running JustBetweenUs.WinUI via
-                //  Visual Studio on Windows - *especially* after you just cloned the repository, or deleted your local .vs cache folder -
-                //  this is a known issue.
-                //  The problem is that the application takes long enough to draw the UI for the first time, that the Time.Delay(3000) -
-                //  i.e. 3 seconds - expires before the UI is ready - generally only in JustBetweenUs.WinUI.  Rebuild the application and
-                //  try running again.
-                //  TODO: a future version of CodeBrix will solve this problem by having a Task to await that only completes when the page
-                //  has fully loaded - and then the XamlRoot will never be missing.
-                await ShowInfo("This application is adapted from a sample provided by Paul Ainsworth.");
-            }).Start();
+            Initialization = InitializeAsync();
+        }
+    }
+
+    /// <summary>
+    /// The startup work that the constructor begins: reading the default encryption key and showing
+    /// the application's first informational dialog. A page or a test can await this to find out when
+    /// that work has finished.
+    /// </summary>
+    public Task Initialization { get; private set; } = Task.CompletedTask;
+
+    private async Task InitializeAsync()
+    {
+        try
+        {
+            var defaultKey = await _encryptSvc.GetDefaultKey();
+            //We can't set a value to EncryptionKey except on the main (UI) thread, because this causes problems on Linux and macOS
+            InvokeOnMainThread(() => EncryptionKey = defaultKey);
+
+            //A dialog needs a UI anchor that does not exist until the page has been laid out, so wait
+            //  for the page to say that it is ready instead of guessing how long that takes.
+            await _pageReady.Task;
+
+            await ShowInfo("This application is adapted from a sample provided by Paul Ainsworth.");
+        }
+        catch (OperationCanceledException)
+        {
+            //The view model was disposed before the page became ready - there is nothing left to show
+        }
+        catch (Exception e)
+        {
+            //Startup work must never be able to bring the application down
+            Debug.WriteLine($"Main view model startup failed: {e.Message}");
         }
     }
 
@@ -73,22 +90,18 @@ public class MainViewModel : SimpleViewModel, ICopyToClipboard
     private readonly Dictionary<EncryptionMode.CryptAlgorithm, EncryptionMode> _encryptionModeDictionary =
         EncryptionMode.GetDictionary();
 
-    public List<string> EncryptionModes { get; } = new();
-
-    private EncryptionMode.CryptAlgorithm _selectedEncryptionMode;
-
-    private string _selectedEncryptionModeText = string.Empty;
-
-    public string SelectedEncryptionModeText
+    /// <summary>The algorithms the picker offers, in enum order; the picker displays their Description.</summary>
+    public IReadOnlyList<EncryptionMode> EncryptionModes
     {
-        get => _selectedEncryptionModeText;
-        set
-        {
-            SetProperty(ref _selectedEncryptionModeText, value);
-            _selectedEncryptionMode = _encryptionModeDictionary
-                .Single(s => s.Value.Description == value)
-                .Key;
-        }
+        get;
+        private set => SetProperty(ref field, value);
+    } = [];
+
+    /// <summary>The algorithm that the picker currently has selected.</summary>
+    public EncryptionMode SelectedEncryptionMode
+    {
+        get;
+        set => SetProperty(ref field, value);
     }
 
     #endregion
@@ -133,7 +146,7 @@ public class MainViewModel : SimpleViewModel, ICopyToClipboard
         {
             try
             {
-                switch (_selectedEncryptionMode)
+                switch (SelectedEncryptionMode?.Member)
                 {
                     case EncryptionMode.CryptAlgorithm.Aes:
                         ProcessedText = await _encryptSvc.AES_EncryptToBase64(EncryptionKey.Trim(), EnteredText);
@@ -180,7 +193,7 @@ public class MainViewModel : SimpleViewModel, ICopyToClipboard
             {
                 try
                 {
-                    switch (_selectedEncryptionMode)
+                    switch (SelectedEncryptionMode?.Member)
                     {
                         case EncryptionMode.CryptAlgorithm.Aes:
                             ProcessedText = await _encryptSvc.AES_DecryptFromBase64(EncryptionKey.Trim(), EnteredText);
@@ -238,8 +251,9 @@ public class MainViewModel : SimpleViewModel, ICopyToClipboard
 
     #region ShowOsInfoCommand
 
+    private SimpleCommand _showOsInfoCommand;
     public SimpleCommand ShowOsInfoCommand =>
-        (field ??= new SimpleCommand(DoShowOsInfo));
+        (_showOsInfoCommand ??= new SimpleCommand(DoShowOsInfo));
 
     private async Task DoShowOsInfo()
     {
@@ -271,10 +285,22 @@ public class MainViewModel : SimpleViewModel, ICopyToClipboard
 
     #endregion
 
+    #region | IPageReadyNotifier implementation |
+
+    /// <summary>
+    /// Called by the hosting page once its UI is on screen. The startup dialog waits for this,
+    /// because a dialog needs a UI anchor that does not exist while the page is still being built.
+    /// </summary>
+    public void NotifyPageReady() => _pageReady.TrySetResult();
+
+    #endregion
+
     #region | IDisposable implementation |
 
     public override void Dispose()
     {
+        //Releases the startup task if it is still waiting for the page to become ready
+        _pageReady.TrySetCanceled();
         _encryptSvc = null;
         _encryptCommand?.Dispose();
         _encryptCommand = null;
@@ -282,6 +308,8 @@ public class MainViewModel : SimpleViewModel, ICopyToClipboard
         _decryptCommand = null;
         _copyToClipboardCommand?.Dispose();
         _copyToClipboardCommand = null;
+        _showOsInfoCommand?.Dispose();
+        _showOsInfoCommand = null;
         CopyTextToClipboard = null;
         base.Dispose();
     }

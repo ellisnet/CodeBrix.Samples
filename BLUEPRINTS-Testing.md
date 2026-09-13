@@ -12,9 +12,13 @@ assembly. From there they show fixtures and test doubles - shared expensive
 fixtures, synthetic inputs built rather than committed, stub message handlers,
 mocks over rendering and API seams - along with headless graphics testing,
 golden-image comparison, opt-in live tests, isolating a process-global store,
-and a scripted run that drives the whole application on a real head. Reach
-for this file when you are adding a test project to an application, or when
-something you need to prove will not run in a bare test host.
+and proving that a library's own registration method registers what it
+promises. They end with the runs that need the whole application: a scripted
+run on a real head, kept in a library behind a narrow interface onto the page,
+and an open-ended diagnostic hook that drives a live application from an
+environment variable. Reach for this file when you are adding a test project to
+an application, or when something you need to prove will not run in a bare test
+host.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -49,6 +53,9 @@ conventions the code blocks follow.
 - [Check audible-only behavior with an opt-in unattended walkthrough](#check-audible-only-behavior-with-an-opt-in-unattended-walkthrough)
 - [Ship a simulator that enforces the real device's limits rather than a stub](#ship-a-simulator-that-enforces-the-real-devices-limits-rather-than-a-stub)
 - [Make a byte pump testable by writing to a sink interface instead of a control](#make-a-byte-pump-testable-by-writing-to-a-sink-interface-instead-of-a-control)
+- [Move a scripted run into the library behind a surface interface](#move-a-scripted-run-into-the-library-behind-a-surface-interface)
+- [Prove a registration extension registers what it promises](#prove-a-registration-extension-registers-what-it-promises)
+- [Drive a running application from an environment variable and report to the log](#drive-a-running-application-from-an-environment-variable-and-report-to-the-log)
 
 ## Related blueprints
 
@@ -573,7 +580,10 @@ public sealed class SampleMediaFixture : IAsyncLifetime
     {
         try
         {
-            if (Directory.Exists(Root)) { Directory.Delete(Root, true); }
+            if (Directory.Exists(Root))
+            {
+                Directory.Delete(Root, true);
+            }
         }
         catch (IOException)
         {
@@ -821,7 +831,7 @@ shared helper.
 
 ```csharp
 // From CodeBrix.Samples/PdfSideBySide/tests/libs/PdfSideBySide.PdfRender.Tests/Helpers/TestPdfs.cs
-/// <summary>Full path of the assets/Inanna.pdf sample copied beside the test binary.</summary>
+/// <summary>Full path of the <c>assets/Inanna.pdf</c> sample copied beside the test binary.</summary>
 public static string InannaPath => Path.Combine(AppContext.BaseDirectory, "assets", "Inanna.pdf");
 ```
 
@@ -955,13 +965,13 @@ a lower bound on its size in pages.
 [Fact]
 public async Task Compose_and_render_fixture_offline_produces_multipage_pdf()
 {
-    //Arrange - parse the embedded article fixture (no network, no images)
+    //Arrange
     var html = await EmbeddedResourceHelper.GetResourceAsString(
         FixtureResource, typeof(ArticleRenderServiceTests).Assembly);
     var article = new ArticleParser(CuneiformUrl).Parse(html);
     article.Blocks.Should().NotBeEmpty();
 
-    //Act - compose the book and render it to a PDF
+    //Act
     var composer = new BookComposer(article, BookTheme.For(PageSizeOption.EightByTen), DateTime.Now);
     var document = composer.Compose();
     var renderer = new PdfDocumentRenderer(unicode: true) { Document = document };
@@ -1004,7 +1014,8 @@ and share one fixture so a filter can exclude the whole set.
 // From CodeBrix.Samples/NotionDocumentCreator/tests/libs/NotionDocumentCreator.CreateDocument.Tests/NotionDocumentServiceTests.cs
 /// <summary>
 /// Integration tests against the live Notion API. Opt-in: they skip unless both
-/// NOTION_AUTH_TOKEN and NOTION_TEST_PAGE_ID environment variables are set ...
+/// NOTION_AUTH_TOKEN and NOTION_TEST_PAGE_ID environment variables are set (the
+/// ...
 /// </summary>
 public class NotionDocumentServiceTests : IDisposable
 {
@@ -1021,7 +1032,10 @@ public class NotionDocumentServiceTests : IDisposable
         _service = new NotionDocumentService();
     }
 
-    public void Dispose() => _service?.Dispose();
+    public void Dispose()
+    {
+        _service?.Dispose();
+    }
 }
 ```
 
@@ -1103,7 +1117,7 @@ client.
 internal static class TestClient
 {
     public static (IPolyHavenApiClient Client, StubHttpMessageHandler Stub) Create(
-        PolyHavenClientOptions options = null)
+        PolyHavenClientOptions? options = null)
     {
         var stub = new StubHttpMessageHandler();
         var factory = new DefaultPolyHavenClientFactory(stub, options);
@@ -1211,21 +1225,33 @@ private const int EGL_PLATFORM_SURFACELESS_MESA = 0x31DD;
 // ...
 
 /// <summary>Tries to create a current GL context; returns <see langword="null"/> when the machine can't.</summary>
-public static EglTestContext TryCreate()
+public static EglTestContext? TryCreate()
 {
-    if (!OperatingSystem.IsLinux()) { return null; }
+    if (!OperatingSystem.IsLinux())
+    {
+        return null;
+    }
 
     try
     {
         var display = eglGetPlatformDisplay(EGL_PLATFORM_SURFACELESS_MESA, IntPtr.Zero, IntPtr.Zero);
-        if (display == IntPtr.Zero || !eglInitialize(display, out _, out _)) { return null; }
+        if (display == IntPtr.Zero || !eglInitialize(display, out _, out _))
+        {
+            return null;
+        }
         // ... eglChooseConfig, eglCreateContext (client version 3), eglCreatePbufferSurface, eglMakeCurrent ...
 
         var gl = GL.GetApi(name => eglGetProcAddress(name));
         return new EglTestContext(display, context, surface, gl);
     }
-    catch (DllNotFoundException) { return null; }
-    catch (EntryPointNotFoundException) { return null; }
+    catch (DllNotFoundException)
+    {
+        return null;
+    }
+    catch (EntryPointNotFoundException)
+    {
+        return null;
+    }
 }
 ```
 
@@ -1249,7 +1275,12 @@ public class GlModelSceneRendererTests
         var gl = egl.Gl;
         const uint size = 64;
         var (fbo, colorRb, depthRb) = CreateFramebuffer(gl, size, size);
-        var renderer = new GlModelSceneRenderer { BackgroundColor = (0f, 0f, 1f, 1f) };
+
+        var renderer = new GlModelSceneRenderer
+        {
+            BackgroundColor = (0f, 0f, 1f, 1f), // blue background, red triangle
+        };
+
         try
         {
             //Act
@@ -1574,10 +1605,10 @@ matching file under `Pinta.Brix.FileFormats.Tests/`
 player element, a real visual tree - still need proving.
 
 **The MVVM shape.** The page reads options from the environment in its constructor
-and, when they are present, hooks its loaded event to run a script that drives the
-view model's own commands and properties, then prints machine-readable lines and
-exits with a status. Nothing about the run changes what the application does when
-the variables are not set.
+and, when they are present, hooks its loaded event to start a run that lives in the
+Core library. The run drives the view models' own commands and properties, prints
+machine-readable lines and exits with a status. Nothing about the run changes what
+the application does when the variables are not set.
 
 **Code.**
 
@@ -1586,16 +1617,29 @@ the variables are not set.
 //Optional scripted run: import, play and report without anyone touching the window.
 if (SmokeOptions.FromEnvironment() is { } smoke)
 {
-    Loaded += (_, _) => RunSmoke(smoke);
+    Loaded += (_, _) => StartSmokeRun(smoke);
 }
 ```
 
+Every line the run prints carries the same prefix, so one grep separates the run's
+own output from everything else the application writes, and the process exit code
+says pass or fail without anything having to read the log:
+
 ```csharp
-// From CodeBrix.Samples/CodeBrixVideoTool/src/CodeBrixVideoTool.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/CodeBrixVideoTool/src/CodeBrixVideoTool.Core/Smoke/SmokeRun.cs
 private static void Fact(string name, object value) =>
     Console.WriteLine($"CBVT-SMOKE: {name}={value?.ToString() ?? "(null)"}");
 
-private static void Finish(int failures)
+private void Check(string step, bool ok, string detail)
+{
+    Console.WriteLine($"CBVT-SMOKE: {(ok ? "PASS" : "FAIL")} {step} ({detail})");
+    if (!ok)
+    {
+        failures++;
+    }
+}
+
+private void Finish()
 {
     Console.WriteLine($"CBVT-SMOKE: RESULT {(failures == 0 ? "PASS" : $"FAIL ({failures})")}");
     Console.Out.Flush();
@@ -1604,35 +1648,58 @@ private static void Finish(int failures)
 ```
 
 ```csharp
-// From CodeBrix.Samples/CodeBrixVideoTool/src/CodeBrixVideoTool.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/CodeBrixVideoTool/src/CodeBrixVideoTool.Core/Smoke/SmokeRun.cs
 var outputPath = Path.Combine(
     options.WorkFolder, "smoke" + MediaFormats.Extension(options.Destination));
-viewModel.Conversion.PickOutputPathAsync = (_, _) => Task.FromResult(outputPath);
+SetOutputPath(viewModel.Conversion, outputPath);
 
-var finished = new TaskCompletionSource<Processing.Operations.ConversionOutcome>();
-void OnFinished(object _, Processing.Operations.ConversionOutcome result) => finished.TrySetResult(result);
-viewModel.Conversion.ConversionFinished += OnFinished;
-viewModel.Conversion.RunCommand.Execute(null);
-var outcome = await finished.Task;
-viewModel.Conversion.ConversionFinished -= OnFinished;
+var outcome = await RunConversionAsync(viewModel.Conversion);
+// ...
+
+/// <summary>
+/// Presses the action button and waits for the run to report itself finished. The outcome arrives
+/// on an event rather than from the command, so the wait is a completion source subscribed before
+/// the command is executed.
+/// </summary>
+private static async Task<ConversionOutcome> RunConversionAsync(ConversionViewModel conversion)
+{
+    var finished = new TaskCompletionSource<ConversionOutcome>();
+    void OnFinished(object _, ConversionOutcome result) => finished.TrySetResult(result);
+    conversion.ConversionFinished += OnFinished;
+    conversion.RunCommand.Execute(null);
+    var outcome = await finished.Task;
+    conversion.ConversionFinished -= OnFinished;
+    return outcome;
+}
+
+/// <summary>
+/// Puts a fixed destination in place of the save dialog, through the bridge interface the
+/// conversion view model implements. It is the only dialog in the way of an unattended run.
+/// </summary>
+private static void SetOutputPath(IOutputPathBridge bridge, string path) =>
+    bridge.PickOutputPathAsync = (_, _) => Task.FromResult(path);
 ```
 
 **Where to look.**
-`CodeBrixVideoTool/src/CodeBrixVideoTool.UI/Views/MainPage.xaml.cs` (the smoke-mode
-region: `SmokeOptions`, `RunSmoke`, `RunMp4ExportAsync`, `CheckLastRunNotes`,
-`ShownRowOpacity`, `FindLibraryRow`)
+`CodeBrixVideoTool/src/CodeBrixVideoTool.Core/Smoke/` (`SmokeOptions`, `SmokeRun`
+with `RunMp4ExportAsync` and `CheckLastRunNotes`, `ISmokeSurface`,
+`SmokeFrameCounts`)
+`CodeBrixVideoTool/src/CodeBrixVideoTool.UI/Views/MainPage.xaml.cs` (the page's own
+part of it: `StartSmokeRun` and the surface members)
 
 **Sharp edges.**
-- The bridge delegates are what make the script possible: replacing the save-path
-  delegate with one that returns a fixed path removes the only dialog in the way.
+- The bridge delegate is what makes the script possible: assigned through the
+  bridge interface the view model implements, a delegate that returns a fixed path
+  removes the only dialog in the way.
 - An event plus a completion source is how the script awaits a fire-and-forget
   command.
 - Anything that happens off an event rather than in the command needs a bounded
   retry loop before the script asserts on it, rather than an assumption that it
   has landed.
-- To prove a visual rule is real rather than only configured, the script forces a
-  layout pass, gets the item's container, walks the visual tree for the named
-  element and compares it against a control case.
+- To prove a visual rule is real rather than only configured, the run asks the page
+  to lay the list out and read the row's own opacity, and compares it against a
+  control case - see
+  [Move a scripted run into the library behind a surface interface](BLUEPRINTS-Testing.md#move-a-scripted-run-into-the-library-behind-a-surface-interface).
 - Where a case is expected to fail a profile check, assert the expectation rather
   than success.
 
@@ -2309,3 +2376,341 @@ adapter and the factory that joins them)
   naming the control, or a dispatcher gets added to the library, the suite quietly
   stops covering the path the application actually runs.
 
+### Move a scripted run into the library behind a surface interface
+
+**When you want this.** An end-to-end script that drives the real application has
+to live somewhere, and the page it starts from is the worst place for it: several
+hundred lines of code-behind that no test project can reach and nobody reviews.
+This is the companion to
+[Drive a scripted end-to-end run of the whole application](BLUEPRINTS-Testing.md#drive-a-scripted-end-to-end-run-of-the-whole-application),
+which is about what such a run checks and how it reports; this one is about where
+the run lives and what it is allowed to ask the window for.
+
+**The MVVM shape.** The run is an ordinary class in the Core library, built from
+the options it was asked for and one interface carrying the handful of readings
+only a window can give. Everything else it does through the view models' own
+commands and properties. The page implements that interface explicitly over its
+named controls and starts the run from a guarded wrapper, which is all the
+code-behind keeps.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/CodeBrixVideoTool/src/CodeBrixVideoTool.Core/Smoke/ISmokeSurface.cs
+/// <summary>
+/// The few things a scripted run can only learn by looking at the screen: what the player element
+/// itself says, what the two panels are showing, and the opacity a file's row is really being drawn
+/// at. The page implements this over its own controls; everything else a run does it does through
+/// the view models' own commands and properties.
+/// </summary>
+public interface ISmokeSurface
+{
+    /// <summary>How many stops the quality drop-down is offering.</summary>
+    int QualityChoiceCount { get; }
+
+    // ... the chosen stop, whether the notes panel is shown and how many lines it holds, and what
+    // ... the player element says about duration, position, chapters and caption tracks ...
+
+    /// <summary>
+    /// The player element's frame counters, read together so the three of them belong to one moment.
+    /// </summary>
+    SmokeFrameCounts FrameCounts { get; }
+
+    /// <summary>
+    /// Lays the file list out, so a row that was only just added has a container to read.
+    /// </summary>
+    void LayOutLibraryList();
+
+    /// <summary>The opacity one file's row is really being drawn at.</summary>
+    /// <param name="item">The file whose row to read.</param>
+    /// <returns>The row's opacity, or null when the list has not built a row for that file.</returns>
+    double? ShownRowOpacity(object item);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/CodeBrixVideoTool/src/CodeBrixVideoTool.Core/Smoke/SmokeRun.cs
+/// <remarks>
+/// The run owns the sequence of checks and the reporting format. The few things it can only learn by
+/// looking at the screen come from <see cref="ISmokeSurface" />, which the hosting page implements
+/// over its own controls.
+/// </remarks>
+public sealed class SmokeRun
+{
+    private readonly SmokeOptions options;
+    private readonly ISmokeSurface surface;
+    private int failures;
+
+    /// <summary>Creates a run against one page's controls.</summary>
+    /// <param name="options">What the run was asked for.</param>
+    /// <param name="surface">The page, behind the little it is asked for.</param>
+    /// <exception cref="ArgumentNullException">Either argument is null.</exception>
+    public SmokeRun(SmokeOptions options, ISmokeSurface surface)
+    {
+        this.options = options ?? throw new ArgumentNullException(nameof(options));
+        this.surface = surface ?? throw new ArgumentNullException(nameof(surface));
+    }
+    // ...
+}
+```
+
+The page side is the interface and nothing else: one starter, one member per
+reading, and the visual-tree walk that answers the only question a control cannot
+answer directly.
+
+```csharp
+// From CodeBrix.Samples/CodeBrixVideoTool/src/CodeBrixVideoTool.UI/Views/MainPage.xaml.cs
+public sealed partial class MainPage : Page, ISmokeSurface
+// ...
+    private async void StartSmokeRun(SmokeOptions options)
+    {
+        try
+        {
+            await new SmokeRun(options, this).RunAsync(ViewModel);
+        }
+        catch (Exception exception)
+        {
+            //An event handler cannot hand a failure back to a caller, and the run reports its own,
+            //so this is only here to be certain nothing escapes into the dispatcher unobserved.
+            SmokeRun.ReportFailure(exception);
+        }
+    }
+
+    int ISmokeSurface.QualityChoiceCount => QualityBox.Items.Count;
+    // ...
+    void ISmokeSurface.LayOutLibraryList() => LibraryList.UpdateLayout();
+
+    double? ISmokeSurface.ShownRowOpacity(object item)
+    {
+        if (item is null || LibraryList.ContainerFromItem(item) is not DependencyObject container)
+        {
+            return null;
+        }
+
+        return FindLibraryRow(container)?.Opacity;
+    }
+
+    private static FrameworkElement FindLibraryRow(DependencyObject node)
+    {
+        var children = VisualTreeHelper.GetChildrenCount(node);
+        for (var index = 0; index < children; index++)
+        {
+            var child = VisualTreeHelper.GetChild(node, index);
+            if (child is FrameworkElement { Name: "LibraryRow" } row)
+            {
+                return row;
+            }
+
+            if (FindLibraryRow(child) is { } found)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+```
+
+**Where to look.**
+`CodeBrixVideoTool/src/CodeBrixVideoTool.Core/Smoke/ISmokeSurface.cs` and
+`src/CodeBrixVideoTool.Core/Smoke/SmokeRun.cs`
+`CodeBrixVideoTool/src/CodeBrixVideoTool.UI/Views/MainPage.xaml.cs`
+
+**Sharp edges.**
+- Keep the interface to what only the screen can answer. Anything the view model
+  already knows belongs in the run, or the interface grows into a second, worse
+  copy of the view model.
+- Implement the members explicitly, so the page's own surface does not widen and
+  nothing else in the page starts calling them.
+- Counters that have to agree with one another come back as one record read in one
+  go; three separate properties are three separate moments, and a frame arriving
+  between them turns a true check into a flaky one.
+- The starter is an `async void` event handler, so wrap the whole call: the run
+  reports its own failures, and the wrapper is there for the ones it cannot.
+- A row's opacity is only readable once the list has built a container for it. Ask
+  for the layout pass first, and treat a missing container as unreadable rather
+  than as a failure.
+
+### Prove a registration extension registers what it promises
+
+**When you want this.** A library hands the application one `AddXxx` method and
+the application calls it in one line at startup. That line is the whole contract
+between them, and nothing else in a test suite touches it.
+
+**The MVVM shape.** Not a view-model concern. The test fixture builds its
+container by calling the library's own registration method, exactly as the
+application's startup does, and the test class resolves through the fixture and
+asserts both what came back and how long it lives. The fixture itself is
+[Test a service the way the container builds it](BLUEPRINTS-Testing.md#test-a-service-the-way-the-container-builds-it);
+what is added here is pointing it at
+[Register library services with one AddXxx extension method](BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method)
+rather than at registrations written for the test.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/WikipediaPublisher/Tests/WikipediaPublisher.RenderArticle.Tests/RenderArticleTestingFixture.cs
+/// <summary>
+/// Builds the container the application builds, by calling the pipeline library's own
+/// AddRenderArticle() registration method, so a test can resolve IArticleRenderService the
+/// same way the view model does instead of constructing the implementation itself.
+/// </summary>
+public class RenderArticleTestingFixture : SimpleTestFixture
+{
+    protected override void RegisterCustomServices(
+        IServiceCollection services,
+        IHostEnvironment environment,
+        IConfiguration config,
+        Func<IServiceProvider> serviceResolver)
+    {
+        //The application registers the pipeline exactly this way, inside the
+        //  SimpleServiceResolver.CreateInstance() callback in its App constructor
+        services.AddRenderArticle();
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/WikipediaPublisher/Tests/WikipediaPublisher.RenderArticle.Tests/RegisterServicesTests.cs
+public class RegisterServicesTests : IClassFixture<RenderArticleTestingFixture>
+// ...
+[Fact]
+public void AddRenderArticle_registers_the_article_render_service()
+{
+    //Arrange - the fixture built its container by calling AddRenderArticle()
+
+    //Act
+    var service = _fixture.GetService<IArticleRenderService>();
+
+    //Assert
+    service.Should().NotBeNull();
+    service.Should().BeOfType<ArticleRenderService>();
+}
+
+[Fact]
+public void AddRenderArticle_registers_the_article_render_service_as_a_singleton()
+{
+    //Arrange - the registration is AddSingleton, so every caller gets one instance
+
+    //Act
+    var first = _fixture.GetService<IArticleRenderService>();
+    var second = _fixture.GetService<IArticleRenderService>();
+
+    //Assert
+    second.Should().BeSameAs(first);
+}
+```
+
+**Where to look.**
+`WikipediaPublisher/Tests/WikipediaPublisher.RenderArticle.Tests/RenderArticleTestingFixture.cs`
+`WikipediaPublisher/Tests/WikipediaPublisher.RenderArticle.Tests/RegisterServicesTests.cs`
+`WikipediaPublisher/WikipediaPublisher.RenderArticle/RegisterServices.cs`
+
+**Sharp edges.**
+- Call the library's own method from the fixture. A fixture that registers the
+  implementation itself proves the test's wiring and nothing about the
+  application's.
+- Assert the lifetime as well as the type: resolving twice and comparing identity
+  is the only thing that pins a singleton registration, and a registration quietly
+  changed to transient breaks every caller that assumed one instance.
+- Assert the concrete type too, even though nothing else in the application names
+  it. That is what catches a registration re-pointed at a different implementation.
+- Two small tests per registration method is the whole cost, and the fixture they
+  share is the one every other test class in the project already takes.
+
+### Drive a running application from an environment variable and report to the log
+
+**When you want this.** Something only goes wrong in the running application - a
+layout that is only wrong on screen, a flow that no test host can reach - and you
+want to drive it and see the answer without a mouse, without a second application
+and without a new build for every new question. This differs from
+[Drive a scripted end-to-end run of the whole application](BLUEPRINTS-Testing.md#drive-a-scripted-end-to-end-run-of-the-whole-application)
+and
+[Check audible-only behavior with an opt-in unattended walkthrough](BLUEPRINTS-Testing.md#check-audible-only-behavior-with-an-opt-in-unattended-walkthrough),
+both of which run a fixed sequence: this hook evaluates whatever the variable
+holds.
+
+**The MVVM shape.** Not a view-model concern. The runtime that owns the guest
+program reads the variables once it is up, posts the work onto the thread that
+owns the interpreter, and reports through the same diagnostic sink every startup
+failure already uses. Nothing about the application changes when the variables are
+not set.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
+private void RunHostedDiagnostics()
+{
+    // A diagnostic: when DRAKONBRIX_PROBE is set, open a diagram's first icon
+    // and its edit-text dialog from Tcl (no mouse) and report the resulting
+    // geometry chain, so live-only layout issues surface in the log.
+    if (Environment.GetEnvironmentVariable("DRAKONBRIX_PROBE") == "1")
+    {
+        _bridge.Post(pollInterp =>
+        {
+            Result probe = null;
+            pollInterp.EvaluateScript(
+                "after 1500 {\n" +
+                "  catch { mwc::change_text 4 } cerr\n" +
+                "  __brixreport \"open=$cerr\"\n" +
+                // ... then read the dialog's geometry chain back through __brixreport ...
+                "}", ref probe);
+        });
+    }
+
+    // A generic diagnostic: when DRAKONBRIX_EVAL is set, its content is
+    // evaluated as a Tcl script once the editor is up, and the completion
+    // ...
+    string evalScript = Environment.GetEnvironmentVariable("DRAKONBRIX_EVAL");
+    if (!String.IsNullOrEmpty(evalScript))
+    {
+        _bridge.Post(evalInterp =>
+        {
+            Result evalResult = null;
+            ReturnCode evalCode = evalInterp.EvaluateScript(evalScript, ref evalResult);
+            Report("eval(" + evalCode + "): " + evalResult);
+        });
+    }
+}
+```
+
+Everything the hook has to say goes through one sink, which writes a prefixed line
+to the console and raises an event for anything hosting the runtime:
+
+```csharp
+// From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
+/// <summary>Raised with diagnostic text (startup failures, bgerror).</summary>
+public event Action<string> Diagnostic;
+// ...
+private void Report(string message)
+{
+    Console.WriteLine("DRAKONBRIX: " + message);
+    Action<string> handler = Diagnostic;
+    if (handler != null) { handler(message); }
+}
+```
+
+The guest program reports through the same sink because the application adds a
+one-command shim for it, which is
+[Add your own commands to an embedded interpreter](BLUEPRINTS-PlatformServices.md#add-your-own-commands-to-an-embedded-interpreter).
+
+**Where to look.**
+`DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs` (`RunHostedDiagnostics`
+and `Report`, called from the hosted start once the boot sequence has returned)
+`DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/Commands/DiagnosticReportCommand.cs`
+
+**Sharp edges.**
+- Post the work onto the thread that owns the object being driven. A hook that
+  evaluates on the caller's thread is a crash in a component that was documented
+  as single-threaded.
+- Report the completion code as well as the result. A script that failed and a
+  script that returned nothing print the same empty string otherwise.
+- Report through a sink of your own rather than the guest's output. An embedded
+  interpreter's own print command usually is not wired to the process console, so
+  its output goes nowhere.
+- A hook into a live application needs a delay before it acts, because the thing it
+  drives is built by the startup sequence that is still finishing.
+- Read the variables once, at one place in the startup, and do nothing at all when
+  they are unset. That is what makes a hook like this safe to leave in the shipped
+  application.

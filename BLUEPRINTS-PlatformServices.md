@@ -3,13 +3,17 @@
 These recipes cover the seam between a view model and the capabilities only a
 hosting page or a head can provide: dialogs that need a XamlRoot, native file
 open and save pickers, the clipboard, canvas repaints, a repeating timer,
-the mouse cursor, an embedded browser and an audio transport. The shape
-is nearly always the same one - the view model declares a small interface
-holding a delegate, implements it, and the page fills the delegate in when
-the data context arrives - so one piece of shared code runs both on a head
-that supplies the capability and on a head that does not. Several recipes also
+the mouse cursor, an embedded browser, an audio transport and the signal that
+says the page is finally on screen. The shape is nearly always the same one -
+the view model declares a small interface holding a delegate, implements it,
+and the page fills the delegate in when the data context arrives - so one piece
+of shared code runs both on a head that supplies the capability and on a head
+that does not. The same interfaces carry work in the other direction too: a page
+that forwards its paint call, or reads a fact back, through the contract it
+already implements never has to name the view model's type. Several recipes also
 cover what to do with what comes back, such as normalizing the path a picker
-returns or keeping a single replace-file confirmation instead of two. Reach
+returns, deciding which side of the seam a picker's policy belongs on, or keeping
+a single replace-file confirmation instead of two. Reach
 for this file when a command needs something the view model cannot do for
 itself, when the same feature has to work across several UI stacks, or when
 a head with no windowing system must still start and explain what it cannot do.
@@ -42,6 +46,12 @@ conventions the code blocks follow.
 - [Release an exclusive device handle from both the page unload and the window close](#release-an-exclusive-device-handle-from-both-the-page-unload-and-the-window-close)
 - [Marshal a save dialog onto the UI thread from a command handler](#marshal-a-save-dialog-onto-the-ui-thread-from-a-command-handler)
 - [Offer a typed path where a head has no folder dialog](#offer-a-typed-path-where-a-head-has-no-folder-dialog)
+- [Assign every bridge through the interface that declares it](#assign-every-bridge-through-the-interface-that-declares-it)
+- [Signal the view model when the page is on screen](#signal-the-view-model-when-the-page-is-on-screen)
+- [Keep picker plumbing in the page and picker policy in the view model](#keep-picker-plumbing-in-the-page-and-picker-policy-in-the-view-model)
+- [Build a head's native picker behind a registered service](#build-a-heads-native-picker-behind-a-registered-service)
+- [Call the page's bridge from the setter that changed](#call-the-pages-bridge-from-the-setter-that-changed)
+- [Send the paint call back to the view model through the canvas bridge](#send-the-paint-call-back-to-the-view-model-through-the-canvas-bridge)
 
 ## Related blueprints
 
@@ -153,7 +163,11 @@ the page fills in, and implements it itself. The command supplies a suggested fi
 name, treats a null or blank result as a cancel, and handles two separate "no
 dialog" signals: a null delegate (the head never wired one) and a
 `NotSupportedException` (the head wired one but the platform refuses). The page
-implements the picker in a few lines inside its `DataContextChanged` handler.
+implements the picker in a few lines inside its `DataContextChanged` handler, and
+hands back a normalized path and nothing else: what that path then means to the
+application is the view model's business, which is why the empty-placeholder rule
+below sits in the command rather than in the page (see
+[Keep picker plumbing in the page and picker policy in the view model](BLUEPRINTS-PlatformServices.md#keep-picker-plumbing-in-the-page-and-picker-policy-in-the-view-model)).
 
 **Code.**
 
@@ -197,7 +211,15 @@ private async Task DoSelectOutputFile()
         var chosenPath = await PickSavePdfPathAsync(GetSuggestedFileName());
         if (!string.IsNullOrWhiteSpace(chosenPath))
         {
-            OutputFilePath = chosenPath.Trim();
+            var destination = chosenPath.Trim();
+
+            //Deciding that a brand-new, still-empty file the picker created is a destination
+            //  rather than a document is this application's policy, so it lives here and not
+            //  in the page: the create-time "replace existing file?" prompt should fire only
+            //  for a file that really has content in it.
+            FileDialogHelper.RemoveEmptyPlaceholder(destination);
+
+            OutputFilePath = destination;
             StatusText = $"Will save to: {OutputFilePath}";
         }
     }
@@ -252,11 +274,9 @@ private static async Task<string> PickSavePdfPathAsync(string suggestedFileName)
     if (file == null) { return null; }
 
     //Some heads percent-encode the path they return, which would save "My Book.pdf" as
-    //  "My%20Book.pdf"; decode it before anything touches the disk.
-    var path = FileDialogHelper.ToFileSystemPath(file.Path);
-
-    FileDialogHelper.RemoveEmptyPlaceholder(path);
-    return path;
+    //  "My%20Book.pdf"; decode it before anything touches the disk. That is the only thing
+    //  done to it here: what the chosen path then means is the view model's business.
+    return FileDialogHelper.ToFileSystemPath(file.Path);
 }
 ```
 
@@ -466,65 +486,78 @@ private static async Task<string> PickMediaFileAsync()
 }
 ```
 
-**Adapted: put the picker behind an interface rather than calling it inline.**
-PdfSideBySide calls the picker directly from its view model; the shape to prefer
-keeps the picker configuration verbatim but moves the call behind a bridge, so a
-head with no picker is a case the view model handles rather than an exception it
-catches:
+**A second application, the same shape.** PdfSideBySide declares its bridge in the
+Core library beside the other service contracts, and the command asks for a file
+only when a head has supplied one. A head that cannot show a dialog is a case the
+view model answers, not an exception it catches:
 
 ```csharp
-// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs
-    private static async Task<string> PickPdfPathAsync()
-    {
-        var picker = new FileOpenPicker
-        {
-            SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
-        };
-        picker.FileTypeFilter.Add(".pdf");
-
-        var file = await picker.PickSingleFileAsync();
-        return file?.Path;
-    }
+// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.Core/Services/IPdfFileBridge.cs
+/// <summary>
+/// The one thing the main view model cannot do for itself: ask a person which PDF to open. Only a
+/// head knows how to show a file dialog, so the page fills this in when it takes the view model as
+/// its data context.
+/// </summary>
+public interface IPdfFileBridge
+{
+    /// <summary>
+    /// Shows an "open file" dialog filtered to PDF documents and returns the full path the person
+    /// chose, or <c>null</c> when they cancelled. A head with no file dialog leaves this null, and
+    /// the view model says so instead of browsing.
+    /// </summary>
+    Func<Task<string>> PickPdfPathAsync { get; set; }
+}
 ```
 
 ```csharp
-// Adapted from CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs
-// The picker call is moved behind an interface the page implements, so a head that cannot
-// show one is a case the view model handles instead of an exception it catches.
-public interface IPdfFileBridge
-{
-    Task<string> PickPdfPathAsync();
-}
-
-// In the view model:
-private IPdfFileBridge _fileBridge;
-
-public void SetFileBridge(IPdfFileBridge bridge) => _fileBridge = bridge;
-
+// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs
 private async Task BrowseAsync(DocumentSide side)
 {
     if (IsBusy) { return; }
-    if (_fileBridge == null)
+    if (PickPdfPathAsync == null)
     {
-        await ShowError("This head cannot browse for files; pass the two PDF paths on the command line.");
+        //This head has no file dialog, so the command line is the only way in
+        await ShowInfo("This head cannot browse for files. Start it with the two PDF file " +
+            "paths on the command line instead.");
         return;
     }
 
     IsBusy = true;
     try
     {
-        var path = await _fileBridge.PickPdfPathAsync();
+        var path = await PickPdfPathAsync();
         if (path == null) { return; }
-        // ... unchanged from the sample
+
+        var document = await _comparison.OpenAsync(side, path);
+        // ...
     }
-    finally { IsBusy = false; }
+    // ...
 }
+```
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs
+DataContextChanged += (_, _) =>
+{
+    //Give the view model's SimpleDialog helpers a XamlRoot to attach dialogs to
+    (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
+
+    //Give the view model the file dialog only a head can show
+    if (DataContext is IPdfFileBridge fileBridge)
+    {
+        fileBridge.PickPdfPathAsync = PickPdfPathAsync;
+    }
+
+    WireViewModel();
+};
 ```
 
 **Where to look.**
 `CodeBrixVideoTool/src/CodeBrixVideoTool.Core/Services/IMediaFileBridge.cs`
 `CodeBrixVideoTool/src/CodeBrixVideoTool.UI/Views/MainPage.xaml.cs`
+`PdfSideBySide/src/PdfSideBySide.Core/Services/IPdfFileBridge.cs` and
 `PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs`
+`PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs`
 `PdfSideBySide/src/PdfSideBySide.LinuxFrameBuffer/Program.cs`
 
 **Sharp edges.**
@@ -601,8 +634,8 @@ private static bool HasPercentEscape(string text)
 // From CodeBrix.Samples/PainDiagram/Shared/Helpers/FileDialogHelper.cs
 /// <summary>
 /// The WinRT <c>FileSavePicker</c> (Skia heads and native WinUI) creates an empty
-/// placeholder file at the chosen path for a brand-new name. Remove it - but only when it
-/// is genuinely empty - so a chosen path behaves like a pure destination and the app's own
+/// placeholder file at the chosen path for a brand-new name. Remove it — but only when it
+/// is genuinely empty — so a chosen path behaves like a pure destination and the app's own
 /// "replace existing file?" prompt fires only for a real, non-empty file. A file that has
 /// content is never deleted, so no user data is lost before the save-time confirmation.
 /// </summary>
@@ -628,7 +661,8 @@ public static void RemoveEmptyPlaceholder(string path)
 
 **Where to look.**
 `NotionDocumentCreator/src/NotionDocumentCreator.Core/Helpers/FileDialogHelper.cs`
-`PainDiagram/Shared/Helpers/FileDialogHelper.cs`
+`PainDiagram/Shared/Helpers/FileDialogHelper.cs` and
+`PainDiagram/CodeBrixPlatform/PainDiagram.UI/Services/WinRtFileSavePicker.cs`
 
 **Also shown by.**
 `PolyHavenBrowser/src/PolyHavenBrowser.Core/Helpers/FileDialogHelper.cs` (the
@@ -646,8 +680,12 @@ library and the WinUI head only - the WPF head does not link it, because a WPF
   lost before the application's own overwrite confirmation.
 - Failure to delete is deliberately swallowed: the worst case is one extra
   confirmation prompt, never lost data.
-- Call both helpers in the page, before the path reaches the view model, so the
-  view model only ever sees real paths.
+- The two helpers belong at different depths. Decoding is plumbing: the page (or
+  the picker service it resolves) does it, so the view model only ever sees real
+  paths. Removing the placeholder is a decision about what a chosen path means,
+  so applications whose command owns that question call it from the view model -
+  see
+  [Keep picker plumbing in the page and picker policy in the view model](BLUEPRINTS-PlatformServices.md#keep-picker-plumbing-in-the-page-and-picker-policy-in-the-view-model).
 
 ### Suppress a native save dialog overwrite prompt so the view model owns confirmation
 
@@ -766,16 +804,24 @@ on, which is also the graceful-degradation path when no page has wired one.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.Core/Bridges/ICanvasBridge.cs
 /// <summary>
-/// Lets the hosting page hand the view model the invalidate (repaint) delegates for the two
-/// Skia canvases. Frames and tracking results arrive on capture/worker threads; the page's
-/// delegates are responsible for marshalling their invalidates onto the UI thread.
+/// The main and self-view canvas contract between the hosting page and the view model, in
+/// both directions. The page hands the view model the invalidate (repaint) delegates for the
+/// two Skia canvases; frames and tracking results arrive on capture/worker threads, so the
+/// page's delegates are responsible for marshalling their invalidates onto the UI thread.
+/// The other direction is <see cref="RenderMainCanvas"/>: the page's paint handler forwards
+/// the surface, so what the main canvas shows stays the view model's decision.
 /// </summary>
 public interface ICanvasBridge
 {
+    /// <summary>Invalidates the main canvas (live preview in Capture Mode; the painting in Paint Mode).</summary>
     Action InvalidateMainCanvas { get; set; }
+
+    /// <summary>Invalidates the small self-view canvas shown beside the painting in Paint Mode.</summary>
     Action InvalidateSelfView { get; set; }
+
+    // ... RenderMainCanvas, the return leg, has its own recipe
 }
 ```
 
@@ -799,8 +845,16 @@ DataContextChanged += (_, _) =>
     }
 };
 
+//Nothing else owns the view model - the XAML declares it - so the page is what runs its
+//  teardown: the camera stopped, the tracking thread joined, the bridge delegates dropped
+Unloaded += (_, _) => (DataContext as IDisposable)?.Dispose();
+
 InitializeComponent();
 ```
+
+The bridge interfaces live in a `Bridges/` folder of the Core library rather than
+in the view model's own file, which is what lets a second view model - or a test -
+satisfy the same contract.
 
 Where a library raises its own "I changed, repaint me" event, the view model
 subscribes once and forwards, with no timer and no per-frame polling anywhere:
@@ -837,7 +891,7 @@ private void InvalidateDrawCanvas()
 ```
 
 **Where to look.**
-`WebcamPainter/src/WebcamPainter.Core/ViewModels/MainViewModel.cs` and
+`WebcamPainter/src/WebcamPainter.Core/Bridges/ICanvasBridge.cs` and
 `WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml.cs`
 `PainDiagram/Shared/ViewModels/MainViewModel.cs` and
 `PainDiagram/PainDiagram.Wpf/Views/MainWindow.xaml.cs`
@@ -880,7 +934,7 @@ public interface ICopyToClipboard { Action<string> CopyTextToClipboard { get; se
 
 // ...
 
-public class MainViewModel : SimpleViewModel, ICopyToClipboard
+public class MainViewModel : SimpleViewModel, ICopyToClipboard, IPageReadyNotifier
 {
     // ...
     private async Task DoCopyToClipboard()
@@ -931,6 +985,10 @@ public MainPage()
             };
         }
     };
+
+    //The view model waits for this before it shows its startup dialog: a dialog needs a XamlRoot,
+    //  and the page does not have one until it is on screen.
+    Loaded += (sender, args) => (DataContext as IPageReadyNotifier)?.NotifyPageReady();
 
     InitializeComponent();
 }
@@ -984,6 +1042,9 @@ BindingContextChanged += (sender, args) =>
   Nothing throws.
 - Three implementations use three different clipboard APIs, which is why the
   bridge is a delegate rather than a method the view model could call directly.
+- One page satisfies as many of these contracts as it has work for. This one also
+  implements the page-ready signal in the same constructor; see
+  [Signal the view model when the page is on screen](BLUEPRINTS-PlatformServices.md#signal-the-view-model-when-the-page-is-on-screen).
 
 ### Open a URL in the default browser from a view model
 
@@ -1355,7 +1416,10 @@ own close button is a way out.
 
 **The MVVM shape.** The window's `Closed` event is the platform seam. The handler
 vetoes the close, runs the async save-prompt loop, and re-issues the close when
-the answer comes back.
+the answer comes back. `App` owns the window and the page owns the prompt loop,
+and neither may hold a reference to the other, so a registered service holds the
+loop: the page hands it to the view model through a bridge, the view model
+installs it on the service, and the window-close handler resolves the service.
 
 **Code.**
 
@@ -1365,7 +1429,8 @@ the answer comes back.
 //event: setting Handled vetoes the close, and the X11 head reports
 //SupportsClosingCancellation. The save-prompt loop is async, so when
 //dirty documents exist the close is vetoed first and re-issued once
-//the user has decided.
+//the user has decided. Mirrors upstream's exit-path prompt loop; it
+//is triggered by window close because there is no File > Quit here.
 MainWindow.Closed += async (_, e) =>
 {
     if (windowCloseConfirmed) { return; }
@@ -1376,7 +1441,12 @@ MainWindow.Closed += async (_, e) =>
 
     try
     {
-        if (Views.MainPage.Current is { } page && await page.ConfirmCloseApplicationAsync())
+        //The shell installs its save-prompt loop on this service, so the
+        //window close reaches it without knowing which page is showing.
+        IShellCloseService closeService =
+            SimpleServiceResolver.Instance?.GetService<IShellCloseService>();
+
+        if (closeService is not null && await closeService.ConfirmCloseAsync())
         {
             windowCloseConfirmed = true;
             MainWindow.Close();
@@ -1390,8 +1460,46 @@ MainWindow.Closed += async (_, e) =>
 };
 ```
 
+The service is the whole of its own registration, and holds nothing but the
+delegate, so it is safe to resolve before any window or page exists:
+
+```csharp
+// From CodeBrix.Samples/Pinta.Brix/src/Pinta.Brix.Core/Services/ShellCloseService.cs
+public sealed class ShellCloseService : IShellCloseService
+{
+    /// <inheritdoc />
+    public Func<Task<bool>> ConfirmCloseApplicationAsync { get; set; }
+
+    /// <inheritdoc />
+    public async Task<bool> ConfirmCloseAsync()
+    {
+        //Read once: the shell can replace the loop while a close is in flight.
+        Func<Task<bool>> prompt = ConfirmCloseApplicationAsync;
+
+        if (prompt == null) { return true; }
+
+        return await prompt();
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/Pinta.Brix/src/Pinta.Brix.Core/ViewModels/MainViewModel.cs
+//App's window-close handler resolves this service and asks it whether
+//the close may proceed; the page installs the prompt loop on the
+//bridge below, and this is what forwards it.
+IShellCloseService closeService = GetService<IShellCloseService>();
+if (closeService != null)
+{
+    closeService.ConfirmCloseApplicationAsync = ConfirmCloseAsync;
+}
+```
+
 **Where to look.**
 `Pinta.Brix/src/Pinta.Brix.UI/App.xaml.cs`
+`Pinta.Brix/src/Pinta.Brix.Core/Services/IShellCloseService.cs` and
+`ShellCloseService.cs`
+`Pinta.Brix/src/Pinta.Brix.Core/Bridges/IShellCloseBridge.cs`
 `Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.Dialogs.cs`
 
 **Sharp edges.**
@@ -1403,6 +1511,12 @@ MainWindow.Closed += async (_, e) =>
   losing the user's work.
 - Not every head has window chrome. An application whose only exit is the window
   button has no exit path at all on the framebuffer head.
+- Reaching the page from `App` through a static `Current` property is the shortcut
+  to avoid: it pins one page instance for the life of the process and makes the
+  close path untestable. A registered service that holds only a delegate costs one
+  registration line and inverts the dependency.
+- Read the delegate into a local before awaiting it. The shell can replace or drop
+  its prompt loop while a close is in flight.
 
 ### Tell the user when graphics initialization failed
 
@@ -1436,8 +1550,11 @@ public async Task ShowRenderingUnavailableAsync(GLInitializationState state)
     var osInfo = await SimpleOsInfo.GatherInfo(withConsoleOutput: false);
     if (osInfo.IsWindows)
     {
-        message += "On Windows, you may be able to fix this by installing the free Microsoft " +
-            "\"OpenCL and OpenGL Compatibility Pack\"...\n\n";
+        message +=
+            "On Windows, you may be able to fix this by installing the free Microsoft " +
+            "\"OpenCL and OpenGL Compatibility Pack\". Download and install it from:\n" +
+            "https://apps.microsoft.com/detail/9NQPSL29BFFF\n\n" +
+            "After installing it, restart this app.\n\n";
     }
 
     message += $"Details:\nStatus: {state.Status}\n{state.FailedReason ?? "(none reported)"}";
@@ -1449,6 +1566,12 @@ public async Task ShowRenderingUnavailableAsync(GLInitializationState state)
 
 ```csharp
 // From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs
+//The user just opened the Model View: if the GL canvas already knows its
+//OpenGL initialization failed, tell them why the preview pane is empty.
+modelViewBridge.ModelViewOpened = () => _ = MaybeReportRenderingUnavailableAsync();
+
+// ...
+
 //The canvas may only attempt its OpenGL initialization when it loads into the visual
 //tree, which can happen after IsModelViewActive is set - so check at both moments.
 ModelCanvas.Loaded += (_, _) => _ = MaybeReportRenderingUnavailableAsync();
@@ -1482,7 +1605,9 @@ private async Task MaybeReportRenderingUnavailableAsync()
 **Sharp edges.**
 - Check at two moments - the canvas's `Loaded` and the view's activation - because
   a collapsed canvas may not attempt initialization until it enters the visual
-  tree.
+  tree. The activation half arrives through a bridge the view model invokes from
+  the setter that switched views, not through a `PropertyChanged` name check; see
+  [Call the page's bridge from the setter that changed](BLUEPRINTS-PlatformServices.md#call-the-pages-bridge-from-the-setter-that-changed).
 - A page-level flag reports the failure once per run; without it the dialog
   reappears on every item the user opens.
 - Decide the operating-system-specific hint with `SimpleOsInfo` rather than
@@ -1494,10 +1619,13 @@ private async Task MaybeReportRenderingUnavailableAsync()
 navigates freely, and a command that sends it somewhere.
 
 **The MVVM shape.** The view model declares a bridge with an `Action<string>` the
-page sets, plus a method the page calls whenever the browser lands on a new URL.
-The command builds the URL and marshals the navigation onto the UI thread; the
-page does nothing but forward. The view model checks the delegate for null before
-using it and never names a WebView type.
+page sets, a method the page calls once its browser exists, and a method the page
+calls whenever the browser lands on a new URL. The command builds the URL and one
+private helper marshals every navigation onto the UI thread; the page does nothing
+but forward. Where the browser opens first is the view model's decision too, which
+is what the ready signal is for - the page never sets a start page of its own. The
+view model checks the delegate for null before using it and never names a WebView
+type.
 
 **Code.**
 
@@ -1507,6 +1635,12 @@ public interface IWebViewBridge
 {
     /// <summary>Navigates the embedded browser to the given URL (null when no WebView).</summary>
     Action<string> NavigateToUrl { get; set; }
+
+    /// <summary>
+    /// Called by the page once its embedded browser exists and <see cref="NavigateToUrl"/> has
+    /// been set, so the view model decides which page the browser opens on.
+    /// </summary>
+    void NotifyBrowserReady();
 
     /// <summary>Called by the page whenever the embedded browser lands on a new URL.</summary>
     void SetCurrentBrowserUrl(string url);
@@ -1523,11 +1657,26 @@ private Task DoSearch()
     {
         var searchUrl =
             $"https://{WikiHost}/w/index.php?search={Uri.EscapeDataString(SearchTerms.Trim())}";
-        InvokeOnMainThread(() => NavigateToUrl(searchUrl));
+        Navigate(searchUrl);
         StatusText = "Browse to the article you want, then click Publish.";
     }
 
     return Task.CompletedTask;
+}
+
+private void Navigate(string url)
+{
+    if (NavigateToUrl != null && (!string.IsNullOrWhiteSpace(url)))
+    {
+        InvokeOnMainThread(() => NavigateToUrl(url));
+    }
+}
+
+public void NotifyBrowserReady()
+{
+    //The view model, not the page, decides where the browser starts, so every head opens
+    //  on the same page and all navigation flows one way.
+    Navigate(HomeUrl);
 }
 
 public void SetCurrentBrowserUrl(string url)
@@ -1548,15 +1697,17 @@ public void SetCurrentBrowserUrl(string url)
 // From CodeBrix.Samples/WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml.cs
 private void InitializeBrowser()
 {
-    if (_browserInitialized || DataContext is not MainViewModel viewModel) { return; }
+    //Reached through the bridge interface, not the concrete view model type: the page needs
+    //  nothing from the view model beyond the three members the browser contract names.
+    if (_browserInitialized || DataContext is not IWebViewBridge browser) { return; }
     _browserInitialized = true;
 
     //Use CoreWebView2.Source (the authoritative current URL after redirects / user
     //  navigation); the XAML Browser.Source property does not reliably reflect those.
     Browser.NavigationCompleted += (_, _) =>
-        viewModel.SetCurrentBrowserUrl(Browser.CoreWebView2?.Source ?? Browser.Source?.AbsoluteUri);
+        browser.SetCurrentBrowserUrl(Browser.CoreWebView2?.Source ?? Browser.Source?.AbsoluteUri);
 
-    viewModel.NavigateToUrl = url =>
+    browser.NavigateToUrl = url =>
     {
         if (!string.IsNullOrWhiteSpace(url))
         {
@@ -1564,15 +1715,18 @@ private void InitializeBrowser()
         }
     };
 
-    Browser.Source = new Uri(MainViewModel.HomeUrl);
+    //The view model owns the start page too, so every navigation flows the same way.
+    browser.NotifyBrowserReady();
 }
 ```
 
+Every Skia head has a `WebView2` control to host: the Windows, Skia-on-WPF and
+macOS runtimes have one built in, and the Linux heads get one from the
+CodeBrix.Platform WebView add-in. The page's XAML declares it and nothing else:
+
 ```xml
 <!-- From CodeBrix.Samples/WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml -->
-<!-- Center: embedded browser. Every Skia head now has a WebView2 - the Windows,
-     Skia-on-WPF and macOS runtimes have it built in, and the Linux heads get it
-     from the CodeBrix.Platform.WebView add-in (WPE WebKit). -->
+<!-- ... -->
 <WebView2 Grid.Row="1" x:Name="Browser" />
 ```
 
@@ -1606,6 +1760,9 @@ WebView control satisfying the same interface)
   property does not reliably reflect redirects or user navigation.
 - The Skia head wires the browser in a `Loaded` handler behind a guard flag,
   because `Loaded` can fire more than once.
+- Wire the delegate before raising the ready signal. The view model answers the
+  signal by navigating, and a navigation with no delegate in place is silently
+  lost.
 - The system WPE WebKit engine is a run-time dependency, not a build one: the
   build succeeds on a machine that cannot run the WebView.
 - Referencing the add-in once, in the shared library, is deliberate. It is inert
@@ -1620,18 +1777,17 @@ short. Without this, a clip that has run to its end does nothing when Play is
 pressed again.
 
 **The MVVM shape.** The page's bridge implementation is the natural home for the
-element's own transport quirk, but the policy - Play means replay when the clip
+element's own transport calls, but the policy - Play means replay when the clip
 has finished, resume when the user has scrubbed - is application behavior and
-belongs on the view model, with the bridge exposing read-only transport facts and
-a seek. The block below is adapted to that shape; the sample keeps the same logic
-in the page.
+belongs on the view model. So the bridge carries the transport facts back as
+read-only delegates, plus a seek, and the whole decision is one method on the view
+model. The page's only part in it is one line that forwards the player's
+playback-ended event.
 
 **Code.**
 
 ```csharp
-// Adapted from CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs
-// The sample implements this in the page; the logic is unchanged, but here the state and
-// the decision live on the view model, and the bridge grows read-only transport facts.
+// From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/IAudioPlayerBridge.cs
 public interface IAudioPlayerBridge
 {
     // ... LoadAudioSource, PlayAudio, PauseAudio, StopAudio, SetAudioLooping ...
@@ -1639,27 +1795,45 @@ public interface IAudioPlayerBridge
     /// <summary>Whether the player is currently advancing.</summary>
     Func<bool> IsAudioPlaying { get; set; }
 
-    /// <summary>The player's position and the clip's duration.</summary>
+    /// <summary>The player's position within the clip.</summary>
     Func<TimeSpan> AudioPosition { get; set; }
+
+    /// <summary>The loaded clip's duration.</summary>
     Func<TimeSpan> AudioDuration { get; set; }
 
-    /// <summary>Moves the player to a position.</summary>
+    /// <summary>Moves the player to a position within the clip.</summary>
     Action<TimeSpan> SeekAudio { get; set; }
 }
+```
 
-//How close to the duration still counts as "parked at the end". The player refreshes its
-//position on an interval, so the last value it reports before ending can sit just short
-//of the duration.
-private static readonly TimeSpan AudioEndTolerance = TimeSpan.FromMilliseconds(250);
+```csharp
+// From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/MainViewModel.cs
+//Whether the current clip has run to its end. A finished clip leaves the transport parked
+//at the end, where Play() has nothing left to play, so the next Play rewinds first.
 private bool _audioPlaybackEnded;
 
-public SimpleCommand PlayAudioCommand => field ??= new SimpleCommand(() =>
+//How close to the duration still counts as "parked at the end". The player refreshes its
+//position on an interval (150 ms by default), so the last value it reports before ending
+//can sit just short of the duration.
+private static readonly TimeSpan AudioEndTolerance = TimeSpan.FromMilliseconds(250);
+
+// ...
+
+/// <summary>Starts (or resumes) audio playback; a clip parked at its end replays instead.</summary>
+public SimpleCommand PlayAudioCommand => field ??= new SimpleCommand(CanUseAudioTransport, DoPlayAudio);
+
+// ...
+
+//Starts (or resumes) the audio clip. A clip that has played through to its end leaves the
+//transport parked at the end, where Play() alone has nothing left to play - so rewind first
+//and let one click replay the clip. Two things deliberately do NOT rewind: a player that is
+//still going (a looping clip reports playback ended on every pass), and a clip the user has
+//scrubbed away from the end since it finished - there, the thumb is the intent, so resume
+//from where they left it.
+private void DoPlayAudio()
 {
-    //A clip that has played through to its end leaves the transport parked at the end,
-    //where Play alone has nothing left to play - so rewind first and let one click replay
-    //the clip. Two things deliberately do NOT rewind: a player that is still going (a
-    //looping clip raises PlaybackEnded on every pass), and a clip the user has scrubbed
-    //away from the end since it finished - there, the thumb is the intent.
+    if (!CanUseAudioTransport()) { return; }
+
     if (_audioPlaybackEnded
         && IsAudioPlaying?.Invoke() == false
         && AudioDuration?.Invoke() > TimeSpan.Zero
@@ -1670,19 +1844,35 @@ public SimpleCommand PlayAudioCommand => field ??= new SimpleCommand(() =>
 
     _audioPlaybackEnded = false;
     PlayAudio?.Invoke();
-});
+}
+
+// ...
+
+public void NotifyAudioPlaybackEnded() => _audioPlaybackEnded = true;
 ```
 
 ```csharp
-// Adapted from CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs
+//Audio bridge: the view model hands over the clip's raw stream and transport
+//calls; the AudioPlayer element does the decoding and playing (it takes
+//stream ownership). The last four members are the transport facts the view
+//model's replay policy reads back, plus the seek it uses to rewind.
+// ...
+audioBridge.IsAudioPlaying = () => AudioElement?.IsPlaying ?? false;
+audioBridge.AudioPosition = () => AudioElement?.Position ?? TimeSpan.Zero;
+audioBridge.AudioDuration = () => AudioElement?.Duration ?? TimeSpan.Zero;
+audioBridge.SeekAudio = position => AudioElement?.Seek(position);
+
+// ... after InitializeComponent():
+
+//A clip that plays through to its end parks the transport at the end; the view model
+//remembers that so the next Play can rewind instead of doing nothing.
 AudioElement.PlaybackEnded += (_, _) => ViewModel?.NotifyAudioPlaybackEnded();
-viewModel.IsAudioPlaying = () => AudioElement?.IsPlaying ?? false;
-viewModel.AudioPosition = () => AudioElement?.Position ?? TimeSpan.Zero;
-viewModel.AudioDuration = () => AudioElement?.Duration ?? TimeSpan.Zero;
-viewModel.SeekAudio = position => AudioElement?.Seek(position);
 ```
 
 **Where to look.**
+`KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/IAudioPlayerBridge.cs`
+`KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/MainViewModel.cs`
 `KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs`
 
 **Sharp edges.**
@@ -1693,6 +1883,10 @@ viewModel.SeekAudio = position => AudioElement?.Seek(position);
   before the end can sit slightly short of the duration. A tolerance window is
   what makes the end-of-clip test reliable.
 - Loading a new source and stopping both clear the flag.
+- Facts the policy reads come back as `Func<T>` delegates rather than as bound
+  properties, because they are read at the moment of the decision and never
+  displayed. A transport fact that the UI does show - the scrubber position -
+  would be a bound property instead.
 
 ### Keep an embedded interpreter on its own thread and post every call to it
 
@@ -2168,11 +2362,16 @@ DataContextChanged += (_, _) =>
     //Give the view model's SimpleDialog helpers a XamlRoot to attach dialogs to
     (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
 
-    if (ViewModel != null)
+    if (DataContext is ICanvasBridge canvasBridge)
     {
         //Raised on the decoding thread: hop to the user-interface thread and mark the canvas dirty
-        ViewModel.InvalidateVideoCanvas = () => DispatcherQueue?.TryEnqueue(InvalidateVideoCanvas);
-        ViewModel.PickSaveCubePathAsync = PickSaveCubePathAsync;
+        canvasBridge.InvalidateVideoCanvas = () => DispatcherQueue?.TryEnqueue(InvalidateVideoCanvas);
+    }
+
+    if (DataContext is IFileSaveBridge fileSave)
+    {
+        //The bake's destination: this head has a picker, and a head without one wires nothing
+        fileSave.PickSaveCubePathAsync = PickSaveCubePathAsync;
     }
 };
 ```
@@ -2215,10 +2414,11 @@ if (string.IsNullOrWhiteSpace(cubeFilePath)) { return; }
   suggested file name lets the platform's dialog open where they last were.
 - A stamped suggested name stops two saves in a row from quietly proposing the
   same file.
-- This application hands the delegate over as a plain settable property, so the
-  page has to name the view model's type. Declaring it as a one-member bridge
-  interface the view model implements keeps the page ignorant of the view model,
-  and is what the rest of the repository does.
+- Two seams, two interfaces, one handler. The repaint delegate and the save dialog
+  are wired in the same `DataContextChanged` block but through separate `is`
+  tests, so a head that can supply one and not the other still gets what it can
+  give; see
+  [Assign every bridge through the interface that declares it](BLUEPRINTS-PlatformServices.md#assign-every-bridge-through-the-interface-that-declares-it).
 
 ### Offer a typed path where a head has no folder dialog
 
@@ -2331,3 +2531,562 @@ using System; //Required: the IAsyncOperation GetAwaiter extension (awaiting the
 - A head that can opt into a picker on its host builder is a third case again; see
   the framebuffer opt-in in the startup area.
 
+### Assign every bridge through the interface that declares it
+
+**When you want this.** A page has several delegates to fill in on its data
+context, and the quickest way to reach them all is one cast to the view model's
+type. That cast is a compile-time dependency on a class the page has no other
+reason to know, and it silently makes every capability all-or-nothing.
+
+**The MVVM shape.** Each capability is its own small interface that the view model
+implements. The page tests the data context once per contract with `is`, or
+narrows a single test into one interface-typed local per contract, and assigns
+through that. The page then names contracts and not classes, a head that can
+satisfy some of them and not others still gives what it can, and a test or a
+second view model can stand in because nothing is tied to a type.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/CodeBrixVideoTool/src/CodeBrixVideoTool.UI/Views/MainPage.xaml.cs
+private void WireViewModel()
+{
+    if (ViewModel is not { } viewModel)
+    {
+        return;
+    }
+
+    surface ??= new VideoPlayerSurface(Player);
+    viewModel.Playback.AttachSurface(surface);
+
+    //Each bridge is handed over through the interface that declares it rather than through the
+    //view model's own type, so what the page has to supply is the contract and nothing more.
+    if (DataContext is IMediaFileBridge mediaFile)
+    {
+        mediaFile.PickMediaFileAsync = PickMediaFileAsync;
+    }
+
+    if (viewModel.Conversion is IOutputPathBridge outputPath)
+    {
+        outputPath.PickOutputPathAsync = PickOutputPathAsync;
+    }
+}
+```
+
+A bridge need not be implemented by the top-level view model. The second one here
+belongs to the child view model that owns the conversion, and the page reaches it
+through the same kind of test. The page still holds a typed `ViewModel` property
+for the things a page legitimately needs its own view model for - here, attaching
+the player surface - and that is the point of the split: the type is used where a
+type is meant, and the contracts are used for everything a head supplies.
+
+The other form narrows one test into a local per contract, which reads better when
+a page fills in a lot of delegates at once:
+
+```csharp
+// From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs
+if (DataContext is MainViewModel viewModel)
+{
+    //Each bridge is filled in through the interface the view model implements
+    //rather than through the concrete type, so what the page owes it is explicit.
+    IImageCanvasBridge canvasBridge = viewModel;
+    ICatalogGridBridge catalogBridge = viewModel;
+    IViewerPaneBridge viewerBridge = viewModel;
+    IAudioPlayerBridge audioBridge = viewModel;
+
+    //Marshal 2D-canvas invalidations from the view model onto the UI thread
+    canvasBridge.InvalidateImageCanvas = () => DispatcherQueue?.TryEnqueue(() => ImageCanvas?.Invalidate());
+    // ...
+}
+```
+
+**Where to look.**
+`CodeBrixVideoTool/src/CodeBrixVideoTool.UI/Views/MainPage.xaml.cs`
+`KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs`
+
+**Also shown by.**
+`SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs` (two
+`is` tests in one handler, one per seam),
+`WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml.cs`,
+`PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs`,
+`Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.xaml.cs`,
+`WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml.cs`
+(the browser wiring reaches the view model through `IWebViewBridge` and stops
+there)
+
+**Sharp edges.**
+- Wire from `DataContextChanged`, before `InitializeComponent()`. On some heads
+  `InitializeComponent()` is what sets the data context, so a handler subscribed
+  afterwards never runs.
+- One test per contract rather than one for all of them. Otherwise a view model
+  that does not implement the last interface you added quietly gets none of its
+  delegates.
+- Reading the page's `is` tests is the fastest description of what this head
+  promises the view model. That is worth as much as the decoupling.
+- The view model nulls every delegate it was handed in `Dispose()`, which is what
+  breaks the page-to-view-model reference the wiring creates.
+
+### Signal the view model when the page is on screen
+
+**When you want this.** Startup work in the view model wants to show a dialog, and
+a dialog needs a UI anchor that does not exist while the page is still being
+built. Sleeping for a moment and hoping is the thing to avoid.
+
+**The MVVM shape.** A one-method interface the view model implements. Each head's
+page calls it from its loaded event, and the view model's startup task awaits a
+`TaskCompletionSource` that the call completes. A head that never calls it simply
+never shows that dialog, and disposal cancels the wait so nothing is left pending.
+The XamlRoot getter covered by
+[Give the view model a XamlRoot so its dialogs can show](BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show)
+says where a dialog attaches; this says when there is something to attach to.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/JustBetweenUs/Shared/ViewModels/MainViewModel.cs
+/// <summary>
+/// Lets the hosting page tell the view model that its UI is on screen and can host a dialog. Each
+/// head calls <see cref="NotifyPageReady"/> from its page's loaded event, and that is what releases
+/// the startup dialog; a head that never calls it simply never shows that dialog.
+/// </summary>
+public interface IPageReadyNotifier
+{
+    /// <summary>Tells the view model that the page is loaded and can host a dialog.</summary>
+    void NotifyPageReady();
+}
+```
+
+```csharp
+// From CodeBrix.Samples/JustBetweenUs/Shared/ViewModels/MainViewModel.cs
+private readonly TaskCompletionSource _pageReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+// ...
+
+private async Task InitializeAsync()
+{
+    try
+    {
+        var defaultKey = await _encryptSvc.GetDefaultKey();
+        //We can't set a value to EncryptionKey except on the main (UI) thread, because this causes problems on Linux and macOS
+        InvokeOnMainThread(() => EncryptionKey = defaultKey);
+
+        //A dialog needs a UI anchor that does not exist until the page has been laid out, so wait
+        //  for the page to say that it is ready instead of guessing how long that takes.
+        await _pageReady.Task;
+
+        await ShowInfo("This application is adapted from a sample provided by Paul Ainsworth.");
+    }
+    catch (OperationCanceledException)
+    {
+        //The view model was disposed before the page became ready - there is nothing left to show
+    }
+    // ...
+}
+
+// ...
+
+public void NotifyPageReady() => _pageReady.TrySetResult();
+```
+
+Every head satisfies it in one line, and the MAUI head differs only in the name of
+the property that holds the view model:
+
+```csharp
+// From CodeBrix.Samples/JustBetweenUs/JustBetweenUs.Wpf/Views/MainWindow.xaml.cs
+//The view model waits for this before it shows its startup dialog
+Loaded += (sender, args) => (DataContext as IPageReadyNotifier)?.NotifyPageReady();
+```
+
+```csharp
+// From CodeBrix.Samples/JustBetweenUs/Mobile/Views/MainPage.xaml.cs
+//The view model waits for this before it shows its startup dialog: a dialog needs a page to
+//  attach to, and the page is not on screen until it has loaded.
+Loaded += (sender, args) => (BindingContext as IPageReadyNotifier)?.NotifyPageReady();
+```
+
+**Where to look.**
+`JustBetweenUs/Shared/ViewModels/MainViewModel.cs`
+`JustBetweenUs/CodeBrixPlatform/JustBetweenUs.UI/Views/MainPage.xaml.cs`,
+`JustBetweenUs.Wpf/Views/MainWindow.xaml.cs`,
+`JustBetweenUs.WinUI/Views/MainPage.xaml.cs` and
+`Mobile/Views/MainPage.xaml.cs`
+
+**Also shown by.**
+`PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs` (`OnPageReady`,
+an ordinary method guarded by a bool rather than a completion source, because
+nothing is waiting on it - the page's `Loaded` handler is what starts the work) and
+`PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs`
+
+**Sharp edges.**
+- Cancel the completion source in `Dispose()`. A view model torn down before its
+  page loaded would otherwise leave a task waiting forever, and the awaiting code
+  needs a `catch (OperationCanceledException)` that does nothing.
+- Create it with the run-continuations-asynchronously option, or the startup task
+  resumes inline on whichever thread raised the loaded event.
+- `Loaded` can fire more than once. `TrySetResult` makes the second call harmless,
+  which is why the signal is idempotent rather than an event.
+- Do not replace this with a delay. The wait is for a specific fact, and on a slow
+  head a guessed delay is either too short to be true or long enough to be felt.
+
+### Keep picker plumbing in the page and picker policy in the view model
+
+**When you want this.** A native picker hands back something that needs work
+before it is useful - a percent-encoded path, an empty placeholder file it created
+at the chosen name - and you have to decide where that work belongs.
+[Clean up the path a file picker returns](BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns)
+is the pair of helpers that do it; this is where each one is called from, and why
+the answer is not the same for both.
+
+**The MVVM shape.** Draw the line at "is this true of the platform, or true of
+this application". Turning what a head returns into a real file-system path is
+plumbing: it is a fact about that head's dialog, so the page does it and the view
+model never sees anything else. What a chosen path then means - that an empty file
+a save dialog just created is a destination rather than a document the user
+already has - is application policy, identical on every head, so the command
+applies it. The bridge delegate carries a plain path across the seam.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml.cs
+private static async Task<string> PickSavePdfPathAsync(string suggestedFileName)
+{
+    var picker = new FileSavePicker
+    {
+        SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+        SuggestedFileName = suggestedFileName,
+        DefaultFileExtension = ".pdf"
+    };
+    picker.FileTypeChoices.Add("PDF document", new List<string> { ".pdf" });
+
+    var file = await picker.PickSaveFileAsync();
+    if (file == null) { return null; }
+
+    //Some heads percent-encode the path they return, which would save "My Article.pdf" as
+    //  "My%20Article.pdf"; decode it before anything touches the disk. Decoding is the only
+    //  thing the page does to the path: what to make of an empty file already sitting there
+    //  is application policy, and the view model applies it for every head.
+    return FileDialogHelper.ToFileSystemPath(file.Path);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/WikipediaPublisher/Shared/ViewModels/MainViewModel.cs
+var chosenPath = await PickSavePdfPathAsync(GetSuggestedFileName());
+if (!string.IsNullOrWhiteSpace(chosenPath))
+{
+    OutputFilePath = chosenPath.Trim();
+
+    //Application policy, applied identically on every head: an empty file that a
+    //  save dialog created as a placeholder for a brand-new name is not a file the
+    //  user already has, so remove it and let the publish-time "replace existing
+    //  file?" prompt speak only for a file with real content in it.
+    FileDialogHelper.RemoveEmptyPlaceholder(OutputFilePath);
+
+    StatusText = $"Will save to: {OutputFilePath}";
+}
+```
+
+**Where to look.**
+`WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml.cs`
+`WikipediaPublisher/Shared/ViewModels/MainViewModel.cs`
+
+**Also shown by.**
+`NotionDocumentCreator/src/NotionDocumentCreator.UI/Views/MainPage.xaml.cs` and
+`NotionDocumentCreator/src/NotionDocumentCreator.Core/ViewModels/MainViewModel.cs`
+(the same split, with the policy comment in the command that applies it),
+`PainDiagram/CodeBrixPlatform/PainDiagram.UI/Services/WinRtFileSavePicker.cs`
+(the placeholder removal is inside the picker service there, because that
+application's save command asks its own replace question later and the service is
+head-specific anyway)
+
+**Sharp edges.**
+- The test is not "which file is it easier to write in". Anything a second head
+  would have to repeat differently is plumbing; anything every head must do the
+  same way is policy, and policy in a page is policy you will have to copy.
+- Policy in the command is policy you can test, because the command runs without a
+  window and the page's picker does not.
+- Keep the delegate's contract boring: a path or null. A bridge that returns a
+  storage object, or a tuple of path plus flags, drags the platform back across
+  the seam.
+- Trim what comes back before storing it, whichever side you are on, because the
+  same property is usually typed into by hand as well.
+
+### Build a head's native picker behind a registered service
+
+**When you want this.** The page code-behind that hands a picker delegate to the
+view model has grown a dialog of its own to build, and you would rather that
+construction lived somewhere a second page, or a second head, can reuse.
+
+**The MVVM shape.** The head's UI project declares an interface for the dialog it
+can show and one implementation of it, registers it as a singleton in `App`'s
+service callback, and the page resolves it and hands the view model a method group.
+The view model is untouched: it still sees only its own file-save bridge, and a
+head with a different dialog would register its own implementation of its own
+interface.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PainDiagram/CodeBrixPlatform/PainDiagram.UI/Services/IFileSavePicker.cs
+/// <summary>
+/// The head's native "save PNG" dialog, behind an interface and registered with
+/// <c>SimpleServiceResolver</c> at startup, so the page that hands the delegate to the view
+/// model's <c>IFileSaveBridge</c> property never builds a picker itself.
+/// </summary>
+public interface IFileSavePicker
+{
+    /// <summary>
+    /// Shows a "save PNG" dialog seeded with <paramref name="suggestedFileName"/> and returns
+    /// the full path the user chose, or <c>null</c> if they cancelled.
+    /// </summary>
+    /// <param name="suggestedFileName">The file name the dialog opens with.</param>
+    /// <returns>The chosen full path, or <c>null</c> when the dialog was cancelled.</returns>
+    Task<string> PickSavePngPathAsync(string suggestedFileName);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PainDiagram/CodeBrixPlatform/PainDiagram.UI/App.xaml.cs
+SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
+{
+    //The one thing the view model cannot do for itself: this head's native save
+    //  dialog. The page resolves it and hands it to the view model's file-save
+    //  bridge; everything else, the drawing session included, lives in the view model
+    services.AddSingleton<IFileSavePicker, WinRtFileSavePicker>();
+});
+```
+
+```csharp
+// From CodeBrix.Samples/PainDiagram/CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs
+if (DataContext is IFileSaveBridge fileSave)
+{
+    //The save dialog is a registered service, so the page hands the view model a
+    //  delegate without knowing how the dialog is built
+    fileSave.PickSavePngPathAsync =
+        SimpleServiceResolver.Instance.GetService<IFileSavePicker>().PickSavePngPathAsync;
+}
+```
+
+The implementation is the code that used to sit in the page, unchanged, including
+the placeholder-file cleanup that this application's picker owes its view model:
+
+```csharp
+// From CodeBrix.Samples/PainDiagram/CodeBrixPlatform/PainDiagram.UI/Services/WinRtFileSavePicker.cs
+public class WinRtFileSavePicker : IFileSavePicker
+{
+    /// <inheritdoc />
+    public async Task<string> PickSavePngPathAsync(string suggestedFileName)
+    {
+        var picker = new FileSavePicker
+        {
+            SuggestedStartLocation = PickerLocationId.PicturesLibrary,
+            SuggestedFileName = suggestedFileName,
+            DefaultFileExtension = ".png"
+        };
+        picker.FileTypeChoices.Add("PNG image", new List<string> { ".png" });
+
+        StorageFile file = await picker.PickSaveFileAsync();
+        if (file == null) { return null; }
+
+        FileDialogHelper.RemoveEmptyPlaceholder(file.Path);
+        return file.Path;
+    }
+}
+```
+
+**Where to look.**
+`PainDiagram/CodeBrixPlatform/PainDiagram.UI/Services/IFileSavePicker.cs` and
+`WinRtFileSavePicker.cs`
+`PainDiagram/CodeBrixPlatform/PainDiagram.UI/App.xaml.cs`
+`PainDiagram/CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs`
+
+**Sharp edges.**
+- The interface belongs to the head, not to the shared library. Its implementation
+  names a WinRT dialog type, so it could not be shared with a native WPF head even
+  if you wanted to - and in this application those native heads still build their
+  own dialog in the page, which is fine while each is a handful of lines.
+- Resolve in the page, not in the view model. A view model that resolved a picker
+  service would be back to knowing that dialogs exist, which is the thing the
+  bridge was for.
+- A method group is the whole assignment. There is no wrapper lambda to forget to
+  null out, and the delegate the view model holds points at the singleton rather
+  than at the page.
+- This is worth doing when the construction is more than a few lines or a second
+  caller wants it. A three-line picker is fine where it is.
+
+### Call the page's bridge from the setter that changed
+
+**When you want this.** Something in the view model changed, and a page has to
+react to it in a way no binding expresses: scroll a list back to its top, ask a
+canvas whether it initialized. Subscribing to `PropertyChanged` in the page and
+comparing property names is the usual reflex.
+
+**The MVVM shape.** Turn it around. The view model declares a one-delegate bridge
+for the thing only the page can do, and invokes it from the setter or the method
+where the change actually happens. The page's part is one assignment. Nothing
+matches on a string, the page has no subscription to unhook, and the moment the
+call is made is exactly the moment the view model means, rather than whenever the
+notification is dispatched.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/IModelViewBridge.cs
+/// <summary>
+/// The head-capability bridge for the Model View: the view model invokes this as the view
+/// opens, and the page does what only it can - ask its 3D preview canvas whether OpenGL
+/// initialization failed. The view model must behave sensibly when the delegate is
+/// <c>null</c>.
+/// </summary>
+public interface IModelViewBridge { Action ModelViewOpened { get; set; } }
+```
+
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+/// <summary>Whether the Model View is active (otherwise the Browsing View shows).</summary>
+[AffectsCommands(nameof(DocumentCommand))]
+[AffectsProperties(nameof(BrowsingViewVisibility), nameof(ModelViewVisibility))]
+public bool IsModelViewActive
+{
+    get;
+    private set
+    {
+        var wasActive = field;
+        SetProperty(ref field, value);
+
+        //Only the page can see whether the preview canvas managed to initialize OpenGL,
+        //so it is told when there is something to look at.
+        if (value && !wasActive) { ModelViewOpened?.Invoke(); }
+    }
+}
+```
+
+The same application's other bridge is invoked from a method rather than a setter,
+which is the same idea one level up: the call goes where the decision is made.
+
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+//Re-applies search + sort and swaps in a fresh lazily-loading cell collection.
+private void RebuildCells()
+{
+    // ...
+
+    //The grid is showing a different set of models now, so start it at the first one.
+    ScrollCatalogToTop?.Invoke();
+}
+```
+
+**Where to look.**
+`PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/IModelViewBridge.cs` and
+`ICatalogGridBridge.cs`
+`PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`
+`PolyHavenBrowser/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs`
+
+**Also shown by.**
+`KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/ICatalogGridBridge.cs`
+and `IViewerPaneBridge.cs` (the catalog scroll is invoked from the `Cells` setter,
+the viewer hook from the `IsViewerActive` setter)
+
+**Sharp edges.**
+- Guard the edge, not just the value. The view-activation setter tests
+  `value && !wasActive`, because a setter can be written with the value it already
+  holds and the page's work is not idempotent. A call made from a method that only
+  runs when something really changed needs no such guard.
+- The delegate is null until a page wires it, and on a head that wires nothing it
+  stays null, so `?.Invoke()` is the graceful path and not a defensive habit.
+- Invoking from a setter means the call happens on whichever thread wrote the
+  property. If the page's work must be on the UI thread, the page's delegate is
+  what marshals it, exactly as with a repaint.
+- Do not send state through the bridge that a binding already carries. These
+  delegates say "this just happened", not "here is the new value".
+
+### Send the paint call back to the view model through the canvas bridge
+
+**When you want this.** What a canvas should draw depends on application state -
+which mode the application is in, which of two things the canvas is showing - and
+the paint handler in the page is where that decision keeps landing.
+[Let the page invalidate a canvas through a bridge interface](BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface)
+carries repaint requests from the view model to the page; this is the same
+interface used in the other direction.
+
+**The MVVM shape.** The bridge gains a method - not a delegate, because the view
+model is the one implementing it - that takes the surface and draws. The page's
+`PaintSurface` handler forwards and does nothing else, so the mode decision, the
+renderers and the overlay state all stay in the view model, and the page keeps no
+opinion about what it is showing.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.Core/Bridges/ICanvasBridge.cs
+/// <summary>
+/// Draws whatever the main canvas should be showing right now - the mirrored live preview
+/// in Capture Mode, the painting and its crosshair in Paint Mode. Called from the page's
+/// <c>PaintSurface</c> handler, so always on the UI thread.
+/// </summary>
+/// <param name="surface">The Skia surface to render onto.</param>
+/// <param name="info">The image info describing the surface.</param>
+void RenderMainCanvas(SKSurface surface, SKImageInfo info);
+```
+
+```csharp
+// From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.Core/ViewModels/MainViewModel.cs
+/// <summary>
+/// Draws the main canvas: the mirrored live preview in Capture Mode, the painting and its
+/// hand crosshair in Paint Mode. The mode decision lives here, so the page's paint handler
+/// is a single forward (see <see cref="ICanvasBridge"/>) and stays out of application state.
+/// </summary>
+/// <param name="surface">The Skia surface to render onto.</param>
+/// <param name="info">The image info describing the surface.</param>
+public void RenderMainCanvas(SKSurface surface, SKImageInfo info)
+{
+    var session = _paintSession;
+    if (IsPaintMode && session != null)
+    {
+        PaintCanvasHelper.Render(surface, info, session,
+            CrosshairNormX, CrosshairNormY, IsBrushPainting);
+    }
+    else
+    {
+        _mainRenderer.Render(surface, info, _captureService, mirror: true);
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml.cs
+//Which of the two things the main canvas shows is application state, so the handler
+//  forwards the surface and lets the view model draw (see ICanvasBridge)
+MainCanvas.PaintSurface += (_, e) =>
+    (DataContext as ICanvasBridge)?.RenderMainCanvas(e.Surface, e.Info);
+```
+
+**Where to look.**
+`WebcamPainter/src/WebcamPainter.Core/Bridges/ICanvasBridge.cs`
+`WebcamPainter/src/WebcamPainter.Core/ViewModels/MainViewModel.cs`
+`WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml.cs`
+
+**Also shown by.**
+`WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs` (`IVideoFrameSource`,
+which the page's renderer pulls the newest frame through - the view model keeps the
+frame, the renderer keeps the buffers, and neither names the other's type),
+`PalmVisualizer/src/libs/PalmVisualizer.Camera/IWebcamCaptureService.cs`
+(`IWebcamFrameSource`, the same contract, implemented explicitly by the view model
+so it stays off its public surface),
+`GameEngineMusicDemo/src/GameEngineMusicDemo.Core/ViewModels/MainViewModel.cs`
+(`IManageGameCanvas.Demo`, a read-only property the page reads back through the
+bridge it implements rather than through the view model type)
+
+**Sharp edges.**
+- A method, not a settable delegate. The direction decides the shape: the page
+  fills in delegates because the page is the implementer, and the view model
+  implements methods for the same reason.
+- The handler is called on the UI thread by the canvas, so the view model's
+  implementation must not block. Anything expensive belongs in the cached state it
+  draws from, not in the draw.
+- Cast the data context, do not hold it. `(DataContext as ICanvasBridge)?` in the
+  handler costs nothing and survives the data context being replaced or cleared.
+- Where two canvases show different things, only the one whose content is a
+  decision needs this. WebcamPainter's self-view keeps its own renderer in the
+  page, because it always shows exactly one thing.

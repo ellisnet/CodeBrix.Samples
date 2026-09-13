@@ -1,7 +1,6 @@
 using CodeBrix.Platform.Simple;
 using CodeBrix.Platform.UI.FlexPanel;
 using CodeBrix.Platform.WinUI.Graphics3DGL;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using PolyHavenBrowser.ViewModels;
 using System.Threading.Tasks;
@@ -23,23 +22,21 @@ public sealed partial class MainPage : Page
             //(e.g. the "choose a download folder first" alert).
             (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
 
-            //A new cell collection means the user re-searched or re-sorted: jump back to the top.
             if (DataContext is MainViewModel viewModel)
             {
-                viewModel.PropertyChanged += (_, args) =>
-                {
-                    if (args.PropertyName == nameof(MainViewModel.Cells))
-                    {
-                        CatalogScroll.ChangeView(null, 0, null, disableAnimation: true);
-                    }
+                //Each bridge is filled in through the interface the view model implements
+                //rather than through the concrete type, so what the page owes it is explicit.
+                ICatalogGridBridge catalogBridge = viewModel;
+                IModelViewBridge modelViewBridge = viewModel;
 
-                    //The user just opened the Model View: if the GL canvas already knows its
-                    //OpenGL initialization failed, tell them why the preview pane is empty.
-                    if (args.PropertyName == nameof(MainViewModel.IsModelViewActive))
-                    {
-                        _ = MaybeReportRenderingUnavailableAsync();
-                    }
-                };
+                //A new cell collection means the user re-searched or re-sorted: jump back
+                //to the top.
+                catalogBridge.ScrollCatalogToTop = () =>
+                    CatalogScroll.ChangeView(null, 0, null, disableAnimation: true);
+
+                //The user just opened the Model View: if the GL canvas already knows its
+                //OpenGL initialization failed, tell them why the preview pane is empty.
+                modelViewBridge.ModelViewOpened = () => _ = MaybeReportRenderingUnavailableAsync();
             }
         };
 
@@ -49,34 +46,33 @@ public sealed partial class MainPage : Page
         //tree, which can happen after IsModelViewActive is set - so check at both moments.
         ModelCanvas.Loaded += (_, _) => _ = MaybeReportRenderingUnavailableAsync();
 
-        //The Model View's content panes: side-by-side while the window is landscape. In
-        //portrait the FlexPanel's main axis flips so the 3D viewer drops below the info
-        //panes, and the info panes trade their fixed-width column (an explicit Width, so
-        //their content measures - and wraps - against it) for half the height as a flex
-        //basis, still scrolling internally.
+        //The Model View's content panes: side-by-side while the window is landscape. When
+        //the view model says the window is portrait the FlexPanel's main axis flips so the
+        //3D viewer drops below the info panes, and the info panes trade their fixed-width
+        //column (an explicit Width, so their content measures - and wraps - against it) for
+        //a share of the height as a flex basis, still scrolling internally. Which way round
+        //the window is, and the pane's width, basis and margin, are the view model's.
         SizeChanged += (_, args) =>
         {
-            var portrait = args.NewSize.Width < args.NewSize.Height;
-            ModelContentFlex.Direction = portrait ? FlexDirection.Column : FlexDirection.Row;
-            ModelInfoPane.Width = portrait ? double.NaN : 420;
-            FlexPanel.SetBasis(ModelInfoPane,
-                portrait ? new FlexBasis(0.5f, isRelative: true) : FlexBasis.Auto);
-            ModelInfoPane.Margin = portrait ? new Thickness(0, 0, 0, 20) : new Thickness(0, 0, 20, 0);
+            var viewModel = ViewModel;
+            if (viewModel == null) { return; }
+
+            viewModel.NotifyWindowSizeChanged(args.NewSize.Width, args.NewSize.Height);
+
+            var stacked = viewModel.IsModelViewStacked;
+            ModelContentFlex.Direction = stacked ? FlexDirection.Column : FlexDirection.Row;
+            ModelInfoPane.Width = viewModel.ModelInfoPaneWidth;
+            FlexPanel.SetBasis(ModelInfoPane, stacked
+                ? new FlexBasis(viewModel.ModelInfoPaneStackedHeightBasis, isRelative: true)
+                : FlexBasis.Auto);
+            ModelInfoPane.Margin = viewModel.ModelInfoPaneMargin;
         };
 
-        //Lazy catalog loading: as the grid scrolls within two screens of its bottom edge,
-        //ask the cell collection to materialize the next batch.
+        //Lazy catalog loading: the page reports where the grid has scrolled to, and the
+        //view model's cell collection decides when to materialize its next batch.
         CatalogScroll.ViewChanged += (_, _) =>
-        {
-            var cells = ViewModel?.Cells;
-            if (cells == null || !cells.HasMoreItems) { return; }
-
-            var remaining = CatalogScroll.ExtentHeight - CatalogScroll.VerticalOffset - CatalogScroll.ViewportHeight;
-            if (remaining < CatalogScroll.ViewportHeight * 2)
-            {
-                cells.RequestMore(24);
-            }
-        };
+            ViewModel?.NotifyCatalogScrolled(
+                CatalogScroll.ExtentHeight, CatalogScroll.VerticalOffset, CatalogScroll.ViewportHeight);
     }
 
     //When the Model View is active and the preview canvas reports failed OpenGL initialization,

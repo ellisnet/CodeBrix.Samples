@@ -26,6 +26,25 @@ public class WebcamCaptureServiceTests
     }
 
     [Fact]
+    public async Task DiscoverCamerasAsync_enumerates_through_the_service_interface()
+    {
+        //Arrange - the view model holds the service as IWebcamCaptureService, so discovery
+        //  has to work from the interface as well as from the static method
+        using var service = new WebcamCaptureService();
+        IWebcamCaptureService captureService = service;
+
+        //Act
+        IReadOnlyList<CameraDevice> cameras = await captureService.DiscoverCamerasAsync();
+
+        //Assert
+        (cameras != null).Should().Be(true);
+        foreach (CameraDevice camera in cameras)
+        {
+            String.IsNullOrWhiteSpace(camera.FriendlyName).Should().Be(false);
+        }
+    }
+
+    [Fact]
     public void New_service_reports_no_session_and_no_frame()
     {
         //Arrange
@@ -45,6 +64,23 @@ public class WebcamCaptureServiceTests
 
         //Act
         bool copied = service.TryCopyLatestFrame(ref buffer, out int width, out int height);
+
+        //Assert
+        copied.Should().Be(false);
+        width.Should().Be(0);
+        height.Should().Be(0);
+    }
+
+    [Fact]
+    public void Frame_source_reports_no_frame_before_any_arrives()
+    {
+        //Arrange - the page's renderer pulls frames through the narrow frame-source seam
+        using var service = new WebcamCaptureService();
+        IWebcamFrameSource frameSource = service;
+        byte[] buffer = null;
+
+        //Act
+        bool copied = frameSource.TryCopyLatestFrame(ref buffer, out int width, out int height);
 
         //Assert
         copied.Should().Be(false);

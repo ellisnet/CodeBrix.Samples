@@ -126,6 +126,10 @@ dotnet run --project src/MediaPlayerDemo.WinWpfSkia
 
 Console logging is compiled in only for Debug builds - the body of
 `App.InitializeLogging()` is inside `#if DEBUG` - so a Release run is silent.
+The view model asks that same ambient factory for its own `ILogger`, so the line
+it writes at startup and the warning it writes when an address cannot be loaded
+appear in that console output; in a Release build nothing is wired into the
+factory and those lines go nowhere.
 
 There are no tests. This application has no `tests/` folder, no test project and
 no `global.json`, so there is no test-runner selection to be aware of here and
@@ -149,7 +153,7 @@ MediaPlayerDemo/
     MediaPlayerDemo.Core/               Class library; carries every non-head package
       MediaPlayerDemo.Core.csproj       RootNamespace MediaPlayerDemo; framework, add-in, font, hosting and logging packages
       Helpers/HostHelper.cs             The IHostBuilderProvider that SimpleServiceResolver builds its container from
-      ViewModels/MainViewModel.cs       The only view model: address, source, status, stretch options, LoadCommand
+      ViewModels/MainViewModel.cs       The only view model: address, playback source and its release, status, stretch options, LoadCommand
     MediaPlayerDemo.LinuxX11/           Head: Program.cs plus a csproj with one runtime package
     MediaPlayerDemo.LinuxWayland/       Head: Program.cs plus a csproj with one runtime package
     MediaPlayerDemo.LinuxFrameBuffer/   Head: Program.cs plus a csproj with one runtime package
@@ -177,7 +181,7 @@ built. Nothing flows the other way: Core knows nothing about the UI or the heads
 
 | Library or add-in | What it does in this application | Where |
 | --- | --- | --- |
-| CodeBrix.Platform | The XAML framework itself: `Application`, `Window`, `Frame`, `Page` and the controls on the page, plus `SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`, `IXamlRootGetter`, `IHostBuilderProvider`, `CodeBrixPlatformHostBuilder` and `FeatureConfiguration.Font` | `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj`; used throughout `src/MediaPlayerDemo.UI/` and `src/MediaPlayerDemo.Core/` |
+| CodeBrix.Platform | The XAML framework itself: `Application`, `Window`, `Frame`, `Page` and the controls on the page, plus `SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`, `IXamlRootGetter`, `IHostBuilderProvider`, `CodeBrixPlatformHostBuilder`, `LogExtensionPoint` and `FeatureConfiguration.Font` | `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj`; used throughout `src/MediaPlayerDemo.UI/` and `src/MediaPlayerDemo.Core/` |
 | CodeBrix.Platform.MediaPlayer add-in | Supplies the `MediaPlayerElement` control and the `Windows.Media.Core` and `Windows.Media.Playback` types (`MediaSource`, `IMediaPlaybackSource`) the view model builds a source with | `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj`, `src/MediaPlayerDemo.UI/Views/MainPage.xaml`, `src/MediaPlayerDemo.Core/ViewModels/MainViewModel.cs` |
 | CodeBrix.Platform.Fonts.OpenSans | Ships the Open Sans font that is set as the application-wide default and as the page's `FontFamily`, addressed through an `ms-appx:///` URI | `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj`, `src/MediaPlayerDemo.UI/App.xaml`, `src/MediaPlayerDemo.UI/App.xaml.cs`, `src/MediaPlayerDemo.UI/Views/MainPage.xaml` |
 | CodeBrix.Platform runtime for the head | Exactly one runtime package per head - the X11, Wayland, framebuffer, macOS, Win32 and WPF Skia runtimes - and nothing else | the six head csproj files under `src/` |
@@ -187,7 +191,7 @@ Third-party libraries:
 | Library | What it does in this application | Where |
 | --- | --- | --- |
 | Microsoft.Extensions.Hosting | `Host.CreateDefaultBuilder()` behind an `IHostBuilderProvider`, which `SimpleServiceResolver` uses to build the dependency-injection container | `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj`, `src/MediaPlayerDemo.Core/Helpers/HostHelper.cs` |
-| Microsoft.Extensions.Logging.Console | The `LoggerFactory` with a console provider that is wired into the platform's ambient logger in Debug builds | `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj`, `src/MediaPlayerDemo.UI/App.xaml.cs` |
+| Microsoft.Extensions.Logging.Console | The `LoggerFactory` with a console provider that is wired into the platform's ambient logger in Debug builds, and the `ILogger` the view model asks that ambient factory for | `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj`, `src/MediaPlayerDemo.UI/App.xaml.cs`, `src/MediaPlayerDemo.Core/ViewModels/MainViewModel.cs` |
 | LibVLC native runtime for Windows | The native media backend the MediaPlayer add-in needs on the two Windows heads; declared only there | `src/MediaPlayerDemo.Win32Skia/MediaPlayerDemo.Win32Skia.csproj`, `src/MediaPlayerDemo.WinWpfSkia/MediaPlayerDemo.WinWpfSkia.csproj` |
 
 ## Worth studying in this application
@@ -211,9 +215,10 @@ Sharp edges met here. `MediaSource.CreateFromUri()` returns a `MediaSource` whil
 the element's `Source` takes the interface, so the bound property is the interface
 type. `MediaPlayerElement`, `MediaSource` and the `Windows.Media.*` namespaces all
 arrive with the MediaPlayer add-in rather than the base framework, so without that
-package reference none of them resolve. And assigning a new source replaces the
-old one without disposing it - if your own view model owns a disposable source,
-release it in `Dispose()`. See
+package reference none of them resolve. And the element does not take ownership of
+what it is handed: a `MediaSource` is disposable, so the view model publishes the
+new source first, disposes the one it replaced once the element has moved off it,
+and disposes the last one in `Dispose()`. See
 [Play a video from a URL with the MediaPlayer add-in](../BLUEPRINTS-MediaAndVision.md#play-a-video-from-a-url-with-the-mediaplayer-add-in)
 and
 [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
@@ -226,8 +231,9 @@ every edit re-evaluates the command's `CanExecute`. `LoadCommand` is a lazily
 created `SimpleCommand` built from a `CanLoad()` predicate and a `DoLoad()` action;
 the page binds the text box with `UpdateSourceTrigger=PropertyChanged` so the
 property changes on each keystroke and the button enables as soon as there is text.
-`LoadMedia()` wraps the work in try/catch and reports the outcome by setting
-`StatusText`, a private-set bound string that a `TextBlock` displays. On failure
+`LoadMedia()` wraps the work in try/catch, writes a warning to the view model's
+`ILogger` when it fails, and reports the outcome by setting `StatusText`, a
+private-set bound string that a `TextBlock` displays. On failure
 the previous source stays loaded and keeps playing, which is a decision worth
 making consciously in your own application.
 

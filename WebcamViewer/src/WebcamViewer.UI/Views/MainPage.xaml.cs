@@ -12,7 +12,9 @@ namespace WebcamViewer.Views;
 public sealed partial class MainPage : Page
 {
     //I tend to like to declare/define private methods above the constructor, in C# classes
-    private MainViewModel ViewModel => DataContext as MainViewModel;
+    //The paint handler reaches the view model through the interface it implements, never the
+    //  concrete type - the renderer only ever needs the newest frame
+    private IVideoFrameSource FrameSource => DataContext as IVideoFrameSource;
 
     public MainPage()
     {
@@ -37,7 +39,7 @@ public sealed partial class MainPage : Page
 
         InitializeComponent();
 
-        VideoView.PaintSurface += (_, e) => VideoCanvasHelper.RenderFrame(e.Surface, e.Info, ViewModel);
+        VideoView.PaintSurface += (_, e) => VideoCanvasHelper.RenderFrame(e.Surface, e.Info, FrameSource);
         VideoView.SizeChanged += (_, _) => VideoView.Invalidate();
     }
 

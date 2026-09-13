@@ -26,14 +26,14 @@ public sealed partial class MainPage
         // ---- File ---------------------------------------------------------
 
         actions.File.New.Activated += (_, _) => NewImage();
-        actions.File.Open.Activated += async (_, _) => await OpenImageAsync();
-        actions.File.Save.Activated += async (_, _) => await SaveActiveDocumentAsync(saveAs: false);
-        actions.File.SaveAs.Activated += async (_, _) => await SaveActiveDocumentAsync(saveAs: true);
-        actions.File.Close.Activated += async (_, _) => await CloseDocumentAsync(PintaCore.Workspace.ActiveDocument);
-        actions.File.NewScreenshot.Activated += async (_, _) =>
-            await PintaCore.Chrome.ShowMessageDialog(
+        OnActivated(actions.File.Open, OpenImageAsync);
+        OnActivated(actions.File.Save, () => SaveActiveDocumentAsync(saveAs: false));
+        OnActivated(actions.File.SaveAs, () => SaveActiveDocumentAsync(saveAs: true));
+        OnActivated(actions.File.Close, () => CloseDocumentAsync(PintaCore.Workspace.ActiveDocument));
+        OnActivated(actions.File.NewScreenshot, () =>
+            PintaCore.Chrome.ShowMessageDialog(
                 "Not available yet",
-                "Taking a screenshot is not implemented in this port yet.");
+                "Taking a screenshot is not implemented in this port yet."));
 
         // ---- Edit ---------------------------------------------------------
 
@@ -42,15 +42,15 @@ public sealed partial class MainPage
         actions.Edit.Cut.Activated += (_, _) => CutToClipboard();
         actions.Edit.Copy.Activated += (_, _) => CopyToClipboard(merged: false);
         actions.Edit.CopyMerged.Activated += (_, _) => CopyToClipboard(merged: true);
-        actions.Edit.Paste.Activated += async (_, _) => await PasteAsync(PasteTarget.CurrentLayer);
-        actions.Edit.PasteIntoNewLayer.Activated += async (_, _) => await PasteAsync(PasteTarget.NewLayer);
-        actions.Edit.PasteIntoNewImage.Activated += async (_, _) => await PasteAsync(PasteTarget.NewImage);
+        OnActivated(actions.Edit.Paste, () => PasteAsync(PasteTarget.CurrentLayer));
+        OnActivated(actions.Edit.PasteIntoNewLayer, () => PasteAsync(PasteTarget.NewLayer));
+        OnActivated(actions.Edit.PasteIntoNewImage, () => PasteAsync(PasteTarget.NewImage));
         actions.Edit.SelectAll.Activated += (_, _) => SelectAll();
         actions.Edit.Deselect.Activated += (_, _) => Deselect();
         actions.Edit.EraseSelection.Activated += (_, _) => EraseSelection();
         actions.Edit.FillSelection.Activated += (_, _) => FillSelection();
         actions.Edit.InvertSelection.Activated += (_, _) => InvertSelection();
-        actions.Edit.OffsetSelection.Activated += async (_, _) => await OffsetSelectionAsync();
+        OnActivated(actions.Edit.OffsetSelection, OffsetSelectionAsync);
 
         // ---- View ---------------------------------------------------------
 
@@ -60,7 +60,7 @@ public sealed partial class MainPage
         actions.View.ZoomToWindow.Activated += (_, _) => ZoomToWindow();
         actions.View.ZoomToSelection.Activated += (_, _) => ZoomToSelection();
         actions.View.Fullscreen.Activated += (_, _) => ToggleFullscreen();
-        actions.View.EditCanvasGrid.Activated += async (_, _) => await ShowCanvasGridDialogAsync();
+        OnActivated(actions.View.EditCanvasGrid, ShowCanvasGridDialogAsync);
 
         actions.View.MenuBar.Toggled += (value, _) => MainMenuBar.Visibility = ToVisibility(value);
         actions.View.ToolBar.Toggled += (value, _) => MainToolbarBorder.Visibility = ToVisibility(value);
@@ -75,8 +75,8 @@ public sealed partial class MainPage
 
         actions.Image.CropToSelection.Activated += (_, _) => CropToSelection();
         actions.Image.AutoCrop.Activated += (_, _) => AutoCrop();
-        actions.Image.Resize.Activated += async (_, _) => await ResizeImageAsync();
-        actions.Image.CanvasSize.Activated += async (_, _) => await ResizeCanvasAsync();
+        OnActivated(actions.Image.Resize, ResizeImageAsync);
+        OnActivated(actions.Image.CanvasSize, ResizeCanvasAsync);
         actions.Image.FlipHorizontal.Activated += (_, _) => WithDocument(d =>
         {
             d.FlipImageHorizontal();
@@ -114,17 +114,17 @@ public sealed partial class MainPage
         actions.Layers.MoveLayerDown.Activated += (_, _) => MoveLayer(up: false);
         actions.Layers.FlipHorizontal.Activated += (_, _) => FlipLayer(horizontal: true);
         actions.Layers.FlipVertical.Activated += (_, _) => FlipLayer(horizontal: false);
-        actions.Layers.Properties.Activated += async (_, _) => await ShowLayerPropertiesAsync();
-        actions.Layers.ImportFromFile.Activated += async (_, _) => await ImportLayerFromFileAsync();
-        actions.Layers.RotateZoom.Activated += async (_, _) =>
-            await PintaCore.Chrome.ShowMessageDialog(
+        OnActivated(actions.Layers.Properties, ShowLayerPropertiesAsync);
+        OnActivated(actions.Layers.ImportFromFile, ImportLayerFromFileAsync);
+        OnActivated(actions.Layers.RotateZoom, () =>
+            PintaCore.Chrome.ShowMessageDialog(
                 "Not available yet",
-                "Rotate / Zoom Layer is not implemented in this port yet.");
+                "Rotate / Zoom Layer is not implemented in this port yet."));
 
         // ---- Window -------------------------------------------------------
 
-        actions.Window.SaveAll.Activated += async (_, _) => await SaveAllAsync();
-        actions.Window.CloseAll.Activated += async (_, _) => await CloseAllAsync();
+        OnActivated(actions.Window.SaveAll, SaveAllAsync);
+        OnActivated(actions.Window.CloseAll, () => CloseAllAsync());
 
         // ---- Help / App ---------------------------------------------------
 
@@ -132,8 +132,51 @@ public sealed partial class MainPage
         actions.Help.Website.Activated += (_, _) => LaunchUri("https://www.pinta-project.com/");
         actions.Help.Bugs.Activated += (_, _) => LaunchUri("https://github.com/PintaProject/Pinta/issues");
         actions.Help.Translate.Activated += (_, _) => LaunchUri("https://translate.pinta-project.com/");
-        actions.App.About.Activated += async (_, _) => await ShowAboutAsync();
-        actions.App.KeyboardShortcuts.Activated += async (_, _) => await ShowKeyboardShortcutsAsync();
+        OnActivated(actions.App.About, ShowAboutAsync);
+        OnActivated(actions.App.KeyboardShortcuts, ShowKeyboardShortcutsAsync);
+    }
+
+    /// <summary>
+    /// Attaches an asynchronous handler to a command. The action model's
+    /// <c>Activated</c> event is synchronous, so the subscriber is an
+    /// <c>async void</c> one; wrapping it here is what stops a failure inside
+    /// a command from taking the application down, and keeps the wiring above
+    /// at one line per command.
+    /// </summary>
+    private void OnActivated(Command command, Func<Task> handler)
+    {
+        command.Activated += async (_, _) =>
+        {
+            try
+            {
+                await handler();
+            }
+            catch (Exception ex)
+            {
+                await ReportHandlerFailure(ex);
+            }
+        };
+    }
+
+    /// <summary>
+    /// Reports a failure that escaped an event handler. An event handler has
+    /// nowhere to hand an exception back to, so it lands here instead of
+    /// ending the application; the report itself is guarded, because showing a
+    /// dialog is one more UI operation that can fail.
+    /// </summary>
+    private static async Task ReportHandlerFailure(Exception ex)
+    {
+        System.Diagnostics.Debug.WriteLine($"Unhandled failure in a page event handler: {ex}");
+
+        try
+        {
+            await PintaCore.Chrome.ShowErrorDialog("Something went wrong", ex.Message, ex.ToString());
+        }
+        catch (Exception)
+        {
+            //Nothing more can be done here, and a failed report must not be
+            //worse than the failure it was reporting.
+        }
     }
 
     private static Microsoft.UI.Xaml.Visibility ToVisibility(bool visible) =>
@@ -262,12 +305,10 @@ public sealed partial class MainPage
     {
         FileOpenPicker picker = new() { SuggestedStartLocation = PickerLocationId.PicturesLibrary };
 
-        foreach (var format in PintaCore.ImageFormats.Formats.Where(f => f.IsImportAvailable()))
+        //The registry owns which extensions an open dialog accepts.
+        foreach (string extension in PintaCore.ImageFormats.GetImportExtensions())
         {
-            foreach (string extension in format.Extensions.Where(x => x.All(char.IsLower)))
-            {
-                picker.FileTypeFilter.Add($".{extension}");
-            }
+            picker.FileTypeFilter.Add(extension);
         }
 
         StorageFile file = await picker.PickSingleFileAsync();

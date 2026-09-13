@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Shared\Drawing\DrawingCanvas.cs" Link="Drawing\DrawingCanvas.cs" />
-    <Compile Include="..\Shared\Helpers\FileDialogHelper.cs" Link="Helpers\FileDialogHelper.cs" />
+    <Compile Include="..\Shared\Drawing\DrawingCanvasBinder.cs" Link="Drawing\DrawingCanvasBinder.cs" />
     <Compile Include="..\Shared\Helpers\HostHelper.cs" Link="Helpers\HostHelper.cs" />
     <Compile Include="..\Shared\ViewModels\MainViewModel.cs" Link="ViewModels\MainViewModel.cs" />
   </ItemGroup>
@@ -44,11 +44,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.WinUI.ApacheLicenseForever" Version="1.0.193.1013" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
+    <PackageReference Include="CodeBrix.Platform.WinUI.ApacheLicenseForever" Version="1.0.254.253" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2526" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
-    <PackageReference Include="SkiaSharp.Views.WinUI" Version="4.151.0" />
+    <PackageReference Include="SkiaSharp.Views.WinUI" Version="4.152.0" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
@@ -66,7 +66,7 @@
     <Folder Include="ViewModels\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Imaging.Drawing.ApacheLicenseForever" Version="1.0.214.1305" />
+    <PackageReference Include="CodeBrix.Imaging.Drawing.ApacheLicenseForever" Version="1.0.252.351" />
   </ItemGroup>
   <ItemGroup>
     <Page Update="Views\MainPage.xaml">

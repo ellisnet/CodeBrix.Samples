@@ -10,11 +10,15 @@ marshalled back from capture and worker threads with InvokeOnMainThread;
 stale answers dropped when the selection has already moved on; confirmations,
 informational dialogs and error reporting raised from the view model; parent
 and child view models sharing one page; and orderly disposal of commands,
-event subscriptions and the delegates a page handed over. A further group is
-about what the user picks and how much of it you load: enum-backed pickers,
-drop-downs whose choices depend on the current selection, alerting and
-reverting when the platform cannot honor a choice, and grids, trees and
-search boxes that fill lazily rather than all at once. Reach for this file
+event subscriptions, lifetime tokens and the delegates a page handed over -
+including which of them the view model really owns, and who calls Dispose at
+all. A group of their own covers work that has to start where nothing can
+await it: a guarded async void, a task discarded through a helper that
+observes it, and a first load that waits until the page says it is on screen.
+A further group is about what the user picks and how much of it you load:
+enum-backed pickers, drop-downs whose choices depend on the current selection,
+alerting and reverting when the platform cannot honor a choice, and grids,
+trees and search boxes that fill lazily rather than all at once. Reach for this file
 when you are deciding what belongs on a view model rather than in a page,
 or when bound state has to survive background work, a slow service, or a
 user clicking faster than the application can answer.
@@ -80,6 +84,14 @@ conventions the code blocks follow.
 - [Cache the newest frame in the view model and let the renderer pull it](#cache-the-newest-frame-in-the-view-model-and-let-the-renderer-pull-it)
 - [Push a bound toggle into a live native session and re-apply it to the next one](#push-a-bound-toggle-into-a-live-native-session-and-re-apply-it-to-the-next-one)
 - [Validate a typed folder path inside CanExecute](#validate-a-typed-folder-path-inside-canexecute)
+- [Guard an async void handler the platform calls](#guard-an-async-void-handler-the-platform-calls)
+- [Start work you cannot await through a helper that observes it](#start-work-you-cannot-await-through-a-helper-that-observes-it)
+- [Start the first load when the page says it is ready](#start-the-first-load-when-the-page-says-it-is-ready)
+- [Cancel one lifetime token from Dispose so in-flight work stops](#cancel-one-lifetime-token-from-dispose-so-in-flight-work-stops)
+- [Dispose only the service the view model built itself](#dispose-only-the-service-the-view-model-built-itself)
+- [Dispose a view model the XAML declared from the page Unloaded](#dispose-a-view-model-the-xaml-declared-from-the-page-unloaded)
+- [Fail a bound setter into the status line when a device refuses it](#fail-a-bound-setter-into-the-status-line-when-a-device-refuses-it)
+- [Switch devices off the UI thread and let the newest switch report](#switch-devices-off-the-ui-thread-and-let-the-newest-switch-report)
 
 ## Related blueprints
 
@@ -299,9 +311,9 @@ properties of its own.
 `PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs`
 
 **Also shown by.**
-`PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs` (a
-private `_isCreatingDocument` field with `DocumentCommand.RaiseCanExecuteChanged()`
-at both ends of the run)
+`PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/ModelCellViewModel.cs`
+(a per-cell command whose gate is a delegate into the owner, so no attribute can
+see it; the owner calls the cell's `NotifyCanDownloadChanged()` instead)
 
 **Sharp edges.**
 - Funnel every model change through one method. Adding a new kind of change then
@@ -360,6 +372,7 @@ private void UpdateActionSensitivity()
     actions.Layers.DeleteLayer.Sensitive = layerCount > 1;
     actions.Layers.MergeLayerDown.Sensitive = currentIndex > 0;
     actions.Layers.MoveLayerUp.Sensitive = currentIndex < layerCount - 1;
+    actions.Layers.MoveLayerDown.Sensitive = currentIndex > 0;
     actions.Image.Flatten.Sensitive = layerCount > 1;
 }
 ```
@@ -375,13 +388,25 @@ private void OnDocumentStateChanged()
     RefreshLayersPad();
     RefreshHistoryPad();
     UpdateActionSensitivity();
-    UpdateSelectionSizeText();
 }
+```
+
+The view model keeps a funnel of its own for the state it does own, so the page's
+funnel is only about the headless commands and the pads:
+
+```csharp
+// From CodeBrix.Samples/Pinta.Brix/src/Pinta.Brix.Core/ViewModels/MainViewModel.cs
+    private void RefreshDocumentState()
+    {
+        HasOpenDocuments = PintaCore.Workspace.HasOpenDocuments;
+        UpdateSelectionSizeText();
+    }
 ```
 
 **Where to look.**
 `Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.Actions.cs`
 `Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.xaml.cs`
+`Pinta.Brix/src/Pinta.Brix.Core/ViewModels/MainViewModel.cs`
 
 **Sharp edges.**
 - The single funnel is what keeps six different model events from each having to
@@ -390,7 +415,9 @@ private void OnDocumentStateChanged()
   stale enabled state never survives a document close.
 - Prefer `SimpleCommand` with `[AffectsCommands]` when the commands can live on a
   view model; reach for this shape only when the command model is owned by a
-  headless library.
+  headless library. Anything that is really bound state - here the status bar's
+  three readouts and the zoom control - belongs on the view model with its own
+  funnel, which is why the page's funnel no longer touches them.
 
 ### Give each grid cell its own command and lazily loaded thumbnail
 
@@ -488,13 +515,14 @@ public void NotifyCanDownloadChanged() => _downloadCommand?.RaiseCanExecuteChang
 
 ```csharp
 // From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+/// <summary>Whether a model download is in flight (drives the bottom progress bar).</summary>
+[AffectsProperties(nameof(DownloadBarVisibility))]
 public bool IsDownloading
 {
     get;
     private set
     {
         SetProperty(ref field, value);
-        NotifyPropertyChanged(nameof(DownloadBarVisibility));
 
         //The download gate lives on each cell's own command; tell every materialized
         //cell to re-query it. (Cells materialized later evaluate the gate fresh anyway.)
@@ -505,6 +533,9 @@ public bool IsDownloading
     }
 }
 ```
+
+The attribute covers the computed visibility, so the setter body is only the part
+no attribute can express: poking every materialized cell's own command.
 
 **Where to look.**
 `KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/AssetCellViewModel.cs`
@@ -548,11 +579,16 @@ where design-time values come from.
 [Microsoft.UI.Xaml.Data.Bindable]
 public class MainViewModel : SimpleViewModel
 {
+    //The application's configured logger factory, which the heads set up in App.InitializeLogging().
+    //  NullLogger covers the design-mode path, where the constructor returns before this is assigned.
+    private ILogger _log = NullLogger.Instance;
+
     public MainViewModel()
     {
         if (IsDesignMode(true)) { return; } //Leave as the first line of constructor
 
-        Debug.WriteLine("Main view model startup.");
+        _log = LogExtensionPoint.AmbientLoggerFactory.CreateLogger<MainViewModel>();
+        _log.LogInformation("Main view model startup.");
 
         //Load (and, because the player has AutoPlay enabled, start) the default media on startup
         LoadMedia();
@@ -592,6 +628,10 @@ in `if (!IsDesignMode(true)) { ... }` instead of returning early)
   nothing at all.
 - A child view model needs the guard too, and because it returns early in design
   mode its constructor-assigned members stay null then.
+- Anything the constructor assigns after the guard is unassigned in the designer,
+  so give such a field a harmless initial value at its declaration. The logger
+  here starts as the null logger for exactly that reason, and nothing has to
+  null-check it.
 - `[Microsoft.UI.Xaml.Data.Bindable]` on the class is what makes the type usable
   as a binding source. Applications that also compile the view model into a native
   head put it behind `#if HAS_CODEBRIX`.
@@ -609,14 +649,12 @@ and turns a failure into text on screen rather than an exception.
 
 ```csharp
 // From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+/// <summary>Whether the initial catalog fetch is still in flight.</summary>
+[AffectsProperties(nameof(CatalogLoadingVisibility))]
 public bool IsCatalogLoading
 {
     get;
-    private set
-    {
-        SetProperty(ref field, value);
-        NotifyPropertyChanged(nameof(CatalogLoadingVisibility));
-    }
+    private set => SetProperty(ref field, value);
 } = true;
 
 public Visibility CatalogLoadingVisibility => IsCatalogLoading ? Visibility.Visible : Visibility.Collapsed;
@@ -661,28 +699,55 @@ public MainViewModel()
 **Variant: name the task so a page or a test can await it.**
 
 ```csharp
-// Adapted from CodeBrix.Samples/JustBetweenUs/Shared/ViewModels/MainViewModel.cs
-// The sample starts a fire-and-forget Task in the constructor and pads it with a
-// fixed Task.Delay before showing its first dialog; this version keeps the same
-// steps but names the initialization so a page or a test can await it.
+// From CodeBrix.Samples/JustBetweenUs/Shared/ViewModels/MainViewModel.cs
 public MainViewModel()
 {
     if (!IsDesignMode(true))
     {
+        Debug.WriteLine("Main view model startup.");
+
         _encryptSvc = GetService<IEncryptionService>();
         // ... fill the picker list and select the first entry ...
         Initialization = InitializeAsync();
     }
 }
 
+/// <summary>
+/// The startup work that the constructor begins: reading the default encryption key and showing
+/// the application's first informational dialog. A page or a test can await this to find out when
+/// that work has finished.
+/// </summary>
 public Task Initialization { get; private set; } = Task.CompletedTask;
 
 private async Task InitializeAsync()
 {
-    var defaultKey = await _encryptSvc.GetDefaultKey();
-    InvokeOnMainThread(() => EncryptionKey = defaultKey);
+    try
+    {
+        var defaultKey = await _encryptSvc.GetDefaultKey();
+        //We can't set a value to EncryptionKey except on the main (UI) thread, because this causes problems on Linux and macOS
+        InvokeOnMainThread(() => EncryptionKey = defaultKey);
+
+        //A dialog needs a UI anchor that does not exist until the page has been laid out, so wait
+        //  for the page to say that it is ready instead of guessing how long that takes.
+        await _pageReady.Task;
+
+        await ShowInfo("This application is adapted from a sample provided by Paul Ainsworth.");
+    }
+    catch (OperationCanceledException)
+    {
+        //The view model was disposed before the page became ready - there is nothing left to show
+    }
+    catch (Exception e)
+    {
+        //Startup work must never be able to bring the application down
+        Debug.WriteLine($"Main view model startup failed: {e.Message}");
+    }
 }
 ```
+
+A named task costs one property and buys two things: a page or a test can find
+out when startup finished, and every failure has somewhere to land instead of
+being an unobserved exception on a discarded task.
 
 **Where to look.**
 `PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`
@@ -702,18 +767,21 @@ private async Task InitializeAsync()
   with the error text under it, rather than leaving the user staring at an empty
   grid.
 - Work started this early can complete before the page has handed the view model a
-  `XamlRoot`, and a dialog raised then has nowhere to attach. JustBetweenUs pads
-  its first dialog with a fixed delay and its own comment records that the real
-  fix is awaiting a page-readiness signal; prefer a readiness signal in your own
-  code.
+  `XamlRoot`, and a dialog raised then has nowhere to attach. JustBetweenUs waits
+  on a page-readiness signal - a `TaskCompletionSource` each head's page completes
+  from its loaded event - rather than guessing how long the page takes; see
+  [Start the first load when the page says it is ready](#start-the-first-load-when-the-page-says-it-is-ready).
+- The named task is cancelled, not abandoned, when the view model goes away: the
+  readiness source is cancelled in `Dispose()`, and the startup method catches
+  `OperationCanceledException` and says nothing.
 
 ### Load documents named on the command line during startup
 
 **When you want this.** Repeating the same task, or launching from a script,
 without clicking through file pickers first.
 
-**The MVVM shape.** A fire-and-forget async method started from the view-model
-constructor, guarded by the busy flag, with every failure funnelled into the
+**The MVVM shape.** A fire-and-forget async method started once the page says it
+is on screen, guarded by the busy flag, with every failure funnelled into the
 standard error dialog. The head's `Main` does nothing special; the view model
 reads the process arguments itself.
 
@@ -723,7 +791,7 @@ reads the process arguments itself.
 // From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs
     /// <summary>
     /// Convenience for repeated comparisons: launching a head as
-    /// PdfSideBySide.LinuxX11 left.pdf right.pdf pre-loads the two documents, so the
+    /// <c>PdfSideBySide.LinuxX11 left.pdf right.pdf</c> pre-loads the two documents, so the
     /// user need not browse for them. Anything that goes wrong is reported in the status line.
     /// </summary>
     private async Task OpenStartupDocumentsAsync()
@@ -751,6 +819,21 @@ reads the process arguments itself.
     }
 ```
 
+It is started from the page-ready signal rather than from the constructor,
+because its failure path raises a dialog:
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs
+    public void OnPageReady()
+    {
+        if (_isPageReady) { return; }
+        _isPageReady = true;
+
+        //Discarded deliberately: every failure is caught and reported inside
+        _ = OpenStartupDocumentsAsync();
+    }
+```
+
 **Where to look.**
 `PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs`
 
@@ -758,9 +841,12 @@ reads the process arguments itself.
 - `Environment.GetCommandLineArgs()` includes the executable at index 0, so the
   two paths are at indices 1 and 2 and the guard is `arguments.Length < 3`. The
   `string[] args` passed to a head's `Main` is never forwarded anywhere.
-- Starting it from the constructor means it can finish before the page has handed
-  the view model a `XamlRoot`, so an error dialog raised this early has nowhere to
-  attach. Deferring the load until the page signals it is ready is safer.
+- Started from the constructor this could finish before the page had handed the
+  view model a `XamlRoot`, so the error dialog would have had nowhere to attach.
+  The page-ready signal is what makes the dialog safe; see
+  [Start the first load when the page says it is ready](#start-the-first-load-when-the-page-says-it-is-ready).
+- The guard flag makes the signal idempotent, so a page that is loaded more than
+  once does not re-open the documents.
 
 ### Set bound properties from a background thread with InvokeOnMainThread
 
@@ -1179,7 +1265,10 @@ private async Task DoSearch()
     {
         //Everything this run still has to say is already queued on the UI thread, so the
         //tidying up is queued behind it: clearing the field here would make the last page and
-        //the closing sentence look as though a newer run had superseded them.
+        //the closing sentence look as though a newer run had superseded them. Only the run
+        //that is still the current one may turn the busy indicators off, and the token source
+        //is disposed on the UI thread, after the field is cleared, so a cancel arriving in
+        //the meantime can never reach a disposed one.
         InvokeOnMainThread(() =>
         {
             if (ReferenceEquals(cancellation, _searchCts))
@@ -1492,15 +1581,24 @@ public sealed class ConversionProgress
 navigate away or change the selection while it runs.
 
 **The MVVM shape.** Copy everything the run needs into locals at the top, so the
-run depends on nothing that can change underneath it. Guard re-entry with a flag,
-refresh the command at both ends, and announce completion after the `finally` so
-the button is live again by the time the user dismisses the dialog.
+run depends on nothing that can change underneath it. Guard re-entry with a bound
+flag that names the command in `[AffectsCommands]`, so setting it at both ends of
+the run is the whole of the enablement work, and announce completion after the
+`finally` so the button is live again by the time the user dismisses the dialog.
 
 **Code.**
 
 ```csharp
 // From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
-private bool CanCreateDocument() => IsModelViewActive && !_isCreatingDocument;
+/// <summary>Whether a marketing one-sheet is being built right now (re-entry gate).</summary>
+[AffectsCommands(nameof(DocumentCommand))]
+public bool IsCreatingDocument
+{
+    get;
+    private set => SetProperty(ref field, value);
+}
+
+private bool CanCreateDocument() => IsModelViewActive && !IsCreatingDocument;
 
 private async Task CreateDocumentAsync()
 {
@@ -1518,8 +1616,7 @@ private async Task CreateDocumentAsync()
 
     // ... pick the output path ...
 
-    _isCreatingDocument = true;
-    DocumentCommand.RaiseCanExecuteChanged();
+    IsCreatingDocument = true;
     var saved = false;
     try
     {
@@ -1535,8 +1632,7 @@ private async Task CreateDocumentAsync()
     }
     finally
     {
-        _isCreatingDocument = false;
-        DocumentCommand.RaiseCanExecuteChanged();
+        IsCreatingDocument = false;
     }
 
     if (saved)
@@ -1561,6 +1657,9 @@ private async Task CreateDocumentAsync()
   tolerable.
 - Announcing success after the `finally` block, rather than inside the `try`, is
   what leaves the button live while the dialog is up.
+- Make the re-entry gate a bound property rather than a private field. The
+  attribute then refreshes the button for free, and the flag is available to
+  anything else on the page that should dim while the run is going.
 
 ### Dispose a view model its commands and its bridge delegates
 
@@ -1608,7 +1707,8 @@ public override void Dispose()
 }
 ```
 
-The minimal version, for a view model that owns one command and nothing else:
+The minimal version, for a view model that owns one command and one disposable it
+built itself:
 
 ```csharp
 // From CodeBrix.Samples/MediaPlayerDemo/src/MediaPlayerDemo.Core/ViewModels/MainViewModel.cs
@@ -1616,6 +1716,7 @@ The minimal version, for a view model that owns one command and nothing else:
 
 public override void Dispose()
 {
+    (PlayerSource as IDisposable)?.Dispose();
     _loadCommand?.Dispose();
     _loadCommand = null;
     base.Dispose();
@@ -1815,12 +1916,14 @@ public string SearchText
         if (newValue == field) { return; }
 
         SetProperty(ref field, newValue);
-        DebounceRebuild();
+        _ = DebounceRebuildAsync();
     }
 } = string.Empty;
 
-//Waits a beat after the last keystroke before rebuilding, so typing stays smooth.
-private async void DebounceRebuild()
+//Waits a beat after the last keystroke before rebuilding, so typing stays smooth. It
+//returns a Task rather than being `async void`, so a failure is captured in the task
+//instead of escaping onto the UI thread from a property setter.
+private async Task DebounceRebuildAsync()
 {
     _searchDebounce?.Cancel();
     var debounce = new CancellationTokenSource();
@@ -1862,8 +1965,11 @@ _suppressCategoryRebuild = false;
 `KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/MainViewModel.cs`
 
 **Sharp edges.**
-- `async void` is correct here - it is a fire-and-forget UI reaction - and the
-  cancellation is caught rather than allowed to escape.
+- The debounce method returns a `Task` that the setter discards, rather than being
+  `async void`. Both are fire-and-forget from the setter's point of view, but a
+  failure inside an `async void` is thrown onto the UI thread, while a discarded
+  task keeps it. The cancellation is caught either way, because being superseded
+  by more typing is the expected outcome and not a fault.
 - The setter compares before assigning, so re-setting the same text does not
   restart the timer.
 - A discrete choice such as a sort selector rebuilds immediately; only free text
@@ -1877,9 +1983,11 @@ _suppressCategoryRebuild = false;
 and its thumbnail, up front would stall the window.
 
 **The MVVM shape.** A collection type that owns the full filtered list but adds
-only a batch at a time, exposing `HasMoreItems` and a `RequestMore` method. The
-page watches the `ScrollViewer` and calls `RequestMore` as the bottom approaches.
-Each item starts its own thumbnail fetch when it appears.
+only a batch at a time, exposing `HasMoreItems` and a `RequestMore` method. How
+big a batch is, and how near the bottom counts as near, are the collection's
+policy and are named constants on it; the page contributes only the scroll
+geometry, which is the one thing a view model cannot measure. Each item starts
+its own thumbnail fetch when it appears.
 
 **Code.**
 
@@ -1890,6 +1998,13 @@ public class AssetCellCollection : ObservableCollection<AssetCellViewModel>
 {
     //Enough cells to overfill the first screen even on a wide monitor.
     private const int InitialBatch = 36;
+
+    /// <summary>
+    /// How many further cells to materialize each time the grid asks for more. How near the
+    /// bottom edge counts as "near" is a measurement only the view can make, but how much to
+    /// add when it does is this collection's own policy, beside its initial batch.
+    /// </summary>
+    public const int ScrollBatch = 24;
 
     private readonly IReadOnlyList<AssetCellViewModel> _source;
 
@@ -1923,7 +2038,8 @@ public class AssetCellCollection : ObservableCollection<AssetCellViewModel>
 ```csharp
 // From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs
 //Lazy grid loading: as the grid scrolls within two screens of its bottom edge,
-//ask the cell collection to materialize the next batch.
+//ask the cell collection to materialize the next batch (how big a batch is the
+//collection's own policy).
 CatalogScroll.ViewChanged += (_, _) =>
 {
     var cells = ViewModel?.Cells;
@@ -1932,16 +2048,9 @@ CatalogScroll.ViewChanged += (_, _) =>
     var remaining = CatalogScroll.ExtentHeight - CatalogScroll.VerticalOffset - CatalogScroll.ViewportHeight;
     if (remaining < CatalogScroll.ViewportHeight * 2)
     {
-        cells.RequestMore(24);
+        cells.RequestMore(AssetCellCollection.ScrollBatch);
     }
 };
-
-//A new cell collection means the user switched bundle, searched or
-//re-filtered: jump back to the top.
-if (args.PropertyName == nameof(MainViewModel.Cells))
-{
-    CatalogScroll.ChangeView(null, 0, null, disableAnimation: true);
-}
 ```
 
 ```xml
@@ -1966,27 +2075,59 @@ if (args.PropertyName == nameof(MainViewModel.Cells))
 </ScrollViewer>
 ```
 
+**Variant: forward the geometry and let the collection decide.** PolyHavenBrowser
+moves the last piece of arithmetic off the page too. The page reports three
+numbers; the view model forwards them; the collection answers the whole question.
+
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/ModelCellCollection.cs
+    //One scroll-triggered batch, and how much unscrolled extent may remain before it is
+    //  asked for: both are this collection's policy, not the page's.
+    private const int ScrollBatch = 24;
+    private const double LookAheadViewports = 2d;
+    // ...
+    public void RequestMoreIfNearEnd(double extentHeight, double verticalOffset, double viewportHeight)
+    {
+        if (!HasMoreItems) { return; }
+
+        var remaining = extentHeight - verticalOffset - viewportHeight;
+        if (remaining < viewportHeight * LookAheadViewports)
+        {
+            RequestMore(ScrollBatch);
+        }
+    }
+```
+
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+    public void NotifyCatalogScrolled(double extentHeight, double verticalOffset, double viewportHeight) =>
+        Cells?.RequestMoreIfNearEnd(extentHeight, verticalOffset, viewportHeight);
+```
+
 **Where to look.**
 `KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/AssetCellCollection.cs`
 `KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml` and
 `Views/MainPage.xaml.cs`
-
-**Also shown by.**
-`PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/ModelCellCollection.cs`
-and `PolyHavenBrowser/src/PolyHavenBrowser.UI/Views/MainPage.xaml` (the same
-batching collection behind a card grid, built through a factory delegate so the
-collection does not know how a cell is constructed)
+`PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/ModelCellCollection.cs`,
+`PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs` and
+`PolyHavenBrowser/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs` (the page's
+whole contribution: one `ViewChanged` handler forwarding three numbers)
 
 **Sharp edges.**
 - Filtering swaps in a whole new collection instance rather than mutating the
-  existing one, which is what makes "scroll back to the top" a single property
-  change to watch.
+  existing one, which gives the view model one place - the collection property's
+  own setter - to say "and scroll the grid back to the top", through a bridge
+  delegate the page supplies.
 - A threshold of two viewports means a batch is already in place before the user
   reaches the end.
 - `RequestMore` is safe to call repeatedly and no-ops once everything is
   materialized.
 - The collection type is marked `[Microsoft.UI.Xaml.Data.Bindable]`, as is every
   other bound type in these applications, including plain record types.
+- Split the question at the one line a view model cannot answer. "How far down
+  has the grid scrolled" needs the control; "is that near enough, and how many
+  more" does not. The batch size is a public constant the page names rather than
+  a number the page invents.
 
 ### Show and hide panes with computed Visibility properties
 
@@ -2134,7 +2275,9 @@ public bool IsExpanded
     set
     {
         SetProperty(ref field, value);
-        if (value) { _ = EnsureChildrenLoadedAsync(); }
+        //A setter cannot await, so the one-shot child load is started through a helper
+        //  that observes it rather than through a bare fire-and-forget discard.
+        if (value) { BackgroundWork.StartAndObserve(EnsureChildrenLoadedAsync, ReportChildLoadFailure); }
     }
 }
 
@@ -2182,7 +2325,10 @@ internal async Task LoadChildrenForNodeAsync(NotionPageNodeViewModel node)
 - A "load everything" command walks the same `EnsureChildrenLoadedAsync()` path
   recursively, so there is one loading code path rather than two.
 - A failed child load writes to the status line and leaves the row usable; it
-  never throws into the expand gesture.
+  never throws into the expand gesture. The expand setter cannot await, so the
+  load goes through a start-and-observe helper with the row's own failure
+  reporter; see
+  [Start work you cannot await through a helper that observes it](#start-work-you-cannot-await-through-a-helper-that-observes-it).
 
 ### Confirm and inform from the view model with SimpleViewModel dialogs
 
@@ -2247,7 +2393,7 @@ if (File.Exists(outputPath))
         "Replace existing file?");
     if (!replace)
     {
-        StatusText = "Publishing cancelled - the existing file was kept.";
+        StatusText = "Publishing cancelled — the existing file was kept.";
         return;
     }
 }
@@ -2470,11 +2616,12 @@ private void LoadMedia()
     try
     {
         var uri = new Uri(MediaAddress);
-        PlayerSource = MediaSource.CreateFromUri(uri);
+        SetPlayerSource(MediaSource.CreateFromUri(uri));
         StatusText = $"Loaded: {uri}";
     }
     catch (Exception ex)
     {
+        _log.LogWarning(ex, "Cannot load '{MediaAddress}'.", MediaAddress);
         StatusText = $"Cannot load '{MediaAddress}': {ex.Message}";
     }
 }
@@ -2506,6 +2653,9 @@ public string StatusText
 - Be honest about what the status covers. MediaPlayerDemo's covers only URI
   construction and source creation, and says nothing about whether the media
   actually plays.
+- Status text is for the user; a log line is for whoever has to work out why. The
+  catch does both, and the logged form keeps the exception itself, which the
+  sentence on screen throws away.
 
 ### Report a domain rule violation as a typed exception the view model can catch
 
@@ -2679,12 +2829,14 @@ Two identical regions are the same idea with a scoped `DataContext`:
     public MainViewModel()
     {
         if (IsDesignMode(true)) { return; } //Leave as the first line of constructor
-
-        Debug.WriteLine("Main view model startup.");
-
+        // ...
         LeftPane = new DocumentPaneViewModel("Document 1", () => BrowseAsync(DocumentSide.Left));
         RightPane = new DocumentPaneViewModel("Document 2", () => BrowseAsync(DocumentSide.Right));
-        _ = OpenStartupDocumentsAsync();
+
+        //A newly rendered page is one more thing that moves the view, so each pane's image change
+        //  is folded into the one signal the page watches
+        LeftPane.PropertyChanged += OnPanePropertyChanged;
+        RightPane.PropertyChanged += OnPanePropertyChanged;
     }
 
     /// <summary>The left pane - Document 1.</summary>
@@ -2704,7 +2856,7 @@ Two identical regions are the same idea with a scoped `DataContext`:
         BrowseCommand = new SimpleCommand(browse);
     }
     // ...
-    /// <summary>Shows document (or clears the pane when it is null).</summary>
+    /// <summary>Shows document (or clears the pane when it is <c>null</c>).</summary>
     internal void ShowDocument(PdfPageDocument document)
     {
         FilePath = document?.FilePath;
@@ -2737,7 +2889,10 @@ Two identical regions are the same idea with a scoped `DataContext`:
 - The children in CodeBrixVideoTool live in different assemblies from the parent
   and from each other, which is what makes them testable in isolation.
 - A child talks upward by raising an event the parent subscribes to, never by
-  holding a reference to the parent.
+  holding a reference to the parent. PdfSideBySide's parent subscribes to each
+  pane's `PropertyChanged` and folds it into the one signal the page watches, so
+  the page still has a single subscription however many children there are - and
+  the parent unsubscribes from both panes in its own `Dispose()`.
 - Get-only child properties that are never reassigned keep the XAML's scoped
   `DataContext` bindings valid for the life of the page.
 
@@ -2868,24 +3023,37 @@ public class EncryptionMode : SimpleEnumInfo<EncryptionMode.CryptAlgorithm>
 }
 ```
 
+The view model offers the info objects themselves, and the control is told which
+of their properties to show:
+
 ```csharp
 // From CodeBrix.Samples/JustBetweenUs/Shared/ViewModels/MainViewModel.cs
-private readonly Dictionary<EncryptionMode.CryptAlgorithm, EncryptionMode> _encryptionModeDictionary =
-    EncryptionMode.GetDictionary();
+    private readonly Dictionary<EncryptionMode.CryptAlgorithm, EncryptionMode> _encryptionModeDictionary =
+        EncryptionMode.GetDictionary();
 
-public List<string> EncryptionModes { get; } = new();
-
-public string SelectedEncryptionModeText
-{
-    get => _selectedEncryptionModeText;
-    set
+    /// <summary>The algorithms the picker offers, in enum order; the picker displays their Description.</summary>
+    public IReadOnlyList<EncryptionMode> EncryptionModes
     {
-        SetProperty(ref _selectedEncryptionModeText, value);
-        _selectedEncryptionMode = _encryptionModeDictionary
-            .Single(s => s.Value.Description == value)
-            .Key;
+        get;
+        private set => SetProperty(ref field, value);
+    } = [];
+
+    /// <summary>The algorithm that the picker currently has selected.</summary>
+    public EncryptionMode SelectedEncryptionMode
+    {
+        get;
+        set => SetProperty(ref field, value);
     }
-}
+```
+
+```xml
+<!-- From CodeBrix.Samples/JustBetweenUs/CodeBrixPlatform/JustBetweenUs.UI/Views/MainPage.xaml -->
+            <ComboBox HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Width="300"
+                ItemsSource="{d:Binding EncryptionModes}"
+                DisplayMemberPath="Description"
+                SelectedItem="{d:Binding SelectedEncryptionMode, Mode=TwoWay}" />
 ```
 
 **Where to look.**
@@ -2894,19 +3062,24 @@ public string SelectedEncryptionModeText
 `JustBetweenUs/CodeBrixPlatform/JustBetweenUs.UI/Views/MainPage.xaml`
 
 **Also shown by.**
-`JustBetweenUs/Mobile/Views/MainPage.xaml` (a MAUI `Picker` binds identically,
-with no view-model change),
-`WikipediaPublisher/Shared/ViewModels/MainViewModel.cs` (a typed option list
-projected to display names, so no application type leaks into XAML)
+`JustBetweenUs/Mobile/Views/MainPage.xaml` (the same two properties behind a MAUI
+`Picker`, whose `ItemDisplayBinding` plays the part `DisplayMemberPath` plays on
+the other heads - one view model, two dialects of the same binding),
+`WikipediaPublisher/Shared/ViewModels/MainViewModel.cs` and
+`NotionDocumentCreator/src/NotionDocumentCreator.Core/ViewModels/MainViewModel.cs`
+(a page-size option type bound the same way)
 
 **Sharp edges.**
 - Enum-valued bound properties use `SetEnumProperty()`, not `SetProperty()`.
 - A curated list written out by hand keeps unwanted members out of the picker and
   fixes the display order; `Enum.GetValues()` gives you neither.
-- Binding the description string rather than the object means the setter has to
-  map text back to the enum with a `Single()` lookup, which throws if two members
-  ever share a description. Binding the object and using `DisplayMemberPath`
-  avoids that.
+- Bind the object and name its display property; do not bind the description
+  string. Binding the text forces the setter to map it back to a member with a
+  `Single()` lookup, which throws the moment two members share a description, and
+  it puts a lookup in the selection path of every pick.
+- The list property is set once, from the constructor, through `SetProperty`, and
+  the picker's initial selection is set in the same place. A selected item that is
+  not an element of the offered list shows as nothing selected.
 
 ### Stop a two way bound selection from commanding the control back
 
@@ -3006,24 +3179,25 @@ back.
 
 ```csharp
 // From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
-public string SelectedRenderEngineName
+public RenderEngineKind SelectedRenderEngine
 {
-    get => _selectedRenderEngineName;
+    get => _selectedRenderEngine;
     set
     {
-        if (string.IsNullOrEmpty(value) || value == _selectedRenderEngineName) { return; }
+        if (value == _selectedRenderEngine) { return; }
 
         //Optimistic: show the new selection at once; SwitchEngineAsync reverts it if the
         //engine is unsupported or fails to initialize.
-        _selectedRenderEngineName = value;
-        NotifyPropertyChanged(nameof(SelectedRenderEngineName));
-        _ = SwitchEngineAsync(value);
+        SetEnumProperty(ref _selectedRenderEngine, value);
+        _ = RunSwitchEngineAsync(value);
     }
 }
 
-private async Task SwitchEngineAsync(string engineName)
+//Switches the 3D engine behind the model painter: alert + snap back when the engine is
+//not okayed for this platform, otherwise swap painters and re-display the current sample.
+private async Task SwitchEngineAsync(RenderEngineKind kind)
 {
-    if (!Enum.TryParse<RenderEngineKind>(engineName, out var kind) || kind == _currentEngineKind) { return; }
+    if (kind == _currentEngineKind) { return; }
 
     if (IsBusy)
     {
@@ -3049,9 +3223,30 @@ private async Task SwitchEngineAsync(string engineName)
 
 private void RevertEngineSelection()
 {
-    _selectedRenderEngineName = _currentEngineKind.ToString();
-    NotifyPropertyChanged(nameof(SelectedRenderEngineName));
+    _selectedRenderEngine = _currentEngineKind;
+    NotifyPropertyChanged(nameof(SelectedRenderEngine));
 }
+```
+
+The setter discards the task it starts, so a wrapper stands between the two and
+turns anything the switch throws into the same status line and the same revert:
+
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+    //Starts an engine switch from the bound setter. The task is discarded, so this wrapper is
+    //what guarantees a failure becomes status text rather than an unobserved exception.
+    private async Task RunSwitchEngineAsync(RenderEngineKind kind)
+    {
+        try
+        {
+            await SwitchEngineAsync(kind);
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Could not switch to {kind} rendering: {ex.Message}";
+            RevertEngineSelection();
+        }
+    }
 ```
 
 **Where to look.**
@@ -3063,6 +3258,10 @@ private void RevertEngineSelection()
 - The revert target is the currently active choice, not a hard-coded default, so a
   second failed switch returns to whatever is really running.
 - The control is also disabled while busy, and the method still re-checks it.
+- The offered values are the enum members themselves, not their names, so the
+  validation is a comparison rather than a parse and an unknown string is not a
+  case that can arise. The setter uses `SetEnumProperty`, which is the overload
+  an enum-valued bound property needs.
 
 ### Offer only the choices that make sense for the current selection
 
@@ -3252,8 +3451,9 @@ helper. No head-specific code at all.
 
 ```csharp
 // From CodeBrix.Samples/JustBetweenUs/Shared/ViewModels/MainViewModel.cs
+private SimpleCommand _showOsInfoCommand;
 public SimpleCommand ShowOsInfoCommand =>
-    (field ??= new SimpleCommand(DoShowOsInfo));
+    (_showOsInfoCommand ??= new SimpleCommand(DoShowOsInfo));
 
 private async Task DoShowOsInfo()
 {
@@ -3279,9 +3479,9 @@ private async Task DoShowOsInfo()
 **Sharp edges.**
 - `GatherInfo` takes a `withConsoleOutput` flag; pass false unless you want the
   same report on the console.
-- This command uses the `field` keyword for its lazy backing store because it has
-  nothing to dispose; the commands beside it use explicit fields so `Dispose()`
-  can reach them.
+- The command is held in an explicit field, like every other command in the file,
+  so `Dispose()` can reach it. A `field ??=` command property creates the command
+  once too, but nothing can dispose what it holds.
 - To learn which head is running rather than which operating system, see the
   head-detection blueprint in the startup area.
 
@@ -3392,12 +3592,37 @@ re-applies everything.
     }
 ```
 
+The page subscribes once, from a method both its data-context change and its
+loaded event call, and drops the subscription when it unloads:
+
 ```csharp
 // From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs
-                viewModel.PropertyChanged += (_, args) =>
-                {
-                    if (args.PropertyName == nameof(MainViewModel.ViewVersion)) { ApplyViews(); }
-                };
+    //One property to watch: the view model folds everything that moves the view - a zoom, a pan, a
+    //  page change, a newly rendered image - into ViewVersion
+    private void WireViewModel()
+    {
+        var viewModel = ViewModel;
+        if (ReferenceEquals(viewModel, _wiredViewModel)) { return; }
+
+        UnwireViewModel();
+        if (viewModel == null) { return; }
+
+        _wiredViewModel = viewModel;
+        _wiredViewModel.PropertyChanged += OnViewModelPropertyChanged;
+    }
+
+    private void UnwireViewModel()
+    {
+        if (_wiredViewModel == null) { return; }
+
+        _wiredViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        _wiredViewModel = null;
+    }
+
+    private void OnViewModelPropertyChanged(object sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(MainViewModel.ViewVersion)) { ApplyViews(); }
+    }
 ```
 
 **Where to look.**
@@ -3406,10 +3631,16 @@ re-applies everything.
 
 **Sharp edges.**
 - Every call site that changes the model goes through one method, which bumps the
-  counter, re-notifies the derived labels and refreshes the commands.
+  counter, re-notifies the derived labels and refreshes the commands. The panes'
+  own change notifications are folded into it by the parent view model, so the
+  page still watches exactly one name.
 - `nameof(MainViewModel.ViewVersion)` keeps the page's filter refactor-safe.
 - A counter, not a `bool` or an event: any increment is a change, and it survives
   being read late.
+- Subscribe through a method that first unsubscribes, and call it from both the
+  data-context change and the loaded event. A lambda subscribed inline cannot be
+  removed, and a page whose data context is set more than once then holds a
+  handler per assignment.
 
 ### Do blocking work in a service behind Task Run
 
@@ -3444,7 +3675,7 @@ public class AssetCatalogService
 
 ```csharp
 // From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/MainViewModel.cs
-private async Task ReloadCatalogAsync()
+private async Task ReloadCatalogCoreAsync()
 {
     IsCatalogLoading = true;
     CloseViewer();
@@ -3469,7 +3700,9 @@ private async Task ReloadCatalogAsync()
 }
 ```
 
-**Variant: await the network, then build off the UI thread.**
+**Variant: await the network, decode off the UI thread, apply on it.** The work
+splits in two at the line where the result stops being data and starts being
+something the UI owns.
 
 ```csharp
 // From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
@@ -3484,12 +3717,22 @@ private async Task SelectAsync(SampleAssetKind kind)
     try
     {
         var progress = new Progress<string>(message => StatusText = message);
-        var asset = await _assets.EnsureSampleAsync(kind, progress, CancellationToken.None);
+        var asset = await _assets.EnsureSampleAsync(kind, progress, _lifetime.Token);
 
-        //Decode/build off the UI thread; the painters upload to GL lazily during Paint.
-        var painter = await Task.Run(() => BuildPainter(kind, asset));
-        _currentPainter = painter;
-        StatusText = $"{Label(kind)}: {asset.Name}    ·    {Hint(kind)}";
+        //Decode off the UI thread; the painters upload to GL lazily during Paint.
+        var decoded = await Task.Run(() => DecodeSample(kind, asset), _lifetime.Token);
+
+        //Hand the decoded content to a painter back on the UI thread: the painters, their
+        //cameras and the bound status line are only ever touched there.
+        InvokeOnMainThread(() =>
+        {
+            CurrentPainter = ApplyDecodedSample(kind, decoded);
+            StatusText = $"{Label(kind)}: {asset.Name}    ·    {Hint(kind)}";
+        });
+    }
+    catch (OperationCanceledException)
+    {
+        //The view model is shutting down; leave the status line as it is.
     }
     catch (Exception ex)
     {
@@ -3498,9 +3741,16 @@ private async Task SelectAsync(SampleAssetKind kind)
     finally
     {
         IsBusy = false;
-        InvalidateCanvas?.Invoke();
+        RequestRender();
     }
 }
+```
+
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+    //Runs on a worker thread: decodes the downloaded file and builds the mesh. It touches no
+    //painter, no camera and no bound state, so nothing here needs the UI thread.
+    private static DecodedSample DecodeSample(SampleAssetKind kind, SampleAsset asset)
 ```
 
 **Where to look.**
@@ -3515,6 +3765,13 @@ private async Task SelectAsync(SampleAssetKind kind)
   so a read racing the swap sees null rather than a disposed object.
 - Guard re-entry with the busy flag at the top of the method, and always clear the
   flag - and invalidate whatever needs repainting - in the `finally`.
+- Split the method where the answer stops being data: the decode half is `static`
+  and takes only what it needs, which is how you can tell by looking that it
+  touches no bound state; the apply half runs inside `InvokeOnMainThread`. A
+  `static` worker method is the cheapest proof a reviewer can have.
+- Pass a token that is cancelled when the view model is disposed, and catch
+  `OperationCanceledException` separately from a real failure, so a window closing
+  mid-load does not write an error onto a status line nobody will read.
 - Keep GPU work off the worker thread. The renderers here take a lock, stash the
   new data as pending, and upload it on the next render, on the render thread.
 - Dispose the previous result only after the new one is built and assigned, so a
@@ -3627,15 +3884,15 @@ try
     var oldPainter = _modelPainter;
     _modelPainter = new ModelScenePainter(engine);
     _currentEngineKind = kind;
-    if (ReferenceEquals(_currentPainter, oldPainter))
+    if (ReferenceEquals(CurrentPainter, oldPainter))
     {
-        _currentPainter = null;
+        CurrentPainter = null;
     }
     oldPainter?.Dispose();
 }
 catch (Exception ex)
 {
-    StatusText = $"Could not switch to {engineName} rendering: {ex.Message}";
+    StatusText = $"Could not switch to {kind} rendering: {ex.Message}";
     RevertEngineSelection();
     return;
 }
@@ -3662,38 +3919,81 @@ finally
 **When you want this.** Each repaint is expensive, and a fast mouse can queue more
 pointer events than you can draw.
 
-**The MVVM shape.** Two independent mechanisms. Paint coalescing keeps at most one
-pending invalidate. Backlog detection compares the pointer event's own timestamp
+**The MVVM shape.** Two independent mechanisms, both on the view model. Paint
+coalescing keeps at most one pending invalidate, raised through the page's
+invalidate delegate. Backlog detection compares the pointer event's own timestamp
 against a stopwatch and, when the input stream has fallen behind, advances the
 painter's drag anchor without rendering, so the camera stays in sync with the
-cursor while frames are skipped.
+cursor while frames are skipped. The page contributes the two things only it can:
+the pixel coordinates of the event, and the pointer capture.
 
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs
-//A pointer frame that is running more than this far behind real time is a backlog
-//frame: keep the cursor anchor in sync but skip rendering it, catching up to the latest.
-private const double StaleFrameMicroseconds = 1_000_000; // 1 second
+// From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+    //A pointer frame that is running more than this far behind real time is a backlog
+    //frame: keep the cursor anchor in sync but skip rendering it, catching up to the latest.
+    private const double StaleFrameMicroseconds = 1_000_000; // 1 second
 
-//Coalescing: never queue more than one paint. While one is pending, pointer moves only
-//update the camera; the next paint draws the latest state.
-private bool _renderPending;
+    //Tracks how far behind real time the pointer stream is, to detect a backlog.
+    private readonly Stopwatch _gestureClock = new();
+    private double _gestureStartTimestamp;
 
-private void RequestRender()
-{
-    if (_renderPending) { return; }
-    _renderPending = true;
-    DisplayCanvas?.Invalidate();
-}
+    //Coalescing: never queue more than one paint. While one is pending, pointer moves only
+    //update the camera; the next paint draws the latest state.
+    private bool _renderPending;
+```
 
-private bool IsBacklogFrame(ulong timestamp)
-{
-    if (!_gestureClock.IsRunning) { return false; }
-    var inputElapsed = timestamp - _gestureStartTimestamp;
-    var lag = _gestureClock.Elapsed.TotalMicroseconds - inputElapsed;
-    return lag > StaleFrameMicroseconds;
-}
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+    public void PaintCanvas(SKSurface surface, SKImageInfo info)
+    {
+        _renderPending = false;
+        _currentPainter?.Paint(surface, info);
+    }
+
+    /// <summary>
+    /// Requests a repaint, keeping at most one queued: while a paint is pending, pointer moves
+    /// only update the camera and the next paint draws the latest state.
+    /// </summary>
+    public void RequestRender()
+    {
+        if (_renderPending) { return; }
+        _renderPending = true;
+        InvalidateCanvas?.Invoke();
+    }
+```
+
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+    public bool PointerMoved(double x, double y, ulong timestamp)
+    {
+        var painter = _currentPainter;
+        if (painter == null) { return false; }
+
+        if (IsBacklogFrame(timestamp))
+        {
+            //Discard this stale frame: stay aligned with the cursor but don't render it.
+            painter.PointerSkip(x, y);
+        }
+        else
+        {
+            painter.PointerDrag(x, y);
+            RequestRender();
+        }
+
+        return true;
+    }
+
+    //True when this pointer frame is running far enough behind real time to be a backlog
+    //frame that should be dropped rather than rendered.
+    private bool IsBacklogFrame(ulong timestamp)
+    {
+        if (!_gestureClock.IsRunning) { return false; }
+        var inputElapsed = timestamp - _gestureStartTimestamp;
+        var lag = _gestureClock.Elapsed.TotalMicroseconds - inputElapsed;
+        return lag > StaleFrameMicroseconds;
+    }
 ```
 
 ```csharp
@@ -3706,17 +4006,24 @@ void PointerSkip(double x, double y);
 ```
 
 **Where to look.**
-`PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs`
+`PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/Display/IScenePainter.cs`
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/Display/ModelScenePainter.cs`
 
 **Sharp edges.**
-- The pending flag is cleared at the top of the paint handler, so a request made
+- The pending flag is cleared at the top of the paint method, so a request made
   during paint still queues the next frame.
 - `PointerSkip` exists precisely so that dropping a frame does not make the scene
   jump: it moves the anchor without applying the delta to the camera.
-- On pointer release the page requests one more render at full, non-drag
+- On pointer release the view model requests one more render at full, non-drag
   resolution, which is what makes a two-tier resolution scheme work.
+- None of this is view code, even though all of it is about painting: the policy
+  reads a timestamp the event carries and a flag of its own. What the page keeps
+  is converting the event's position into canvas pixels, and capturing and
+  releasing the pointer.
+- The pointer methods return a `bool` so the page knows whether to take the
+  capture. A `void` signature would leave the page guessing whether anything took
+  the press.
 
 ### Run a sensor pipeline on a worker thread with latest frame wins
 
@@ -3941,7 +4248,6 @@ try
     _tracker.Start();
 
     IsCaptureMode = false;
-    NotifyPropertyChanged(nameof(PaintSession));
     InvalidateMainCanvas?.Invoke();
     StatusText = "Show the camera your open palm to spread paint on the photo - " +
                  "close your hand (or hide it) to stop painting.";
@@ -3960,9 +4266,12 @@ finally
 `WebcamPainter/src/WebcamPainter.Core/ViewModels/MainViewModel.cs`
 
 **Sharp edges.**
-- A plain expression-bodied property over a field needs an explicit
-  `NotifyPropertyChanged` when the field is replaced; only `SetProperty`
-  properties notify themselves.
+- The new session is a private field, not a bound property. It reaches the screen
+  through the view model's own renderer and the invalidate delegate, so there is
+  nothing to notify - and nothing that could hand a page a Skia object. A public
+  property here would need an explicit `NotifyPropertyChanged` on every
+  replacement, because a plain expression-bodied property over a field does not
+  notify itself.
 - The worker is created once and reused across mode changes; only `Start()` and
   `Stop()` cycle, and its event is subscribed exactly once.
 - Events that fire off the UI thread marshal in their handler; a handler that only
@@ -3981,6 +4290,30 @@ polls for finished tiles through a timer service, and the configuration dialog i
 awaited concurrently with the render.
 
 **Code.**
+
+The command model that starts a preview raises a synchronous event, so the
+manager offers a `void` entry point over an awaitable method, and observes the
+task it discards:
+
+```csharp
+// From CodeBrix.Samples/Pinta.Brix/src/libs/Pinta.Brix.Engine/Managers/LivePreviewManager.cs
+	public void Start (BaseEffect effect)
+	{
+		_ = RunAndObserve (StartAsync (effect), effect.Name);
+	}
+
+	private static async Task RunAndObserve (Task run, string effectName)
+	{
+		try {
+			await run;
+		} catch (Exception ex) {
+			Debug.WriteLine ($"Live preview of '{effectName}' failed: {ex}");
+		}
+	}
+```
+
+The run itself is one method: the preview surface, the worker-thread render, the
+configuration dialog and the history item the confirmed result becomes.
 
 ```csharp
 // From CodeBrix.Samples/Pinta.Brix/src/libs/Pinta.Brix.Engine/Managers/LivePreviewManager.cs
@@ -4051,6 +4384,11 @@ public abstract bool IsTileable { get; }
 - Thread count comes from a system service, which the tests replace with a mock.
 - The canvas renderer substitutes the preview surface for the active layer while
   the preview is enabled, so no extra compositing path is needed.
+- Keep the real work awaitable and put the `void` entry point beside it, rather
+  than writing the run itself as `async void`. The entry point is then the only
+  place that has to observe the task, and a caller that can wait - a test, or
+  another `async` method - gets the failure instead of losing it; see
+  [Start work you cannot await through a helper that observes it](#start-work-you-cannot-await-through-a-helper-that-observes-it).
 
 ### Drive an undo history from a list and travel to a clicked point
 
@@ -4825,8 +5163,10 @@ what it finds.
 **The MVVM shape.** The view model owns the buffer, the lock and the two
 dimensions, and is the only thing that knows the frames exist. The capture
 callback writes into that cache and leaves. A `TryGet...` method reads out into a
-buffer the caller owns, and is the whole surface the renderer is given. No
-control, no Skia type and no dispatcher appears on either side of it.
+buffer the caller owns, and is the whole surface the renderer is given - declared
+on a one-member interface the view model implements, so the renderer takes the
+source rather than the view model. No control, no Skia type and no dispatcher
+appears on either side of it.
 
 **Code.**
 
@@ -4891,17 +5231,38 @@ public bool TryGetLatestFrame(ref byte[] buffer, out int width, out int height)
 }
 ```
 
-The consumer is a paint handler, so the read has to answer "nothing yet" as a
-normal state rather than as an error:
+The read is declared on an interface the view model implements, so the renderer
+never names the view model; and because the consumer is a paint handler, "nothing
+yet" has to be a normal answer rather than an error:
+
+```csharp
+// From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
+/// <summary>
+/// Lets the canvas renderer pull the most recent webcam frame without knowing which
+/// concrete view model produced it. The hosting page resolves its data context through this
+/// interface and hands it to the renderer from the paint handler.
+/// </summary>
+public interface IVideoFrameSource
+{
+    // ...
+}
+```
 
 ```csharp
 // From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/Video/VideoCanvas.cs
-if (viewModel == null
-    || !viewModel.TryGetLatestFrame(ref _frameBuffer, out int width, out int height)
-    || width <= 0 || height <= 0)
-{
-    return;
-}
+    public static void RenderFrame(SKSurface surface, SKImageInfo info, IVideoFrameSource frameSource)
+    {
+        SKCanvas canvas = surface.Canvas;
+        canvas.Clear(SKColors.Black);
+
+        if (frameSource == null
+            || !frameSource.TryGetLatestFrame(ref _frameBuffer, out int width, out int height)
+            || width <= 0 || height <= 0)
+        {
+            return;
+        }
+        // ...
+    }
 ```
 
 **Where to look.**
@@ -4924,6 +5285,10 @@ if (viewModel == null
 - Nothing is queued, so a slow UI misses frames instead of building a backlog.
   That is the intended behavior for a live view and the wrong behavior for a
   recorder.
+- The renderer takes the interface, and the page hands it its data context cast to
+  that interface. Naming the view model type in the render path would tie a static
+  helper to one application's view model for no gain; the pull half of the pair is
+  one method wide, so the interface is one method wide too.
 
 ### Push a bound toggle into a live native session and re-apply it to the next one
 
@@ -5096,3 +5461,720 @@ private bool CanTakePhoto() => (!IsBusy) && HasFrame && IsValidFolder(FolderPath
 - The busy flag gates both commands, so the browse button is dead while a file is
   being written.
 
+### Guard an async void handler the platform calls
+
+**When you want this.** A handler whose signature you do not choose - a page's
+`Loaded`, a headless command model's `Activated`, a `FrameArrived`, a finished
+event on a child view model - has to await something. `async void` is the only
+shape that fits, and a failure inside one does not land in a task anybody holds:
+it reaches the dispatcher as an unhandled exception and ends the application.
+
+**The MVVM shape.** Every `async void` in these applications has the same shape: a
+`try` around everything it does, and a `catch` that turns the failure into
+whatever this application already uses to say something went wrong - a status
+line, a log line, a report method. Where there is real work, it stays in an
+awaitable method beside the handler, so the handler is a wrapper and nothing
+else, and a test can await the work and see what the handler would swallow.
+
+**Code.**
+
+An event handler on a view model says in its own summary why the whole body is
+wrapped:
+
+```csharp
+// From CodeBrix.Samples/CodeBrixVideoTool/src/CodeBrixVideoTool.Core/ViewModels/MainViewModel.cs
+    /// <summary>
+    /// Adds a finished conversion's output to the list. This is an event handler, so it is
+    /// <c>async void</c> and has no caller to hand a failure back to: the whole body is wrapped so
+    /// that nothing can escape into the dispatcher, and what <see cref="AddAsync" /> does not already
+    /// turn into a sentence ends up in the status bar as one.
+    /// </summary>
+    private async void OnConversionFinished(object sender, ConversionOutcome outcome)
+    {
+        try
+        {
+            // ...
+            await AddAsync(outcome.OutputPath, CancellationToken.None);
+            StatusText = outcome.ToString();
+        }
+        catch (Exception exception)
+        {
+            StatusText = $"The conversion finished, but its result could not be listed: {exception.Message}";
+        }
+    }
+```
+
+A page's `Loaded` is the other common one. Here the failure is a graphics API that
+would not start, and the handler deliberately falls through to the settling step
+that copes with exactly that:
+
+```csharp
+// From CodeBrix.Samples/SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs
+    private async void OnLoaded(object sender, RoutedEventArgs args)
+    {
+        if (gpuCanvas != null) { return; }
+
+        try
+        {
+            // ... build the GPU canvas and give it a moment to report ...
+        }
+        catch (Exception exception)
+        {
+            //Nothing may escape an async void handler. A graphics API that refused to start is not a
+            //  crash here either: the settle below collapses the canvas that did not start, and the
+            //  view model is told it is on the processor.
+            Debug.WriteLine($"SimpleCbxVideoPlayer: the GPU canvas could not be started - {exception.Message}");
+        }
+
+        DispatcherQueue?.TryEnqueue(SettleVideoSurface);
+    }
+```
+
+The guard does not have to live in the page. Where the page's `async void` handler
+only awaits one view-model method, the view model is the better place for it,
+because the view model is what knows how this application reports a failure:
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs
+    public async Task InitializeAsync()
+    {
+        try
+        {
+            await StartUpAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Scope startup failed.");
+            SetStatus("Could not start: " + ex.Message);
+        }
+    }
+```
+
+**Where to look.**
+`CodeBrixVideoTool/src/CodeBrixVideoTool.Core/ViewModels/MainViewModel.cs` and
+`src/CodeBrixVideoTool.UI/Views/MainPage.xaml.cs` (`StartSmokeRun`)
+`SimpleCbxVideoPlayer/src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs`
+`PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs`
+
+**Also shown by.**
+`Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.Actions.cs` (one `OnActivated`
+helper wrapping every asynchronous command handler, so each subscription in the
+wiring block stays one line),
+`KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/MainViewModel.cs`
+(a debounce whose own failure becomes the grid's caption)
+
+**Sharp edges.**
+- Catch `Exception`, not a shortlist. The point of the wrapper is that nothing
+  escapes, and a handler that catches three types still ends the application on
+  the fourth.
+- Keep the real work in an awaitable method beside the handler. That is what lets
+  a test await it, and it is what stops the wrapper growing a body of its own.
+- A report can fail too - showing a dialog is one more UI operation - so guard the
+  reporting, as Pinta.Brix's does. A failed report must not be worse than the
+  failure it was reporting.
+- `OperationCanceledException` usually deserves its own empty `catch` above the
+  general one, so a superseded run is not reported as a fault.
+- Where the handler's whole body is one call into a view model, put the guard in
+  the view model instead. The page then has nothing to decide, and every head gets
+  the same behavior without repeating it.
+
+### Start work you cannot await through a helper that observes it
+
+**When you want this.** The place that has to start asynchronous work cannot await
+it: a bound property's setter, a synchronous model event, a constructor. A bare
+`_ = SomethingAsync();` starts the work, but its failure goes nowhere at all - not
+to a caller, not to the status line, not even to the debugger until the finalizer
+notices.
+
+**The MVVM shape.** Start the work through something whose only job is to observe
+how it ends: either a small static helper the whole application shares, or a
+private wrapper method beside the work it starts. The work itself stays an
+ordinary `Task`-returning method, so a command or a test can still await it, and
+the failure handler belongs to the caller, which is what knows where a message
+about this particular work should go. This is the same instinct as
+[Guard an async void handler the platform calls](#guard-an-async-void-handler-the-platform-calls);
+the difference is that there the signature forced `async void` on you, while here
+you are choosing to discard a task and have to answer for it.
+
+**Code.**
+
+NotionDocumentCreator makes the helper explicit, and documents when not to reach
+for it:
+
+```csharp
+// From CodeBrix.Samples/NotionDocumentCreator/src/NotionDocumentCreator.Core/Helpers/BackgroundWork.cs
+/// <summary>
+/// Starts asynchronous work from a place that cannot await it - a bound property's setter, a
+/// selection change - and observes the result, so the gesture that started the work never sees
+/// an exception and nothing is left as an unobserved task. Prefer awaiting the work from a
+/// command; reach for this only where the caller really has no way to await.
+/// </summary>
+public static class BackgroundWork
+{
+    public static void StartAndObserve(Func<Task> work, Action<Exception> onError = null)
+    {
+        if (work is null) { return; }
+        _ = ObserveAsync(work, onError);
+    }
+
+    private static async Task ObserveAsync(Func<Task> work, Action<Exception> onError)
+    {
+        try
+        {
+            await work();
+        }
+        catch (Exception e)
+        {
+            //Reporting the failure is the caller's business; observing it is this method's.
+            try { onError?.Invoke(e); }
+            catch (Exception) { } //A failing error handler must not replace one unobserved fault with another
+        }
+    }
+}
+```
+
+Each call site supplies the sentence that belongs to it:
+
+```csharp
+// From CodeBrix.Samples/NotionDocumentCreator/src/NotionDocumentCreator.Core/ViewModels/MainViewModel.cs
+    /// <summary>Shows the preview pane for a tapped row.</summary>
+    internal void ShowPreview(NotionPageNodeViewModel node)
+    {
+        if (node is null || node.IsPlaceholder) { return; }
+        SelectedNode = node;
+
+        //The selection has to take effect now, and the load cannot be awaited from here, so it
+        //  is started through a helper that observes it instead of a bare discard.
+        BackgroundWork.StartAndObserve(() => LoadPreviewForNodeAsync(node),
+            e => InvokeOnMainThread(() => StatusText = $"Preview failed: {e.Message}"));
+    }
+```
+
+Where there is only one such call, a private wrapper says the same thing without a
+helper class. The constructor discards this one; the wrapper is what makes that
+safe:
+
+```csharp
+// From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/MainViewModel.cs
+    //The constructor starts this without awaiting it, so a failure has nowhere to surface:
+    //it becomes the sidebar's caption rather than an unobserved task.
+    private async Task ReloadCatalogAsync()
+    {
+        try
+        {
+            await ReloadCatalogCoreAsync();
+        }
+        catch (Exception ex)
+        {
+            IsCatalogLoading = false;
+            BundleCountText = $"Could not read this folder: {ex.Message}";
+        }
+    }
+```
+
+**Where to look.**
+`NotionDocumentCreator/src/NotionDocumentCreator.Core/Helpers/BackgroundWork.cs`
+`NotionDocumentCreator/src/NotionDocumentCreator.Core/ViewModels/NotionPageNodeViewModel.cs`
+`KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/MainViewModel.cs`
+
+**Also shown by.**
+`Pinta.Brix/src/libs/Pinta.Brix.Engine/Managers/LivePreviewManager.cs` (a `void`
+entry point over `StartAsync`, with a `RunAndObserve` wrapper, because the command
+model's event is synchronous),
+`PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`
+(`RunSwitchEngineAsync`, the wrapper a bound picker's setter starts)
+
+**Sharp edges.**
+- Keep the started method awaitable. The wrapper is for the one caller that cannot
+  wait; a command, a page-ready signal or a test should still be able to await the
+  real thing and see what happened.
+- The failure handler belongs to the caller, not to the helper. Only the caller
+  knows whether this failure is a status line, a grid caption or a log entry.
+- Guard the failure handler too. An error path that throws replaces one unobserved
+  fault with another, and the second one is much harder to find.
+- A helper that swallows silently when no handler is supplied is a deliberate
+  choice, and it is the reason the summary tells you to prefer awaiting from a
+  command. Reach for the helper where there is really no way to await.
+
+### Start the first load when the page says it is ready
+
+**When you want this.** The first thing a view model does after startup can raise
+a dialog - an error report, a welcome message, a prompt. Started from the
+constructor it can run before the page exists, and a dialog raised then has no
+root to attach to and simply does not appear.
+
+**The MVVM shape.** The page tells the view model when it is on screen, and the
+view model does its first load then. Two shapes appear here, and both are
+one-directional: the page calls, the view model decides. A view model with one
+such load exposes an idempotent `OnPageReady()` the page calls from `Loaded`; a
+view model whose startup task is already running exposes a readiness signal the
+task awaits partway through, so the work before the dialog still starts
+immediately.
+
+**Code.**
+
+The call form. The page's loaded handler is one line, and the method it calls
+guards itself so a page that loads twice does not load twice:
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs
+        //Anything the view model opens can fail, and an error dialog needs the XamlRoot that only
+        //  a loaded page has, so the startup documents are opened from here
+        Loaded += (_, _) =>
+        {
+            WireViewModel();
+            ViewModel?.OnPageReady();
+        };
+```
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs
+    /// <summary>
+    /// Called by the page once it is loaded, its <c>XamlRoot</c> getter is in place and its file
+    /// bridge is wired: opens the two documents named on the command line, if there are any. Later
+    /// calls do nothing, so the page can call it from every load.
+    /// </summary>
+    public void OnPageReady()
+    {
+        if (_isPageReady) { return; }
+        _isPageReady = true;
+
+        //Discarded deliberately: every failure is caught and reported inside
+        _ = OpenStartupDocumentsAsync();
+    }
+```
+
+The signal form. A `TaskCompletionSource` declared beside the startup task lets the
+work that needs no page run at once and the dialog wait:
+
+```csharp
+// From CodeBrix.Samples/JustBetweenUs/Shared/ViewModels/MainViewModel.cs
+/// <summary>
+/// Lets the hosting page tell the view model that its UI is on screen and can host a dialog. Each
+/// head calls <see cref="NotifyPageReady"/> from its page's loaded event, and that is what releases
+/// the startup dialog; a head that never calls it simply never shows that dialog.
+/// </summary>
+public interface IPageReadyNotifier
+{
+    /// <summary>Tells the view model that the page is loaded and can host a dialog.</summary>
+    void NotifyPageReady();
+}
+
+// ...
+
+    private readonly TaskCompletionSource _pageReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    // ...
+        //A dialog needs a UI anchor that does not exist until the page has been laid out, so wait
+        //  for the page to say that it is ready instead of guessing how long that takes.
+        await _pageReady.Task;
+    // ...
+    public void NotifyPageReady() => _pageReady.TrySetResult();
+```
+
+```csharp
+// From CodeBrix.Samples/JustBetweenUs/CodeBrixPlatform/JustBetweenUs.UI/Views/MainPage.xaml.cs
+        //The view model waits for this before it shows its startup dialog: a dialog needs a XamlRoot,
+        //  and the page does not have one until it is on screen.
+        Loaded += (sender, args) => (DataContext as IPageReadyNotifier)?.NotifyPageReady();
+```
+
+**Where to look.**
+`PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs` and
+`src/PdfSideBySide.UI/Views/MainPage.xaml.cs`
+`JustBetweenUs/Shared/ViewModels/MainViewModel.cs` and
+`JustBetweenUs/CodeBrixPlatform/JustBetweenUs.UI/Views/MainPage.xaml.cs`
+
+**Sharp edges.**
+- A fixed delay is not a readiness signal. It is either too short on a slow start
+  or an idle wait on a fast one, and it is wrong on whichever head you did not
+  test.
+- Make the entry point idempotent. `Loaded` can be raised more than once, and a
+  page that is navigated away from and back must not reload everything.
+- Release the wait when the view model goes away, or a `Dispose()` before the page
+  ever loads leaves the startup task parked forever. JustBetweenUs cancels the
+  source in `Dispose()` and catches the cancellation where it awaits.
+- The page reaches the view model through the readiness interface, not through the
+  view model's own type. Every head then has the same one-line loaded handler,
+  including heads that never call it - in which case the dialog simply never
+  shows, which is a documented outcome rather than a hang.
+- Work that needs no page should still start in the constructor. Waiting for
+  readiness is for the part that touches a dialog, not for the whole startup.
+
+### Cancel one lifetime token from Dispose so in-flight work stops
+
+**When you want this.** The window is closing while a download, a decode or a
+timer is still running, and you do not want shutdown to wait for the network, nor
+a completion callback to arrive and write into a view model that is already torn
+down.
+
+**The MVVM shape.** One `CancellationTokenSource` per view model, created with the
+view model and cancelled first thing in `Dispose()`. Every long call it makes takes
+that token; every `catch` treats `OperationCanceledException` as an ordinary
+shutdown rather than a failure. This is not the per-operation source that
+[Run one render per pane with latest request wins cancellation](#run-one-render-per-pane-with-latest-request-wins-cancellation)
+uses to supersede an older request: this one is never renewed, and its only
+cancel is the last one.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+    //Cancels an in-flight download when the view model is disposed, so shutdown does not
+    //wait for the network. Nothing else cancels: the sample buttons are disabled while busy.
+    private readonly CancellationTokenSource _lifetime = new();
+```
+
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+    public override void Dispose()
+    {
+        //Stop an in-flight download so shutdown does not wait for the network.
+        _lifetime.Cancel();
+        // ... dispose the commands, clear the invalidate delegate, release the painters ...
+        _lifetime.Dispose();
+
+        base.Dispose();
+    }
+```
+
+Where the sources are per-operation rather than per-view-model, `Dispose()` still
+has to reach them, and cancelling one that a later run already disposed is a case
+worth handling rather than avoiding:
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs
+    private static void CancelAndDispose(ref CancellationTokenSource source)
+    {
+        var cancellation = source;
+        source = null;
+        if (cancellation == null) { return; }
+
+        try
+        {
+            cancellation.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            //Already disposed as the "previous" of a later render
+        }
+        cancellation.Dispose();
+    }
+```
+
+**Where to look.**
+`PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`
+`PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs`
+
+**Also shown by.**
+`JustBetweenUs/Shared/ViewModels/MainViewModel.cs` (`_pageReady.TrySetCanceled()`
+releases a startup task still waiting for the page),
+`KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/MainViewModel.cs` (the
+search debounce's source, nulled and then disposed)
+
+**Sharp edges.**
+- Cancel before anything else in `Dispose()`, and dispose the source after the
+  rest of the teardown. In between, work that was already inside a call can wake
+  up, see the cancellation and leave without touching a field that is now null.
+- Null the field before disposing whatever it holds, so a callback arriving
+  mid-teardown finds null rather than a disposed object.
+- Catch `OperationCanceledException` on its own and say nothing. A window closing
+  should not leave an error on a status line, and it certainly should not raise a
+  dialog on a page that is going away.
+- One token for the view model's own lifetime, separate sources for
+  latest-request-wins. Mixing the two gives you a token that is cancelled for two
+  different reasons and a shutdown that cannot tell them apart.
+
+### Dispose only the service the view model built itself
+
+**When you want this.** A view model resolves a service if one is registered and
+constructs its own otherwise, and that service holds something real - a connection
+pool, a handle, a cache. Disposing it unconditionally breaks every other consumer
+of a registered singleton; never disposing it leaks whatever the fallback opened.
+
+**The MVVM shape.** Record the ownership at the moment of the decision, in a
+`readonly bool` beside the service field, and let `Dispose()` read it. The rule
+the whole repository follows - a container singleton is released, not disposed - is
+then written into the code rather than remembered.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+    private readonly IGitHubIssueSearchService _searchService;
+    private readonly bool _ownsSearchService;
+```
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+        _searchService = GetService<IGitHubIssueSearchService>();
+        if (_searchService == null)
+        {
+            //Nothing registered the service, so the view model builds its own and is then the
+            //thing that has to close its connection pool when it goes.
+            _searchService = new GitHubIssueSearchService(new GitHubSearchOptions());
+            _ownsSearchService = true;
+        }
+```
+
+```csharp
+// From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
+            //Only the instance this view model built itself; a registered one belongs to the
+            //container that handed it over and is shared with whatever else resolved it.
+            if (_ownsSearchService && _searchService is IDisposable ownService)
+            {
+                ownService.Dispose();
+            }
+```
+
+**Where to look.**
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs`
+
+**Also shown by.**
+`MediaPlayerDemo/src/MediaPlayerDemo.Core/ViewModels/MainViewModel.cs` (the same
+question about an object rather than a service: the view model creates every
+playback source it hands to the element, so it publishes the new one, disposes the
+one it replaced, and releases the last in `Dispose()`),
+`PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs` (a renderer
+resolved with a `?? new` fallback and disposed because it owns a page cache)
+
+**Sharp edges.**
+- Decide ownership where the object is obtained, not where it is disposed. A
+  `Dispose()` that tries to work out what it owns is guessing, and it will guess
+  differently after the next refactor.
+- `?? new` is convenient and it changes who owns the result. Every use of that
+  pattern needs an answer to "and who disposes it".
+- Publish the replacement before disposing the old one when a control is bound to
+  it. The binding then moves off the old object before it becomes invalid.
+- A registered singleton may be shared with a section of the application you are
+  not looking at. Releasing the reference is the whole of the view model's duty
+  there; the container owns the lifetime.
+
+### Dispose a view model the XAML declared from the page Unloaded
+
+**When you want this.** The page declares its view model in `<Page.DataContext>`,
+so nothing else has a reference to it - and the view model holds a camera, a
+tracking thread, GPU painters or the page's own bridge delegates. Nobody calls
+`Dispose()` unless the page does.
+
+**The MVVM shape.** The page's constructor subscribes `Unloaded` and disposes its
+data context through `IDisposable`, never through the view model's own type, so
+the line is the same on every head and says nothing about what is being released.
+The view model's `Dispose()` is the one place that knows.
+[Dispose a view model its commands and its bridge delegates](#dispose-a-view-model-its-commands-and-its-bridge-delegates)
+is about what that method does; this is about who calls it.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml.cs
+        //Nothing else owns the view model - the XAML declares it - so the page is what runs its
+        //  teardown: the camera stopped, the tracking thread joined, the bridge delegates dropped
+        Unloaded += (_, _) => (DataContext as IDisposable)?.Dispose();
+```
+
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs
+        //The XAML creates the view model and nothing else owns it, so the page is what
+        //  releases its painters, rendering engines and commands.
+        Unloaded += (_, _) => (DataContext as IDisposable)?.Dispose();
+```
+
+**Where to look.**
+`WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml.cs`
+`PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs`
+
+**Sharp edges.**
+- This is the answer for a single-page application, where unloading the page means
+  the application is going. A page that is navigated away from and back would get
+  a disposed view model on the way back, so an application with navigation needs
+  the view model's lifetime to belong to whatever owns the navigation instead.
+- Cast to `IDisposable`, not to the view model type. The page then does not name
+  the view model in that line at all, which is the same discipline the bridge
+  assignments in the handler above it follow.
+- Where what has to be released is exclusive - a device handle, a lock - one
+  unloaded handler is not enough, because a window can close without unloading its
+  page on every head. See
+  [Release an exclusive device handle from both the page unload and the window close](BLUEPRINTS-PlatformServices.md#release-an-exclusive-device-handle-from-both-the-page-unload-and-the-window-close).
+- Make `Dispose()` safe to call twice. A page can be unloaded more than once, and
+  a second teardown must be a no-op rather than a second `Stop()` on a native
+  session.
+
+### Fail a bound setter into the status line when a device refuses it
+
+**When you want this.** A picker or a check box pushes its new value straight into
+a device, a driver or a native session, and that push can be refused - a voltage
+range this model does not have, a mode the hardware will not enter. An exception
+thrown out of a property setter has nowhere to go: it leaves through the binding
+engine, and the control has already moved.
+
+**The MVVM shape.** The setter stores the value and calls one private method that
+does the talking. That method catches the library's own exception type, writes the
+refusal into the status line the application already uses, and re-reads from the
+device whatever the failed attempt may have changed, rather than assuming the
+state it was heading for. Where the refusal means the choice itself is impossible,
+see
+[Alert and revert when the user picks an unsupported option](#alert-and-revert-when-the-user-picks-an-unsupported-option);
+this is the quieter case, where the value stands and the device simply says no.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs
+    /// <summary>The combo-box item for the input range applied to both channels.</summary>
+    public VoltageRangeOption SelectedRangeOption
+    {
+        get => _selectedRangeOption;
+        set
+        {
+            //A combo box clears its selection while its items are replaced;
+            //  a null here is that transient, not a choice.
+            if (value == null || ReferenceEquals(_selectedRangeOption, value)) { return; }
+            SetProperty(ref _selectedRangeOption, value, notifyOnMainThread: true);
+            ApplyChannelSettings();
+        }
+    }
+```
+
+```csharp
+// From CodeBrix.Samples/PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs
+    private void ApplyChannelSettings()
+    {
+        if (_scope == null || !_scope.IsOpen) { return; }
+
+        try
+        {
+            bool wasStreaming = _scope.IsStreaming;
+            if (wasStreaming) { _scope.StopStreaming(); }
+
+            foreach (ChannelId channel in _scope.Capabilities.SupportedChannels)
+            {
+                _scope.SetChannel(channel, new ChannelSettings(true, Coupling.Dc, SelectedRange));
+            }
+
+            if (wasStreaming) { DoStartStreaming(); }
+        }
+        catch (PicoScopeException ex)
+        {
+            //One of the two callers is the range picker's setter, so a range the
+            //  device refuses must not throw out of a bound property. The stream
+            //  may have been stopped before the refusal, so the flag the buttons
+            //  read is re-read from the device rather than assumed.
+            IsStreaming = _scope.IsStreaming;
+            SetStatus("Could not apply the channel settings: " + ex.Message);
+        }
+    }
+```
+
+**Where to look.**
+`PicoScope.Brix/src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs`
+
+**Sharp edges.**
+- Catch the library's own exception type, not everything. A device refusal is a
+  sentence for the user; a null reference in your own code is a defect, and
+  swallowing it into a status line hides it.
+- Re-read the state the failure may have changed. Here the streaming flag drives
+  the transport buttons, and the stream was stopped before the refusal, so
+  assuming it is still running leaves two buttons lying.
+- Guard the transient null. A combo box clears its selection while its item source
+  is replaced, and treating that as a choice pushes a meaningless value at the
+  device on every refresh.
+- The same method is called from startup and from the setter. Writing it so it is
+  safe with no device open (`_scope == null`) is what lets both callers share it.
+
+### Switch devices off the UI thread and let the newest switch report
+
+**When you want this.** A dropdown chooses which camera, scope or capture device
+is live, and opening one takes long enough to freeze the window. The user can also
+choose a third device while the second is still opening, and the one that finishes
+last must not be the one that gets to write the status line.
+
+**The MVVM shape.** The setter does two things only: clear the flags that describe
+the old device, and start the switch with a version number it increments. The
+switch runs the blocking open inside `Task.Run`, and every line after the await -
+the status text, the repaint, even the error message - is guarded by comparing its
+version against the current one. Where the open is quick enough to stay on the UI
+thread, the simpler arrangement in
+[Own one capture session in the view model and switch it from the selection setter](BLUEPRINTS-MediaAndVision.md#own-one-capture-session-in-the-view-model-and-switch-it-from-the-selection-setter)
+is the one to copy; this recipe is what that shape turns into once opening a
+device is slow enough to be seen.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs
+    private void SwitchCamera(CameraDevice camera)
+    {
+        //The setter only kicks the switch off: opening a device can take long enough to
+        //  stall the UI thread, so the switch itself runs on a worker and the status line
+        //  carries the result
+        HasFrame = false;
+        _ = SwitchCameraAsync(camera, ++_cameraSwitchVersion);
+    }
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs
+    /// <summary>
+    /// Starts (or stops) live capture off the UI thread - the capture service serializes its
+    /// own start and stop, so two devices are never opened at once - and lets only the newest
+    /// switch report: a camera that finishes opening late must not overwrite the status of
+    /// the one the user has since chosen.
+    /// </summary>
+    private async Task SwitchCameraAsync(CameraDevice camera, int version)
+    {
+        try
+        {
+            var service = _captureService;
+            if (service == null) { return; }
+
+            await Task.Run(() =>
+            {
+                if (camera == null)
+                {
+                    service.Stop();
+                }
+                else
+                {
+                    service.Start(camera);
+                }
+            }).ConfigureAwait(false);
+
+            if (version != _cameraSwitchVersion) { return; } //a newer switch took over
+
+            if (camera == null)
+            {
+                //The page's delegate marshals the repaint itself
+                InvalidatePreviewCanvas?.Invoke();
+                return;
+            }
+            InvokeOnMainThread(() => StatusText = $"Live: {camera.FriendlyName}");
+        }
+        catch (Exception e)
+        {
+            if (version == _cameraSwitchVersion)
+            {
+                InvokeOnMainThread(() =>
+                    StatusText = $"Could not start '{camera?.FriendlyName}': {e.Message}");
+            }
+        }
+    }
+```
+
+**Where to look.**
+`PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Camera/WebcamCaptureService.cs`
+
+**Sharp edges.**
+- The version is incremented in the argument itself, so the new value is both
+  stored and carried by the switch it started. Two statements would leave a window
+  where a switch carries a version that is no longer current.
+- The `catch` checks the version too. A device that fails to open after the user
+  has already chosen another one has nothing worth saying.
+- Serializing the device calls is the service's job, not the view model's. The
+  view model may well have two switches in flight; what must never happen is two
+  devices being opened at once, and a lock inside the service is where that is
+  guaranteed for every caller.
+- Read the service field into a local before using it, so a teardown on another
+  code path cannot null it between the check and the call.
+- The setter clears the "we have a frame" flag before the switch starts, so a
+  command gated on it cannot run against the device that is on its way out.

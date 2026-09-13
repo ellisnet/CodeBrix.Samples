@@ -30,6 +30,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Threading.Tasks;
 using Pinta.Brix.Engine.Drawing;
 using Debug = System.Diagnostics.Debug;
 
@@ -71,7 +72,33 @@ public sealed class LivePreviewManager : ILivePreview
 	public RectangleI RenderBounds { get; private set; }
 	public bool IsEnabled { get; private set; }
 
-	public async void Start (BaseEffect effect)
+	/// <summary>
+	/// Starts a live preview of <paramref name="effect"/> and forgets the
+	/// resulting task. The command model's Activated event is synchronous, so
+	/// this is the entry point it calls; a failure inside the run is recorded
+	/// rather than left to tear the process down on an unobserved task.
+	/// </summary>
+	public void Start (BaseEffect effect)
+	{
+		_ = RunAndObserve (StartAsync (effect), effect.Name);
+	}
+
+	private static async Task RunAndObserve (Task run, string effectName)
+	{
+		try {
+			await run;
+		} catch (Exception ex) {
+			Debug.WriteLine ($"Live preview of '{effectName}' failed: {ex}");
+		}
+	}
+
+	/// <summary>
+	/// Runs a live preview of <paramref name="effect"/> to completion: the
+	/// preview surface, the worker-thread render, the configuration dialog and
+	/// the history item the confirmed result is pushed as. Awaitable, so a
+	/// caller that can wait sees the failure instead of losing it.
+	/// </summary>
+	public async Task StartAsync (BaseEffect effect)
 	{
 		if (IsEnabled)
 			throw new InvalidOperationException ("LivePreviewManager.Start() called while live preview is already enabled.");
@@ -211,15 +238,22 @@ public sealed class LivePreviewManager : ILivePreview
 			renderHandle.Cancel ();
 		}
 
+		// An event handler, so it cannot return a task; the body is wrapped
+		// because an exception escaping an async void handler has nowhere to go
+		// but the process.
 		async void EffectData_PropertyChanged (object? sender, PropertyChangedEventArgs e)
 		{
-			// TODO: calculate bounds
-			handlersInQueue++;
-			renderHandle.Cancel ();
-			await renderHandle.Task;
-			handlersInQueue--;
-			if (handlersInQueue > 0) return;
-			renderHandle = AsyncEffectRenderer.Start (settings, effect, layer.Surface, LivePreviewSurface);
+			try {
+				// TODO: calculate bounds
+				handlersInQueue++;
+				renderHandle.Cancel ();
+				await renderHandle.Task;
+				handlersInQueue--;
+				if (handlersInQueue > 0) return;
+				renderHandle = AsyncEffectRenderer.Start (settings, effect, layer.Surface, LivePreviewSurface);
+			} catch (Exception ex) {
+				Debug.WriteLine ("Live preview restart failed: " + ex);
+			}
 		}
 
 		// This method now polls the renderer for its state instead of being a passive event handler.

@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using PolyHavenBrowser.PolyHavenApiClient;
+using PolyHavenBrowser.Rendering;
 using PolyHavenBrowser.Services;
 
 namespace PolyHavenBrowser;
@@ -11,7 +12,10 @@ namespace PolyHavenBrowser;
 /// </summary>
 public static class RegisterServices
 {
-    /// <summary>Registers the Poly Haven API client, the catalog service and the download service.</summary>
+    /// <summary>
+    /// Registers the Poly Haven API client, the model loader, the catalog service, the
+    /// download service and the document backdrop service.
+    /// </summary>
     public static IServiceCollection AddPolyHavenBrowser(this IServiceCollection services)
     {
         if (services == null) { throw new ArgumentNullException(nameof(services)); }
@@ -21,6 +25,10 @@ public static class RegisterServices
             //Poly Haven asks API consumers to identify themselves.
             options.UserAgent = "PolyHavenBrowser/1.0 (CodeBrix.Platform sample; +https://polyhaven.com)";
         });
+
+        //The view model asks for the interface, so the loading technology can be swapped or
+        //mocked without touching it. The loader holds no state between calls.
+        services.AddSingleton<IModelLoader, GltfModelLoader>();
 
         services.AddSingleton<ModelCatalogService>();
         services.AddSingleton<ModelDownloadService>();

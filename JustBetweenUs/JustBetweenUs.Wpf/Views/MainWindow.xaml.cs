@@ -17,6 +17,10 @@ public partial class MainWindow : Window
                 copy.CopyTextToClipboard = Clipboard.SetText;
             }
         };
+
+        //The view model waits for this before it shows its startup dialog
+        Loaded += (sender, args) => (DataContext as IPageReadyNotifier)?.NotifyPageReady();
+
         InitializeComponent();
     }
 }

@@ -50,7 +50,7 @@
                     <TextBlock Text="{d:Binding FileName}" Visibility="{d:Binding PlaceholderVisibility}"
                                Opacity="0.55" Foreground="#202020"
                                HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <!-- The code-behind sizes the image to zoom x fit-the-page and scrolls it to the pan position -->
+                    <!-- The view model works out the image size and the scroll offset; the code-behind applies them -->
                     <ScrollViewer x:Name="LeftScroller"
                                   HorizontalScrollMode="Enabled" VerticalScrollMode="Enabled"
                                   HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"

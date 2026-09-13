@@ -201,4 +201,36 @@ public class MediaFormatsTests
         levels[2].Should().Be(QualityLevel.Better);
         levels[3].Should().Be(QualityLevel.Best);
     }
+
+    [Theory]
+    [InlineData(".cbv", "CodeBrix video")]
+    [InlineData(".mkv", "Matroska video")]
+    [InlineData(".webm", "WebM video")]
+    [InlineData(".mp4", "MP4 video")]
+    public void DescribeExtension_labels_each_extension_a_save_dialog_is_given(string extension, string expected)
+    {
+        //Act
+        var label = MediaFormats.DescribeExtension(extension);
+
+        //Assert
+        label.Should().Be(expected);
+    }
+
+    [Fact]
+    public void DescribeExtension_labels_every_extension_this_application_writes()
+    {
+        //Arrange
+        var extensions = MediaFormats.SupportedFormats
+            .Append(MediaFormatKind.Mp4)
+            .Select(MediaFormats.Extension)
+            .Distinct();
+
+        //Act
+        var labels = extensions.Select(MediaFormats.DescribeExtension).ToList();
+
+        //Assert
+        labels.Should().HaveCount(4);
+        labels.Should().OnlyHaveUniqueItems();
+        labels.Should().NotContain(string.Empty);
+    }
 }

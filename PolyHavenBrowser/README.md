@@ -43,14 +43,15 @@ this repository with its own README.)
 - Give every cell its own command and its own asynchronously loaded thumbnail, with an application-wide gate injected as a delegate: [Give each grid cell its own command and lazily loaded thumbnail](../BLUEPRINTS-MVVM.md#give-each-grid-cell-its-own-command-and-lazily-loaded-thumbnail).
 - Debounce a search box in the property setter so typing stays smooth while a large collection is refiltered: [Debounce a search box before rebuilding a filtered list](../BLUEPRINTS-MVVM.md#debounce-a-search-box-before-rebuilding-a-filtered-list).
 - Switch a page between two modes with one bool and computed `Visibility` properties, keeping converters out of the common case: [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties).
-- Write bound properties and `SimpleCommand` commands the way the family expects, including the `field` keyword form of an auto-property whose setter does work: [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
-- Refresh a command's enabled state when its gate is a private flag rather than a bound property: [Refresh CanExecute when the gating state is not a bound property](../BLUEPRINTS-MVVM.md#refresh-canexecute-when-the-gating-state-is-not-a-bound-property).
+- Write bound properties and `SimpleCommand` commands the way the family expects, including the `field` keyword form of an auto-property whose setter does work, and `[AffectsCommands]` / `[AffectsProperties]` on the properties that gate a button or a computed companion instead of raising those notifications by hand: [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way).
+- Refresh a per-cell command explicitly where its gate is an injected delegate rather than a property an attribute can hang on: [Refresh CanExecute when the gating state is not a bound property](../BLUEPRINTS-MVVM.md#refresh-canexecute-when-the-gating-state-is-not-a-bound-property).
 - Start the catalog fetch from the view-model constructor without awaiting it, and turn a failed load into readable text on screen: [Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor).
 - Copy everything a multi-second command needs into locals before it starts, so the user can navigate away while it runs: [Snapshot view model state before a long running command](../BLUEPRINTS-MVVM.md#snapshot-view-model-state-before-a-long-running-command).
 - Drive a long job from a command with a busy flag, a bound progress value and a per-stage status line: [Run a long job from a command with progress cancellation and a busy flag](../BLUEPRINTS-MVVM.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag).
 - Guard the view-model constructor so the XAML designer never resolves services or starts network calls: [Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
 - Gate downloading behind a chosen folder and explain the gate in a dialog rather than showing a dead button: [Gate an action behind a chosen folder and explain the gate with a dialog](../BLUEPRINTS-MVVM.md#gate-an-action-behind-a-chosen-folder-and-explain-the-gate-with-a-dialog).
 - Hand the view model a `XamlRoot` getter through an interface as soon as the DataContext is set, so its dialogs and its off-screen GL context have somewhere to attach: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+- Let the view model ask the page for the two things only a page can do - scrolling the catalog back to its top, and asking the 3D canvas whether it initialized - through small bridge interfaces assigned in the same handler: [Let the page invalidate a canvas through a bridge interface](../BLUEPRINTS-PlatformServices.md#let-the-page-invalidate-a-canvas-through-a-bridge-interface).
 - Choose a save destination through the native picker from the view model, and degrade with an explanation on a head that registers none: [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model).
 - Decode a percent-encoded picker path and remove the empty placeholder file the save picker leaves behind, before anything touches the disk: [Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns).
 - Put the real work in libraries that have no UI dependency at all and are consumed only through their interfaces: [Put the real work in a UI free library behind a service interface](../BLUEPRINTS-DocumentsAndData.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface).
@@ -62,6 +63,7 @@ this repository with its own README.)
 - Embed OFL fonts as resources and register them with the PDF font system, so the generated document looks the same on every machine: [Register embedded OFL fonts with the PDF font system](../BLUEPRINTS-DocumentsAndData.md#register-embedded-ofl-fonts-with-the-pdf-font-system).
 - Record both bundled content and content downloaded at run time in a notices file next to the application: [Record bundled third-party content in a notices file](../BLUEPRINTS-ProjectLayoutAndPackaging.md#record-bundled-third-party-content-in-a-notices-file).
 - Wrap a toolbar onto extra rows and flip a two-pane split between landscape and portrait with the CodeBrix.Platform.FlexPanel add-in: [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS-ViewsAndControls.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in).
+- Report the new window size to the view model and let it decide the orientation, the pane width, the flex basis and the margin the page then applies: [Decide portrait or landscape on the view model and apply it from the page](../BLUEPRINTS-ViewsAndControls.md#decide-portrait-or-landscape-on-the-view-model-and-apply-it-from-the-page).
 - Re-key the theme's brushes so accent buttons, dialogs and the framebuffer head's built-in picker chrome all follow your palette: [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS-ViewsAndControls.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette).
 - Draw icons with `FontIcon` glyphs rather than literal symbol characters, so they survive on a device with no system fonts: [Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS-ViewsAndControls.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts).
 - Write an `IValueConverter` for the cases a computed property cannot cover, such as showing a placeholder only while a bound image is null: [Format a value for display with an IValueConverter](../BLUEPRINTS-ViewsAndControls.md#format-a-value-for-display-with-an-ivalueconverter).
@@ -125,8 +127,8 @@ dotnet run --project PolyHavenBrowser/src/PolyHavenBrowser.LinuxX11
 ```
 
 Substitute any other head project for `PolyHavenBrowser.LinuxX11`. The LinuxFrameBuffer
-head hard-codes its picker start and restriction folders in its own `Program.cs`; change
-them, or derive them from the environment, before running it on another machine.
+head derives its picker start and restriction folders from the running user's home folder
+in its own `Program.cs`; an appliance would point them at its own content folder instead.
 
 **Tests**
 
@@ -182,7 +184,8 @@ PolyHavenBrowser/
       App.xaml / App.xaml.cs           Fonts, container setup, design-mode flag, logging, first navigation
       Views/MainPage.xaml(.cs)         Browsing View, Model View, the 3D preview element, layout plumbing
     PolyHavenBrowser.Core/             The application library every head references
-      ViewModels/                      MainViewModel and ModelFact, ModelCellCollection, ModelCellViewModel
+      ViewModels/                      MainViewModel and ModelFact, ModelCellCollection, ModelCellViewModel,
+                                       ICatalogGridBridge and IModelViewBridge (what the page owes the view model)
       Services/                        ModelCatalogService, ModelDownloadService, ModelDescriptionBuilder
                                        and ModelFileStats, DocumentBackdropService, CatalogSortOrder
       Converters/                      NullToVisibilityConverter
@@ -235,7 +238,6 @@ and each test project references only the one library it covers.
 | CodeBrix.Platform.Graphics3DGL | Supplies `GLCanvasElement` (the element the preview subclasses, with its cross-platform GL context, off-screen framebuffer and read-back), `GLInitializationState`, and `OffscreenGLContext` for the document's product shots; the OpenGL binding the shaders draw with arrives only transitively through it | `src/libs/PolyHavenBrowser.Rendering/GL/ModelSceneGlCanvas.cs`, `.../GL/GlModelSceneRenderer.cs`, `src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs` |
 | CodeBrix.Platform.FlexPanel add-in | The Browsing View's wrapping header toolbar, and the Model View's info-pane and viewer split whose main axis flips between landscape and portrait | `src/PolyHavenBrowser.UI/Views/MainPage.xaml`, `.../MainPage.xaml.cs` |
 | CodeBrix.Platform.Fonts.Roboto | The application's default text font and its script fallbacks, set in the `App` constructor | `src/PolyHavenBrowser.UI/App.xaml.cs`, `src/PolyHavenBrowser.UI/App.xaml` |
-| CodeBrix.Platform SkiaSharp views layer | Referenced by `PolyHavenBrowser.Core` for the SkiaSharp drawing surface hosted in CodeBrix.Platform XAML | `src/PolyHavenBrowser.Core/PolyHavenBrowser.Core.csproj` |
 | CodeBrix.Imaging | Decodes downloaded base-color and backdrop textures to RGBA for GPU upload, and backs the PDF image pipeline and the accent-color sampler | `src/libs/PolyHavenBrowser.Rendering/Images/LdrImageDecoder.cs`, `src/libs/PolyHavenBrowser.CreateDocument/Internal/AccentColorSampler.cs`, `.../Internal/SheetFonts.cs` |
 | CodeBrix.PdfDocuments | Draws the marketing one-sheet directly on a PDF page, and registers the embedded fonts through its meta font resolver | `src/libs/PolyHavenBrowser.CreateDocument/Services/MarketingSheetCreator.cs`, `.../Internal/SheetComposer.cs`, `.../Internal/SheetFonts.cs` |
 | CodeBrix.TestMocks | The mocking library used by the API-client and rendering test projects, in place of a third-party mocking package | `tests/libs/PolyHavenBrowser.Rendering.Tests/Mocked/`, `tests/libs/PolyHavenBrowser.PolyHavenApiClient.Tests/Mocked/` |
@@ -260,7 +262,10 @@ property. Everything behind it is in `PolyHavenBrowser.Rendering`:
 `GL/ModelSceneGlCanvas.cs` is a `GLCanvasElement` subclass that owns the GL lifecycle,
 declares a `Model` dependency property, and translates pointer drag and wheel into camera
 calls. The view model holds the parsed model as a bound property and nothing else; no
-rendering code appears in the page, in the code-behind, or in the view model.
+rendering code appears in the page, in the code-behind, or in the view model. It does not
+construct a loader either: `IModelLoader` is registered in `RegisterServices.cs` and
+resolved from the container, so the view model names the interface and never the glTF
+implementation - the same seam the rendering tests mock.
 
 Read `GL/ModelSceneGlCanvas.cs` first, then `GL/IModelSceneRenderer.cs`, whose XML docs say
 which method runs on which thread, then `GL/GlModelSceneRenderer.cs`. Three sharp edges are
@@ -314,10 +319,15 @@ a "do not retry" flag and the cell simply keeps its placeholder, which the templ
 through `NullToVisibilityConverter`.
 
 In the MVVM shape, the batching policy belongs to the collection and the view model, and the
-page contributes only the one thing it can see, which is scroll geometry: when the viewport
-approaches the bottom of the extent, it asks the collection for another batch, and when a
-new collection arrives it scrolls back to the top. `RequestMore` is safe to call repeatedly
-and no-ops once every item has a cell, which matters because the scroll event fires often.
+page contributes only the one thing it can see, which is scroll geometry. Its `ViewChanged`
+handler is a one-line forward of the extent height, the vertical offset and the viewport
+height to `MainViewModel.NotifyCatalogScrolled`, which passes them to the collection;
+`RequestMoreIfNearEnd` owns both halves of the decision, which is how near the bottom is
+near enough and how big a batch is. It is safe to call repeatedly and no-ops once every item
+has a cell, which matters because the scroll event fires often. Scrolling back to the top
+goes the other way: a fresh collection makes the view model invoke the `ScrollCatalogToTop`
+delegate the page filled in through `ICatalogGridBridge`, because only the page holds the
+`ScrollViewer`.
 
 Read `ViewModels/ModelCellCollection.cs`, then `ViewModels/ModelCellViewModel.cs`, then the
 `ItemsRepeater` and its `UniformGridLayout` in `MainPage.xaml`. See
@@ -383,9 +393,9 @@ a bound status line: fetch the CC0 backdrop textures (cached beside the download
 falling back to a plain colored floor when a texture cannot be fetched); build the three
 photography sets on a worker thread; render the hero and gallery shots on the head's own
 off-screen GL context; then fetch the catalog thumbnail and compose and save the PDF on a
-worker thread. The busy flag is cleared and the command refreshed in a `finally`, and the
-"document created" dialog is raised after that block, so the button is live again by the
-time the user dismisses it.
+worker thread. The busy flag is a bound property carrying `[AffectsCommands]`, so clearing
+it in a `finally` re-enables the button by itself, and the "document created" dialog is
+raised after that block, so the button is live again by the time the user dismisses it.
 
 Three sharp edges. GL work must stay on the UI thread, and the context's `MakeCurrent()`
 returns a disposable that saves and restores the head's own context, so a `using` block is
@@ -486,13 +496,17 @@ and [Enable a picker and the software keyboard on the Linux framebuffer head](..
 When a machine has no usable OpenGL driver, the preview would otherwise be a blank
 rectangle. The view model owns the message, the OS-specific hint and the dialog, in a public
 method the page can call; the page owns only the one fact it can observe, which is the
-canvas's initialization state, and forwards it in a couple of lines. It has to check at two
-moments, because the canvas may only attempt initialization when it loads into the visual
-tree, which can happen after the view has already switched. It reports once per application
-run, so navigating between models does not re-nag, and it decides whether the Windows hint
-applies by asking `SimpleOsInfo` at run time rather than compiling the hint in.
+canvas's initialization state, and forwards it in a couple of lines. The prompt to look
+comes through `IModelViewBridge`: as the Model View opens, the view model invokes the
+`ModelViewOpened` delegate the page filled in, so nothing has to watch property
+notifications. The page has to check at two moments, because the canvas may only attempt
+initialization when it loads into the visual tree, which can happen after the view has
+already switched. It reports once per application run, so navigating between models does not
+re-nag, and it decides whether the Windows hint applies by asking `SimpleOsInfo` at run time
+rather than compiling the hint in.
 
-See [Tell the user when graphics initialization failed](../BLUEPRINTS-PlatformServices.md#tell-the-user-when-graphics-initialization-failed)
+See [Tell the user when graphics initialization failed](../BLUEPRINTS-PlatformServices.md#tell-the-user-when-graphics-initialization-failed),
+[Call the page's bridge from the setter that changed](../BLUEPRINTS-PlatformServices.md#call-the-pages-bridge-from-the-setter-that-changed)
 and [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 
 ### The page reflows, and the theme follows the application's palette
@@ -500,11 +514,16 @@ and [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-Platf
 Both views use the FlexPanel add-in. The header is a wrapping panel in which the identity
 block grows to soak up free space, keeping the search, sort and folder controls pinned right
 while they share its row and dropping them onto their own rows as the window narrows. The
-Model View's split is a panel whose main axis flips between landscape and portrait. The
-subtle part is that an explicit `Width` and a flex basis are not interchangeable: content is
-measured against a `Width`, so text wraps to the pane, while a basis sizes the box without
-giving the content that constraint. The sample uses a `Width` in landscape and a relative
-basis in portrait, swapping them on the same element.
+Model View's split is a panel whose main axis flips between landscape and portrait. Which
+way round the window counts as, and what the info pane's width, height basis and margin
+should be in each case, are application policy, so they are properties on the view model:
+the page's `SizeChanged` handler hands over the new size and then applies
+`IsModelViewStacked`, `ModelInfoPaneWidth`, `ModelInfoPaneStackedHeightBasis` and
+`ModelInfoPaneMargin` to the panel, which is the part only a view can do. The subtle part is
+that an explicit `Width` and a flex basis are not interchangeable: content is measured
+against a `Width`, so text wraps to the pane, while a basis sizes the box without giving the
+content that constraint. The sample uses a `Width` in landscape and a relative basis in
+portrait, swapping them on the same element.
 
 For color, `MainPage.xaml` re-keys the theme's accent-button brushes (including the disabled
 state, because a gated command's button spends real time disabled) and bases a lightweight
@@ -517,6 +536,7 @@ the default text font and its script fallbacks come from the bundled font packag
 application renders identically on a device with no system fonts at all.
 
 See [Wrap and reflow a layout with the FlexPanel add-in](../BLUEPRINTS-ViewsAndControls.md#wrap-and-reflow-a-layout-with-the-flexpanel-add-in),
+[Decide portrait or landscape on the view model and apply it from the page](../BLUEPRINTS-ViewsAndControls.md#decide-portrait-or-landscape-on-the-view-model-and-apply-it-from-the-page),
 [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS-ViewsAndControls.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette)
 and [Use FontIcon glyphs so icons survive on a device with no system fonts](../BLUEPRINTS-ViewsAndControls.md#use-fonticon-glyphs-so-icons-survive-on-a-device-with-no-system-fonts).
 

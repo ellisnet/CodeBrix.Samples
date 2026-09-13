@@ -16,7 +16,6 @@ namespace GameEngineMusicDemo.Views;
 public sealed partial class MainPage : Page
 {
     private IManageGameCanvas _gameCanvasManager;
-    private MainViewModel _viewModel;
 
     /// <summary>Creates the page.</summary>
     public MainPage()
@@ -25,8 +24,9 @@ public sealed partial class MainPage : Page
         {
             //Give the view model's SimpleDialog helpers a XamlRoot to attach dialogs to
             (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
+
+            //Through the interface the view model implements, never through its concrete type
             _gameCanvasManager = DataContext as IManageGameCanvas;
-            _viewModel = DataContext as MainViewModel;
         };
 
         this.InitializeComponent();
@@ -35,7 +35,7 @@ public sealed partial class MainPage : Page
     }
 
     // Null until the canvas has started, and every handler below is reachable before then.
-    private GameEngineMusicDemoGame Demo => _viewModel?.Demo;
+    private GameEngineMusicDemoGame Demo => _gameCanvasManager?.Demo;
 
     // ----- volume buses -----
 

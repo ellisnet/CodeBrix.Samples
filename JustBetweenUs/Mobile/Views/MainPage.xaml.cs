@@ -27,6 +27,11 @@ public partial class MainPage : ContentPage
                 };
             }
         };
+
+        //The view model waits for this before it shows its startup dialog: a dialog needs a page to
+        //  attach to, and the page is not on screen until it has loaded.
+        Loaded += (sender, args) => (BindingContext as IPageReadyNotifier)?.NotifyPageReady();
+
         InitializeComponent();
     }
 }

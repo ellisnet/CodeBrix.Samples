@@ -42,9 +42,8 @@
                     Command="{Binding SearchCommand}" />
         </Grid>
 
-        <!-- Embedded browser -->
-        <wv2:WebView2 Grid.Row="1" x:Name="Browser"
-                      Source="https://en.wikipedia.org/wiki/Main_Page" />
+        <!-- Embedded browser; the view model says which page it starts on -->
+        <wv2:WebView2 Grid.Row="1" x:Name="Browser" />
 
         <!-- Status line -->
         <Grid Grid.Row="2" Margin="0,10,0,0">
@@ -81,8 +80,9 @@
             <Label Grid.Column="3" Content="Page size:"
                    VerticalContentAlignment="Center" Margin="14,0,10,0" />
             <ComboBox Grid.Column="4" Width="200" Height="30" VerticalContentAlignment="Center"
-                      ItemsSource="{Binding PageSizeNames}"
-                      SelectedItem="{Binding SelectedPageSizeName, Mode=TwoWay}" />
+                      ItemsSource="{Binding PageSizes}"
+                      DisplayMemberPath="DisplayName"
+                      SelectedItem="{Binding SelectedPageSize, Mode=TwoWay}" />
             <Button Grid.Column="5" Width="120" Height="34" Margin="14,0,0,0"
                     Content="Publish" FontWeight="SemiBold"
                     Command="{Binding PublishCommand}" />

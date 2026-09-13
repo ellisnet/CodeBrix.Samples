@@ -14,14 +14,20 @@ namespace PalmVisualizer.Camera;
 /// are taken - this application only watches. The latest-frame cache lives in the
 /// underlying <see cref="WebcamSession"/>; this service just forwards to it.
 /// </summary>
-public sealed class WebcamCaptureService : IDisposable
+public sealed class WebcamCaptureService : IWebcamCaptureService
 {
     private volatile bool _hasFrame;
+
+    //The underlying session allows its control calls from one thread at a time; the
+    //  application starts and stops cameras off the UI thread, so serialize them here
+    private readonly object _controlLock = new object();
 
     private WebcamSession _session;
 
     /// <summary>
-    /// Discovers the cameras connected to this computer.
+    /// Discovers the cameras connected to this computer. The instance method
+    /// <see cref="DiscoverCamerasAsync"/> is the same discovery reached through
+    /// <see cref="IWebcamCaptureService"/>.
     /// </summary>
     /// <returns>The connected cameras; empty when none were found.</returns>
     public static async Task<IReadOnlyList<CameraDevice>> GetCamerasAsync()
@@ -34,6 +40,9 @@ public sealed class WebcamCaptureService : IDisposable
         }
         return cameras;
     }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<CameraDevice>> DiscoverCamerasAsync() => GetCamerasAsync();
 
     /// <summary>Indicates whether a capture session is currently running.</summary>
     public bool IsRunning => _session != null;
@@ -58,23 +67,29 @@ public sealed class WebcamCaptureService : IDisposable
     {
         if (camera == null) { throw new ArgumentNullException(nameof(camera)); }
 
-        Stop();
+        lock (_controlLock)
+        {
+            Stop();
 
-        _session = new WebcamSession(camera.Device);
-        _session.FrameReceived += OnFrameReceived;
-        _session.Start();
+            _session = new WebcamSession(camera.Device);
+            _session.FrameReceived += OnFrameReceived;
+            _session.Start();
+        }
     }
 
     /// <summary>Stops the running capture session, when there is one.</summary>
     public void Stop()
     {
-        if (_session != null)
+        lock (_controlLock)
         {
-            _session.FrameReceived -= OnFrameReceived;
-            _session.Dispose();
-            _session = null;
+            if (_session != null)
+            {
+                _session.FrameReceived -= OnFrameReceived;
+                _session.Dispose();
+                _session = null;
+            }
+            _hasFrame = false;
         }
-        _hasFrame = false;
     }
 
     private void OnFrameReceived(object sender, WebcamFrameEventArgs frame)

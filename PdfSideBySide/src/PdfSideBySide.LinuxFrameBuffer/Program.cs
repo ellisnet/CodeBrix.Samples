@@ -1,6 +1,7 @@
 using CodeBrix.Platform.UI.Hosting;
 using CodeBrix.Platform.UI.Runtime.Skia;
 using System;
+using System.IO;
 using Windows.Graphics.Display;
 
 namespace PdfSideBySide;
@@ -12,6 +13,13 @@ internal class Program
     {
         App.InitializeLogging();
 
+        //The framebuffer picker draws its own file list, so it needs a folder to start in and a
+        //  tree to stay inside: this user's documents folder, inside their home directory
+        var homeFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (string.IsNullOrEmpty(homeFolder)) { homeFolder = Environment.CurrentDirectory; }
+        var startFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        if (string.IsNullOrEmpty(startFolder) || !Directory.Exists(startFolder)) { startFolder = homeFolder; }
+
         //The FrameBuffer head has no OS chrome, so the "Browse…" file picker is opt-in
         var host = CodeBrixPlatformHostBuilder.Create()
             .App(() => new App())
@@ -20,8 +28,8 @@ internal class Program
                 .AutoRotationEnabled(true)
                 .EnableFileOpenPicker(new FilePickerOptions {
                     AllowMultipleFileSelect = false,
-                    StartFolder = "/home/jeremy/Temp",
-                    RestrictToFolder = "/home/jeremy",
+                    StartFolder = startFolder,
+                    RestrictToFolder = homeFolder,
                     RequiredExtension = ".pdf",
                 })
             )

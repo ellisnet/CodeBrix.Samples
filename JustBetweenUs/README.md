@@ -64,6 +64,8 @@ image assets can be pushed across completely different UI stacks.
   picks an SVG or bitmap source from the file extension: [Load an SVG or bitmap from an embedded resource with a custom URI scheme](../BLUEPRINTS-ViewsAndControls.md#load-an-svg-or-bitmap-from-an-embedded-resource-with-a-custom-uri-scheme).
 - A `Button` subclass that composes an embedded icon and a caption, with the icon
   above, below, left or right of the text: [Build a button that combines an embedded image with text](../BLUEPRINTS-ViewsAndControls.md#build-a-button-that-combines-an-embedded-image-with-text).
+- A control that cannot throw when an asynchronous load fails, reporting it to the
+  application's log and as an event instead: [Report a control's load failure with an event and a log line](../BLUEPRINTS-ViewsAndControls.md#report-a-controls-load-failure-with-an-event-and-a-log-line).
 - Embedding the same asset files into two assemblies, once by link path and once
   by an explicit logical name: [Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS-ProjectLayoutAndPackaging.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection).
 - Rendering the same SVG icons through the same Skia SVG engine on the Skia heads
@@ -281,8 +283,8 @@ Third-party libraries:
 
 `Shared/ViewModels/MainViewModel.cs` is the whole application. It holds the three
 bound text properties (`EncryptionKey`, `EnteredText`, `ProcessedText`), the
-algorithm selection, four `SimpleCommand` instances, the clipboard bridge
-interface, the dialog calls and the `Dispose` override. It derives from
+algorithm selection, four `SimpleCommand` instances, the two bridge interfaces the
+heads satisfy, the dialog calls and the `Dispose` override. It derives from
 `SimpleViewModel` and references nothing but the Simple toolkit and
 `IEncryptionService`. Every head pulls it in as a linked `<Compile>` item and
 compiles its own copy: Core does it once on behalf of the six Skia heads, and the
@@ -290,9 +292,10 @@ WinUI, WPF and MAUI heads each do it themselves.
 
 The one framework-specific concession in the file is a `[Bindable]` attribute
 guarded by `#if HAS_CODEBRIX`, a symbol Core and all six Skia head csproj files
-define. The WinUI head defines `HAS_WINUI` and the file uses it for one startup
-timing difference. Those two symbols are the complete list of places where a head
-can drift, which is the point: keep them countable.
+define. That single symbol is the complete list of places where a head can drift in
+the shared source, which is the point: keep them countable. The WinUI head csproj
+also defines `HAS_WINUI` so head-specific code has a symbol to hang on, and nothing
+in the shared source needs it: every head runs the same startup path.
 
 Read `Shared/ViewModels/MainViewModel.cs` first, then one head's csproj to see the
 three `<Compile Include="..\Shared\...">` lines, then a second head's csproj to
@@ -335,7 +338,9 @@ onto the platform's controls assembly; the WinUI, WPF and MAUI pages use plain
 icon buttons and the animated star, while `JustBetweenUs.Wpf/Views/MainWindow.xaml`
 and `Mobile/Views/MainPage.xaml` use plain text buttons and a small "i" button.
 The MAUI page uses a `Picker` where the others use a `ComboBox`, bound to exactly
-the same two properties. Four pages, one view model.
+the same two properties and differing only in how each stack spells "display this
+property of the item": `DisplayMemberPath` on three of them, `ItemDisplayBinding` on
+MAUI. Four pages, one view model.
 
 Read `CodeBrixPlatform/JustBetweenUs.UI/JustBetweenUs.UI.projitems`, then the four
 pages side by side. See
@@ -403,13 +408,15 @@ The algorithm dropdown is driven from an enum rather than from strings.
 `Shared/ViewModels/EncryptionMode.cs` derives from
 `SimpleEnumInfo<EncryptionMode.CryptAlgorithm>`, gives each enum member a
 `[SimpleEnum<EncryptionMode>]` attribute pointing at a static property that supplies
-its friendly description, and exposes `GetDictionary()`. The view model builds the
-list of descriptions from that dictionary and binds it; a `ComboBox` on three stacks
-and a `Picker` on MAUI consume the same two bindings with no view-model change. One
-pitfall lives here: the bound property is the description string, so the setter maps
-text back to the enum with a `Single()` lookup that would throw if two members ever
-shared a description. Binding the `EncryptionMode` object with a display member, or
-exposing the enum itself as the bound property, avoids that.
+its friendly description, and exposes `GetDictionary()`. The view model assigns the
+`EncryptionMode` objects from that dictionary to `EncryptionModes` once through
+`SetProperty`, and the selection is an `EncryptionMode` object too, in
+`SelectedEncryptionMode`; each command body switches on `SelectedEncryptionMode?.Member`,
+the enum member the object carries. The picker is told which property to display
+rather than being handed strings: `DisplayMemberPath="Description"` on the `ComboBox`
+of the three XAML stacks, `ItemDisplayBinding="{Binding Description}"` on the MAUI
+`Picker`. Binding the object rather than its description keeps the selection and the
+algorithm one fact, so nothing has to map a display string back to an enum.
 
 The information button is the simplest command in the file: `SimpleOsInfo.GatherInfo()`
 is awaited once, cached in a field, formatted into a `StringBuilder` and passed to
@@ -457,52 +464,90 @@ order `CodeBrixPlatform/JustBetweenUs.UI/Views/MainPage.xaml.cs`,
 [Copy text to the clipboard from a command through a bridge interface](../BLUEPRINTS-PlatformServices.md#copy-text-to-the-clipboard-from-a-command-through-a-bridge-interface)
 and [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 
-### Async startup, the dialog anchor, and the timing pitfall
+### Async startup, the dialog anchor, and the page-ready signal
 
 The view model needs the default key from the service before the user can do
-anything useful, and it must not block construction of the page. The MVVM shape is
-a named initialization the constructor starts and a page or a test can await:
+anything useful, and it must not block construction of the page. The MVVM shape is a
+named initialization that the constructor starts and a page or a test can await:
 
 ```csharp
-// Adapted from CodeBrix.Samples/JustBetweenUs/Shared/ViewModels/MainViewModel.cs
-// The sample starts an unnamed fire-and-forget Task; this version names the
-// initialization so nothing observing the view model has to guess when it finished.
+// From CodeBrix.Samples/JustBetweenUs/Shared/ViewModels/MainViewModel.cs
 public Task Initialization { get; private set; } = Task.CompletedTask;
 
 private async Task InitializeAsync()
 {
-    var defaultKey = await _encryptSvc.GetDefaultKey();
-    //Assigning a bound property off the UI thread causes problems on Linux and macOS
-    InvokeOnMainThread(() => EncryptionKey = defaultKey);
+    try
+    {
+        var defaultKey = await _encryptSvc.GetDefaultKey();
+        //We can't set a value to EncryptionKey except on the main (UI) thread, because this causes problems on Linux and macOS
+        InvokeOnMainThread(() => EncryptionKey = defaultKey);
+
+        //A dialog needs a UI anchor that does not exist until the page has been laid out, so wait
+        //  for the page to say that it is ready instead of guessing how long that takes.
+        await _pageReady.Task;
+
+        await ShowInfo("This application is adapted from a sample provided by Paul Ainsworth.");
+    }
+    catch (OperationCanceledException)
+    {
+        //The view model was disposed before the page became ready - there is nothing left to show
+    }
+    catch (Exception e)
+    {
+        //Startup work must never be able to bring the application down
+        Debug.WriteLine($"Main view model startup failed: {e.Message}");
+    }
 }
 ```
 
-The `InvokeOnMainThread` wrapper is the rule worth remembering. The comment beside
-it in the file says assigning a bound property off the UI thread causes problems on
-Linux and macOS; on Windows it appears to work. Test the marshalling on the
-strictest head, not the most forgiving one.
+Three rules are worth taking away from those few lines. The `InvokeOnMainThread`
+wrapper is the first: the comment beside it says assigning a bound property off the
+UI thread causes problems on Linux and macOS, and on Windows it appears to work, so
+test the marshalling on the strictest head rather than the most forgiving one. The
+second is that the task has a name. Startup work started from a constructor and
+thrown away cannot be awaited, observed or tested; `Initialization` can be. The third
+is that everything inside is caught, so a failure during startup cannot escape into
+an application that has no one left to report it to.
 
-The same initialization then shows the "adapted from a sample provided by Paul
-Ainsworth" dialog, and this is where the sample records its most instructive sharp
-edge. The dialog needs a UI anchor that does not exist until the page has laid out,
-so the code pads itself with a fixed delay, longer under `HAS_WINUI`. The comment
-in the file names the symptom (an exception about a missing anchor on a freshly
-cloned WinUI solution) and says outright that the real fix is awaiting a
-page-loaded signal rather than a fixed delay. Prefer a readiness signal in your own
-code, supplied through the same bridge that supplies the anchor.
+The dialog is the interesting part. It needs a UI anchor that does not exist until
+the page has laid out, so the view model does not show it until the page says it is
+ready. That readiness is the application's second bridge, declared in the same file
+as the clipboard one:
 
-That anchor arrives as a getter, not a value:
+```csharp
+// From CodeBrix.Samples/JustBetweenUs/Shared/ViewModels/MainViewModel.cs
+public interface IPageReadyNotifier
+{
+    /// <summary>Tells the view model that the page is loaded and can host a dialog.</summary>
+    void NotifyPageReady();
+}
+```
+
+The view model holds a `TaskCompletionSource` that `NotifyPageReady()` completes and
+`Dispose()` cancels, and `InitializeAsync` awaits its task. Every head calls the one
+line from its page's loaded event -
+`Loaded += (sender, args) => (DataContext as IPageReadyNotifier)?.NotifyPageReady();`,
+with `BindingContext` in place of `DataContext` on MAUI - so the dialog appears as
+soon as there is something to attach it to, on the head that lays out fastest and on
+the head that lays out slowest, with no per-head timing anywhere in the shared code.
+A signal, rather than a delegate the page assigns, is what makes the order safe: the
+page cannot arrive too late, because the completion source remembers that the page
+became ready no matter which side got there first.
+
+The anchor itself arrives as a getter, not a value:
 `(DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot)`. Passing a
 lambda means the anchor is read at the moment a dialog is shown, so the view model
-never holds a stale reference; the MAUI page passes itself, and the WPF page skips
-the line entirely because its dialogs need no anchor.
+never holds a stale reference; the MAUI page passes itself, and the WPF window skips
+that line entirely because its dialogs need no anchor.
 
-Read the constructor of `Shared/ViewModels/MainViewModel.cs`, then
-`CodeBrixPlatform/JustBetweenUs.UI/Views/MainPage.xaml.cs`. See
+Read the constructor and `InitializeAsync` in `Shared/ViewModels/MainViewModel.cs`,
+then `CodeBrixPlatform/JustBetweenUs.UI/Views/MainPage.xaml.cs`. See
 [Kick off async startup loading from the view model constructor](../BLUEPRINTS-MVVM.md#kick-off-async-startup-loading-from-the-view-model-constructor),
 [Set bound properties from a background thread with InvokeOnMainThread](../BLUEPRINTS-MVVM.md#set-bound-properties-from-a-background-thread-with-invokeonmainthread),
-[Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer)
-and [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+[Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer),
+[Start the first load when the page says it is ready](../BLUEPRINTS-MVVM.md#start-the-first-load-when-the-page-says-it-is-ready),
+[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show)
+and [Signal the view model when the page is on screen](../BLUEPRINTS-PlatformServices.md#signal-the-view-model-when-the-page-is-on-screen).
 
 ### The encryption library: the shape of a service the view model can trust
 
@@ -572,8 +617,10 @@ documented in the file and worth carrying over: the two streams are deliberately
 not disposed, because disposing the write stream closes the underlying stream and
 the image source may hold a reference to it rather than copying; the assembly is
 found by scanning loaded assemblies, so something must already have touched it (the
-page does, through Core); and load failures are caught and written only to the
-debug output, so a wrong resource name shows an empty image with no visible error.
+page does, through Core); and a load failure is caught, written to the application
+log as an error and raised on the control's own `LoadFailed` event, carrying the URI
+and the exception in an `EmbeddedImageFailedEventArgs`, so a misspelled resource name
+reports itself instead of silently drawing nothing.
 
 `EmbeddedImageButton.cs` composes an `EmbeddedImage` and a `TextBlock` into a
 `StackPanel` and rebuilds its own `Content` whenever any of its layout properties
@@ -592,7 +639,8 @@ items. See
 [Build a button that combines an embedded image with text](../BLUEPRINTS-ViewsAndControls.md#build-a-button-that-combines-an-embedded-image-with-text),
 [Embed an asset with an explicit logical name and load it by reflection](../BLUEPRINTS-ProjectLayoutAndPackaging.md#embed-an-asset-with-an-explicit-logical-name-and-load-it-by-reflection),
 [Rasterize SVG art with the CodeBrix SkiaSvg library](../BLUEPRINTS-GraphicsAndRendering.md#rasterize-svg-art-with-the-codebrix-skiasvg-library),
-[Play a Lottie animation on a Skia head and on native WinUI](../BLUEPRINTS-GraphicsAndRendering.md#play-a-lottie-animation-on-a-skia-head-and-on-native-winui)
+[Play a Lottie animation on a Skia head and on native WinUI](../BLUEPRINTS-GraphicsAndRendering.md#play-a-lottie-animation-on-a-skia-head-and-on-native-winui),
+[Report a control's load failure with an event and a log line](../BLUEPRINTS-ViewsAndControls.md#report-a-controls-load-failure-with-an-event-and-a-log-line)
 and [Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace).
 
 ### Head-specific plumbing, all of it in Program.cs

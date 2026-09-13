@@ -69,6 +69,25 @@ public static class MediaFormats
         _ => "?",
     };
 
+    /// <summary>
+    /// The label a "save as" dialog puts on the file-type filter for one extension. This is the same
+    /// policy <see cref="DisplayName" /> states, said the short way a dialog has room for, and keyed
+    /// by the extension because that is all a save dialog is given.
+    /// </summary>
+    /// <param name="extension">A lower-case, dotted extension.</param>
+    /// <returns>What to call a file with that extension in a dialog.</returns>
+    /// <remarks>
+    /// An extension this application does not write is described as an MP4, because the <c>.mp4</c>
+    /// export is the one destination that is not one of the four supported formats.
+    /// </remarks>
+    public static string DescribeExtension(string extension) => extension switch
+    {
+        ".cbv" => "CodeBrix video",
+        ".mkv" => "Matroska video",
+        ".webm" => "WebM video",
+        _ => "MP4 video",
+    };
+
     /// <summary>The file-name extension a destination format is written with.</summary>
     /// <param name="kind">The format.</param>
     /// <returns>A lower-case, dotted extension.</returns>

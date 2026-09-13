@@ -145,7 +145,10 @@ public sealed class ModelSceneGlCanvas : GLCanvasElement
     // runs before the first RenderOverride on every head (e.g. a canvas that starts collapsed).
     private void EnsureInitialized(GL gl)
     {
-        if (_rendererInitialized) { return; }
+        if (_rendererInitialized)
+        {
+            return;
+        }
         _renderer.Initialize(gl);
         _rendererInitialized = true;
     }
@@ -195,7 +198,8 @@ public sealed class ModelSceneGlCanvas : GLCanvasElement
 ```
 
 The view-model side is a plain property plus a change notification, with the parse
-done off the UI thread:
+done off the UI thread by a loader the view model resolved rather than
+constructed:
 
 ```csharp
 // From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
@@ -208,7 +212,7 @@ private async Task OpenModelViewAsync(PolyHavenAsset asset, DownloadedModel down
     //at first paint.
     var (model, stats) = await Task.Run(() =>
     {
-        var loaded = new GltfModelLoader().LoadFile(downloaded.GltfPath);
+        var loaded = _modelLoader.LoadFile(downloaded.GltfPath);
         return (loaded, ModelFileStats.FromLoadedModel(loaded, downloaded.ModelFolder));
     });
 
@@ -226,6 +230,7 @@ private async Task OpenModelViewAsync(PolyHavenAsset asset, DownloadedModel down
 `PolyHavenBrowser/src/libs/PolyHavenBrowser.Rendering/GL/ModelSceneGlCanvas.cs`
 `PolyHavenBrowser/src/PolyHavenBrowser.UI/Views/MainPage.xaml` and
 `PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`
+`PolyHavenBrowser/src/libs/PolyHavenBrowser.Rendering/Models/IModelLoader.cs`
 
 **Sharp edges.**
 - Initialization must be idempotent and called from both `Init` and
@@ -244,6 +249,9 @@ private async Task OpenModelViewAsync(PolyHavenAsset asset, DownloadedModel down
   pointer move is fine.
 - When GL initialization fails outright, tell the user rather than showing an
   empty pane; see the bridge area.
+- The loader is an interface the view model asks the resolver for, so the parse
+  step can be stood in for; the control, the renderer and the GL context stay out
+  of that seam entirely.
 
 ### Keep the GL renderer framework-free behind an interface
 
@@ -689,9 +697,11 @@ restarting and without every layer above the GPU knowing which one is active.
 
 **The MVVM shape.** One interface is the seam. A selector registered as a
 singleton owns the list of kinds, the per-platform gate and engine creation. The
-view model exposes the kind names as a bound list and the selection as a bound
-string property; its setter starts the switch, and everything above the seam -
-painter, camera, model loading, XAML - is unchanged by the choice.
+view model exposes the selector's kinds as a bound list and the selection as a
+bound property of that same enum type - the dropdown holds the values themselves,
+not display strings that have to be looked back up - and its setter starts the
+switch. Everything above the seam - painter, camera, model loading, XAML - is
+unchanged by the choice.
 
 **Code.**
 
@@ -750,11 +760,37 @@ public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
 }
 ```
 
+```csharp
+// From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
+/// <summary>The rendering engines shown in the dropdown (OpenGL first - the default).</summary>
+public IReadOnlyList<RenderEngineKind> RenderEngineKinds =>
+    _engineSelector?.AvailableKinds ?? Array.Empty<RenderEngineKind>();
+
+/// <summary>
+/// The rendering engine picked in the dropdown. Selecting an engine that is not supported
+/// on this platform shows an alert and snaps the selection back; selecting a supported one
+/// swaps the 3D engine and re-displays the current texture/model sample through it.
+/// </summary>
+public RenderEngineKind SelectedRenderEngine
+{
+    get => _selectedRenderEngine;
+    set
+    {
+        if (value == _selectedRenderEngine) { return; }
+
+        //Optimistic: show the new selection at once; SwitchEngineAsync reverts it if the
+        //engine is unsupported or fails to initialize.
+        SetEnumProperty(ref _selectedRenderEngine, value);
+        _ = RunSwitchEngineAsync(value);
+    }
+}
+```
+
 ```xml
 <!-- From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/Views/MainPage.xaml -->
 <ComboBox Width="130" Height="36" VerticalAlignment="Center"
-          ItemsSource="{d:Binding RenderEngineNames}"
-          SelectedItem="{d:Binding SelectedRenderEngineName, Mode=TwoWay}"
+          ItemsSource="{d:Binding RenderEngineKinds}"
+          SelectedItem="{d:Binding SelectedRenderEngine, Mode=TwoWay}"
           IsEnabled="{d:Binding IsNotBusy}"
           Visibility="{d:Binding EngineSelectorVisibility}" />
 ```
@@ -762,6 +798,7 @@ public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
 **Where to look.**
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/Display/IModelRenderEngine.cs`
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/Display/IModelRenderEngineSelector.cs`
+`PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/Display/RENDERING-PIPELINE.md`
 
 **Sharp edges.**
@@ -773,6 +810,9 @@ public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
 - The list is deliberately not filtered to supported kinds, so the user learns why
   an option is unavailable; see the alert-and-revert blueprint in the view-model
   area, and pre-warm the new backend off the UI thread before swapping.
+- The setter shows the new selection at once and the switch reverts it on failure,
+  so the revert writes the backing field and raises the notification by hand -
+  going back through the setter would start a second switch.
 
 ### Gate an optional graphics backend to specific heads with an allow list
 
@@ -1077,7 +1117,10 @@ engine declares its orientation; nothing else in the application knows about it.
 // From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/Display/ModelScenePainter.cs
 public void Paint(SKSurface surface, SKImageInfo info)
 {
-    if (_disposed || info.Width <= 0 || info.Height <= 0) { return; }
+    if (_disposed || info.Width <= 0 || info.Height <= 0)
+    {
+        return;
+    }
 
     // When a background texture is present, render the model over a transparent clear so it
     // composites onto the texture we draw behind it; otherwise use the solid dark colour.
@@ -1150,7 +1193,10 @@ private const int DragRenderDimension = 960;
 
 public void Paint(SKSurface surface, SKImageInfo info)
 {
-    if (_disposed || info.Width <= 0 || info.Height <= 0) { return; }
+    if (_disposed || info.Width <= 0 || info.Height <= 0)
+    {
+        return;
+    }
 
     var (renderWidth, renderHeight) = CapResolution(info.Width, info.Height);
     if (_buffer == null || _bufferWidth != renderWidth || _bufferHeight != renderHeight)
@@ -1214,7 +1260,10 @@ public static SKBitmap LoadForDisplay(byte[] data, string fileExtension)
 // From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/libs/PolyHavenBrowser.Rendering/ToneMapping/ToneMapper.cs
 internal static float ApplyOperator(float value, ToneMapOperator toneMapOperator)
 {
-    if (value <= 0f) { return 0f; }
+    if (value <= 0f)
+    {
+        return 0f;
+    }
 
     return toneMapOperator switch
     {
@@ -1336,12 +1385,25 @@ public ImageCanvasPainter ImagePainter { get; } = new();
 /// <inheritdoc />
 public Action InvalidateImageCanvas { get; set; }
 
+/// <summary>The zoom toolbar's visibility (2D viewer only).</summary>
+[AffectsCommands(nameof(ZoomInCommand), nameof(ZoomOutCommand), nameof(ZoomResetCommand))]
+public Visibility ZoomBarVisibility => ImageViewerVisibility;
+
+// ...
+
+/// <summary>The zoom caption, e.g. <c>125%</c>.</summary>
 public string ZoomText => $"{ImagePainter.ZoomFactor * 100:0}%";
 
-public SimpleCommand ZoomInCommand => field ??= new SimpleCommand(() => AdjustZoom(1.25f));
-public SimpleCommand ZoomOutCommand => field ??= new SimpleCommand(() => AdjustZoom(0.8f));
+/// <summary>Zooms the 2D viewer in one step.</summary>
+public SimpleCommand ZoomInCommand => field ??= new SimpleCommand(CanZoom, () => AdjustZoom(1.25f));
 
-/// <summary>Applies one wheel notch of zoom from the page's pointer-wheel handler.</summary>
+/// <summary>Zooms the 2D viewer out one step.</summary>
+public SimpleCommand ZoomOutCommand => field ??= new SimpleCommand(CanZoom, () => AdjustZoom(0.8f));
+
+//Only the 2D viewer has a zoom; the toolbar carrying these is shown with the same test,
+//and SetViewerMode's notification for it is what refreshes them.
+private bool CanZoom() => _viewerMode == ViewerMode.Image;
+
 public void AdjustZoomFromWheel(int wheelDelta) => AdjustZoom(wheelDelta > 0 ? 1.25f : 0.8f);
 
 private void AdjustZoom(float factor)
@@ -1354,8 +1416,10 @@ private void AdjustZoom(float factor)
 
 ```csharp
 // From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs
+IImageCanvasBridge canvasBridge = viewModel;
+// ...
 //Marshal 2D-canvas invalidations from the view model onto the UI thread
-viewModel.InvalidateImageCanvas = () => DispatcherQueue?.TryEnqueue(() => ImageCanvas?.Invalidate());
+canvasBridge.InvalidateImageCanvas = () => DispatcherQueue?.TryEnqueue(() => ImageCanvas?.Invalidate());
 
 //The 2D viewer: the view model's painter draws images and spritesheets (checkerboard,
 //zoom, sprite spotlight) onto this SkiaSharp surface.
@@ -1387,6 +1451,13 @@ ImageCanvas.PointerWheelChanged += (_, e) =>
   game assets.
 - The view model disposes the previous bitmap when swapping in a new one, and
   clears both the painter's bitmap and its highlight when the viewer closes.
+- The zoom commands gate on the same test that shows their toolbar, and the
+  computed visibility property carries the attribute that refreshes them - so one
+  notification, raised when the viewer mode changes, updates the toolbar and its
+  buttons together.
+- The page assigns the delegate through the bridge interface rather than through
+  the view model's type, so what the page owes the view model is readable from the
+  interface alone.
 
 ### Spotlight one region of an image on the canvas
 
@@ -1897,15 +1968,28 @@ private void SetActiveLayer(string layerName)
 }
 ```
 
-The page's paint handler is one line:
+Each head's page wires its canvas with one call to a shared helper, which the page
+passes a getter rather than the session itself:
 
 ```csharp
 // From CodeBrix.Samples/PainDiagram/CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs
-DrawCanvas.PaintSurface += (_, e) => ViewModel?.Session?.Render(e.Surface, e.Info);
+DrawCanvas.BindToSession(() => ViewModel?.Session);
+```
 
-// ...
+The helper holds the wiring that used to be repeated in every code-behind: the
+paint handler renders the session, and a resize invalidates because the canvas
+does not repaint itself.
 
-DrawCanvas.SizeChanged += (_, _) => DrawCanvas.Invalidate();
+```csharp
+// From CodeBrix.Samples/PainDiagram/Shared/Drawing/DrawingCanvasBinder.cs
+public static void BindToSession(this DrawingCanvas canvas, Func<DrawingSession> sessionGetter)
+{
+    if (canvas == null || sessionGetter == null) { return; }
+
+    canvas.PaintSurface += (_, e) => sessionGetter()?.Render(e.Surface, e.Info);
+    // ...
+    //SKXamlCanvas does not repaint itself when it is resized
+    canvas.SizeChanged += (_, _) => canvas.Invalidate();
 ```
 
 A session built over a captured photograph looks the same, with the background
@@ -1957,7 +2041,8 @@ public bool SelectColor(string colorName)
 ```
 
 **Where to look.**
-`PainDiagram/Shared/ViewModels/MainViewModel.cs`
+`PainDiagram/Shared/ViewModels/MainViewModel.cs` and
+`Shared/Drawing/DrawingCanvasBinder.cs`
 `WebcamPainter/src/libs/WebcamPainter.Painting/PaintingSession.cs`
 `WebcamPainter/src/libs/WebcamPainter.Painting/HighlighterPalette.cs`
 
@@ -1975,6 +2060,9 @@ public bool SelectColor(string colorName)
   surface clear color is what shows in the letterbox bars around the image.
 - The session can be null in the designer, because the view model skips
   construction in design mode, so every handler uses null-conditional access.
+- The helper is handed a getter rather than the session, and calls it on every
+  event: that is what lets a canvas be wired before the data context has arrived
+  and keeps it harmless after the view model is disposed.
 
 ### Export a drawing at a chosen pixel size
 
@@ -2132,9 +2220,11 @@ else
 and needs to see where the brush is and how big it is.
 
 **The MVVM shape.** A static render helper in the drawing library takes the
-session plus three primitive values from the view model: normalized position and
-whether ink is flowing. The page's paint handler passes them through; the helper
-never touches the view model.
+session plus three primitive values: normalized position and whether ink is
+flowing. The view model calls it, because the view model is what knows which of
+the two things the canvas is currently showing; the page's paint handler is a
+single forward through the canvas bridge. The helper never touches the view
+model.
 
 **Code.**
 
@@ -2160,8 +2250,10 @@ public static void Render(SKSurface surface, SKImageInfo info, PaintingSession s
     //A dark halo behind the ring keeps the cursor visible over any photo content
     using (var halo = new SKPaint
     {
-        Style = SKPaintStyle.Stroke, StrokeWidth = 4f,
-        Color = new SKColor(0, 0, 0, 140), IsAntialias = true,
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 4f,
+        Color = new SKColor(0, 0, 0, 140),
+        IsAntialias = true,
     })
     {
         canvas.DrawCircle(center.X, center.Y, radius, halo);
@@ -2169,8 +2261,10 @@ public static void Render(SKSurface surface, SKImageInfo info, PaintingSession s
 
     using (var ring = new SKPaint
     {
-        Style = SKPaintStyle.Stroke, StrokeWidth = 2f,
-        Color = ringColor, IsAntialias = true,
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 2f,
+        Color = ringColor,
+        IsAntialias = true,
     })
     {
         canvas.DrawCircle(center.X, center.Y, radius, ring);
@@ -2197,9 +2291,32 @@ public float GetBrushRadiusInView(float viewWidth, float viewHeight)
     => _session.ScaleToView(BrushRadius, new SizeF(viewWidth, viewHeight));
 ```
 
+The three values are private state on the view model rather than bound
+properties, because they are read at frame rate by the renderer and never by a
+binding:
+
+```csharp
+// From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.Core/ViewModels/MainViewModel.cs
+public void RenderMainCanvas(SKSurface surface, SKImageInfo info)
+{
+    var session = _paintSession;
+    if (IsPaintMode && session != null)
+    {
+        PaintCanvasHelper.Render(surface, info, session,
+            CrosshairNormX, CrosshairNormY, IsBrushPainting);
+    }
+    else
+    {
+        _mainRenderer.Render(surface, info, _captureService, mirror: true);
+    }
+}
+```
+
 **Where to look.**
 `WebcamPainter/src/libs/WebcamPainter.Painting/PaintCanvas.cs`
 `WebcamPainter/src/libs/WebcamPainter.Painting/PaintingSession.cs`
+`WebcamPainter/src/WebcamPainter.Core/ViewModels/MainViewModel.cs` and
+`Core/Bridges/ICanvasBridge.cs`
 
 **Sharp edges.**
 - The dark halo drawn under the ring is what keeps the cursor readable over both
@@ -2210,6 +2327,9 @@ public float GetBrushRadiusInView(float viewWidth, float viewHeight)
   rectangle the renderer uses - rather than recomputing aspect-fit math.
 - Give the crosshair arms a minimum length so they stay visible when the brush is
   small on screen.
+- Which of the two pictures the canvas shows is application state, so that
+  decision belongs on the view model, not in the paint handler; the bridge carries
+  the surface into the view model rather than carrying the state out.
 
 ### Draw an animated SkSL shader as a game engine direct drawing
 
@@ -2568,7 +2688,7 @@ renderer; nothing about resolution lives in the page.
     /// <summary>The highest resolution a page is ever rendered at, whatever the zoom.</summary>
     public const int MaximumRenderDpi = 600;
 
-    /// <summary>The zoom levels, in order, that ZoomIn and ZoomOut step through.</summary>
+    /// <summary>The zoom levels, in order, that <see cref="ZoomIn"/> and <see cref="ZoomOut"/> step through.</summary>
     public static IReadOnlyList<int> Levels { get; } = [100, 125, 150, 200, 300, 400, 500, 700, 1000];
 
     /// <summary>The current level as a multiplier of the fit-the-page size (1.0 at 100%).</summary>
@@ -2576,7 +2696,7 @@ renderer; nothing about resolution lives in the page.
 
     /// <summary>
     /// The resolution to render a page at for the current level: baseDpi scaled by the
-    /// zoom factor so text stays sharp, capped at MaximumRenderDpi (past the cap
+    /// zoom factor so text stays sharp, capped at <see cref="MaximumRenderDpi"/> (past the cap
     /// the image is scaled up a little on screen instead of rendering an enormous bitmap).
     /// </summary>
     public int GetRenderDpi(int baseDpi)
@@ -2913,15 +3033,24 @@ private void OnPaintSurface (object? sender, SKPaintSurfaceEventArgs e)
 **When you want this.** You have raw premultiplied pixels - from a decoder, a
 renderer, a thumbnail - and need them in an `Image` element.
 
-**The MVVM shape.** A static factory returning an image source, caching by key.
-Returning null for an unknown key lets callers fall back to a text label rather
-than showing an empty square.
+**The MVVM shape.** A static factory returning an image source, caching by key in
+a bounded, thread-safe cache. Returning null for an unknown key lets callers fall
+back to a text label rather than showing an empty square.
 
 **Code.**
 
 ```csharp
 // From CodeBrix.Samples/Pinta.Brix/src/libs/Pinta.Brix.Controls/IconImageSource.cs
-public static ImageSource? Create (string iconName, int size)
+	/// <summary>
+	/// Every command, tool and pad button asks for an icon at one of a handful
+	/// of sizes, so the working set is small and fixed; the bound is here so a
+	/// caller that asks for arbitrary sizes cannot grow the cache forever.
+	/// </summary>
+	private const int CacheCapacity = 512;
+
+	private static readonly BoundedCache<(string, int), ImageSource> cache = new (CacheCapacity);
+	// ...
+	public static ImageSource? Create (string iconName, int size)
 {
 	if (cache.TryGetValue ((iconName, size), out ImageSource? cached))
 		return cached;
@@ -2938,13 +3067,14 @@ public static ImageSource? Create (string iconName, int size)
 	pixels.CopyTo (bitmap.PixelBuffer);
 	bitmap.Invalidate ();
 
-	cache[(iconName, size)] = bitmap;
+	cache.Set ((iconName, size), bitmap);
 	return bitmap;
 }
 ```
 
 **Where to look.**
-`Pinta.Brix/src/libs/Pinta.Brix.Controls/IconImageSource.cs`
+`Pinta.Brix/src/libs/Pinta.Brix.Controls/IconImageSource.cs` and
+`BoundedCache.cs`
 `Pinta.Brix/src/libs/Pinta.Brix.Controls/Pads/LayerRowFactory.cs`
 
 **Sharp edges.**
@@ -2955,6 +3085,11 @@ public static ImageSource? Create (string iconName, int size)
   there is no conversion step here.
 - The same idiom serves live thumbnails, letterboxed rather than stretched so a
   tall or wide source keeps its shape.
+- The cache behind the factory is bounded and holds a lock of its own: icons are
+  asked for from several builds that can overlap, and a plain dictionary shared
+  between them is both a race and an unbounded one. A capacity that evicts the
+  least recently used entry keeps a caller that asks for arbitrary sizes from
+  growing it forever.
 
 ### Honor EXIF orientation when decoding with SkiaSharp codecs
 
@@ -3141,35 +3276,33 @@ button's `Command` still binds to the view model.
 
 ```xml
 <!-- From CodeBrix.Samples/JustBetweenUs/CodeBrixPlatform/JustBetweenUs.UI/Views/MainPage.xaml -->
-<Page ...
-      xmlns:lottie="clr-namespace:CommunityToolkit.WinUI.Lottie;assembly=CodeBrix.Platform.UI.Lottie">
-  <!-- ... -->
-  <Button Grid.Row="4" Grid.Column="1" Width="80" Height="50"
-          VerticalAlignment="Center" HorizontalAlignment="Left"
-          Command="{d:Binding ShowOsInfoCommand}">
-      <StackPanel Orientation="Horizontal">
-          <AnimatedVisualPlayer AutoPlay="True"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Height="40" Width="50">
-              <!--NOTE: Visual Studio doesn't recognize 'embedded:' and the path below, but they are correct and will work fine-->
-              <lottie:LottieVisualSource UriSource="embedded://JustBetweenUs.Core/JustBetweenUs.Assets.star_icon.json" />
-          </AnimatedVisualPlayer>
-      </StackPanel>
-  </Button>
+xmlns:lottie="clr-namespace:CommunityToolkit.WinUI.Lottie;assembly=CodeBrix.Platform.UI.Lottie"
+...
+<Button Grid.Row="4" Grid.Column="1" Width="80" Height="50"
+        VerticalAlignment="Center" HorizontalAlignment="Left"
+        Command="{d:Binding ShowOsInfoCommand}">
+    <StackPanel Orientation="Horizontal">
+        <AnimatedVisualPlayer AutoPlay="True"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Height="40" Width="50">
+            <!--NOTE: Visual Studio doesn't recognize 'embedded:' and the path below, but they are correct and will work fine-->
+            <lottie:LottieVisualSource UriSource="embedded://JustBetweenUs.Core/JustBetweenUs.Assets.star_icon.json" />
+        </AnimatedVisualPlayer>
+    </StackPanel>
+</Button>
 ```
 
 ```xml
 <!-- From CodeBrix.Samples/JustBetweenUs/JustBetweenUs.WinUI/Views/MainPage.xaml -->
-<Page ...
-      xmlns:lottie="using:CodeBrix.Platform.WinUI.Lottie">
-  <!-- ... -->
-  <lottie:AnimatedVisualPlayer AutoPlay="True"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               Height="40" Width="50">
-      <lottie:LottieVisualSource UriSource="ms-appx:///Assets/star_icon.json" />
-  </lottie:AnimatedVisualPlayer>
+xmlns:lottie="using:CodeBrix.Platform.WinUI.Lottie"
+...
+<lottie:AnimatedVisualPlayer AutoPlay="True"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             Height="40" Width="50">
+    <lottie:LottieVisualSource UriSource="ms-appx:///Assets/star_icon.json" />
+</lottie:AnimatedVisualPlayer>
 ```
 
 **Where to look.**
@@ -3318,16 +3451,26 @@ private async void OnLoaded(object sender, RoutedEventArgs args)
 {
     if (gpuCanvas != null) { return; }
 
-    //The GPU canvas is built here rather than in XAML because constructing it is what starts the
-    //  graphics API, and that must not happen inside InitializeComponent().
-    gpuCanvas = new SkiaGLCanvasElement();
-    gpuCanvas.PaintSurface += OnGpuPaintSurface;
-    VideoHost.Children.Insert(0, gpuCanvas);
+    try
+    {
+        //The GPU canvas is built here rather than in XAML because constructing it is what starts the
+        //  graphics API, and that must not happen inside InitializeComponent().
+        gpuCanvas = new SkiaGLCanvasElement();
+        gpuCanvas.PaintSurface += OnGpuPaintSurface;
+        VideoHost.Children.Insert(0, gpuCanvas);
 
-    CpuCanvas.SizeChanged += (_, _) => CpuCanvas.Invalidate();
+        CpuCanvas.SizeChanged += (_, _) => CpuCanvas.Invalidate();
 
-    //IsGpuInitialized reads null until the element has loaded and tried to start OpenGL.
-    await Task.Delay(600);
+        //IsGpuInitialized reads null until the element has loaded and tried to start OpenGL.
+        await Task.Delay(600);
+    }
+    catch (Exception exception)
+    {
+        //Nothing may escape an async void handler. A graphics API that refused to start is not a
+        //  crash here either: the settle below collapses the canvas that did not start, and the
+        //  view model is told it is on the processor.
+        Debug.WriteLine($"SimpleCbxVideoPlayer: the GPU canvas could not be started - {exception.Message}");
+    }
 
     DispatcherQueue?.TryEnqueue(SettleVideoSurface);
 }
@@ -3402,14 +3545,22 @@ model's picture of the world cannot flip underneath it.
   constructing it is what starts the graphics API, so a failure there is a failure
   you can still catch instead of one that takes the whole page down inside
   `InitializeComponent`.
+- The loaded handler is `async void`, because that is the signature the event has,
+  so nothing may escape it. Wrap the whole start-up in a try/catch and leave the
+  settle outside it: a graphics API that refused to start is then an ordinary
+  outcome - one canvas collapses, the view model is told, the application runs -
+  rather than an unobserved exception on the UI thread.
 - Insert it at index zero so the already-declared canvas sits above it; collapsing
   the loser then leaves exactly one canvas painting.
 - Telling the view model "no GPU canvas" must also withdraw the context from
   whatever is drawing, or the drawing code keeps believing in a device the page
   has just collapsed.
-- The page reaches its view model by casting the data context to the concrete view
-  model type. A one-method bridge interface, the way the game-canvas recipes do it,
-  keeps the page from naming the view model's type at all.
+- The settle call reaches the view model by casting the data context to the
+  concrete view model type, while the two delegate seams this page fills in - the
+  canvas invalidate and the save-path picker - are assigned through their own
+  interfaces. A one-method bridge interface for the settle too, the way the
+  game-canvas recipes do it, would keep the page from naming the view model's type
+  at all.
 
 ### Hand a video presenter the graphics context inside the paint handler that makes it current
 

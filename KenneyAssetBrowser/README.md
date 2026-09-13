@@ -86,6 +86,9 @@ user choices through the CodeBrix.Platform.AppSettings add-in behind a one-file 
   [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties).
 - Letting the view model raise dialogs by taking a XamlRoot getter from the page once:
   [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+- Handing each capability to the data context through the interface that declares it,
+  so the page names contracts rather than the view model's class:
+  [Assign every bridge through the interface that declares it](../BLUEPRINTS-PlatformServices.md#assign-every-bridge-through-the-interface-that-declares-it).
 - Using one error surface for a whole dispatching open path:
   [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
 - Wrapping the settings add-in in one application-named facade nothing else bypasses:
@@ -214,9 +217,10 @@ KenneyAssetBrowser/
   src/
     KenneyAssetBrowser.UI/                Shared project: App.xaml(.cs) and Views/MainPage.xaml(.cs)
     KenneyAssetBrowser.Core/              The library every head references; carries the packages
+      Converters/                         TimecodeConverter: the audio scrubber's m:ss.f labels
       Helpers/                            HostHelper (host-builder provider), FormatHelper (byte and count text)
       Services/                           AssetCatalogService: the gateway to the AssetRead library
-      ViewModels/                         MainViewModel, the cell view models, the two bridge interfaces
+      ViewModels/                         MainViewModel, the cell view models, the four bridge interfaces
       RegisterServices.cs                 The AddKenneyAssetBrowser() DI extension method
     KenneyAssetBrowser.LinuxX11/          Head: Program.cs plus one runtime package
     KenneyAssetBrowser.LinuxWayland/      Head: Program.cs plus one runtime package
@@ -335,18 +339,23 @@ See [Classify and group the contents of a container for browsing](../BLUEPRINTS-
 The Browsing View is a sidebar of pack cards beside a grid of asset cards, with a header
 carrying the search box, the category filter and the assets-folder button. Read
 `ViewModels/AssetCellCollection.cs` first: it is an observable collection that holds the
-whole filtered list privately and only adds a batch at a time, exposing `HasMoreItems` and
-`RequestMore(count)`. Then `Views/MainPage.xaml` for the repeater and its uniform grid
-layout, and `Views/MainPage.xaml.cs` for the scroll watcher that asks for the next batch
-while the bottom edge is still a couple of viewports away. Filtering swaps in a whole new
-collection instance rather than mutating the existing one, which is what lets a single
-property change mean "the list is different, scroll back to the top". The search box binds
+whole filtered list privately and only adds a batch at a time, exposing `HasMoreItems`,
+`RequestMore(count)` and the `ScrollBatch` size each of those calls asks for. Then
+`Views/MainPage.xaml` for the repeater and its uniform grid layout, and
+`Views/MainPage.xaml.cs` for the scroll watcher that asks for the next batch while the
+bottom edge is still a couple of viewports away. Filtering swaps in a whole new collection
+instance rather than mutating the existing one, and the `Cells` setter is where "the list
+is different" becomes "scroll back to the top": it invokes the `ScrollCatalogToTop` delegate
+of `ICatalogGridBridge`, the one-member interface the page fills in. The search box binds
 two-way with `UpdateSourceTrigger=PropertyChanged` and its setter starts a cancellable
 delay, so a rebuild happens once typing settles rather than on every keystroke; the category
 list next to it needs a suppression flag around repopulation, because assigning the list and
-resetting the selection would otherwise each trigger a rebuild. In the MVVM shape the batch
-size is policy and belongs beside the collection's own initial batch constant, while the
-scroll measurement is a view concern and stays in the page.
+resetting the selection would otherwise each trigger a rebuild. The batch size is policy, so
+it sits beside the collection's own initial-batch constant as `ScrollBatch` and the page
+names it when it asks; how near the bottom edge counts as near is a measurement
+only the view can make, and that stays in the page. The debounced rebuild is an `async void`
+method, so it catches its own failures and reports them in the result caption rather than
+letting them escape where nothing can catch them.
 See [Fill a grid lazily as it scrolls](../BLUEPRINTS-MVVM.md#fill-a-grid-lazily-as-it-scrolls),
 [Debounce a search box before rebuilding a filtered list](../BLUEPRINTS-MVVM.md#debounce-a-search-box-before-rebuilding-a-filtered-list)
 and [Stop a two way bound selection from commanding the control back](../BLUEPRINTS-MVVM.md#stop-a-two-way-bound-selection-from-commanding-the-control-back).
@@ -429,23 +438,29 @@ and [Play a baked animation clip in a preview canvas](../BLUEPRINTS-GraphicsAndR
 ### Playing a pack's audio clips
 
 Audio is the clearest bridge example in this application. `ViewModels/IAudioPlayerBridge.cs`
-is five settable delegates - load a stream, play, pause, stop, set looping - which
-`MainViewModel` implements itself and the page fills in from `DataContextChanged`. The view
-model owns the transport commands and the loop state and null-guards every call, so a head
-where the bridge was never filled in degrades to a viewer pane that says playback is not
-available rather than to a crash; the interface's own doc comment states that contract. The
+is nine settable delegates - load a stream, play, pause, stop, set looping, then the three
+read-only transport facts (is it playing, position, duration) and a seek - which
+`MainViewModel` implements itself and the page fills in from `DataContextChanged`, through
+the interface rather than through the concrete view-model type. The view model owns the
+transport commands and the loop state and null-guards every call, so a head where the bridge
+was never filled in degrades to a viewer pane that says playback is not available rather than
+to a crash; the interface's own doc comment states that contract. The transport buttons take
+their enabled state from `HasAudioClip`, which carries the `[AffectsCommands]` attribute
+naming all four of them, so on such a head they are disabled rather than silently inert. The
 clip's bytes go straight to the element as a memory stream - the element takes ownership of
 it, decodes Ogg Vorbis, WAV, MP3 and FLAC itself, and so the application never needs a
 format check before playing. Opening a different asset stops whatever was playing first.
 The scrubber is the deliberate exception to routing everything through the view model:
 position and duration change many times a second and mean nothing outside this control
-group, so the slider and the two timecode labels bind to the element by name, through a
-one-way converter that shows tenths because most of what a pack ships is a sound effect
-shorter than a second. The replay behavior - Play on a clip parked at its end should rewind
-first, but not when the clip is looping and not when the user has scrubbed away from the end
-- is application policy: in the MVVM shape it belongs in `PlayAudioCommand`, with the bridge
-growing read-only accessors for position, duration and playing state plus a seek action, and
-the page forwarding the element's playback-ended event in one line.
+group, so the slider and the two timecode labels bind to the element by name, through
+`Converters/TimecodeConverter.cs` - a one-way converter that shows tenths, because most of
+what a pack ships is a sound effect shorter than a second, and which sits in Core beside the
+rest of the reusable code rather than in the page. The replay behavior - Play on a clip
+parked at its end rewinds first, but not when the clip is looping and not when the user has
+scrubbed away from the end - is application policy, so it lives in `PlayAudioCommand`: the
+command reads the transport back through the bridge's position, duration and playing-state
+accessors and rewinds with its seek, while the page's only part in it is forwarding the
+element's playback-ended event to `NotifyAudioPlaybackEnded()` in one line.
 See [Play an audio clip straight from bytes with the AudioPlayer add-in](../BLUEPRINTS-MediaAndVision.md#play-an-audio-clip-straight-from-bytes-with-the-audioplayer-add-in),
 [Replay a finished audio clip with one button press](../BLUEPRINTS-PlatformServices.md#replay-a-finished-audio-clip-with-one-button-press),
 [Bind a scrubber and volume slider straight to the media element](../BLUEPRINTS-ViewsAndControls.md#bind-a-scrubber-and-volume-slider-straight-to-the-media-element)
@@ -464,9 +479,14 @@ the whole switch in a single error handler, so any failure becomes one dialog th
 `ShowError(ex, message)` rather than a crash. Unsupported files still open, into the
 explanatory mode, so nothing in the grid is a dead card. The view model exposes `Visibility`
 properties throughout rather than booleans plus converters, and the XAML binds them
-directly.
-See [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties)
-and [Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs).
+directly. Closing the viewer is also what releases the bitmap it was showing, and switching
+pack is what closes the previous archive - so `Dispose()` has only the last of each left to
+do: it nulls every delegate the page handed over, closes the viewer, disposes the archive and
+the pending search delay, and calls the base implementation.
+See [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties),
+[Confirm and inform from the view model with SimpleViewModel dialogs](../BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs),
+[Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates)
+and [Call the page's bridge from the setter that changed](../BLUEPRINTS-PlatformServices.md#call-the-pages-bridge-from-the-setter-that-changed).
 
 ### Layout that follows the window, twice
 
@@ -495,16 +515,20 @@ head with no player, and the viewer pane says so. The 3D preview can fail on a m
 no usable OpenGL driver, and an empty pane looks like a bug - so the page asks the canvas for
 its initialization state, which is a view concern, and hands the state object to a view-model
 method that owns the message and shows the dialog. The check has to run at two moments, the
-canvas's load and the view model's viewer-active change, because a collapsed canvas may not
-attempt initialization until it enters the visual tree; a flag reports it once per run rather
-than on every model the user opens. The Windows-specific hint in the message is gated on
+canvas's load and the moment the viewer opens, because a collapsed canvas may not attempt
+initialization until it enters the visual tree; the second of those reaches the page as
+`IViewerPaneBridge.ViewerOpened`, a delegate the view model invokes rather than a property
+name the page watches for. A flag reports it once per run rather than on every model the
+user opens. The Windows-specific hint in the message is gated on
 `SimpleOsInfo.GatherInfo(withConsoleOutput: false)` reporting Windows, not on a build
 constant. The same instinct shows up in the LinuxFrameBuffer head, which opts into a folder
 picker and a software keyboard because it has no desktop chrome to borrow either from; the
-start and restrict folders in that call are the author's own machine paths and should be
-treated as placeholders and computed from the environment in your own application.
-See [Tell the user when graphics initialization failed](../BLUEPRINTS-PlatformServices.md#tell-the-user-when-graphics-initialization-failed)
-and [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head).
+start and restrict folders in that call are computed from the environment - the signed-in
+user's home folder, and its `Assets` subfolder when there is one - rather than written into
+the head as fixed paths.
+See [Tell the user when graphics initialization failed](../BLUEPRINTS-PlatformServices.md#tell-the-user-when-graphics-initialization-failed),
+[Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head)
+and [Compute the framebuffer picker's folders from the environment](../BLUEPRINTS-AppStructureAndStartup.md#compute-the-framebuffer-pickers-folders-from-the-environment).
 
 ### Settings behind one facade, and the folder the whole application hangs on
 
@@ -523,11 +547,14 @@ the file name of the pack browsed last, which is restored on the next run and fa
 the first pack in the folder. The folder itself gates the whole Browsing View through a pair
 of visibility properties, and the same `PickFolderCommand` is bound twice - once on the
 first-launch prompt and once on the header button - so there is a single code path either
-way.
+way. When the folder is already known, the constructor starts the catalog load it cannot
+await through a private wrapper of its own, so a failure becomes the sidebar's caption
+rather than a task nobody is watching.
 See [Wrap the AppSettings add-in in one application named facade](../BLUEPRINTS-SettingsAndPersistence.md#wrap-the-appsettings-add-in-in-one-application-named-facade),
 [Open the settings store before any other startup work](../BLUEPRINTS-SettingsAndPersistence.md#open-the-settings-store-before-any-other-startup-work),
-[Choose a folder with the picker and remember it across runs](../BLUEPRINTS-SettingsAndPersistence.md#choose-a-folder-with-the-picker-and-remember-it-across-runs)
-and [Gate an action behind a chosen folder and explain the gate with a dialog](../BLUEPRINTS-MVVM.md#gate-an-action-behind-a-chosen-folder-and-explain-the-gate-with-a-dialog).
+[Choose a folder with the picker and remember it across runs](../BLUEPRINTS-SettingsAndPersistence.md#choose-a-folder-with-the-picker-and-remember-it-across-runs),
+[Gate an action behind a chosen folder and explain the gate with a dialog](../BLUEPRINTS-MVVM.md#gate-an-action-behind-a-chosen-folder-and-explain-the-gate-with-a-dialog)
+and [Start work you cannot await through a helper that observes it](../BLUEPRINTS-MVVM.md#start-work-you-cannot-await-through-a-helper-that-observes-it).
 
 ### Startup, and why every package lives where it does
 

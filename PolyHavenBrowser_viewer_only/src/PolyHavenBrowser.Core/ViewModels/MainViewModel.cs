@@ -3,8 +3,10 @@ using Microsoft.UI.Xaml;
 using PolyHavenBrowser.Display;
 using PolyHavenBrowser.Rendering;
 using PolyHavenBrowser.Services;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 using System.Threading;
@@ -18,27 +20,54 @@ namespace PolyHavenBrowser.ViewModels;
 /// </summary>
 public interface ICanvasInvalidator
 {
-    /// <summary>Invalidates the hosting page's canvas (null before the page wires it up).</summary>
+    /// <summary>
+    /// Invalidates the hosting page's canvas (null before the page wires it up). This is the
+    /// raw "repaint the control" call; <see cref="MainViewModel.RequestRender"/> is the
+    /// coalescing gate in front of it.
+    /// </summary>
     Action InvalidateCanvas { get; set; }
 }
 
 /// <summary>
 /// Drives the PolyHavenBrowser main page: three sample buttons (texture, HDRI, model) that
 /// download a representative Poly Haven asset on demand and display it on the shared Skia
-/// canvas through an <see cref="IScenePainter"/>.
+/// canvas through an <see cref="IScenePainter"/>. It also owns the canvas repaint policy -
+/// paint coalescing and backlogged-pointer-frame detection - so the page's canvas handlers
+/// stay short forwards.
 /// </summary>
 [Microsoft.UI.Xaml.Data.Bindable]
 public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
 {
+    //A pointer frame that is running more than this far behind real time is a backlog
+    //frame: keep the cursor anchor in sync but skip rendering it, catching up to the latest.
+    private const double StaleFrameMicroseconds = 1_000_000; // 1 second
+
     private readonly SampleAssetService _assets;
     private readonly IModelRenderEngineSelector _engineSelector;
+
+    //Cancels an in-flight download when the view model is disposed, so shutdown does not
+    //wait for the network. Nothing else cancels: the sample buttons are disabled while busy.
+    private readonly CancellationTokenSource _lifetime = new();
+
+    //Tracks how far behind real time the pointer stream is, to detect a backlog.
+    private readonly Stopwatch _gestureClock = new();
+    private double _gestureStartTimestamp;
+
+    //Coalescing: never queue more than one paint. While one is pending, pointer moves only
+    //update the camera; the next paint draws the latest state.
+    private bool _renderPending;
+
     private ModelScenePainter _modelPainter;
 
     private IScenePainter _currentPainter;
     private PanoramaScenePainter _panoramaPainter;
     private SampleAssetKind _selectedKind = SampleAssetKind.Texture;
     private RenderEngineKind _currentEngineKind = RenderEngineKind.OpenGL;
-    private string _selectedRenderEngineName = nameof(RenderEngineKind.OpenGL);
+    private RenderEngineKind _selectedRenderEngine = RenderEngineKind.OpenGL;
+
+    private SimpleCommand _selectTextureCommand;
+    private SimpleCommand _selectHdriCommand;
+    private SimpleCommand _selectModelCommand;
 
     /// <summary>Creates the view model and begins loading the initial texture sample.</summary>
     public MainViewModel()
@@ -50,42 +79,43 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
         //The engine selector owns the available 3D backends (OpenGL + Vulkan) and creates
         //them on demand; the app always starts on OpenGL (no persistence).
         _engineSelector = GetService<IModelRenderEngineSelector>();
-        foreach (var kind in _engineSelector.AvailableKinds)
-        {
-            RenderEngineNames.Add(kind.ToString());
-        }
-        NotifyPropertyChanged(nameof(RenderEngineNames));
-        NotifyPropertyChanged(nameof(SelectedRenderEngineName));
 
         _modelPainter = new ModelScenePainter(_engineSelector.Create(RenderEngineKind.OpenGL, GetXamlRoot));
 
-        _ = SelectAsync(SampleAssetKind.Texture);
+        Initialization = SelectAsync(SampleAssetKind.Texture);
     }
+
+    /// <summary>
+    /// The initial sample load the constructor starts, so a page or a test can await the first
+    /// display instead of racing it. It never faults: the load catches every failure and reports
+    /// it through <see cref="StatusText"/>.
+    /// </summary>
+    public Task Initialization { get; } = Task.CompletedTask;
 
     /// <inheritdoc />
     public Action InvalidateCanvas { get; set; }
 
     /// <summary>The painter the hosting canvas should draw with.</summary>
-    public IScenePainter CurrentPainter => _currentPainter;
+    public IScenePainter CurrentPainter
+    {
+        get => _currentPainter;
+        private set => SetProperty(ref _currentPainter, value);
+    }
 
     /// <summary>Whether an asset is currently being downloaded or loaded.</summary>
     [AffectsCommands(nameof(SelectTextureCommand), nameof(SelectHdriCommand), nameof(SelectModelCommand))]
+    [AffectsProperties(nameof(IsNotBusy), nameof(BusyVisibility))]
     public bool IsBusy
     {
         get;
-        private set
-        {
-            SetProperty(ref field, value);
-            NotifyPropertyChanged(nameof(BusyVisibility));
-            NotifyPropertyChanged(nameof(IsNotBusy));
-        }
+        private set => SetProperty(ref field, value);
     }
 
     /// <summary>The inverse of <see cref="IsBusy"/> (disables the engine dropdown while loading).</summary>
     public bool IsNotBusy => !IsBusy;
 
     /// <summary>The busy indicator's visibility (visible while an asset is downloading/loading).</summary>
-    public Visibility BusyVisibility => IsBusy ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility BusyVisibility => GetVisibility(IsBusy);
 
     /// <summary>A short status line shown beneath the canvas.</summary>
     public string StatusText
@@ -94,26 +124,26 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
         private set => SetProperty(ref field, value ?? string.Empty);
     } = "Starting up…";
 
-    /// <summary>The rendering-engine names shown in the dropdown (OpenGL first - the default).</summary>
-    public List<string> RenderEngineNames { get; } = new();
+    /// <summary>The rendering engines shown in the dropdown (OpenGL first - the default).</summary>
+    public IReadOnlyList<RenderEngineKind> RenderEngineKinds =>
+        _engineSelector?.AvailableKinds ?? Array.Empty<RenderEngineKind>();
 
     /// <summary>
     /// The rendering engine picked in the dropdown. Selecting an engine that is not supported
     /// on this platform shows an alert and snaps the selection back; selecting a supported one
     /// swaps the 3D engine and re-displays the current texture/model sample through it.
     /// </summary>
-    public string SelectedRenderEngineName
+    public RenderEngineKind SelectedRenderEngine
     {
-        get => _selectedRenderEngineName;
+        get => _selectedRenderEngine;
         set
         {
-            if (string.IsNullOrEmpty(value) || value == _selectedRenderEngineName) { return; }
+            if (value == _selectedRenderEngine) { return; }
 
             //Optimistic: show the new selection at once; SwitchEngineAsync reverts it if the
             //engine is unsupported or fails to initialize.
-            _selectedRenderEngineName = value;
-            NotifyPropertyChanged(nameof(SelectedRenderEngineName));
-            _ = SwitchEngineAsync(value);
+            SetEnumProperty(ref _selectedRenderEngine, value);
+            _ = RunSwitchEngineAsync(value);
         }
     }
 
@@ -121,8 +151,7 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
     /// The engine dropdown's visibility: shown in Texture and Model modes, hidden in HDRI mode
     /// (the HDRI panorama is CPU-rendered and unaffected by the engine choice).
     /// </summary>
-    public Visibility EngineSelectorVisibility =>
-        _selectedKind == SampleAssetKind.Hdri ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility EngineSelectorVisibility => GetVisibility(_selectedKind != SampleAssetKind.Hdri);
 
     /// <summary>Whether the texture sample is selected (drives the button highlight).</summary>
     public bool IsTextureSelected => _selectedKind == SampleAssetKind.Texture;
@@ -135,24 +164,147 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
 
     /// <summary>Selects and shows the sample texture (on a lit cube).</summary>
     public SimpleCommand SelectTextureCommand =>
-        field ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Texture));
+        _selectTextureCommand ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Texture));
 
     /// <summary>Selects and shows the sample HDRI panorama.</summary>
     public SimpleCommand SelectHdriCommand =>
-        field ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Hdri));
+        _selectHdriCommand ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Hdri));
 
     /// <summary>Selects and shows the sample 3D model.</summary>
     public SimpleCommand SelectModelCommand =>
-        field ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Model));
+        _selectModelCommand ??= new SimpleCommand(() => !IsBusy, () => SelectAsync(SampleAssetKind.Model));
+
+    #region | Canvas painting and pointer input |
+
+    /// <summary>
+    /// Paints the current scene into the canvas surface; the hosting page calls this from its
+    /// canvas <c>PaintSurface</c> handler. The coalescing flag is cleared first, so a repaint
+    /// requested while this paint runs still queues the next frame.
+    /// </summary>
+    /// <param name="surface">The canvas surface to paint into.</param>
+    /// <param name="info">The surface's pixel size and format.</param>
+    public void PaintCanvas(SKSurface surface, SKImageInfo info)
+    {
+        _renderPending = false;
+        _currentPainter?.Paint(surface, info);
+    }
+
+    /// <summary>
+    /// Requests a repaint, keeping at most one queued: while a paint is pending, pointer moves
+    /// only update the camera and the next paint draws the latest state.
+    /// </summary>
+    public void RequestRender()
+    {
+        if (_renderPending) { return; }
+        _renderPending = true;
+        InvalidateCanvas?.Invoke();
+    }
+
+    /// <summary>
+    /// Begins a drag at the given canvas position and starts the gesture clock that backlog
+    /// detection measures against.
+    /// </summary>
+    /// <param name="x">The pointer's X position in canvas pixels.</param>
+    /// <param name="y">The pointer's Y position in canvas pixels.</param>
+    /// <param name="timestamp">The pointer event's own timestamp, in microseconds.</param>
+    /// <returns><see langword="true"/> when a painter took the press, otherwise false.</returns>
+    public bool PointerPressed(double x, double y, ulong timestamp)
+    {
+        var painter = _currentPainter;
+        if (painter == null) { return false; }
+
+        painter.PointerDown(x, y);
+        _gestureStartTimestamp = timestamp;
+        _gestureClock.Restart();
+        RequestRender();
+        return true;
+    }
+
+    /// <summary>
+    /// Continues a drag to the given canvas position. A frame that has fallen far enough behind
+    /// real time is discarded through <see cref="IScenePainter.PointerSkip"/>, which advances
+    /// the drag anchor without moving the camera, so dropping a frame keeps the camera in sync
+    /// with the cursor instead of making the scene jump.
+    /// </summary>
+    /// <param name="x">The pointer's X position in canvas pixels.</param>
+    /// <param name="y">The pointer's Y position in canvas pixels.</param>
+    /// <param name="timestamp">The pointer event's own timestamp, in microseconds.</param>
+    /// <returns><see langword="true"/> when a painter took the move, otherwise false.</returns>
+    public bool PointerMoved(double x, double y, ulong timestamp)
+    {
+        var painter = _currentPainter;
+        if (painter == null) { return false; }
+
+        if (IsBacklogFrame(timestamp))
+        {
+            //Discard this stale frame: stay aligned with the cursor but don't render it.
+            painter.PointerSkip(x, y);
+        }
+        else
+        {
+            painter.PointerDrag(x, y);
+            RequestRender();
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Ends the current drag, from either a pointer release or a lost pointer capture, and
+    /// redraws once at full (non-drag) resolution.
+    /// </summary>
+    public void PointerReleased()
+    {
+        _currentPainter?.PointerUp();
+        _gestureClock.Reset();
+        RequestRender();
+    }
+
+    /// <summary>Zooms by a mouse-wheel delta (positive zooms in / narrows).</summary>
+    /// <param name="wheelDelta">The wheel delta the pointer event reported.</param>
+    /// <returns><see langword="true"/> when a painter took the zoom, otherwise false.</returns>
+    public bool PointerWheelChanged(double wheelDelta)
+    {
+        var painter = _currentPainter;
+        if (painter == null) { return false; }
+
+        painter.Zoom(wheelDelta);
+        RequestRender();
+        return true;
+    }
+
+    //True when this pointer frame is running far enough behind real time to be a backlog
+    //frame that should be dropped rather than rendered.
+    private bool IsBacklogFrame(ulong timestamp)
+    {
+        if (!_gestureClock.IsRunning) { return false; }
+        var inputElapsed = timestamp - _gestureStartTimestamp;
+        var lag = _gestureClock.Elapsed.TotalMicroseconds - inputElapsed;
+        return lag > StaleFrameMicroseconds;
+    }
+
+    #endregion
+
+    //Starts an engine switch from the bound setter. The task is discarded, so this wrapper is
+    //what guarantees a failure becomes status text rather than an unobserved exception.
+    private async Task RunSwitchEngineAsync(RenderEngineKind kind)
+    {
+        try
+        {
+            await SwitchEngineAsync(kind);
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Could not switch to {kind} rendering: {ex.Message}";
+            RevertEngineSelection();
+        }
+    }
 
     //Switches the 3D engine behind the model painter: alert + snap back when the engine is
     //not okayed for this platform, otherwise swap painters and re-display the current sample.
-    private async Task SwitchEngineAsync(string engineName)
+    private async Task SwitchEngineAsync(RenderEngineKind kind)
     {
-        if (!Enum.TryParse<RenderEngineKind>(engineName, out var kind) || kind == _currentEngineKind)
-        {
-            return;
-        }
+        if (kind == _currentEngineKind) { return; }
 
         if (IsBusy)
         {
@@ -191,15 +343,15 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
             var oldPainter = _modelPainter;
             _modelPainter = new ModelScenePainter(engine);
             _currentEngineKind = kind;
-            if (ReferenceEquals(_currentPainter, oldPainter))
+            if (ReferenceEquals(CurrentPainter, oldPainter))
             {
-                _currentPainter = null;
+                CurrentPainter = null;
             }
             oldPainter?.Dispose();
         }
         catch (Exception ex)
         {
-            StatusText = $"Could not switch to {engineName} rendering: {ex.Message}";
+            StatusText = $"Could not switch to {kind} rendering: {ex.Message}";
             RevertEngineSelection();
             return;
         }
@@ -216,14 +368,14 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
         }
         else
         {
-            InvalidateCanvas?.Invoke();
+            RequestRender();
         }
     }
 
     private void RevertEngineSelection()
     {
-        _selectedRenderEngineName = _currentEngineKind.ToString();
-        NotifyPropertyChanged(nameof(SelectedRenderEngineName));
+        _selectedRenderEngine = _currentEngineKind;
+        NotifyPropertyChanged(nameof(SelectedRenderEngine));
     }
 
     private async Task SelectAsync(SampleAssetKind kind)
@@ -237,12 +389,22 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
         try
         {
             var progress = new Progress<string>(message => StatusText = message);
-            var asset = await _assets.EnsureSampleAsync(kind, progress, CancellationToken.None);
+            var asset = await _assets.EnsureSampleAsync(kind, progress, _lifetime.Token);
 
-            //Decode/build off the UI thread; the painters upload to GL lazily during Paint.
-            var painter = await Task.Run(() => BuildPainter(kind, asset));
-            _currentPainter = painter;
-            StatusText = $"{Label(kind)}: {asset.Name}    ·    {Hint(kind)}";
+            //Decode off the UI thread; the painters upload to GL lazily during Paint.
+            var decoded = await Task.Run(() => DecodeSample(kind, asset), _lifetime.Token);
+
+            //Hand the decoded content to a painter back on the UI thread: the painters, their
+            //cameras and the bound status line are only ever touched there.
+            InvokeOnMainThread(() =>
+            {
+                CurrentPainter = ApplyDecodedSample(kind, decoded);
+                StatusText = $"{Label(kind)}: {asset.Name}    ·    {Hint(kind)}";
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            //The view model is shutting down; leave the status line as it is.
         }
         catch (Exception ex)
         {
@@ -251,11 +413,13 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
         finally
         {
             IsBusy = false;
-            InvalidateCanvas?.Invoke();
+            RequestRender();
         }
     }
 
-    private IScenePainter BuildPainter(SampleAssetKind kind, SampleAsset asset)
+    //Runs on a worker thread: decodes the downloaded file and builds the mesh. It touches no
+    //painter, no camera and no bound state, so nothing here needs the UI thread.
+    private static DecodedSample DecodeSample(SampleAssetKind kind, SampleAsset asset)
     {
         switch (kind)
         {
@@ -263,8 +427,36 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
                 //The decoded bitmap feeds the cube's texture and doubles as the darkened
                 //  backdrop; the painter takes ownership of it for the background.
                 var textureBitmap = TextureImageLoader.LoadForDisplay(asset.PrimaryFilePath);
-                _modelPainter.SetModel(CubeMeshBuilder.Build(textureBitmap, asset.Name));
-                _modelPainter.SetBackgroundTexture(textureBitmap);
+                return new DecodedSample
+                {
+                    TextureBitmap = textureBitmap,
+                    Model = CubeMeshBuilder.Build(textureBitmap, asset.Name),
+                };
+
+            case SampleAssetKind.Model:
+                return new DecodedSample { Model = new GltfModelLoader().LoadFile(asset.PrimaryFilePath) };
+
+            case SampleAssetKind.Hdri:
+                var bytes = File.ReadAllBytes(asset.PrimaryFilePath);
+                return new DecodedSample
+                {
+                    Panorama = TextureImageLoader.LoadFloatImage(
+                        bytes, Path.GetExtension(asset.PrimaryFilePath)),
+                };
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(kind));
+        }
+    }
+
+    //Runs on the UI thread: hands the decoded content to a painter and frames the camera.
+    private IScenePainter ApplyDecodedSample(SampleAssetKind kind, DecodedSample decoded)
+    {
+        switch (kind)
+        {
+            case SampleAssetKind.Texture:
+                _modelPainter.SetModel(decoded.Model);
+                _modelPainter.SetBackgroundTexture(decoded.TextureBitmap);
                 //A fixed key light (from upper-front-left) shades the faces distinctly so the
                 //  cube reads as solid, and a 3/4 angle with perspective shows three faces.
                 //  Extra framing margin keeps the whole cube (and its rotating silhouette)
@@ -278,7 +470,7 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
                 return _modelPainter;
 
             case SampleAssetKind.Model:
-                _modelPainter.SetModel(new GltfModelLoader().LoadFile(asset.PrimaryFilePath));
+                _modelPainter.SetModel(decoded.Model);
                 _modelPainter.SetBackgroundTexture(null);
                 _modelPainter.FixedLightDirection = null;
                 _modelPainter.Camera.FovDegrees = 45f;
@@ -289,9 +481,7 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
                 return _modelPainter;
 
             case SampleAssetKind.Hdri:
-                var bytes = File.ReadAllBytes(asset.PrimaryFilePath);
-                var panorama = TextureImageLoader.LoadFloatImage(bytes, Path.GetExtension(asset.PrimaryFilePath));
-                var newPainter = new PanoramaScenePainter(panorama);
+                var newPainter = new PanoramaScenePainter(decoded.Panorama);
                 var old = _panoramaPainter;
                 _panoramaPainter = newPainter;
                 old?.Dispose();
@@ -323,4 +513,57 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
         SampleAssetKind.Hdri => "drag to look around · scroll to zoom",
         _ => "drag to rotate · scroll to zoom",
     };
+
+    //What one sample decodes to, before any of it reaches a painter: whichever of these the
+    //sample kind produces.
+    private sealed class DecodedSample
+    {
+        public SKBitmap TextureBitmap { get; init; }
+
+        public LoadedModel Model { get; init; }
+
+        public FloatImage Panorama { get; init; }
+    }
+
+    #region | IDisposable implementation |
+
+    /// <summary>
+    /// Releases what this view model created: the painters (each of which disposes its
+    /// rendering engine), the commands, the canvas bridge delegate the page handed over, and
+    /// the cancellation source that stops an in-flight download. The services resolved from
+    /// the container are singletons, so they are released rather than disposed.
+    /// </summary>
+    public override void Dispose()
+    {
+        //Stop an in-flight download so shutdown does not wait for the network.
+        _lifetime.Cancel();
+
+        _selectTextureCommand?.Dispose();
+        _selectTextureCommand = null;
+        _selectHdriCommand?.Dispose();
+        _selectHdriCommand = null;
+        _selectModelCommand?.Dispose();
+        _selectModelCommand = null;
+
+        //The delegate captures the page, so clearing it is what releases the page.
+        InvalidateCanvas = null;
+
+        //Null each painter before disposing it, so a paint arriving mid-teardown sees null
+        //rather than a disposed painter.
+        _currentPainter = null;
+
+        var modelPainter = _modelPainter;
+        _modelPainter = null;
+        modelPainter?.Dispose();
+
+        var panoramaPainter = _panoramaPainter;
+        _panoramaPainter = null;
+        panoramaPainter?.Dispose();
+
+        _lifetime.Dispose();
+
+        base.Dispose();
+    }
+
+    #endregion
 }

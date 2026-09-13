@@ -14,7 +14,8 @@ has to fetch, parse, produce or save a document or a body of data, and you
 want the network, file and layout code out of the view model. Along the way
 they cover the care that work needs in practice: pacing outbound calls,
 reporting true progress across a multi-file download, caching, embedding
-fonts, and registering the formats you can import and export.
+fonts, and registering the formats you can import and export - including
+letting that registry, rather than a page, say what a file dialog offers.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -68,6 +69,7 @@ conventions the code blocks follow.
 - [Save a document through a native picker with format filters](#save-a-document-through-a-native-picker-with-format-filters)
 - [Raise a UI hook from a codec through a static event](#raise-a-ui-hook-from-a-codec-through-a-static-event)
 - [Offer a data folder by rule rather than by a hard-coded list](#offer-a-data-folder-by-rule-rather-than-by-a-hard-coded-list)
+- [Build a file dialog's filter list in the format registry](#build-a-file-dialogs-filter-list-in-the-format-registry)
 
 ## Related blueprints
 
@@ -105,8 +107,8 @@ the implementation exists.
   <EmbeddedResource Include="Embedded\DefaultKey.txt" />
 </ItemGroup>
 <ItemGroup>
-  <!-- ... CodeBrix.Cryptography plus Microsoft.Extensions hosting and logging abstractions;
-       no CodeBrix.Platform package at all. See the project's csproj. ... -->
+  <!-- ... the CodeBrix Cryptography library plus the Microsoft.Extensions -->
+  <!-- ... hosting and logging abstractions; no CodeBrix.Platform package ... -->
 </ItemGroup>
 ```
 
@@ -1120,7 +1122,7 @@ public WikipediaClient()
 
 /// <summary>
 /// Downloads a media file (rate-limited to be polite to Wikimedia servers).
-/// Returns null when the download fails - callers treat missing images as non-fatal.
+/// Returns null when the download fails — callers treat missing images as non-fatal.
 /// </summary>
 public async Task<byte[]> TryDownloadMediaAsync(string url, CancellationToken cancellationToken = default)
 {
@@ -1280,12 +1282,26 @@ if (pageNumber == 1)
 }
 ```
 
-One query builder writes both queries, so the two plans cannot drift apart:
+One query builder writes both queries, so the two plans cannot drift apart. The only
+difference between them is the scope term at the front:
 
 ```csharp
-// Adapted from CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/IssueSearchQueryBuilder.cs
-// user:{owner} is:open no:assignee          the whole owner
-// repo:{owner}/{name} is:open no:assignee   one repository, same rules
+// From CodeBrix.Samples/GitHubIssueFinder/src/libs/GitHubIssueFinder.GitHub/Search/IssueSearchQueryBuilder.cs
+public static string BuildQuery(IssueSearchRequest request, string repositoryFullName = null)
+{
+    var owner = RequireOwner(request);
+
+    var repository = Clean(repositoryFullName);
+    var scope = repository == null ? "user:" + owner : "repo:" + repository;
+
+    var assignee = Clean(request.Assignee);
+    var assignment = assignee == null ? "no:assignee" : "assignee:" + assignee;
+
+    //Leaving is:open out is what widens the search to closed items as well.
+    return request.IncludeClosed
+        ? scope + " " + assignment
+        : scope + " is:open " + assignment;
+}
 ```
 
 **Where to look.**
@@ -1512,7 +1528,7 @@ leave the field empty.
 ```csharp
 // From CodeBrix.Samples/WikipediaPublisher/WikipediaPublisher.RenderArticle/Internal/WikipediaClient.cs
 /// <summary>
-/// Looks up Wikimedia "extmetadata" (author, credit, license, ...) for the given "File:" page
+/// Looks up Wikimedia "extmetadata" (author, credit, license, …) for the given "File:" page
 /// titles via the MediaWiki imageinfo API, batching up to 50 titles per request. The local
 /// wiki's API transparently resolves files hosted on Wikimedia Commons. Titles that cannot be
 /// resolved are simply absent from the result; a failed request yields an empty dictionary
@@ -1663,7 +1679,7 @@ if (gltf.Include != null)
     foreach (var (relativePath, sidecar) in gltf.Include)
     {
         var sidecarPath = Path.Combine(modelFolder, relativePath.Replace('/', Path.DirectorySeparatorChar));
-        Directory.CreateDirectory(Path.GetDirectoryName(sidecarPath));
+        Directory.CreateDirectory(Path.GetDirectoryName(sidecarPath)!);
         await DownloadOneAsync(client, sidecar, sidecarPath, totalBytes, completedBytes, progress, cancellationToken)
             .ConfigureAwait(false);
         completedBytes += sidecar.Size;
@@ -1936,7 +1952,7 @@ unit-tested with a theory and no I/O.
 // From CodeBrix.Samples/WikipediaPublisher/WikipediaPublisher.RenderArticle/Internal/ArticleParser.cs
 /// <summary>
 /// Derives a print-resolution rendition URL from a Wikimedia thumbnail URL.
-/// Thumbnail URLs look like .../thumb/6/66/Name.jpg/250px-Name.jpg - the pixel
+/// Thumbnail URLs look like …/thumb/6/66/Name.jpg/250px-Name.jpg — the pixel
 /// prefix of the final segment selects the rendition size.
 /// </summary>
 internal static string DerivePrintUrl(string src, int fileWidth, string urlPath)
@@ -1945,7 +1961,7 @@ internal static string DerivePrintUrl(string src, int fileWidth, string urlPath)
     // ...
     var currentWidth = int.Parse(pxMatch.Groups[1].Value);
 
-    //SVG renditions (....svg/NNNpx-....svg.png) can be rasterized at any size;
+    //SVG renditions (….svg/NNNpx-….svg.png) can be rasterized at any size;
     //  raster files cannot be upscaled beyond their true file width.
     var isSvgRendition = urlPath.EndsWith(".svg.png", StringComparison.OrdinalIgnoreCase);
     var target = isSvgRendition
@@ -1965,7 +1981,7 @@ private async Task<bool> TryPrepareOneAsync(ArticleImage image, CancellationToke
 {
     var bytes = await _client.TryDownloadMediaAsync(image.PrintUrl, cancellationToken);
 
-    //High-resolution rendition may 404 (e.g. odd file types) - fall back to the page thumbnail
+    //High-resolution rendition may 404 (e.g. odd file types) — fall back to the page thumbnail
     if (bytes is null && (!image.PrintUrl.Equals(image.ThumbUrl, StringComparison.Ordinal)))
     {
         bytes = await _client.TryDownloadMediaAsync(image.ThumbUrl, cancellationToken);
@@ -2004,11 +2020,11 @@ returns a result record with everything the UI wants to display.
 ```csharp
 // From CodeBrix.Samples/WikipediaPublisher/WikipediaPublisher.RenderArticle/Services/ArticleRenderService.cs
 // 1. Fetch
-progress?.Report(new RenderProgress(RenderStage.FetchingArticle, "Fetching the article...", 5));
+progress?.Report(new RenderProgress(RenderStage.FetchingArticle, "Fetching the article…", 5));
 var html = await _client.GetArticleHtmlAsync(request.ArticleUrl, cancellationToken);
 
 // 2. Parse
-progress?.Report(new RenderProgress(RenderStage.ParsingArticle, "Reading the article...", 12));
+progress?.Report(new RenderProgress(RenderStage.ParsingArticle, "Reading the article…", 12));
 var parser = new ArticleParser(request.ArticleUrl);
 var article = parser.Parse(html);
 
@@ -2024,13 +2040,13 @@ if (article.Blocks.Count == 0)
 
 // 4. Compose
 cancellationToken.ThrowIfCancellationRequested();
-progress?.Report(new RenderProgress(RenderStage.ComposingBook, "Laying out the book...", 74));
+progress?.Report(new RenderProgress(RenderStage.ComposingBook, "Laying out the book…", 74));
 var theme = BookTheme.For(request.PageSize);
 var composer = new BookComposer(article, theme, DateTime.Now);
 var document = composer.Compose();
 
 // 5. Render + save
-progress?.Report(new RenderProgress(RenderStage.SavingPdf, "Rendering the PDF...", 82));
+progress?.Report(new RenderProgress(RenderStage.SavingPdf, "Rendering the PDF…", 82));
 var renderer = new PdfDocumentRenderer(unicode: true) { Document = document };
 renderer.RenderDocument();
 
@@ -2240,8 +2256,8 @@ font's character map once and asks it per codepoint.
 /// <summary>
 /// Filters article text down to the character ranges covered by the embedded book
 /// fonts (EB Garamond and Source Sans 3: Latin, Latin Extended, Greek, Cyrillic and
-/// common punctuation). Characters outside those ranges - for example Cuneiform,
-/// CJK or Arabic glyphs quoted inline in an article - would otherwise render as
+/// common punctuation). Characters outside those ranges — for example Cuneiform,
+/// CJK or Arabic glyphs quoted inline in an article — would otherwise render as
 /// "tofu" boxes in the PDF, which ruins a printed page.
 /// </summary>
 internal static class GlyphFilter
@@ -2258,14 +2274,19 @@ internal static class GlyphFilter
         return cleaned;
     }
 
-    private static bool IsSupported(char c) => (int)c switch
+    private static bool IsSupported(char c)
     {
-        0x0009 or 0x000A or 0x000D => true,   //Tab, newline
-        >= 0x0020 and <= 0x007E => true,      //ASCII
-        >= 0x00A0 and <= 0x024F => true,      //Latin-1, Latin Extended A/B
-        // ... Greek, Cyrillic, Latin Extended Additional, punctuation, currency, number forms ...
-        _ => false
-    };
+        int code = c;
+
+        return code switch
+        {
+            0x0009 or 0x000A or 0x000D => true,   //Tab, newline
+            >= 0x0020 and <= 0x007E => true,      //ASCII
+            >= 0x00A0 and <= 0x024F => true,      //Latin-1, Latin Extended A/B
+            // ... Greek, Cyrillic, Latin Extended Additional, punctuation, currency, number forms ...
+            _ => false
+        };
+    }
 }
 ```
 
@@ -2380,7 +2401,7 @@ public static BookTheme For(PageSizeOption option)
 
 ```csharp
 // From CodeBrix.Samples/WikipediaPublisher/WikipediaPublisher.RenderArticle/Internal/BookTheme.cs
-// Palette (warm ink on paper with an oxblood accent)
+// ── Palette (warm ink on paper with an oxblood accent) ──────────────
 public static readonly Color Ink = new(31, 30, 28);
 public static readonly Color Accent = new(122, 44, 38);
 public static readonly Color Muted = new(112, 108, 102);
@@ -2400,7 +2421,15 @@ public double H2Size => BodySize * 1.27;
 public double CaptionSize => BodySize * 0.81;
 public double RaisedCapSize => BodySize * 2.35;
 
-public static BookTheme For(PageSizeOption option) => /* one record per trim size */;
+public static BookTheme For(PageSizeOption option)
+{
+    var page = PageSizeInfo.For(option);
+
+    return option switch
+    {
+        // ... one record per trim size: its own margins, body size and cover title size ...
+    };
+}
 ```
 
 **Where to look.**
@@ -2973,8 +3002,16 @@ private sealed class HyperlinkTarget : IRunTarget
 // From CodeBrix.Samples/NotionDocumentCreator/src/libs/NotionDocumentCreator.CreateDocument/Internal/RichTextWriter.cs
 private void ApplyAnnotations(FormattedText formatted, Annotations annotations, bool isLink, bool isEmoji)
 {
-    if (isEmoji) { formatted.Font.Name = BookFonts.EmojiFamily; }
-    if (isLink) { formatted.Font.Color = BookTheme.Accent; }
+    if (isEmoji)
+    {
+        formatted.Font.Name = BookFonts.EmojiFamily;
+    }
+
+    if (isLink)
+    {
+        formatted.Font.Color = BookTheme.Accent;
+    }
+
     if (annotations is null) { return; }
 
     if (annotations.IsBold) { formatted.Font.Bold = true; }
@@ -3324,7 +3361,7 @@ it.
 
 ```csharp
 // From CodeBrix.Samples/PdfSideBySide/src/libs/PdfSideBySide.PdfRender/PdfComparison.cs
-    /// <summary>Whether MoveBothNext would move at least one cursor.</summary>
+    /// <summary>Whether <see cref="MoveBothNext"/> would move at least one cursor.</summary>
     public bool CanMoveBothNext => IsReady && (Left.CanMoveNext || Right.CanMoveNext);
 
     /// <summary>
@@ -3487,8 +3524,9 @@ Pinta.Brix.Tools.CoreTools.Register(Pinta.Brix.Engine.PintaCore.Services);
 - The effects and tools registrations take a service provider and resolve what
   each item needs, so the registration list is the only place that knows the
   catalog.
-- Extensions are listed in both cases because file matching is ordinal; the save
-  picker filters to the lowercase ones only.
+- Extensions are listed in both cases because file matching is ordinal. The registry
+  drops the upper case spellings again when it builds a dialog's filter entries, so a
+  page never has to know the rule.
 - Registration happens after the window exists, because one of the installed
   services needs the window's dispatcher queue.
 
@@ -3591,16 +3629,11 @@ var picker = new Windows.Storage.Pickers.FileSavePicker
     SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.PicturesLibrary,
     SuggestedFileName = document.DisplayName,
 };
-foreach (var format in PintaCore.ImageFormats.Formats.Where(f => f.IsExportAvailable()))
+//The registry owns which formats a save dialog offers and under
+//what name; the page just hands the list to the picker.
+foreach (FileDialogFilter filter in PintaCore.ImageFormats.GetExportFilters())
 {
-    var extensions = format.Extensions
-        .Where(x => x.All(char.IsLower))
-        .Select(x => $".{x}")
-        .ToList();
-    if (extensions.Count > 0)
-    {
-        picker.FileTypeChoices.Add(format.FilterName, extensions);
-    }
+    picker.FileTypeChoices.Add(filter.Name, [.. filter.Extensions]);
 }
 
 StorageFile file = await picker.PickSaveFileAsync();
@@ -3632,12 +3665,17 @@ document.Workspace.History.SetClean();
 
 **Where to look.**
 `Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.xaml.cs`
-`Pinta.Brix/src/libs/Pinta.Brix.Engine/Managers/WorkspaceManager.cs`
+`Pinta.Brix/src/libs/Pinta.Brix.Engine/Managers/WorkspaceManager.cs` and
+`Managers/ImageConverterManager.cs`
+
+**Related.**
+[Build a file dialog's filter list in the format registry](#build-a-file-dialogs-filter-list-in-the-format-registry)
+is where the entries the picker is handed come from.
 
 **Sharp edges.**
-- The picker's filter list is built from the registry's export-capable formats
-  only, and from lowercase extensions only, because the registry lists both cases
-  for matching.
+- The page does not decide what the dialog offers. It copies the filter entries the
+  format registry hands it, so the rules about which formats are offered and which
+  spelling of an extension is used are stated once, in the library.
 - The picker returns null on cancel and the whole save must return false, or a
   cancelled save marks the document clean.
 - Clearing the history's dirty flag after a successful export is what clears the
@@ -3851,3 +3889,158 @@ foreach (LutCatalogEntry entry in LutCatalog.Scan(SampleAssets.GetLutsFolder(ass
   finds the other; that is what lets a command line or a search box name a file and
   tick its row.
 
+### Build a file dialog's filter list in the format registry
+
+**When you want this.** Several pages open and save files, every one of them needs the
+same list of formats, and you do not want each picker working that list out from the
+format descriptors itself.
+
+**The MVVM shape.** The registry that owns the formats owns the filter list as well. It
+hands out one small record per entry - the name a dialog shows and the extensions it
+stands for - and the page's only work is to copy that list into the picker. Nothing
+about a descriptor, including which case its extensions are spelled in and whether it
+can be written as well as read, leaves the library.
+
+**Code.**
+
+The record is deliberately tiny, and it is the only shape that crosses the line:
+
+```csharp
+// From CodeBrix.Samples/Pinta.Brix/src/libs/Pinta.Brix.Engine/Classes/FileDialogFilter.cs
+/// <summary>
+/// A display name paired with the file extensions it stands for, ready to be
+/// handed to a file dialog's filter list.
+/// </summary>
+public sealed class FileDialogFilter
+{
+	/// <summary>
+	/// The name the dialog shows for this entry, for example
+	/// <c>"OpenRaster image (*.ora)"</c>.
+	/// </summary>
+	public string Name { get; }
+
+	/// <summary>
+	/// The extensions the entry accepts, each including its leading dot and
+	/// in lower case, for example <c>".ora"</c>.
+	/// </summary>
+	public ImmutableArray<string> Extensions { get; }
+	// ...
+}
+```
+
+Two questions, one builder: an open dialog and a save dialog differ by a predicate,
+and an open dialog that wants extensions rather than named entries gets them from the
+same list:
+
+```csharp
+// From CodeBrix.Samples/Pinta.Brix/src/libs/Pinta.Brix.Engine/Managers/ImageConverterManager.cs
+	/// <summary>
+	/// The filter entries an "open image" dialog should offer: one per format
+	/// that can be imported, carrying the lower case extensions it reads.
+	/// </summary>
+	public IReadOnlyList<FileDialogFilter> GetImportFilters ()
+		=> BuildFilters (f => f.IsImportAvailable ());
+
+	/// <summary>
+	/// The filter entries a "save image as" dialog should offer: one per
+	/// format that can be exported, carrying the lower case extensions it
+	/// writes.
+	/// </summary>
+	public IReadOnlyList<FileDialogFilter> GetExportFilters ()
+		=> BuildFilters (f => f.IsExportAvailable ());
+
+	/// <summary>
+	/// Every lower case extension an "open image" dialog should accept, in
+	/// registration order and with no duplicates.
+	/// </summary>
+	public IReadOnlyList<string> GetImportExtensions ()
+		=> [.. GetImportFilters ().SelectMany (f => f.Extensions).Distinct ()];
+
+	/// <summary>
+	/// Builds one filter entry per available format. The registry lists every
+	/// extension in both cases so that matching is case-insensitive; a dialog
+	/// only wants one of each, so the upper case spellings are dropped here
+	/// rather than by every caller.
+	/// </summary>
+	private List<FileDialogFilter> BuildFilters (Func<FormatDescriptor, bool> isAvailable)
+	{
+		List<FileDialogFilter> filters = [];
+
+		foreach (FormatDescriptor format in formats.Where (isAvailable)) {
+
+			List<string> extensions = [
+				.. format.Extensions
+					.Where (x => x.All (char.IsLower))
+					.Select (x => $".{x}")];
+
+			if (extensions.Count > 0)
+				filters.Add (new FileDialogFilter (format.FilterName, extensions));
+		}
+
+		return filters;
+	}
+```
+
+What is left in the page is a copy loop, and it reads the same either way round:
+
+```csharp
+// From CodeBrix.Samples/Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.Palette.cs
+        //The palette registry owns which formats a save dialog offers.
+        foreach (FileDialogFilter filter in PintaCore.PaletteFormats.GetSaveFilters())
+        {
+            picker.FileTypeChoices.Add(filter.Name, [.. filter.Extensions]);
+        }
+```
+
+The rule about extension case is now somewhere a test can hold it to account:
+
+```csharp
+// From CodeBrix.Samples/Pinta.Brix/tests/libs/Pinta.Brix.Engine.Tests/ImageConverterManagerTests.cs
+	[Fact]
+	public void GetExportFilters_drops_the_upper_case_spellings ()
+	{
+		//Arrange
+		ImageConverterManager formats = CreateManager ();
+
+		//Act
+		FileDialogFilter filter = formats.GetExportFilters ().First (f => f.Extensions.Contains (".bth"));
+
+		//Assert
+		filter.Extensions.Should ().BeEquivalentTo ([".bth", ".bo"]);
+	}
+```
+
+**Where to look.**
+`Pinta.Brix/src/libs/Pinta.Brix.Engine/Classes/FileDialogFilter.cs`
+`Pinta.Brix/src/libs/Pinta.Brix.Engine/Managers/ImageConverterManager.cs` and
+`Managers/PaletteFormatManager.cs`
+`Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.xaml.cs`, `Views/MainPage.Palette.cs` and
+`Views/MainPage.Actions.cs`
+`Pinta.Brix/tests/libs/Pinta.Brix.Engine.Tests/ImageConverterManagerTests.cs` and
+`PaletteFormatManagerTests.cs`
+
+**Also shown by.**
+`CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Formats/MediaFormats.cs`, whose
+`DescribeExtension` names the one destination format a save dialog is being opened for;
+the page passes the extension in and puts the answer on the picker, so the label is
+decided by the same class that decides everything else about a format
+
+**Related.**
+[Register import and export formats at startup through one entry point](#register-import-and-export-formats-at-startup-through-one-entry-point)
+is where the entries come from, and
+[Save a document through a native picker with format filters](#save-a-document-through-a-native-picker-with-format-filters)
+is the save path that consumes them.
+
+**Sharp edges.**
+- A format that can be read but not written must never appear in a save dialog. The two
+  filter methods differ by exactly one predicate, which is the cheapest way to be sure
+  they cannot drift apart.
+- Extensions listed in both cases for ordinal matching are a library detail. Drop the
+  spellings a dialog does not want inside the builder, once, rather than in every page
+  that opens a picker.
+- Two registries in the same application can answer the same question differently and
+  both be right: the image registry offers the lower case spellings only, and the
+  palette registry offers every spelling it holds, because its dialog matches literally.
+  Each rule is written down beside the formats it governs.
+- An empty registry produces an empty list rather than an exception, and a picker with
+  no filters offers everything. Register the formats before a dialog can be opened.
