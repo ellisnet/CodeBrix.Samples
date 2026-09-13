@@ -12,7 +12,7 @@
   <ItemGroup>
     <!-- The playback core: the chapter, caption and track types the player surface reports, and the
          container readers that answer "does this file have chapters or captions?" before it is opened. -->
-    <PackageReference Include="CodeBrix.VideoPlayback.MitLicenseForever" Version="1.0.252.1212" />
+    <PackageReference Include="CodeBrix.VideoPlayback.MitLicenseForever" Version="1.0.256.1099" />
 
     <!-- AV1 video and Opus audio. These are the APPLICATION's dependencies, never the VideoPlayer
          add-in's: AV1 decoding is BSD-2-Clause and Opus is BSD-3-Clause while the add-in is
