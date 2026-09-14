@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
     <!-- The engine's SkiaSharp reference is managed-only; on Linux the native
          libSkiaSharp must be pulled in explicitly for the tests to run. -->
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.152.0" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
@@ -42,7 +42,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="xunit.v3" Version="4.0.0" />
+    <PackageReference Include="xunit.v3" Version="4.0.1" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,53 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the InannaRosette sample application, together with the licenses under
+which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here. That includes the PDF document library the report is drawn
+with.
+
+------------------------------------------------------------------------
+Merriweather
+  (bundled: src/libs/InannaRosette.Reading/Fonts/Merriweather-*.ttf)
+------------------------------------------------------------------------
+Copyright 2020 The Merriweather Project Authors
+(https://github.com/EbenSorkin/Merriweather4), with Reserved Font Name
+"Merriweather".
+
+Licensed under the SIL Open Font License, Version 1.1.
+Full license text: src/libs/InannaRosette.Reading/Fonts/OFL-Merriweather.txt
+
+Eight faces (Regular, Bold, Italic, BoldItalic, Light, LightItalic, Medium,
+MediumItalic) are embedded as resources in the InannaRosette.Reading assembly,
+with the license text embedded beside them, and are registered with the PDF
+font system so the generated report renders identically on any machine. The
+files were copied from the CodeBrix.Platform.Fonts.Merriweather package, which
+redistributes Sorkin Type's Merriweather under the same license. Glyph subsets
+of these faces are embedded in every PDF report the application writes.
+
+The same typeface also reaches the application's on-screen text through that
+CodeBrix.Platform.Fonts.Merriweather package, where it is set as the
+application-wide default text font; that copy ships inside the package rather
+than in this folder.
+
+------------------------------------------------------------------------
+Card texts, emblem art and interpretation templates
+------------------------------------------------------------------------
+The forty cards' names, epithets, transliterations, domains, lore, keywords,
+meanings and invocations, the nine stations of the rosette spread, the
+procedural vector art for every emblem and ornament, and the sentence stock the
+interpreter writes from are all original to this application. They draw on
+Mesopotamian mythology, which is in the public domain, but no third-party text,
+translation or artwork is reproduced or redistributed here.
+
+------------------------------------------------------------------------
+Readings and reports (written at run time)
+------------------------------------------------------------------------
+The application writes reading files and PDF reports where the user chooses.
+That content belongs to whoever made it; nothing of it is redistributed as part
+of this repository, and nothing is downloaded at run time.

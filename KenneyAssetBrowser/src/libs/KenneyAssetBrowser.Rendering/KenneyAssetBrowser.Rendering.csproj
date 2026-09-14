@@ -24,9 +24,9 @@
     <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.254.167" />
     <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.254.167" />
 
-    <PackageReference Include="SharpGLTF.Runtime" Version="1.0.6" />
+    <PackageReference Include="SharpGLTF.Runtime" Version="1.0.7" />
     <!-- Scene evaluation (EvaluateTriangles) - CPU-bakes animation clips for the preview -->
-    <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.6" />
+    <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.7" />
     <PackageReference Include="SkiaSharp" Version="4.152.0" />
 
     <!-- Rasterizes the packs' SVG vector art for the 2D viewer (pins SkiaSharp 4.151.0 itself) -->

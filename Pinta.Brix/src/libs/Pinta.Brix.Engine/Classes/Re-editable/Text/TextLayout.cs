@@ -125,7 +125,7 @@ public sealed class TextLayout
 			point.X - engine.Origin.X,
 			point.Y - engine.Origin.Y));
 
-		return engine.CharIndexToPosition (Math.Clamp (index, 0, engine.ToString ().Length));
+		return engine.CharIndexToPosition (Math.Clamp (index, 0, Result.Text.Length));
 	}
 
 	public PointI TextPositionToPoint (TextPosition p)
@@ -186,9 +186,19 @@ public sealed class TextLayout
 		return rects.ToImmutable ();
 	}
 
+	/// <summary>
+	/// The engine's text as the layout sees it: lines joined with a single '\n'
+	/// so every line break is exactly one char, matching the "+1 for the
+	/// newline" that PositionToCharIndex and CharIndexToPosition assume.
+	/// TextEngine.ToString() joins with Environment.NewLine, which is "\r\n" on
+	/// Windows, and that put every line after the first out of step with the
+	/// layout's char indices.
+	/// </summary>
+	private string LayoutText => string.Join ('\n', engine.Lines);
+
 	private TextLayoutResult BuildResult ()
 	{
-		string text = engine.ToString ();
+		string text = LayoutText;
 		is_empty = text.Length == 0;
 
 		FontDescription font = engine.Font;

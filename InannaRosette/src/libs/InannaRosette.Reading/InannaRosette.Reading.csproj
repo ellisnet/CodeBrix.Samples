@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Match the namespace used by the library code -->
+    <RootNamespace>InannaRosette.Reading</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Fonts\*.ttf" />
+    <None Remove="Fonts\OFL-*.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Fonts\*.ttf" />
+    <EmbeddedResource Include="Fonts\OFL-*.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The reading report is a hand-placed document (vector card art, a spread diagram and
+         measured text blocks), so it draws directly with CodeBrix.PdfDocuments' XGraphics
+         rather than composing a flowing document through a document object model. -->
+    <PackageReference Include="CodeBrix.PdfDocuments.MitLicenseForever" Version="1.0.254.196" />
+    <!-- IServiceCollection, for the AddReading() registration extension -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+  </ItemGroup>
+
+</Project>
