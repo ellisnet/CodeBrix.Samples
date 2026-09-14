@@ -19,7 +19,7 @@
          Apache-2.0, so each ships as its own package and the application calls Register() once at
          start-up. Nothing plays without Dav1d; Opus is needed for WebM, MKV and Mode 1 (Mode 2
          carries Vorbis, which the core decodes itself). -->
-    <PackageReference Include="CodeBrix.VideoPlayback.Dav1d.BsdLicenseForever" Version="1.0.252.1241" />
+    <PackageReference Include="CodeBrix.VideoPlayback.Dav1d.BsdLicenseForever" Version="1.0.257.141" />
     <PackageReference Include="CodeBrix.Audio.Opus.BsdLicenseForever" Version="1.0.250.73" />
 
     <!-- SimpleViewModel and SimpleCommand for the playback view model -->
