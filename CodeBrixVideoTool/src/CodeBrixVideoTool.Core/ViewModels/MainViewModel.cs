@@ -4,6 +4,7 @@ using CodeBrixVideoTool.Processing;
 using CodeBrixVideoTool.Processing.Formats;
 using CodeBrixVideoTool.Processing.Operations;
 using CodeBrixVideoTool.Processing.Probing;
+using CodeBrixVideoTool.Processing.Tools;
 using CodeBrixVideoTool.Processing.ViewModels;
 using CodeBrixVideoTool.Services;
 using Microsoft.UI.Xaml;
@@ -23,6 +24,8 @@ namespace CodeBrixVideoTool.ViewModels;
 public class MainViewModel : SimpleViewModel, IMediaFileBridge
 {
     private readonly IMediaProbe probe;
+    private readonly IExternalToolCheck toolCheck;
+    private bool toolsChecked;
 
     /// <summary>Creates the view model and the two halves of the application under it.</summary>
     public MainViewModel()
@@ -30,6 +33,7 @@ public class MainViewModel : SimpleViewModel, IMediaFileBridge
         if (IsDesignMode(true)) { return; } //Leave as the first line of constructor
 
         probe = GetService<IMediaProbe>() ?? new MediaProbe();
+        toolCheck = GetService<IExternalToolCheck>() ?? new ExternalToolCheck();
 
         Playback = new PlaybackViewModel();
         Conversion = new ConversionViewModel();
@@ -100,6 +104,15 @@ public class MainViewModel : SimpleViewModel, IMediaFileBridge
 
     private async Task DoOpenAsync()
     {
+        //The FIRST Open of the session checks the external tools, once, and warns about the first one that is
+        //missing. The flag is set before the check runs, so a second click never checks or warns again. The
+        //warning is dismissed with OK and the Open carries on: a .cbv file opens and plays without FFmpeg.
+        if (!toolsChecked)
+        {
+            toolsChecked = true;
+            await WarnAboutMissingToolsAsync();
+        }
+
         if (PickMediaFileAsync is null)
         {
             StatusText = "This head has no file dialog, so a file cannot be chosen by hand.";
@@ -113,6 +126,38 @@ public class MainViewModel : SimpleViewModel, IMediaFileBridge
         }
 
         await AddAsync(path, CancellationToken.None);
+    }
+
+    private async Task WarnAboutMissingToolsAsync()
+    {
+        var previousStatus = StatusText;
+        string problem;
+
+        IsBusy = true;
+        StatusText = "Checking for FFmpeg, FFprobe and SVT-AV1...";
+        try
+        {
+            problem = await toolCheck.FindProblemAsync(CancellationToken.None);
+        }
+        catch (Exception exception)
+        {
+            //The check is a courtesy. If it cannot be made, the Open goes ahead and the work itself reports.
+            problem = null;
+            previousStatus = $"Could not check for FFmpeg: {exception.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+
+        if (problem is null)
+        {
+            StatusText = previousStatus;
+            return;
+        }
+
+        StatusText = problem;
+        await ShowInfo(problem);
     }
 
     private void DoRemove()

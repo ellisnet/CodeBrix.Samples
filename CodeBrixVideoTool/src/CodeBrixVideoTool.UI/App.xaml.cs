@@ -2,6 +2,7 @@ using CodeBrixVideoTool.Helpers;
 using CodeBrixVideoTool.Playback.Services;
 using CodeBrixVideoTool.Processing.Operations;
 using CodeBrixVideoTool.Processing.Probing;
+using CodeBrixVideoTool.Processing.Tools;
 using CodeBrix.Platform.Simple;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -37,6 +38,7 @@ public partial class App : Application
             //Register the app's services here
             services.AddSingleton<IMediaProbe, MediaProbe>();
             services.AddSingleton<IConversionRunner, ConversionRunner>();
+            services.AddSingleton<IExternalToolCheck, ExternalToolCheck>();
         });
         SimpleViewModel.SetIsDesignMode(false);
 
