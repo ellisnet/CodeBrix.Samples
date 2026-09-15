@@ -15,7 +15,15 @@ want the network, file and layout code out of the view model. Along the way
 they cover the care that work needs in practice: pacing outbound calls,
 reporting true progress across a multi-file download, caching, embedding
 fonts, and registering the formats you can import and export - including
-letting that registry, rather than a page, say what a file dialog offers.
+letting that registry, rather than a page, say what a file dialog offers. A
+last group is about a document that is drawn rather than composed, and about
+the data behind it: vector art described once and rendered by both a page
+control and the report, path data parsed into the document library's own path
+type, a page cursor that gives hand placement margins and page breaks, tracked
+capitals and justified copy typeset by hand, gradient stops blended to opaque
+because their alpha is ignored, a saved file that stores identity and looks the
+text up again, prose made deterministic by a seed the data itself produces, and
+a static table built lazily because field initializers run in order.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -70,6 +78,14 @@ conventions the code blocks follow.
 - [Raise a UI hook from a codec through a static event](#raise-a-ui-hook-from-a-codec-through-a-static-event)
 - [Offer a data folder by rule rather than by a hard-coded list](#offer-a-data-folder-by-rule-rather-than-by-a-hard-coded-list)
 - [Build a file dialog's filter list in the format registry](#build-a-file-dialogs-filter-list-in-the-format-registry)
+- [Describe vector art once and render it through two renderers](#describe-vector-art-once-and-render-it-through-two-renderers)
+- [Convert SVG path data into a PDF graphics path](#convert-svg-path-data-into-a-pdf-graphics-path)
+- [Give a hand-placed document a page cursor with margins and breaks](#give-a-hand-placed-document-a-page-cursor-with-margins-and-breaks)
+- [Typeset tracked capitals justified copy and fitted lines by hand](#typeset-tracked-capitals-justified-copy-and-fitted-lines-by-hand)
+- [Blend a tint to opaque because gradient stops ignore alpha](#blend-a-tint-to-opaque-because-gradient-stops-ignore-alpha)
+- [Save only identity and rehydrate the text from the data tables](#save-only-identity-and-rehydrate-the-text-from-the-data-tables)
+- [Make generated prose deterministic from a seed the data makes](#make-generated-prose-deterministic-from-a-seed-the-data-makes)
+- [Build a static data table lazily because field initializers run in order](#build-a-static-data-table-lazily-because-field-initializers-run-in-order)
 
 ## Related blueprints
 
@@ -143,7 +159,11 @@ ProcessedText = await _encryptSvc.AES_EncryptToBase64(EncryptionKey.Trim(), Ente
 `WikipediaPublisher/WikipediaPublisher.RenderArticle/`,
 `NotionDocumentCreator/src/libs/NotionDocumentCreator.CreateDocument/`,
 `PdfSideBySide/src/libs/PdfSideBySide.PdfRender/`,
-`PolyHavenBrowser/src/libs/PolyHavenBrowser.PolyHavenApiClient/`
+`PolyHavenBrowser/src/libs/PolyHavenBrowser.PolyHavenApiClient/`,
+`InannaRosette/src/libs/InannaRosette.Reading/`
+(the deck, the spread, the prose, the JSON and the printable report behind
+`IReadingInterpreter`, `IReadingSerializer` and `IPdfReportBuilder`, in a library
+with no CodeBrix.Platform reference and no XAML anywhere in it)
 
 **Sharp edges.**
 - The library is referenced by the shared platform library and, separately, by each
@@ -2223,6 +2243,14 @@ internal static class BookFonts
 `PolyHavenBrowser/src/libs/PolyHavenBrowser.CreateDocument/Internal/SheetFonts.cs`
 `WikipediaPublisher/WikipediaPublisher.RenderArticle/Internal/BookFonts.cs`
 
+**Also shown by.**
+`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfFonts.cs`
+(two family aliases built from eight embedded faces and registered once per face
+name under a double-checked lock, so the call is safe from both the report's
+constructor and its `Build()`; the quieter family deliberately points its "Bold"
+face at Merriweather Medium, because the resolver decides what is bold by looking
+for "bold" in the face name)
+
 **Sharp edges.**
 - The same method sets the PDF layer's imaging back-end. Forget it and image
   placement fails, not the font lookup.
@@ -3227,6 +3255,15 @@ public void Compose(XGraphics gfx)
 `PolyHavenBrowser/src/libs/PolyHavenBrowser.CreateDocument/Internal/SheetComposer.cs`
 `PolyHavenBrowser/src/libs/PolyHavenBrowser.CreateDocument/Models/MarketingSheetRequest.cs`
 
+**Also shown by.**
+`InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs` and
+`Services/Pdf/`
+(a multi-page report drawn straight onto `XGraphics` - cover, full-page spread
+diagram, one section per station, an appendix of lore - over a page-flow cursor,
+a text kit and a palette the library grows for itself, with the reason for
+drawing rather than composing written into the library's own project file;
+`Build()` returns bytes rather than writing a file)
+
 **Sharp edges.**
 - Choose the API to match the document: absolute placement wants the graphics
   object directly; a flowing, paginated document wants a document object model
@@ -4044,3 +4081,1106 @@ is the save path that consumes them.
   Each rule is written down beside the formats it governs.
 - An empty registry produces an empty list rather than an exception, and a picker with
   no filters offers everything. Register the formats before a dialog can be opened.
+
+### Describe vector art once and render it through two renderers
+
+**When you want this.** The same artwork has to appear on screen and in a
+document you generate, and you refuse to draw it twice. Two drawings drift
+apart; a bitmap shared between them looks soft when it is printed.
+
+**The MVVM shape.** The artwork is plain data in the UI-free library: one list
+of layer records per motif, each record a path string authored in a fixed
+square design box plus the few flags a renderer needs. Neither renderer owns
+the art. A page control turns a layer list into XAML shapes inside a canvas
+that a viewbox scales; the report turns the same list into paths on the
+document's graphics context. Adding a motif is adding data, and both sides
+pick it up with no further work.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Data/EmblemArt.cs
+/// <summary>
+/// One drawable layer of an emblem. <see cref="PathData"/> is SVG path mini-language
+/// (absolute commands only) understood by WinUI <c>Path.Data</c> and <c>SKPath.ParseSvgPathData</c>.
+/// </summary>
+/// <param name="PathData">The geometry, in a 0..100 x 0..100 box.</param>
+/// <param name="Filled">True to fill the geometry; false to stroke it.</param>
+/// <param name="StrokeWidth">Stroke width in box units (only meaningful when <paramref name="Filled"/> is false).</param>
+/// <param name="Opacity">Layer opacity, 0..1.</param>
+/// <param name="Accent">True when the renderer should use the card's secondary colour for this layer.</param>
+public sealed record EmblemLayer(string PathData, bool Filled, double StrokeWidth = 0, double Opacity = 1.0, bool Accent = false);
+// ...
+/// <summary>
+/// Procedural vector art for every <see cref="Emblem"/>, plus the deck's shared ornaments.
+/// Every emblem is drawn inside a 0..100 x 0..100 box, centered at (50,50),
+/// designed to sit inside a circle of radius ~46.
+/// </summary>
+public static class EmblemArt
+{
+    private static EmblemLayer F(string d) => new(d, true);
+    private static EmblemLayer F(string d, double opacity) => new(d, true, 0, opacity);
+    private static EmblemLayer A(string d) => new(d, true, 0, 1.0, true);
+    private static EmblemLayer S(string d, double w = 3) => new(d, false, w);
+    private static EmblemLayer S(string d, double w, double opacity) => new(d, false, w, opacity);
+    private static EmblemLayer SA(string d, double w = 3) => new(d, false, w, 1.0, true);
+
+    private static IReadOnlyList<EmblemLayer> L(params EmblemLayer[] layers) => layers;
+
+    /// <summary>Returns the layers for <paramref name="emblem"/>, back to front.</summary>
+    public static IReadOnlyList<EmblemLayer> Layers(Emblem emblem) => emblem switch
+```
+
+The screen renderer is a page-side helper: it is the only place in the
+application that knows what a XAML shape is, and it returns a fixed-size canvas
+so that the caller can scale it to whatever size a card currently happens to
+be.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs
+    /// <summary>
+    /// Render a stack of emblem layers authored in a 0..<paramref name="box"/> coordinate box
+    /// into a fixed-size Canvas, ready for a Viewbox. Filled layers take <paramref name="fill"/>
+    /// (accent layers take <paramref name="accent"/>); stroked layers take <paramref name="stroke"/>.
+    /// </summary>
+    internal static Canvas LayerCanvas(IReadOnlyList<EmblemLayer> layers, double box,
+                                       Brush? fill, Brush? accent, Brush? stroke)
+    {
+        var canvas = new Canvas { Width = box, Height = box };
+        if (layers is null) { return canvas; }
+
+        foreach (var layer in layers)
+        {
+            if (layer is null || string.IsNullOrWhiteSpace(layer.PathData)) { continue; }
+            var brush = layer.Accent ? (accent ?? fill) : fill;
+            canvas.Children.Add(new Microsoft.UI.Xaml.Shapes.Path
+            {
+                Data = ParseGeometry(layer.PathData),
+                Fill = layer.Filled ? brush : null,
+                Stroke = layer.Filled ? null : (layer.Accent ? (accent ?? stroke) : stroke),
+                StrokeThickness = layer.Filled ? 0 : Math.Max(0.4, layer.StrokeWidth),
+                StrokeLineJoin = PenLineJoin.Round,
+                StrokeStartLineCap = PenLineCap.Round,
+                StrokeEndLineCap = PenLineCap.Round,
+                Opacity = layer.Opacity <= 0 ? 1 : layer.Opacity,
+            });
+        }
+        return canvas;
+    }
+```
+
+The document renderer takes the identical list and the rectangle it should
+fill, and resolves each layer's color from the same three inputs.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfOrnaments.cs
+    /// <summary>
+    /// Draws a stack of <see cref="EmblemLayer"/>s into <paramref name="box"/>.
+    /// Layers marked as accents take <paramref name="accent"/>; other filled layers take
+    /// <paramref name="main"/>; other stroked layers take <paramref name="stroke"/>.
+    /// </summary>
+    public static void DrawLayers(
+        XGraphics gfx,
+        IReadOnlyList<EmblemLayer> layers,
+        XRect box,
+        XColor main,
+        XColor accent,
+        XColor stroke,
+        double opacity = 1.0,
+        double designBox = SvgPathToPdf.DefaultDesignBox)
+    {
+        if (layers.Count == 0) return;
+        var scale = Math.Min(box.Width, box.Height) / designBox;
+
+        foreach (var layer in layers)
+        {
+            if (string.IsNullOrWhiteSpace(layer.PathData)) continue;
+
+            XGraphicsPath path;
+            try
+            {
+                path = SvgPathToPdf.Build(layer.PathData, box, designBox);
+            }
+            catch (FormatException)
+            {
+                continue;   // one malformed glyph must never take the whole report down
+            }
+
+            var layerOpacity = Math.Clamp(layer.Opacity, 0, 1) * Math.Clamp(opacity, 0, 1);
+            if (layerOpacity <= 0) continue;
+
+            if (layer.Filled)
+            {
+                var colour = layer.Accent ? accent : main;
+                gfx.DrawPath(new XSolidBrush(colour.Alpha(layerOpacity)), path);
+            }
+            else
+            {
+                var colour = layer.Accent ? accent : stroke;
+                var width = Math.Max(0.22, layer.StrokeWidth * scale);
+                gfx.DrawPath(new XPen(colour.Alpha(layerOpacity), width)
+                {
+                    LineCap = XLineCap.Round,
+                    LineJoin = XLineJoin.Round,
+                }, path);
+            }
+        }
+    }
+```
+
+**Where to look.**
+`InannaRosette/src/libs/InannaRosette.Reading/Data/EmblemArt.cs`
+`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs` and
+`Controls/Ornament.cs`
+`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfOrnaments.cs`
+
+**Sharp edges.**
+- Stroke widths are authored in design-box units, not in output units, so each
+  renderer has to scale them itself. The document side takes the smaller of the
+  two box-to-rectangle ratios and floors the result, because a hairline that
+  rounds to zero disappears entirely in print while it still shows on screen.
+- The document renderer catches a malformed-path failure per layer and skips
+  that layer, so one bad glyph cannot take a whole report down. The screen
+  renderer cannot do the same thing, because its parser rejects shapes the
+  document parser accepts; it has its own fallback chain instead.
+- Only the accent flag varies per card. Everything else about a motif is fixed
+  by the data, which is what keeps the two renderings recognizably the same
+  picture rather than two interpretations of one description.
+- A layer with zero opacity is skipped before a path is built, not drawn
+  invisibly. The order of that check matters when a caller multiplies a whole
+  stack down by a group opacity.
+
+### Convert SVG path data into a PDF graphics path
+
+**When you want this.** Your artwork is SVG path strings and it has to reach a
+PDF as real vector segments. This is a different job from
+[Rasterize SVG art with the CodeBrix SkiaSvg library](BLUEPRINTS-GraphicsAndRendering.md#rasterize-svg-art-with-the-codebrix-skiasvg-library),
+which renders whole SVG documents to pixels: here there is no SVG document, no
+rasterizer and no extra library - just the path mini-language, parsed into the
+document library's own path type so the marks stay vector at any print
+resolution.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs
+    /// <summary>
+    /// Builds a path from <paramref name="pathData"/>, scaling the square design box
+    /// <c>0..designBox</c> so that it fits centred inside <paramref name="destination"/>.
+    /// </summary>
+    public static XGraphicsPath Build(string pathData, XRect destination, double designBox = DefaultDesignBox)
+    {
+        var scale = Math.Min(destination.Width / designBox, destination.Height / designBox);
+        var offsetX = destination.X + (destination.Width - designBox * scale) / 2.0;
+        var offsetY = destination.Y + (destination.Height - designBox * scale) / 2.0;
+        return Build(pathData, scale, scale, offsetX, offsetY);
+    }
+
+    /// <summary>Builds a path, mapping source point <c>(x, y)</c> to <c>(x * sx + dx, y * sy + dy)</c>.</summary>
+    public static XGraphicsPath Build(string pathData, double sx, double sy, double dx, double dy)
+    {
+        var path = new XGraphicsPath { FillMode = XFillMode.Winding };
+        var builder = new Builder(path, sx, sy, dx, dy);
+        Parse(pathData, builder);
+        return path;
+    }
+```
+
+The parser is one loop over a scanner. A command letter is sticky, so a
+letter followed by several coordinate sets repeats; a move-to that repeats
+becomes a line-to, which is the one place the grammar changes the command under
+you.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs
+        while (true)
+        {
+            scanner.SkipSeparators();
+            if (scanner.AtEnd) break;
+
+            var c = scanner.Peek;
+            if (IsCommand(c))
+            {
+                command = c;
+                scanner.Advance();
+            }
+            else if (command == '\0')
+            {
+                throw new FormatException($"Path data must begin with a command; found '{c}'.");
+            }
+            else if (command is 'M') command = 'L';      // implicit line-to after a move-to
+            else if (command is 'm') command = 'l';
+            else if (command is 'Z' or 'z')
+            {
+                throw new FormatException("Unexpected number after a close-path command.");
+            }
+
+            var relative = char.IsLower(command);
+            var upper = char.ToUpperInvariant(command);
+// ...
+        // Deliberately no implicit close: an un-terminated sub-path stays open, so stroked
+        // figures are not silently joined back to their starting point. A fill closes it anyway.
+```
+
+Quadratic segments are raised to cubics exactly rather than approximated,
+and an elliptical arc is converted by the endpoint-to-center parameterization
+of the specification and emitted as pieces of ninety degrees or less.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs
+    private static void EmitQuadratic(ISink sink, double x0, double y0, double qx, double qy, double x, double y)
+    {
+        // Exact degree elevation from quadratic to cubic.
+        var c1X = x0 + 2.0 / 3.0 * (qx - x0);
+        var c1Y = y0 + 2.0 / 3.0 * (qy - y0);
+        var c2X = x + 2.0 / 3.0 * (qx - x);
+        var c2Y = y + 2.0 / 3.0 * (qy - y);
+        sink.CurveTo(c1X, c1Y, c2X, c2Y, x, y);
+// ...
+        // Emit in pieces of at most 90 degrees; the cubic approximation of a circular arc is
+        // excellent below that and the error grows quickly above it.
+        var pieces = Math.Max(1, (int)Math.Ceiling(Math.Abs(deltaTheta) / (Math.PI / 2) - 1e-9));
+        var delta = deltaTheta / pieces;
+        var t = 4.0 / 3.0 * Math.Tan(delta / 4.0);
+```
+
+Tokenizing is where hand-written parsers usually go wrong, so the scanner
+is explicit about what separates one number from the next and about the two
+arc flags, which the grammar allows to be written with nothing between them.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs
+    /// <summary>
+    /// Tokenises the path string. Numbers may be separated by whitespace, commas, or nothing at
+    /// all where a sign or a second decimal point unambiguously begins the next number.
+    /// </summary>
+    private struct Scanner(string text)
+    {
+        private int _i = 0;
+
+        public readonly bool AtEnd => _i >= text.Length;
+
+        public readonly char Peek => text[_i];
+
+        public void Advance() => _i++;
+
+        public void SkipSeparators()
+        {
+            while (_i < text.Length && (char.IsWhiteSpace(text[_i]) || text[_i] is ',')) _i++;
+        }
+// ...
+        /// <summary>
+        /// Reads an arc flag. The grammar allows these to be written without separators
+        /// (<c>"a5 5 0 1150 20"</c>), so exactly one character is consumed.
+        /// </summary>
+        public bool Flag()
+        {
+            SkipSeparators();
+            if (_i >= text.Length) throw new FormatException("Path data ended while an arc flag was expected.");
+            var c = text[_i];
+            if (c is not ('0' or '1')) throw new FormatException($"Arc flag must be 0 or 1; found '{c}'.");
+            _i++;
+            return c == '1';
+        }
+```
+
+**Where to look.**
+`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs`
+`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfOrnaments.cs`
+`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs`
+
+**Sharp edges.**
+- Numbers may run together where a sign or a second decimal point makes the
+  break unambiguous. A scanner that splits on whitespace and commas alone
+  mis-parses `"10-5"` and `".5.5"` silently, producing a plausible wrong shape
+  rather than an error.
+- The two arc flags are single characters, not numbers. Reading them with the
+  number scanner swallows the coordinates that follow.
+- An unterminated sub-path is deliberately left open. Closing it implicitly
+  joins a stroked figure back to its start with a line nobody drew; a filled
+  figure is closed by the fill anyway.
+- After a close-path the current point returns to the start of the sub-path,
+  and any following segment opens a fresh sub-path there - so the builder
+  re-issues the move before it draws. Forget that and the next segment either
+  vanishes or attaches to the wrong figure.
+- A zero radius degenerates to a straight line and coincident endpoints omit
+  the arc entirely. Both are in the specification and both are easy to leave
+  out, and either one produces a division by zero if you do.
+
+### Give a hand-placed document a page cursor with margins and breaks
+
+**When you want this.** You are drawing a document straight onto a graphics
+context, the way
+[Compose a fixed layout poster with the CodeBrix PdfDocuments library](BLUEPRINTS-DocumentsAndData.md#compose-a-fixed-layout-poster-with-the-codebrix-pdfdocuments-library)
+does, but it runs to many pages. The low-level API has no notion of a margin,
+a cursor or a page break, and you want those three things without giving up
+hand placement for a flowing document model.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPageFlow.cs
+    public PdfPageFlow(PdfDocument document, PageSize pageSize, string headerText)
+    {
+        _document = document;
+        _pageSize = pageSize;
+        _headerText = headerText;
+
+        // Page metrics are fixed by the page size; take them from a throwaway probe so that
+        // callers can plan a layout before the first page exists.
+        var probe = new PdfPage { Size = pageSize, Orientation = PageOrientation.Portrait };
+        PageWidth = probe.Width.Point;
+        PageHeight = probe.Height.Point;
+    }
+```
+
+The cursor is one settable number and everything else is derived from it,
+so a caller can ask how much room is left before it decides what to draw.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPageFlow.cs
+    public double ContentLeft => MarginLeft;
+    public double ContentRight => PageWidth - MarginRight;
+    public double ContentWidth => PageWidth - MarginLeft - MarginRight;
+    public double ContentTop => MarginTop;
+    public double ContentBottom => PageHeight - MarginBottom;
+
+    /// <summary>The vertical cursor, in points from the top of the page.</summary>
+    public double Y { get; set; }
+
+    /// <summary>Space left on the current page below the cursor.</summary>
+    public double Remaining => ContentBottom - Y;
+
+    /// <summary>The graphics context of the current page.</summary>
+    public XGraphics Gfx => _gfx ?? throw new InvalidOperationException("No page has been started.");
+
+    /// <summary>1-based number of the current page.</summary>
+    public int PageNumber { get; private set; }
+```
+
+Starting a page is also where the page's furniture goes on: the parchment
+ground, the running header with its rule and closing star, and the centered
+folio. The cover opts out.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPageFlow.cs
+    /// <summary>
+    /// Closes the current page and starts a new one. Decorated pages get the parchment ground,
+    /// the running header and the centred page number; the cover does not.
+    /// </summary>
+    public XGraphics BeginPage(bool decorate = true)
+    {
+        _gfx?.Dispose();
+
+        var page = _document.AddPage();
+        page.Size = _pageSize;
+        page.Orientation = PageOrientation.Portrait;
+        PageNumber = _document.PageCount;
+
+        _gfx = XGraphics.FromPdfPage(page);
+        _gfx.DrawRectangle(new XSolidBrush(PdfPalette.Ivory), new XRect(0, 0, PageWidth, PageHeight));
+
+        if (decorate)
+        {
+            DrawRunningHeader(_gfx);
+            DrawFooter(_gfx);
+        }
+
+        Y = ContentTop;
+        return _gfx;
+    }
+
+    /// <summary>Starts a new page if <paramref name="needed"/> points would not fit below the cursor.</summary>
+    /// <returns><c>true</c> when a page break happened.</returns>
+    public bool EnsureSpace(double needed)
+    {
+        if (_gfx is null)
+        {
+            BeginPage();
+            return true;
+        }
+
+        if (Y + needed <= ContentBottom) return false;
+        BeginPage();
+        return true;
+    }
+```
+
+The whole report is then a sequence of section methods over one flow.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs
+        using var flow = new PdfPageFlow(document, _options.UseLetter ? PageSize.Letter : PageSize.A4, header)
+        {
+            MarginLeft = 62,
+            MarginRight = 62,
+            MarginTop = 84,
+            MarginBottom = 66,
+        };
+
+        DrawCover(flow, interpretation, querent, date);
+        DrawSpreadPage(flow, interpretation);
+        DrawOpeningAndInsights(flow, interpretation);
+        DrawStations(flow, interpretation);
+        DrawCounsel(flow, interpretation);
+        DrawClosingBlessing(flow, interpretation);
+        DrawAppendix(flow, interpretation);
+```
+
+**Where to look.**
+`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPageFlow.cs`
+`InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs`
+(`DrawFlowedParagraph` breaks one paragraph across pages line by line, leaving
+at least two lines behind and carrying at least three forward)
+
+**Sharp edges.**
+- The page metrics come from a throwaway probe page that is never added to the
+  document. Adding a real page just to read its size leaves a blank sheet in
+  the output that nothing explains.
+- The graphics property throws until a page has been started, which is
+  deliberate: the first space check opens the first page rather than silently
+  drawing nowhere.
+- Advancing the cursor clamps at the bottom of the text area. An over-long
+  advance therefore parks the cursor at the margin instead of pushing it off
+  the page, where drawing would continue invisibly below the paper.
+- The flow owns the graphics context and disposes the previous one each time it
+  starts a page, so nothing may draw onto a page after the next one begins.
+  Any code holding a saved reference to the old context is drawing into a
+  finished page.
+- Decoration is a flag on the page start, not a property of the flow. A cover
+  with a running header and a folio reading one is the failure this prevents.
+
+### Typeset tracked capitals justified copy and fitted lines by hand
+
+**When you want this.** The drawing API gives you one call that puts a string
+at a point. A designed report wants letter-spaced small capitals, justified
+body copy whose last line stays ragged, headings that shrink until they fit
+their column, and - above all - a way to know how tall a block will be before
+committing to it.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfText.cs
+    /// <summary>Width of <paramref name="text"/> when drawn with the given letter spacing.</summary>
+    public static double MeasureTracked(XGraphics gfx, string text, XFont font, double tracking)
+    {
+        if (string.IsNullOrEmpty(text)) return 0;
+        double width = 0;
+        foreach (var ch in text) width += gfx.MeasureString(ch.ToString(), font).Width + tracking;
+        return width - tracking;
+    }
+
+    /// <summary>
+    /// Draws letter-spaced text with its baseline at <paramref name="baselineY"/>.
+    /// Returns the width consumed.
+    /// </summary>
+    public static double DrawTracked(
+        XGraphics gfx, string text, XFont font, XBrush brush,
+        double x, double baselineY, double tracking, TrackedAlign align = TrackedAlign.Left, double boxWidth = 0)
+    {
+        if (string.IsNullOrEmpty(text)) return 0;
+
+        var width = MeasureTracked(gfx, text, font, tracking);
+        var penX = align switch
+        {
+            TrackedAlign.Center => x + (boxWidth - width) / 2.0,
+            TrackedAlign.Right => x + boxWidth - width,
+            _ => x,
+        };
+
+        foreach (var ch in text)
+        {
+            var s = ch.ToString();
+            gfx.DrawString(s, font, brush, new XPoint(penX, baselineY));
+            penX += gfx.MeasureString(s, font).Width + tracking;
+        }
+
+        return width;
+    }
+```
+
+Justification is a second pass over the wrapped lines: measure the words,
+share the slack between the gaps, and leave the real last line alone.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfText.cs
+    /// <summary>
+    /// Draws a justified paragraph with the last line left aligned - which the built-in
+    /// <c>XTextFormatter</c>'s Justify mode does not do. Returns the height consumed.
+    /// </summary>
+    public static double DrawJustified(
+        XGraphics gfx, string text, XFont font, XBrush brush,
+        double x, double top, double width, double lineHeight)
+        => DrawJustifiedCore(gfx, text, font, brush, x, top, width, lineHeight, justifyLastLine: false);
+// ...
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var words = lines[i].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var isLast = !justifyLastLine && i == lines.Count - 1;
+
+            if (isLast || words.Length < 2)
+            {
+                gfx.DrawString(lines[i], font, brush, new XPoint(x, baseline));
+            }
+            else
+            {
+                var wordsWidth = words.Sum(w => gfx.MeasureString(w, font).Width);
+                var gap = (width - wordsWidth) / (words.Length - 1);
+
+                // Guard against a pathologically short line being stretched into a ladder.
+                var naturalGap = gfx.MeasureString(" ", font).Width;
+                if (gap > naturalGap * 4.5)
+                {
+                    gfx.DrawString(lines[i], font, brush, new XPoint(x, baseline));
+                }
+                else
+                {
+                    var penX = x;
+                    foreach (var w in words)
+                    {
+                        gfx.DrawString(w, font, brush, new XPoint(penX, baseline));
+                        penX += gfx.MeasureString(w, font).Width + gap;
+                    }
+                }
+            }
+
+            baseline += lineHeight;
+        }
+```
+
+Fitting is a bounded shrink loop rather than a solve, which is both simpler
+and safe against a string that can never fit.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfText.cs
+    /// <summary>
+    /// Draws a single line, shrinking the point size until it fits <paramref name="width"/>.
+    /// Returns the font actually used.
+    /// </summary>
+    public static XFont DrawFitted(
+        XGraphics gfx, string text, string family, double emSize, XFontStyle style, XBrush brush,
+        double x, double baselineY, double width, TrackedAlign align = TrackedAlign.Left)
+    {
+        var size = emSize;
+        var font = new XFont(family, size, style);
+        for (var guard = 0; guard < 20 && gfx.MeasureString(text, font).Width > width; guard++)
+        {
+            size *= 0.94;
+            font = new XFont(family, size, style);
+        }
+```
+
+Measuring without drawing is what lets the report decide where a page break
+belongs. The station sections keep a kicker, a heading, a keyword line and the
+first few lines of prose together by measuring that block first and asking the
+flow for the room.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs
+            var firstParagraph = paragraphs.Count > 0 ? paragraphs[0] : string.Empty;
+
+            // Keep the kicker, heading, keyword line and the first two lines of prose together.
+            var headBlock = 14 + 22 + 14 + Math.Min(
+                PdfText.MeasureParagraph(flow.Gfx, firstParagraph, bodyFont, textWidth, BodyLeading),
+                BodyLeading * 3);
+// ...
+            first = false;
+            flow.EnsureSpace(headBlock);
+```
+
+**Where to look.**
+`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfText.cs`
+`InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs`
+`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPageFlow.cs`
+(the running header and the folio are both tracked text)
+
+**Sharp edges.**
+- Tracked text is measured a character at a time and the trailing gap is
+  subtracted at the end. Measure the whole string at once and centering is off
+  by the accumulated spacing, which grows with the length of the line.
+- The justifier leaves the final line ragged, which the built-in formatter's
+  justify mode does not. When a paragraph is split across a page break the last
+  line on this page is not really the last line, so there is a second entry
+  point that justifies it too.
+- A short line with few words would be stretched into a ladder of white. The
+  guard compares the computed gap against the natural space width and falls
+  back to plain left alignment rather than producing something unreadable.
+- Every fitting loop carries a guard count. Without one, a string that can
+  never fit its column spins forever at run time rather than merely looking
+  wrong.
+- Measuring a paragraph wraps it, and drawing it wraps it again. That is cheap
+  at report sizes and it keeps the two calls independent, but it is real work
+  repeated - do not put it inside a per-glyph loop.
+
+### Blend a tint to opaque because gradient stops ignore alpha
+
+**When you want this.** You want a soft wash behind a title, or a medallion
+that fades from a card's own color into the dark, and the transparent gradient
+stops you wrote came out as flat, fully opaque bands. The renderer honors alpha
+on a solid brush and on a pen, and ignores it on a gradient stop.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPalette.cs
+    /// <summary>Same colour with an explicit alpha (0..1). Safe for solid brushes and pens.</summary>
+    public static XColor Alpha(this XColor color, double alpha)
+    {
+        var a = (int)Math.Round(Math.Clamp(alpha, 0, 1) * 255);
+        return XColor.FromArgb(a, (int)color.R, (int)color.G, (int)color.B);
+    }
+
+    /// <summary>
+    /// Opaque blend of <paramref name="fore"/> over <paramref name="back"/>.
+    /// Used for tinted text and for gradient stops, whose alpha channel the renderer ignores.
+    /// </summary>
+    public static XColor Over(this XColor fore, XColor back, double amount)
+    {
+        var t = Math.Clamp(amount, 0, 1);
+        return XColor.FromArgb(
+            (int)Math.Round(back.R + (fore.R - back.R) * t),
+            (int)Math.Round(back.G + (fore.G - back.G) * t),
+            (int)Math.Round(back.B + (fore.B - back.B) * t));
+    }
+```
+
+Every stop is therefore written as a blend that is already opaque: the
+tint mixed into the ground it will sit on, at the strength the stop wanted.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs
+        // A radial dusk behind the star. Gradient stops ignore alpha, so every stop is opaque.
+        var dusk = new XShadingBrush(starCenter, 0, starCenter, bandHeight * 0.95,
+        [
+            new XGradientStop(0.00, PdfPalette.Lapis.Over(PdfPalette.Night2, 0.55)),
+            new XGradientStop(0.38, PdfPalette.Lapis.Over(PdfPalette.Night, 0.28)),
+            new XGradientStop(0.78, PdfPalette.Night),
+            new XGradientStop(1.00, PdfPalette.Kohl),
+        ]);
+        gfx.DrawRectangle(dusk, new XRect(0, 0, pw, bandHeight));
+```
+
+A related refusal in the same layer: the rounded-rectangle call does not
+honor a shading brush at all. The fix is to lay a solid ground in the rounded
+shape, then paint the gradient through a rounded-rectangle clip with the plain
+rectangle call, which does honor it.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfCardPainter.cs
+        // Body: Night2 with a soft lapis glow falling from the top edge.
+        // DrawRoundedRectangle does not honour a shading brush, so lay a solid ground first and
+        // paint the gradient through a rounded-rectangle clip, which DrawRectangle does honour.
+        gfx.DrawRoundedRectangle(new XSolidBrush(PdfPalette.Night2), rect, ellipse);
+
+        var glowCenter = new XPoint(cx, rect.Y + h * 0.06);
+        var body = new XShadingBrush(glowCenter, 0, glowCenter, h * 0.98,
+        [
+            new XGradientStop(0.0, PdfPalette.LapisLight.Over(PdfPalette.Night2, 0.52)),
+            new XGradientStop(0.40, PdfPalette.Lapis.Over(PdfPalette.Night2, 0.26)),
+            new XGradientStop(1.0, PdfPalette.Night),
+        ]);
+
+        var clipState = gfx.Save();
+        var clip = new XGraphicsPath();
+        clip.AddRoundedRectangle(rect.X, rect.Y, rect.Width, rect.Height, corner * 2, corner * 2);
+        gfx.IntersectClip(clip);
+        gfx.DrawRectangle(body, rect);
+        gfx.Restore(clipState);
+```
+
+**Where to look.**
+`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPalette.cs`
+`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfCardPainter.cs`
+`InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs`
+
+**Sharp edges.**
+- The two helpers are not interchangeable and the difference is invisible at
+  the call site. The alpha helper is correct for a solid brush or a pen and
+  wrong for a gradient stop; the blend helper is correct for a stop and wrong
+  wherever something really does have to show through.
+- The blend needs the color it will actually sit on. Blending against the page
+  ground and then drawing over a dark panel gives a band that is too light, and
+  nothing in the type system catches it.
+- The same palette is written three times in three type systems - the
+  application resource dictionary, the page's ornament constants and this
+  file - because the library has no UI reference and must still match the
+  screen. Changing one and not the other two is a silent divergence between
+  what the person sees and what they print.
+- A card's own accent color comes from data and may be very dark. The palette
+  lifts such a color toward white until it reads against the deep card body,
+  rather than trusting the data to be sensible.
+
+### Save only identity and rehydrate the text from the data tables
+
+**When you want this.** Your document is a selection out of a body of content
+you already ship - which cards, which slots, which way up - and you are about
+to write the content into the saved file alongside it. Do not. Save the
+identity and look the content up again when the file is opened.
+
+**The MVVM shape.** The serializer lives in the UI-free library behind an
+interface the view model resolves, and both directions go through a plain
+storage record that is not the domain type. The view model turns its own table
+into the library's reading type to save, and lays a reading that comes back
+into its own table, telling the page about each card as it arrives.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingSerializer.cs
+/// <summary>
+/// Saves and loads a <see cref="RosetteReading"/> as JSON. Only the identifying data is stored
+/// (card ids, station indexes, orientation, querent, question, timestamp); the card text
+/// and the spread text are rehydrated from <see cref="DeckData"/> and <see cref="RosetteSpread"/>.
+/// </summary>
+public sealed class ReadingSerializer : IReadingSerializer
+{
+    /// <summary>The document actually written to disk. Public so callers may inspect or build one.</summary>
+    public sealed record ReadingDocument
+    {
+        /// <summary>The document-format version; 1 is the only one written so far.</summary>
+        public int Version { get; init; } = 1;
+
+        /// <summary>When the reading was laid.</summary>
+        public DateTime Created { get; init; }
+
+        /// <summary>Who the reading is for; may be empty.</summary>
+        public string Querent { get; init; } = "";
+
+        /// <summary>The question put to the rosette; may be empty.</summary>
+        public string Question { get; init; } = "";
+
+        /// <summary>The cards on the rosette, ordered by station.</summary>
+        public List<PlacementDocument> Placements { get; init; } = [];
+    }
+
+    /// <summary>One card at one station, in storage form.</summary>
+    public sealed record PlacementDocument
+    {
+        /// <summary>The station the card sits on: 0 is the Heart, 1-8 the petals.</summary>
+        public int Position { get; init; }
+
+        /// <summary>The card's identifier in the deck.</summary>
+        public int CardId { get; init; }
+
+        /// <summary>Whether the card was laid reversed.</summary>
+        public bool Reversed { get; init; }
+    }
+
+    private static readonly JsonSerializerOptions Options = new()
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+```
+
+Reading back is tolerant on purpose, and the doc comment says so. An
+unknown identifier or an out-of-range slot is skipped, a second card on a slot
+that is already filled is ignored, and only text that is not the document at
+all is an error.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingSerializer.cs
+        if (doc is null) throw new FormatException("The text is not a valid reading document.");
+
+        var reading = new RosetteReading
+        {
+            Created = doc.Created == default ? DateTime.Now : doc.Created,
+            Querent = doc.Querent,
+            Question = doc.Question,
+        };
+
+        foreach (var p in doc.Placements.OrderBy(p => p.Position))
+        {
+            var position = RosetteSpread.At(p.Position);
+            var card = DeckData.ById(p.CardId);
+            if (position is null || card is null) continue;
+            if (reading.At(p.Position) is not null) continue;
+            reading.Placements.Add(new PlacedCard(position, card, p.Reversed));
+        }
+
+        return reading;
+    }
+```
+
+The view model's side is where a loaded reading becomes a table again.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+    //Lays a reading that was read back from a file: the table starts empty and each placement
+    //  arrives already on its station, so the page places it rather than dealing it to the tray
+    private void ApplyReading(RosetteReading reading)
+    {
+        GatherToDeck();
+
+        Querent = reading.Querent ?? string.Empty;
+        Question = reading.Question ?? string.Empty;
+
+        var laid = 0;
+        foreach (var placement in reading.Placements)
+        {
+            var index = placement.Position.Index;
+            if (index < 0 || index >= StationCount || _stations[index] != null) { continue; }
+
+            //A card on the table is never also in the stack, so the deck hands it over rather
+            //  than keeping a second copy of it; a file naming the same card twice is refused
+            //  here rather than being drawn again later
+            if (!_deck.Remove(placement.Card)) { continue; }
+
+            var card = new ReadingCard(placement.Card)
+            {
+                IsReversed = placement.IsReversed,
+                Station = index,
+            };
+            _cards.Add(card);
+            _stations[index] = card;
+            laid++;
+            CardAdded?.Invoke(card);
+        }
+
+        //Whatever was not laid is the deck now, and a reading just opened deserves a fresh order
+        _deck.Shuffle();
+
+        RefreshCounts(refreshGuidance: false);
+        SetStatus($"Opened a reading with {laid} cards laid; {DeckRemaining} cards remain in the deck.");
+```
+
+**Where to look.**
+`InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingSerializer.cs`
+`InannaRosette/src/libs/InannaRosette.Reading/Data/DeckData.cs` and
+`Data/RosetteSpread.cs`
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+
+**Sharp edges.**
+- The card identifier is a dense one-based index into the deck, so the deck's
+  *order* is now part of the file format. Inserting a card in the middle
+  silently re-points every reading anyone has saved. Either never reorder, or
+  give the cards stable keys before the first file is written.
+- The version field is written and not yet read. That is a hook, not a
+  mechanism, and it is worth saying so out loud: a reader that ignores the
+  version cannot refuse a future document it does not understand.
+- A missing timestamp falls back to now, so a hand-written file with no
+  timestamp still opens instead of dating itself to the year zero.
+- Rehydrating means a saved reading picks up later corrections to the content
+  for free - and equally, that a correction changes what an old file says. That
+  is the right trade for lore and the wrong one for a receipt.
+- Because each placement arrives with its slot already set, the page's
+  card-added handler has to read the card's slot rather than assume a new card
+  goes to the tray. Missing that is invisible until someone opens a file.
+
+### Make generated prose deterministic from a seed the data makes
+
+**When you want this.** Your application writes prose - a summary, a reading,
+a report narrative - and you want it to vary so it does not read like a form
+letter, while still being the same text every time for the same inputs, so a
+test can assert on an exact sentence.
+
+**The MVVM shape.** The generator is a pure service in the UI-free library
+behind the interface the view model resolves. It takes the model and returns a
+record, holds no state between calls, and reaches for no clock and no random
+source. The view model runs it on a worker and marshals the result back.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingInterpreter.cs
+    /// <inheritdoc />
+    public ReadingInterpretation Interpret(RosetteReading reading)
+    {
+        ArgumentNullException.ThrowIfNull(reading);
+
+        var placed = reading.Placements
+            .Where(p => p is not null)
+            .GroupBy(p => p.Position.Index)
+            .Select(g => g.First())
+            .OrderBy(p => p.Position.Index)
+            .ToList();
+
+        var seed = SeedFor(placed);
+        var title = BuildTitle(reading);
+
+        if (placed.Count == 0)
+        {
+            return new ReadingInterpretation(
+                reading, title, EmptyOpening, [], EmptyInsights(), EmptyCounsel, EmptyClosing)
+            {
+                Closing = ClosingBlessing,
+            };
+        }
+```
+
+The seed is a hash of the placements themselves, so turning one card over
+changes every sentence the seed reaches.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingInterpreter.cs
+    private static int SeedFor(IReadOnlyList<PlacedCard> placed)
+    {
+        unchecked
+        {
+            var h = 2166136261u;
+            foreach (var p in placed)
+            {
+                h = (h ^ (uint)p.Position.Index) * 16777619u;
+                h = (h ^ (uint)p.Card.Id) * 16777619u;
+                h = (h ^ (uint)(p.IsReversed ? 7 : 3)) * 16777619u;
+            }
+            return (int)(h & 0x7FFFFFFF);
+        }
+```
+
+The sentence stock is a separate internal class, reached through a
+`using static` at the top of the generator. Each slot in the output mixes the
+one seed with its own salt, so two slots choose independently rather than in
+lockstep.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/InterpretationTemplates.cs
+/// <summary>
+/// The sentence stock the <see cref="ReadingInterpreter"/> draws on. Every slot offers
+/// several variants, chosen by a seed derived from the cards themselves, so that two
+/// different layouts do not read alike while the same layout always reads the same.
+/// </summary>
+internal static class InterpretationTemplates
+{
+// ...
+    /// <summary>Scrambles a seed with a salt so that different slots make independent choices.</summary>
+    public static int Mix(int seed, int salt)
+    {
+        unchecked
+        {
+            var h = (uint)seed * 2654435761u ^ (uint)(salt * 40503 + 0x9E37);
+            h ^= h >> 15;
+            h *= 2246822519u;
+            h ^= h >> 13;
+            h *= 3266489917u;
+            h ^= h >> 16;
+            return (int)(h & 0x7FFFFFFF);
+        }
+    }
+
+    /// <summary>Picks one of the variants deterministically.</summary>
+    public static T Pick<T>(IReadOnlyList<T> variants, int seed, int salt) =>
+        variants[Mix(seed, salt) % variants.Count];
+```
+
+**Where to look.**
+`InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingInterpreter.cs`
+`InannaRosette/src/libs/InannaRosette.Reading/Services/InterpretationTemplates.cs`
+`InannaRosette/src/libs/InannaRosette.Reading/InternalsVisibleTo.cs`
+
+**Sharp edges.**
+- The seed comes from the data and nothing else. Seed it from a clock, a
+  process-wide random source or a file path and every test that asserts on the
+  prose becomes a test that asserts the call did not throw.
+- Every slot needs its own salt. Two slots sharing a salt pick the same index
+  out of their variant lists forever, which reads as a tic rather than as a
+  coincidence.
+- The input is de-duplicated by slot before it is hashed, because the model may
+  have come from a file rather than from the screen. Hash the raw list and two
+  files describing the same layout produce different prose.
+- The empty case is a documented shape rather than an error, and a partial one
+  is a real result. Deciding that up front is much easier than retrofitting it
+  once callers expect an exception.
+- The chooser indexes with a remainder, so a variant list must never be empty.
+  An empty list is a divide-by-zero at run time, in a code path a rare seed may
+  be the first to reach.
+- The templates are internal and visible to the test project only through the
+  assembly attribute, which keeps a large body of sentence data off the
+  library's public surface without putting it out of reach of the tests.
+
+### Build a static data table lazily because field initializers run in order
+
+**When you want this.** A static class holds a large content table assembled
+from several static arrays declared further down the same file, and the
+assembled list comes out empty or throws with nothing obviously wrong.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Data/DeckData.cs
+public static class DeckData
+{
+    /// <summary>Terse list builder so the card literals below stay readable.</summary>
+    private static string[] L(params string[] items) => items;
+
+    // Built on first access: the suit arrays below are static field initializers, which run
+    // in textual order, so the list cannot be assembled in a field initializer up here.
+    private static IReadOnlyList<Card>? _cards;
+
+    /// <summary>All forty cards, ordered by Id (1..40): Goddess 1..24, Gate 1..8, Emblem 1..8.</summary>
+    public static IReadOnlyList<Card> Cards => _cards ??= Build();
+
+    /// <summary>Look up a card by its Id, or null when no such card exists.</summary>
+    public static Card? ById(int id) => id >= 1 && id <= Cards.Count ? Cards[id - 1] : null;
+
+    /// <summary>All cards of one suit, in Number order.</summary>
+    public static IReadOnlyList<Card> BySuit(CardSuit suit) => Cards.Where(c => c.Suit == suit).ToList();
+```
+
+Two more habits from the same folder are worth copying. Relationships that
+are arithmetic on an index are written as arithmetic, not as a lookup table
+somebody can get out of step with the titles.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Models/Spread.cs
+/// <summary>
+/// One of the nine stations of the Rosette spread: the heart (index 0) and eight petals
+/// (index 1..8, starting at the top and proceeding clockwise, 45 degrees apart).
+/// </summary>
+public sealed record SpreadPosition(
+    int Index,
+    string Title,
+    string Subtitle,
+    string Question,
+    double AngleDegrees,
+    string Description)
+{
+    /// <summary>True for the Heart at the middle of the flower, false for the eight petals.</summary>
+    public bool IsCenter => Index == 0;
+
+    /// <summary>The petal directly opposite this one on the rosette (petals only), or null for the center.</summary>
+    public int? OppositeIndex => Index == 0 ? null : ((Index - 1 + 4) % 8) + 1;
+}
+```
+
+And where a derived grouping is read by more than one caller - the
+generator, the report and the tests - it is exposed once, from the data, rather
+than rebuilt at each call site.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Data/RosetteSpread.cs
+    /// <summary>The four opposite petal pairs of the rosette: (1,5), (2,6), (3,7), (4,8).</summary>
+    public static IReadOnlyList<(SpreadPosition A, SpreadPosition B)> Axes { get; } =
+    [
+        (_positions[1], _positions[5]),
+        (_positions[2], _positions[6]),
+        (_positions[3], _positions[7]),
+        (_positions[4], _positions[8]),
+    ];
+```
+
+**Where to look.**
+`InannaRosette/src/libs/InannaRosette.Reading/Data/DeckData.cs`
+`InannaRosette/src/libs/InannaRosette.Reading/Models/Spread.cs`
+`InannaRosette/src/libs/InannaRosette.Reading/Data/RosetteSpread.cs`
+
+**Sharp edges.**
+- Static field initializers run in textual order. A list assembled in a field
+  initializer above the arrays it concatenates sees nulls, and that is not a
+  compile error - it is an empty table or a null reference at first use. The
+  comment saying why the lazy form is there is what stops somebody tidying it
+  back.
+- The lazy assignment is idempotent rather than synchronized: two threads
+  racing build the table twice and one wins. That is harmless because the build
+  is pure, and it would not be if construction had a side effect such as
+  registering something.
+- The lookup indexes straight into the list on the assumption that identifiers
+  are a dense one-based run. That assumption is a contract the saved-file
+  format depends on, so it belongs in a test rather than in a comment.
+- Deriving the opposite index arithmetically only works while the ordering
+  convention holds. That convention - the center first, then clockwise from the
+  top - is the one thing both the page geometry and the generated prose
+  silently assume, which is why it is asserted by name in the tests rather than
+  left to the reader.

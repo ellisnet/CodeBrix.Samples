@@ -143,6 +143,11 @@ true.
 `JustBetweenUs`, `KenneyAssetBrowser`, `NotionDocumentCreator`, `WebcamPainter`,
 `WikipediaPublisher`, `PolyHavenBrowser` - every application in the repository,
 each with the rule written into every head as a comment.
+`InannaRosette/src/InannaRosette.Core/InannaRosette.Core.csproj` and the four head
+projects
+(four heads rather than six, and every head repeating the "EXACTLY ONE platform
+head package" comment along with the `Nullable` and `ImplicitUsings` settings the
+shared UI files compiled into it require)
 
 **Sharp edges.**
 - A second runtime package on one head is a build the tooling will not warn you
@@ -219,6 +224,10 @@ the pages compile into the head itself and can see the head's own types.
 **Also shown by.**
 `JustBetweenUs`, `KenneyAssetBrowser`, `NotionDocumentCreator`, `PalmVisualizer`,
 `PolyHavenBrowser`, `WikipediaPublisher`, `CodeBrixVideoTool`.
+`InannaRosette/src/InannaRosette.UI/InannaRosette.UI.projitems`
+(a shared project carrying a plain `.cs` file, `Controls/Ornament.cs`, alongside
+the three XAML pages and their code-behind, so the palette tokens and geometry
+helpers the drawn scene needs compile into every head with the pages)
 
 **Sharp edges.**
 - The shared project's identifier and the item list's shared identifier are the
@@ -288,6 +297,12 @@ letting the linked files declare theirs:
 `PdfSideBySide`, `PolyHavenBrowser`, `PolyHavenBrowser_viewer_only`,
 `PainDiagram`, `WikipediaPublisher`, `NotionDocumentCreator`, `PalmVisualizer`,
 `KenneyAssetBrowser`, `CodeBrixVideoTool`.
+`InannaRosette/src/InannaRosette.Core/InannaRosette.Core.csproj`
+(`RootNamespace` of `InannaRosette` in an assembly called `InannaRosette.Core`, so
+the page's `xmlns:vm` has to name both), beside
+`InannaRosette/src/libs/InannaRosette.Reading/InannaRosette.Reading.csproj`
+(which keeps `RootNamespace` equal to its assembly name, because nothing in it is
+ever addressed from XAML - the two conventions side by side in one folder)
 
 **Sharp edges.**
 - The namespace and the assembly name are deliberately different things: the XAML
@@ -752,6 +767,10 @@ using System.Runtime.CompilerServices;
 **Also shown by.**
 `PolyHavenBrowser_viewer_only`, `NotionDocumentCreator`, `KenneyAssetBrowser`,
 `CodeBrixVideoTool`, `Pinta.Brix`.
+`InannaRosette/`
+(`src/` with the shared UI project, the Core library and four heads, `src/libs/`
+with the domain library, `tests/libs/` mirroring it exactly, and one `.slnx`
+filing them under `Libraries` and `Tests` solution folders)
 
 **Sharp edges.**
 - Each library owns the packages only it needs, and one of them usually states the
@@ -903,6 +922,13 @@ fetched on demand and cached locally.
 `PolyHavenBrowser/THIRD-PARTY-NOTICES.txt` (bundled fonts as well as downloaded
 assets)
 Every other application folder in the repository carries the same file.
+
+**Also shown by.**
+`InannaRosette/THIRD-PARTY-NOTICES.txt`
+(one typeface recorded twice because it arrives twice - embedded in the domain
+library for the report and through a font package for the screen - with the
+license text embedded beside the font files, and the application's own card
+texts, art and templates called out as original)
 
 **Sharp edges.**
 - Name the path each entry covers, so a reader can match a file on disk to its

@@ -9,15 +9,22 @@ controls well - a checkbox tree, a password box, a scrubber wired straight to
 the media element, encoded bytes shown in an image element - and the controls
 you end up writing yourself when no stock control fits: image-backed buttons,
 drawn widgets on a Skia canvas, splitter bars, floating option panels and
-panels generated from a descriptor or by reflection. A last group assembles
+panels generated from a descriptor or by reflection. Another group assembles
 the shell of an editor from a command model rather than from markup - menus,
 toolbars, keyboard shortcuts, a tabbed document area with a toolbox and side
 pads - together with the wiring that forwards pointer, wheel and keyboard
-input from the view into a model that references no UI types. Running through
-all of it is one question about the page's own code: how little of it there
-can be. So the file also covers the wiring itself - subscribing to a view
-model once and unsubscribing when the page unloads, passing a getter rather
-than capturing an object that is not there yet, applying layout values the
+input from the view into a model that references no UI types. A last group is
+about a page that draws a scene instead of arranging controls: a whole pointer
+gesture from press through drag to a snap onto the nearest target, a press told
+apart from a drag and a double click timed in the page, one method that rebuilds
+every size in the scene when the window changes, a control whose face is drawn
+in code inside a fixed design box, a fallback chain that gets run-time path
+geometry past a parser that rejects arcs, animations that end in the right value
+even where animation support is thin, and letter spacing faked with thin spaces.
+Running through all of it is one question about the page's own code: how little
+of it there can be. So the file also covers the wiring itself - subscribing to
+a view model once and unsubscribing when the page unloads, passing a getter
+rather than capturing an object that is not there yet, applying layout values the
 view model worked out, and routing a container control's own chrome back to
 the item's command. Reach for this file whenever you are writing markup or
 page code-behind, and when you need to know which small amount of work
@@ -77,6 +84,13 @@ conventions the code blocks follow.
 - [Build a row of buttons from a palette with one item template](#build-a-row-of-buttons-from-a-palette-with-one-item-template)
 - [Route a container's chrome button to the item's own command](#route-a-containers-chrome-button-to-the-items-own-command)
 - [Report a control's load failure with an event and a log line](#report-a-controls-load-failure-with-an-event-and-a-log-line)
+- [Drag a card across the scene and snap it to the nearest station](#drag-a-card-across-the-scene-and-snap-it-to-the-nearest-station)
+- [Tell a press from a drag and hand roll a double click](#tell-a-press-from-a-drag-and-hand-roll-a-double-click)
+- [Rebuild the whole scene geometry in one Relayout method](#rebuild-the-whole-scene-geometry-in-one-relayout-method)
+- [Draw a control face procedurally inside a fixed design box](#draw-a-control-face-procedurally-inside-a-fixed-design-box)
+- [Parse path data through a fallback chain that flattens arcs](#parse-path-data-through-a-fallback-chain-that-flattens-arcs)
+- [Begin every Storyboard inside a try that sets the final value](#begin-every-storyboard-inside-a-try-that-sets-the-final-value)
+- [Fake letter spacing with thin spaces](#fake-letter-spacing-with-thin-spaces)
 
 ## Related blueprints
 
@@ -176,7 +190,12 @@ parameter, parsed defensively so a typo disables the button rather than throwing
 and every other application's `Views/MainPage.xaml`;
 `JustBetweenUs/JustBetweenUs.WinUI/Views/MainPage.xaml` and
 `JustBetweenUs/JustBetweenUs.Wpf/Views/MainWindow.xaml` show the native heads
-binding the same view model with plain `{Binding ...}`
+binding the same view model with plain `{Binding ...}`,
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml`
+(the view model declared in `<Page.DataContext>`, `xmlns:d` aliasing the
+platform's data namespace for every `{d:Binding}`, and the page's own control
+namespace taking the `using:` form because that control compiles into the head
+beside the page while the view model comes from another assembly)
 
 **Sharp edges.**
 - Bindings in Skia XAML are written `{d:Binding ...}`. The native WinUI, WPF and
@@ -290,7 +309,12 @@ A list's own selection brushes are worth the same treatment:
 
 **Also shown by.**
 `KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml` (re-keyed
-slider brushes so the audio scrubber follows the palette)
+slider brushes so the audio scrubber follows the palette),
+`InannaRosette/src/InannaRosette.UI/App.xaml`
+(the whole `TextControl…` family and the whole `ContentDialog…` family redeclared
+from the same sixteen-color palette that is two sections above them in the same
+dictionary, so the header's text boxes and the application's own dialogs follow
+it with no retemplating at all)
 
 **Sharp edges.**
 - Page-level keys cover the page. Dialogs, pickers and the software keyboard open
@@ -4478,6 +4502,13 @@ private void OnViewModelPropertyChanged(object sender, PropertyChangedEventArgs 
 `PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs`
 `PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs`
 
+**Also shown by.**
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+(`WireViewModel()` called from both `DataContextChanged` and `Loaded` and
+returning immediately when the data context is the one already wired, so
+whichever arrives first wins and the other is a no-op; the single subscription
+exists only for the drawn rail chrome, which cannot be bound)
+
 **Related.**
 [Signal a non property model change to the view with a version counter](BLUEPRINTS-MVVM.md#signal-a-non-property-model-change-to-the-view-with-a-version-counter)
 is what this subscription is watching for, and why one property is enough.
@@ -4831,3 +4862,907 @@ is the control this failure path belongs to.
   thread; if yours is not, marshal first.
 - Debug output is not a report. It is invisible in a published build, which is
   exactly where a missing resource shows up.
+
+### Drag a card across the scene and snap it to the nearest station
+
+**When you want this.** Your page draws a scene rather than a form, and the user has
+to pick one of its objects up, move it about and let it go somewhere meaningful.
+You want the drop to land on the nearest target if it is close enough, and to be a
+real "dropped on nothing" answer if it is not.
+
+**The MVVM shape.** The gesture is the page's, and only the page's: pointer capture,
+the grab offset inside the object, the Z order, the drop shadow, the highlight on
+the target under the pointer. None of that is state anybody else can act on. What
+the page does not decide is what the drop *means* - it computes which station the
+object landed on and calls the view model, which owns the table and answers back
+through its bridge delegates. The page's last line of the gesture is a view model
+call and nothing else.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+private void OnCardPressed(object sender, PointerRoutedEventArgs e)
+{
+    var item = ItemOf(sender);
+    if (item is null) { return; }
+
+    var pp = e.GetCurrentPoint(ContentCanvas);
+    if (!pp.Properties.IsLeftButtonPressed) { return; }
+    e.Handled = true;
+    // ...
+    CloseDetail();
+
+    _dragItem = item;
+    _dragMoved = false;
+    _grab = new Point(pp.Position.X - Canvas.GetLeft(item.View), pp.Position.Y - Canvas.GetTop(item.View));
+    Canvas.SetZIndex(item.View, 900);
+    _dragging = item.View.CapturePointer(e.Pointer);
+}
+```
+
+The grab offset is taken once, at the press, against the same canvas every later
+coordinate is read in, so the object does not jump under the pointer. Capturing
+returns a bool, and that bool - not the press itself - is what says a drag is
+running.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+private int NearestStation(double x, double y)
+{
+    var best = -1;
+    var bestDistance = double.MaxValue;
+    var snap = _cardH * 0.8;
+    for (int i = 0; i < 9; i++)
+    {
+        var c = StationCentre(i);
+        var d = Math.Sqrt((c.X - x) * (c.X - x) + (c.Y - y) * (c.Y - y));
+        if (d < bestDistance) { bestDistance = d; best = i; }
+    }
+    return bestDistance <= snap ? best : -1;
+}
+
+private void OnCardReleased(object sender, PointerRoutedEventArgs e)
+{
+    var item = ItemOf(sender);
+    e.Handled = true;
+    try { ((UIElement)sender).ReleasePointerCapture(e.Pointer); }
+    catch (Exception) { /* capture may already be gone */ }
+
+    if (item is null || !_dragging) { EndDrag(); return; }
+
+    if (!_dragMoved)
+    {
+        EndDrag();
+        ShowDetail(item);
+        return;
+    }
+
+    var x = Canvas.GetLeft(item.View);
+    var y = Canvas.GetTop(item.View);
+    var target = NearestStation(x + _cardW / 2, y + _cardH / 2);
+    EndDrag();
+
+    // the view model decides what a drop on that station means; this page only reports it
+    if (target >= 0)
+    {
+        ViewModel?.PlaceOnStation(item.Model, target);
+    }
+    else
+    {
+        ViewModel?.ReturnToTray(item.Model, announce: false);
+    }
+}
+```
+
+`NearestStation` is the whole snap rule: the closest of the nine station centers,
+accepted only when it is inside an accept radius scaled to the card, and `-1`
+otherwise. Returning `-1` rather than the nearest station regardless is what makes
+"the user dropped this on the table, not on a petal" something the page can report
+honestly.
+
+A drag can also end without a release, and a move that nothing claimed can be
+taken for a window drag:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+private void OnCardCaptureLost(object sender, PointerRoutedEventArgs e)
+{
+    if (_dragging && _dragMoved && _dragItem is not null)
+    {
+        var item = _dragItem;
+        EndDrag();
+        if (item.Model.InTray) { LayoutTray(); } else { RepositionAllCards(); }
+    }
+    else
+    {
+        EndDrag();
+    }
+}
+// ...
+/// <summary>
+/// An unhandled pointer move bubbles out to the window manager, which on some heads then
+/// drags the window instead of leaving the scene alone. Card drags mark their own moves
+/// handled; this catches every other move over the app's own chrome.
+/// </summary>
+private void OnRootPointerMoved(object sender, PointerRoutedEventArgs e) => e.Handled = true;
+```
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+(`OnCardPressed`, `OnCardMoved`, `BeginDragVisuals`, `NearestStation`,
+`OnCardReleased`, `OnCardCaptureLost`, `EndDrag`)
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+(`PlaceOnStation`, `ReturnToTray`) and
+`src/InannaRosette.Core/Services/IReadingTableBridge.cs`
+
+**Sharp edges.**
+- `ReleasePointerCapture` is wrapped in a `try`, because by the time the release
+  arrives the capture may already have been taken away, and the exception would
+  abandon the rest of the handler - including the view model call.
+- Without `OnCardCaptureLost` a window that loses focus mid-drag leaves the object
+  stranded wherever the pointer abandoned it. Ending the drag is not enough on its
+  own: whichever region the object belongs to has to be laid out again, because the
+  object's position is now a drag position and nothing else will correct it.
+- `OnRootPointerMoved` sets `e.Handled = true` on every pointer move over the
+  application's own chrome. An unhandled move bubbles out to the window manager,
+  which on some heads reads it as a window drag. Card moves mark themselves handled
+  already; this catches the rest.
+- `EndDrag` runs before the view model call, not after, so the visual state is
+  settled by the time the bridge delegate comes back asking the page to re-place
+  the card.
+- The page never asks the view model where a card is. It reports the drop and is
+  told, through the bridge, what to draw.
+
+### Tell a press from a drag and hand roll a double click
+
+**When you want this.** One object on your scene has to answer three different
+gestures from the same pointer button: a click that opens something, a double click
+that changes the object, and a drag that moves it. Nothing in the markup can tell
+them apart, because which one is happening is not known until after the press.
+
+**The MVVM shape.** All three are resolved in the page, because all three are
+questions about pixels and clocks. Each one ends somewhere different: the click
+opens a panel the page builds, the double click calls the view model, and the drag
+ends in a view model call too. The view model is never told about presses, moves or
+milliseconds.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+// double click toggles the orientation
+var now = DateTime.UtcNow;
+if (ReferenceEquals(_lastClickItem, item) && (now - _lastClickAt).TotalMilliseconds < 420)
+{
+    _lastClickItem = null;
+    _lastClickAt = DateTime.MinValue;
+    CloseDetail();
+    ViewModel?.ToggleReversed(item.Model);
+    return;
+}
+_lastClickItem = item;
+_lastClickAt = now;
+```
+
+The double click is decided first, at the top of the press handler, before any drag
+bookkeeping happens. The state it needs is two fields - which object was last
+pressed and when - and both are cleared on a hit so that three presses in quick
+succession are one double click and one fresh press, not two overlapping ones.
+
+The press becomes a drag only once the pointer has moved far enough:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+private void OnCardMoved(object sender, PointerRoutedEventArgs e)
+{
+    if (!_dragging || _dragItem is null) { return; }
+    e.Handled = true;
+
+    var p = e.GetCurrentPoint(ContentCanvas).Position;
+    var x = p.X - _grab.X;
+    var y = p.Y - _grab.Y;
+
+    if (!_dragMoved)
+    {
+        var dx = x - Canvas.GetLeft(_dragItem.View);
+        var dy = y - Canvas.GetTop(_dragItem.View);
+        if (Math.Abs(dx) + Math.Abs(dy) < 4) { return; }
+        BeginDragVisuals(_dragItem);
+    }
+    // ...
+}
+```
+
+The threshold is a Manhattan distance against the object's current position rather
+than against the press point, which is what makes it survive a single coarse move
+event. Until it is crossed, `_dragMoved` stays false and the release takes the
+other road:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+private void OnCardReleased(object sender, PointerRoutedEventArgs e)
+{
+    var item = ItemOf(sender);
+    e.Handled = true;
+    try { ((UIElement)sender).ReleasePointerCapture(e.Pointer); }
+    catch (Exception) { /* capture may already be gone */ }
+
+    if (item is null || !_dragging) { EndDrag(); return; }
+
+    if (!_dragMoved)
+    {
+        EndDrag();
+        ShowDetail(item);
+        return;
+    }
+    // ...
+```
+
+And the double click ends in a complete view model transaction:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+/// <summary>
+/// Turns a card the other way up, which the page calls on a double click. A reversed card
+/// reads its reversed meaning, so the interpretation goes stale.
+/// </summary>
+/// <param name="card">The card to turn.</param>
+public void ToggleReversed(ReadingCard? card)
+{
+    if (card == null || !_cards.Contains(card)) { return; }
+
+    card.IsReversed = !card.IsReversed;
+    CardFlipped?.Invoke(card);
+    InvalidateInterpretation(hidePanel: false);
+    SetStatus($"{card.Card.Name} is now {(card.IsReversed ? "reversed" : "upright")}.");
+    RefreshCounts(refreshGuidance: false);
+}
+```
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+(`OnCardPressed`, `OnCardMoved`, `OnCardReleased`, `ShowDetail`)
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+(`ToggleReversed`)
+
+**Sharp edges.**
+- The double-click interval is a constant in the page, timed off `DateTime.UtcNow`.
+  It does not follow the desktop's own double-click setting, so a user who has
+  changed that setting gets this application's interval instead.
+- `DateTime.UtcNow`, not `DateTime.Now`: a local-time reading can jump backwards
+  at a daylight-saving transition and make the interval test nonsense.
+- The press handler returns early unless the left button is down, so a right-click
+  or a stylus barrel press never starts a drag and never counts towards a double
+  click.
+- The threshold has to be crossed before any visual lift happens, or a click that
+  wobbles by a pixel produces a shadow and a scale that then have to be undone.
+- The first press of a double click still opens nothing, because the release that
+  follows it sees `_dragMoved` false and shows the detail panel; the second press
+  closes that panel before calling the view model.
+
+### Rebuild the whole scene geometry in one Relayout method
+
+**When you want this.** Your page is a drawn scene on a `Canvas`, not a panel of
+controls, so nothing reflows itself. Every size in it - the panels, the objects,
+the radius of an arrangement, the position of each label - is arithmetic somebody
+has to redo whenever the window changes size. This differs from
+[Let the page do the layout arithmetic only it can do](BLUEPRINTS-ViewsAndControls.md#let-the-page-do-the-layout-arithmetic-only-it-can-do),
+where the arithmetic is split with the view model because the view model owns half
+the inputs: here every input is a pixel and the whole calculation stays in the page.
+
+**The MVVM shape.** One private method owns all of it, and two events call that one
+method: `SizeChanged` on the canvas and the page's `Loaded`. Nothing else
+recalculates geometry, and the view model contributes exactly one thing to it - a
+bound flag saying which panel is on show, so the method can skip drawing chrome
+nobody can see.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+private void OnContentSizeChanged(object sender, SizeChangedEventArgs e) => Relayout();
+
+private void Relayout()
+{
+    if (_viewModelDisposed) { return; }
+
+    var w = ContentCanvas.ActualWidth;
+    var h = ContentCanvas.ActualHeight;
+    if (w < 200 || h < 200) { return; }
+
+    //Everything below is about to be recomputed, and a blessing in flight was drawn for the
+    //  geometry that is going away; it ends here rather than finishing somewhere odd
+    EndCelebration();
+
+    _altarX = Margin_;
+    _altarY = Gap;
+    _altarH = h - Gap * 2;
+    _railX = w - Margin_ - RailWidth;
+    _altarW = Math.Max(320, _railX - Gap - _altarX);
+    _railY = Gap;
+    _railH = _altarH;
+
+    Place(AltarBorder, _altarX, _altarY, _altarW, _altarH);
+    Place(RailBorder, _railX, _railY, RailWidth, _railH);
+    Place(InterpretationBorder, _railX, _railY, RailWidth, _railH);
+    // the ScrollViewer on this head measures its child with an unbounded width, so the
+    // text column is pinned explicitly or long paragraphs run off the panel edge
+    InterpStack.Width = RailWidth - 50;
+
+    // card size: the rosette must fit in the altar with room for the station labels
+    var hFromHeight = (_altarH / 2 - 28) / 2.05;
+    var hFromWidth = (_altarW / 2 - 64) / 1.8625;
+    _cardH = Math.Clamp(Math.Min(hFromHeight, hFromWidth), 88, 176);
+    _cardW = Math.Round(_cardH * 0.625);
+    _cardH = Math.Round(_cardH);
+    _radius = Math.Round(_cardH * 1.55);
+
+    _centreX = _altarX + _altarW / 2;
+    _centreY = _altarY + _altarH / 2;
+
+    BuildOrnament();
+    BuildSlots();
+
+    // ...
+    RepositionAllCards();
+}
+```
+
+The order inside it is the point. Panels first, because the object size is derived
+from what the panels left; then the object size, clamped so the scene is neither
+unreadable nor absurd; then the radius as a multiple of that size; then everything
+that depends on all three. A guard at the top refuses to run against a canvas that
+has not been given a real size yet, which is what makes it safe to call from
+`Loaded` as well as from `SizeChanged`.
+
+The one piece of arithmetic worth reading on its own is how far out each label sits:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+/// <summary>
+/// How far out a station label must sit so its box clears the card box on that petal.
+/// The two rectangles are separated as soon as they clear on EITHER axis, so the smaller
+/// of the two required distances is enough — which keeps the diagonal labels tucked in.
+/// </summary>
+private double LabelRadius(double labelWidth, double angleDegrees)
+{
+    var radians = angleDegrees * Math.PI / 180.0;
+    var sin = Math.Abs(Math.Sin(radians));
+    var cos = Math.Abs(Math.Cos(radians));
+    var needX = sin > 0.02 ? (labelWidth / 2 + _cardW / 2 + 9) / sin : double.MaxValue;
+    var needY = cos > 0.02 ? (9 + _cardH / 2 + 11) / cos : double.MaxValue;
+    return _radius + Math.Min(needX, needY);
+}
+```
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+(`Relayout`, `Place`, `StationCentre`, `BuildOrnament`, `BuildSlots`,
+`LabelRadius`, `ComputeRailGeometry`, `RepositionAllCards`)
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml` (the `SizeChanged`
+handler on the scene canvas) and
+`src/InannaRosette.UI/Controls/Ornament.cs` (`Polar`)
+
+**Sharp edges.**
+- `Loaded` and `SizeChanged` both have to be wired. On some heads the first real
+  size arrives before `Loaded`, on others after, and a scene drawn only from one of
+  them is empty on the other.
+- The minimum-size guard is what keeps a transient zero or near-zero canvas from
+  producing negative widths that then have to be clamped everywhere downstream.
+- Recomputing everything means anything in flight was drawn for geometry that is
+  about to vanish. The method ends any running animation on its first lines rather
+  than letting it finish against coordinates that no longer exist.
+- Work for a layer that is currently collapsed is skipped and a staleness flag is
+  set instead, so the chrome is redrawn when that layer is shown again. Forget the
+  flag and a window resized while the other panel was up comes back drawn for the
+  old size.
+- A `ScrollViewer` on these heads measures its child with an unbounded width, so
+  the text column inside it is pinned to an explicit width here; without that,
+  long paragraphs run off the panel edge instead of wrapping.
+
+### Draw a control face procedurally inside a fixed design box
+
+**When you want this.** A control whose appearance is data - forty variants of the
+same design, each with its own text, colors and emblem - and which has to look
+right at any size from a thumbnail to a full card. Authoring forty XAML files is
+not the answer, and neither is a bitmap per variant.
+
+**The MVVM shape.** Not a view-model concern at all. The control is a `UserControl`
+with dependency properties for what varies, and everything it draws it builds in
+code into two `Canvas` layers held at one fixed design size inside a `Viewbox`. The
+control's own `Rebuild()` is the single entry point, called from the property
+changed callbacks and from `Loaded`, so there is one code path whatever changed.
+
+**Code.**
+
+```xml
+<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml -->
+<Grid x:Name="Shell" Width="104" Height="166" RenderTransformOrigin="0.5,0.5">
+    <Grid.RenderTransform>
+        <CompositeTransform x:Name="LiftTransform" TranslateX="0" TranslateY="0" ScaleX="1" ScaleY="1" />
+    </Grid.RenderTransform>
+
+    <Grid x:Name="FaceHost" RenderTransformOrigin="0.5,0.5">
+        <Grid.RenderTransform>
+            <CompositeTransform x:Name="FaceTransform" Rotation="0" ScaleX="1" ScaleY="1" />
+        </Grid.RenderTransform>
+        <Viewbox Stretch="Fill">
+            <Grid Width="250" Height="400">
+                <Canvas x:Name="BackCanvas" Width="250" Height="400" />
+                <Canvas x:Name="FaceCanvas" Width="250" Height="400" />
+            </Grid>
+        </Viewbox>
+    </Grid>
+    <!-- ... -->
+    <Canvas x:Name="Overlay" IsHitTestVisible="True" />
+</Grid>
+```
+
+The art is authored once at a single design size and the `Viewbox` does every
+scale. That is why nothing inside the drawing code ever consults the control's real
+width: the face at a thumbnail size and the face at full size are the same objects
+under a different transform. The two canvases are siblings so that turning the card
+over is a visibility swap, not a rebuild.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs
+private void BuildFace(Card card)
+{
+    var gold = Ornament.Brush(Ornament.Gold);
+    var goldDeep = Ornament.Brush(Ornament.GoldDeep);
+    var goldRule = Ornament.Brush(Ornament.GoldDeep, 0.55);
+    var goldFaint = Ornament.Brush(Ornament.GoldDeep, 0.30);
+    var secondary = Ornament.ToColor(card.SecondaryColor);
+    // ...
+    AddCornerFlourishes();
+
+    // numeral / suit band
+    FaceCanvas.Children.Add(Label(Ornament.Track(card.NumeralLabel), 24, 30, 96, 10, goldDeep));
+    FaceCanvas.Children.Add(Label(Ornament.TrackLight(card.SuitName), 96, 31, 130, 8.6, goldDeep, TextAlignment.Right));
+    FaceCanvas.Children.Add(Rect(24, 52, DW - 48, 1.4, 0, goldRule));
+    FaceCanvas.Children.Add(Rect(24, 56.5, DW - 48, 0.8, 0, goldFaint));
+
+    // medallion
+    const double mx = DW / 2, my = 166, mr = 74;
+    FaceCanvas.Children.Add(Circle(mx, my, mr, new RadialGradientBrush
+    {
+        Center = new Windows.Foundation.Point(0.5, 0.5),
+        GradientOrigin = new Windows.Foundation.Point(0.5, 0.42),
+        RadiusX = 0.5,
+        RadiusY = 0.5,
+        GradientStops =
+        {
+            new GradientStop { Color = Ornament.Lighten(secondary, 0.22), Offset = 0 },
+            new GradientStop { Color = secondary, Offset = 0.55 },
+            new GradientStop { Color = Ornament.ToColor(Ornament.Night), Offset = 1 },
+        },
+    }, gold, 1.8));
+    FaceCanvas.Children.Add(Circle(mx, my, mr - 7, null, goldFaint, 0.9));
+
+    AddEmblem(card, mx, my, mr * 1.46);
+    // ...
+```
+
+Every constant in there is in design-box units. A radial gradient whose origin sits
+above center gives the medallion a light source; mixing the card's own secondary
+color towards white for the inner stop and down to the background color for the
+outer one means one data field drives the whole medallion.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs
+private void ApplySize()
+{
+    var w = Math.Max(20, CardWidth);
+    var h = Math.Max(32, CardHeight);
+    Shell.Width = w;
+    Shell.Height = h;
+    Width = w;
+    Height = h;
+    GlowRect.Width = w + 6;
+    GlowRect.Height = h + 6;
+    HighlightRect.Width = w + 10;
+    HighlightRect.Height = h + 10;
+    FaceTransform.CenterX = w / 2;
+    FaceTransform.CenterY = h / 2;
+    LiftTransform.CenterX = w / 2;
+    LiftTransform.CenterY = h / 2;
+    BuildOverlay();
+}
+// ...
+/// <summary>Rebuild all the vector art. Safe to call repeatedly.</summary>
+public void Rebuild()
+{
+    FaceCanvas.Children.Clear();
+    BackCanvas.Children.Clear();
+    BuildBack();
+    if (Card is not null) { BuildFace(Card); }
+    ApplySize();
+    ApplyFacing();
+    ApplyOrientation(animate: false);
+}
+```
+
+`ApplySize()` is the only place in the control that touches real pixels, and what
+it resizes is the shell and the transform centers, never the art. `Rebuild()`
+clears both canvases before it draws, which is what makes it safe to call from a
+property changed callback that may fire several times before the control is ever
+shown.
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml`
+`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs`
+(`Rebuild`, `BuildFace`, `BuildBack`, `ApplySize`, `Rect`, `Circle`, `Label`,
+`PathBox`, `BuildOverlay`) and
+`src/InannaRosette.UI/Controls/Ornament.cs`
+
+**Sharp edges.**
+- The transform centers are set from the real size in `ApplySize()`, not from the
+  design box. Leave them at their defaults and a flip or a rotation pivots around
+  the wrong point at every size but one.
+- The overlay layer sits outside the transformed host, so the badges on a card that
+  has been turned upside down are still the right way up. Anything that must not
+  rotate with the art has to live outside the rotating element.
+- A face built from text that varies in length needs a size rule, not a fixed size:
+  the name here steps down through three sizes by character count so the block
+  always clears the band below it whether it sets on one line or two.
+- Font families are named explicitly on every hand-built text element. Styles in
+  the application resource dictionary do not reach elements created in code.
+- The emblem lookup is wrapped in a `try` that returns quietly, so a variant whose
+  art is missing draws a card with no emblem rather than throwing inside a property
+  changed callback.
+
+### Parse path data through a fallback chain that flattens arcs
+
+**When you want this.** You are building `Path` geometry from path mini-language
+strings at run time, and the parser behind that conversion is not the same on every
+head. One head accepts everything; another rejects elliptical arcs with "the arc
+must be based on a circle". You want one call that returns a usable geometry on all
+of them, and a log line that tells you which road it took without a line per shape.
+
+**The MVVM shape.** Not a view-model concern. The parse lives in one internal
+static method on the control that draws, so every caller in the application - card
+faces, backs, ornaments, overlay marks - goes through the same fallback chain and
+the same logger.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs
+/// <summary>Parse path mini-language into a Geometry (the XAML parser route, kept in one place).</summary>
+internal static Geometry ParseGeometry(string data)
+{
+    if (string.IsNullOrWhiteSpace(data)) { return new PathGeometry(); }
+
+    var parsed = TryParseGeometry(data);
+    if (parsed is not null) { return parsed; }
+
+    // This head's parser only accepts circular arcs; flatten every arc to beziers and retry.
+    var flattened = Ornament.ArcsToBeziers(data);
+    if (!ReferenceEquals(flattened, data))
+    {
+        parsed = TryParseGeometry(flattened);
+        if (parsed is not null)
+        {
+            if (!_geometryFallbackLogged)
+            {
+                _geometryFallbackLogged = true;
+                Log.LogWarning("Arcs flattened to beziers for this head's path parser.");
+            }
+            return parsed;
+        }
+    }
+
+    Log.LogError("Geometry parse failed for \"{PathData}\".",
+        data.Length <= 60 ? data : data[..60] + "\u2026");
+    return new PathGeometry();
+}
+```
+
+The chain is three steps, each cheaper than the one before it is general. The
+binding helper's converter first, then the XAML reader, then the same string with
+every arc rewritten as cubics and both parsers tried again:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs
+private static Geometry? TryParseGeometry(string data)
+{
+    try { return (Geometry)Microsoft.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(typeof(Geometry), data); }
+    catch (Exception) { /* try the reader */ }
+
+    try
+    {
+        const string ns = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
+        var xaml = $"<Path xmlns=\"{ns}\" Data=\"{System.Security.SecurityElement.Escape(data)}\" />";
+        if (Microsoft.UI.Xaml.Markup.XamlReader.Load(xaml) is Microsoft.UI.Xaml.Shapes.Path p && p.Data is not null)
+        {
+            return p.Data;
+        }
+    }
+    catch (Exception) { /* caller reports */ }
+
+    return null;
+}
+```
+
+The rewrite itself refuses to guess. It returns the original string untouched when
+there is no arc to rewrite, and also when the path uses relative commands, because
+tracking a current point through relative commands is a different job from the one
+it was written for:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/Ornament.cs
+/// <summary>
+/// Rewrite every absolute elliptical-arc command (A) in a path as cubic beziers.
+/// This head's path parser only accepts circular arcs ("the arc must be based on a circle,
+/// not an ellipse"), and the deck art contains real ellipses, so arcs are flattened before
+/// they reach it. Returns the original string when there is nothing to do, or when the path
+/// uses relative commands (which are never produced by the deck art or by this class).
+/// </summary>
+public static string ArcsToBeziers(string data)
+{
+    if (string.IsNullOrWhiteSpace(data) || data.IndexOf('A') < 0) { return data; }
+    foreach (var relative in "mlhvcsqtaz")
+    {
+        if (data.IndexOf(relative) >= 0) { return data; }
+    }
+
+    var tokens = System.Text.RegularExpressions.Regex.Matches(
+        data, @"([MLHVCSQTAZ])([^MLHVCSQTAZ]*)");
+    if (tokens.Count == 0) { return data; }
+
+    // ...
+```
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs`
+(`ParseGeometry`, `TryParseGeometry`, `_geometryFallbackLogged`)
+`InannaRosette/src/InannaRosette.UI/Controls/Ornament.cs`
+(`ArcsToBeziers`, `ArcSegment`, `ParseNumbers`, `CirclePath`)
+
+**Sharp edges.**
+- The fallback is logged once per process, behind a static bool. Logging it per
+  shape produces a line for every layer of every card and buries everything else.
+- The failure log truncates the path data before printing it. Path strings run to
+  hundreds of characters and an untruncated one makes the log unreadable.
+- The final fallback returns an empty `PathGeometry`, not null and not an
+  exception, so a shape that cannot be parsed is a missing ornament rather than a
+  page that does not draw.
+- The string handed to the XAML reader is escaped, because path data is put into an
+  attribute value and an unescaped one is malformed markup.
+- The rewrite is not free: the safer route for art you author yourself is to avoid
+  arcs entirely. `Ornament.CirclePath` writes circles as four cubics for exactly
+  that reason, so the shapes this application generates never need the fallback at
+  all - only the authored art does.
+
+### Begin every Storyboard inside a try that sets the final value
+
+**When you want this.** You are animating with `Storyboard` on an application that
+ships to several heads, and animation support is not equally deep on all of them.
+You want the motion where it works, and the correct end state everywhere else -
+without the page filling up with capability checks.
+
+**The MVVM shape.** Not a view-model concern. Animation is a page and control
+matter end to end. The rule is local and mechanical: every `Begin()` call in the
+application sits inside a `try`, and every `catch` sets by hand the value the
+animation would have arrived at.
+
+**Code.**
+
+```xml
+<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml -->
+<UserControl.Resources>
+    <Storyboard x:Name="FlipOutStory">
+        <DoubleAnimation Storyboard.TargetName="FaceTransform" Storyboard.TargetProperty="ScaleX"
+                         From="1" To="0" Duration="0:0:0.13" />
+    </Storyboard>
+    <Storyboard x:Name="FlipInStory">
+        <DoubleAnimation Storyboard.TargetName="FaceTransform" Storyboard.TargetProperty="ScaleX"
+                         From="0" To="1" Duration="0:0:0.16" />
+    </Storyboard>
+    <Storyboard x:Name="RotateStory">
+        <DoubleAnimation x:Name="RotateStep" Storyboard.TargetName="FaceTransform"
+                         Storyboard.TargetProperty="Rotation"
+                         From="0" To="180" Duration="0:0:0.26" />
+    </Storyboard>
+    <!-- ... -->
+</UserControl.Resources>
+```
+
+The storyboards are declared in markup, one per motion, and started from code. A
+flip is two of them with a face swap in between, and each stage carries its own
+fallback:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs
+/// <summary>Flip a face-down card up: ScaleX 1 to 0, swap the face, then 0 to 1.</summary>
+public void FlipToFaceUp()
+{
+    if (IsFaceUp) { return; }
+    try
+    {
+        void OnDone(object? s, object e)
+        {
+            FlipOutStory.Completed -= OnDone;
+            IsFaceUp = true;
+            try { FlipInStory.Begin(); } catch (Exception) { FaceTransform.ScaleX = 1; }
+        }
+        FlipOutStory.Completed += OnDone;
+        FlipOutStory.Begin();
+    }
+    catch (Exception)
+    {
+        IsFaceUp = true;
+        FaceTransform.ScaleX = 1;
+    }
+}
+
+/// <summary>Fade/slide the card in (used by auto-lay and by drawing into the tray).</summary>
+public void PlayAppear()
+{
+    try { AppearStory.Begin(); }
+    catch (Exception) { Shell.Opacity = 1; }
+}
+```
+
+The same rule applies to a storyboard built in code, where the fallback is also the
+line that guarantees the value even when the animation did run:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+private static void FadeIn(UIElement element, bool visible)
+{
+    try
+    {
+        var story = new Microsoft.UI.Xaml.Media.Animation.Storyboard();
+        var animation = new Microsoft.UI.Xaml.Media.Animation.DoubleAnimation
+        {
+            From = visible ? 0 : 1,
+            To = visible ? 1 : 0,
+            Duration = new Duration(TimeSpan.FromMilliseconds(220)),
+        };
+        Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(animation, element);
+        Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(animation, "Opacity");
+        story.Children.Add(animation);
+        story.Begin();
+        element.Opacity = visible ? 1 : 0;
+    }
+    catch (Exception)
+    {
+        element.Opacity = visible ? 1 : 0;
+    }
+}
+```
+
+Notice that `element.Opacity` is set inside the `try` as well, right after
+`Begin()`. The animation and the assignment agree about the destination, so the
+element is in the right state whether the storyboard ran, ran and was interrupted,
+or never started.
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml` and
+`Controls/CardView.xaml.cs` (`FlipToFaceUp`, `PlayAppear`, `ToggleReversed`,
+`ApplyOrientation`, the hover handlers)
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs` (`FadeIn`, `ShowDetail`,
+`Ease`)
+
+**Sharp edges.**
+- A `Completed` handler unsubscribes itself as its first statement. A storyboard is
+  a resource that outlives the run, so a handler left attached fires again on the
+  next one.
+- The `catch` has to set the value the animation targeted, not the value it started
+  from. A fallback that sets the wrong end leaves the control visibly wrong instead
+  of merely unanimated.
+- Where the motion is a multi-step move of several elements rather than a property
+  ramp, this application drives it from an awaited per-frame loop instead, timed
+  off a stopwatch rather than off a count of frames, because a delay is only ever
+  at least as long as it was asked for.
+- A generation counter guards those loops: the page increments it whenever the
+  scene is rebuilt or the page unloads, and each frame checks that its generation
+  is still current before touching anything.
+
+### Fake letter spacing with thin spaces
+
+**When you want this.** Your design calls for tracked small capitals - a title, a
+label, a badge - and the text element you are drawing into ignores character
+spacing on the heads you ship to.
+
+**The MVVM shape.** Not a view-model concern: it is a typography helper, and it
+belongs beside the palette tokens in the static class the page and the controls
+share. It returns a string, so it composes with anything that takes text - a bound
+property, a hand-built text element, a control's own caption.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/Ornament.cs
+// ---------------------------------------------------------------- typography
+private const char ThinSpace = ' ';
+private const char HairSpace = ' ';
+
+/// <summary>
+/// TextBlock.CharacterSpacing is ignored on this head, so "tracked caps" are faked by
+/// inserting thin spaces between letters. Existing spaces become a wider gap.
+/// </summary>
+public static string Track(string? text, bool upper = true)
+{
+    if (string.IsNullOrEmpty(text)) { return string.Empty; }
+    var source = upper ? text.ToUpperInvariant() : text;
+    var sb = new StringBuilder(source.Length * 2);
+    for (int i = 0; i < source.Length; i++)
+    {
+        var ch = source[i];
+        if (i > 0)
+        {
+            sb.Append(char.IsWhiteSpace(ch) || char.IsWhiteSpace(source[i - 1]) ? HairSpace : ThinSpace);
+        }
+        sb.Append(ch == ' ' ? ' ' : ch);
+    }
+    return sb.ToString();
+}
+
+/// <summary>Light tracking (hair spaces only) for longer strings that must still fit.</summary>
+public static string TrackLight(string? text, bool upper = true)
+{
+    if (string.IsNullOrEmpty(text)) { return string.Empty; }
+    var source = upper ? text.ToUpperInvariant() : text;
+    var sb = new StringBuilder(source.Length * 2);
+    for (int i = 0; i < source.Length; i++)
+    {
+        if (i > 0) { sb.Append(HairSpace); }
+        sb.Append(source[i]);
+    }
+    return sb.ToString();
+}
+```
+
+Two widths of space, not one. A thin space between letters and a wider hair space
+where the source already had a word break, so the words stay legible as words
+instead of dissolving into one run of letters. Callers ask for the treatment by
+name at the point the string is made:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+private static string StationLabel(int index)
+{
+    var positions = RosetteSpread.Positions;
+    if (index < 0 || index >= positions.Count)
+    {
+        return Ornament.Track(index == 0 ? "The Heart" : $"{Card.ToRoman(index)}");
+    }
+
+    var pos = positions[index];
+    return index == 0
+        ? Ornament.Track(pos.Title)
+        : Ornament.Track($"{Card.ToRoman(index)} · {pos.Title}");
+}
+```
+
+The report side of this application does the same job properly, drawing one glyph
+at a time and advancing the pen by the measured width plus a tracking amount,
+because a graphics surface has a pen position and a text element does not. The
+screen version is the compromise that a text element forces.
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.UI/Controls/Ornament.cs` (`Track`, `TrackLight`)
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs` (`StationLabel`,
+`BuildChips`, the constructor's title and badge text)
+`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs` (`BuildFace`,
+`BuildBack`) and
+`src/libs/InannaRosette.Reading/Services/Pdf/PdfText.cs` (`DrawTracked`)
+
+**Sharp edges.**
+- A tracked string is display text only. It is roughly twice as long as the
+  original, so never round-trip it, search it, compare it or save it: track at the
+  moment the string reaches the text element and nowhere earlier.
+- The inserted characters are real spaces from the space family, which means a text
+  element may break a line inside a tracked word. Tracked text wants
+  `TextWrapping="NoWrap"` and a box wide enough for it.
+- Measurement gets harder, not easier. `BuildChips` lays out its keyword pills by
+  estimating each one's width from the untracked character count, because there is
+  no wrapping panel here and the tracked string's real width is not something the
+  page can ask for before the element exists. The estimate is deliberately generous
+  so a row breaks early rather than overflowing.
+- An embedded font that has no thin space glyph draws a missing-glyph box between
+  every pair of letters. Prove the treatment with the font you actually ship before
+  designing around it.

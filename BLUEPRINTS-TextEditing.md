@@ -43,9 +43,21 @@ geometry the editor needs. The UI layer never touches the add-in.
 
 ```csharp
 // From CodeBrix.Samples/Pinta.Brix/src/libs/Pinta.Brix.Engine/Classes/Re-editable/Text/TextLayout.cs
+/// <summary>
+/// The engine's text as the layout sees it: lines joined with a single '\n'
+/// so every line break is exactly one char, matching the "+1 for the
+/// newline" that PositionToCharIndex and CharIndexToPosition assume.
+/// TextEngine.ToString() joins with Environment.NewLine, which is "\r\n" on
+/// Windows, and that put every line after the first out of step with the
+/// layout's char indices.
+/// </summary>
+private string LayoutText => string.Join ('\n', engine.Lines);
+
+// ...
+
 private TextLayoutResult BuildResult ()
 {
-	string text = engine.ToString ();
+	string text = LayoutText;
 	is_empty = text.Length == 0;
 
 	FontDescription font = engine.Font;
@@ -133,6 +145,10 @@ public static IReadOnlyList<string> Families {
   meaningful, with a private flag remembering the truth.
 - Indices are .NET character indices, so a surrogate pair is two of them; the
   tests cover exactly that round trip.
+- The string handed to the layout is the engine's lines joined with a single
+  newline character, not the engine's own string form, which joins with the
+  platform newline. Where that is two characters, every line after the first
+  falls out of step with the layout's character indices.
 - Font weight is clamped onto the add-in's own scale.
 - The add-in has no text-decoration concept, so underline rules are derived from
   per-line selection rectangles.

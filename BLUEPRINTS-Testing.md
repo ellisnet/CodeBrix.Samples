@@ -13,10 +13,14 @@ fixtures, synthetic inputs built rather than committed, stub message handlers,
 mocks over rendering and API seams - along with headless graphics testing,
 golden-image comparison, opt-in live tests, isolating a process-global store,
 and proving that a library's own registration method registers what it
-promises. They end with the runs that need the whole application: a scripted
+promises. They go on to the runs that need the whole application: a scripted
 run on a real head, kept in a library behind a narrow interface onto the page,
 and an open-ended diagnostic hook that drives a live application from an
-environment variable. Reach for this file when you are adding a test project to
+environment variable. The last pair is about assertions that can be exact:
+fixtures pinned to fixed identifiers and a fixed timestamp, so the suite can
+assert the sentence a generator wrote and the file name it suggested, and a
+parser driven through a counting sink so its grammar is tested with no output
+document at all. Reach for this file when you are adding a test project to
 an application, or when something you need to prove will not run in a bare test
 host.
 
@@ -56,6 +60,8 @@ conventions the code blocks follow.
 - [Move a scripted run into the library behind a surface interface](#move-a-scripted-run-into-the-library-behind-a-surface-interface)
 - [Prove a registration extension registers what it promises](#prove-a-registration-extension-registers-what-it-promises)
 - [Drive a running application from an environment variable and report to the log](#drive-a-running-application-from-an-environment-variable-and-report-to-the-log)
+- [Pin every fixture to fixed ids and a fixed timestamp so tests can assert exact sentences](#pin-every-fixture-to-fixed-ids-and-a-fixed-timestamp-so-tests-can-assert-exact-sentences)
+- [Test a parser through a counting sink that produces no document](#test-a-parser-through-a-counting-sink-that-produces-no-document)
 
 ## Related blueprints
 
@@ -224,6 +230,11 @@ public void TryCopyLatestFrame_returns_false_before_any_frame()
 `CodeBrixVideoTool` - these test projects carry the same two properties and
 the same comment. (`JustBetweenUs/tests/JustBetweenUs.Encryption.Tests` sets
 neither property explicitly.)
+`InannaRosette/tests/libs/InannaRosette.Reading.Tests/InannaRosette.Reading.Tests.csproj`
+and `InannaRosette/global.json`
+(the runner selected once for the whole folder in `global.json` and again in the
+csproj, whose `AssemblyName` carries a comment pinning it to the exact name the
+library's `InternalsVisibleTo` grants)
 
 **Sharp edges.**
 - The output type must be `Exe`. The comment appears in every one of these
@@ -372,6 +383,10 @@ internal static float[] TestAnchorsY => AnchorsY;
 `NotionDocumentCreator`, `KenneyAssetBrowser`, `CodeBrixVideoTool`,
 `PolyHavenBrowser` (where it is also what lets a test reach the client factory's
 internal constructor).
+`InannaRosette/src/libs/InannaRosette.Reading/InternalsVisibleTo.cs`
+(its own file at the library root holding nothing but the attribute, which is
+what makes the interpretation templates, the page-flow cursor and the PDF palette
+testable while they stay off the public surface)
 
 **Sharp edges.**
 - Every library that has tests carries the file, even one whose tests only touch
@@ -990,6 +1005,14 @@ public async Task Compose_and_render_fixture_offline_produces_multipage_pdf()
 
 **Where to look.**
 `WikipediaPublisher/Tests/WikipediaPublisher.RenderArticle.Tests/Services/ArticleRenderServiceTests.cs`
+
+**Also shown by.**
+`InannaRosette/tests/libs/InannaRosette.Reading.Tests/PdfReportBuilderTests.cs`
+(the `%PDF-` signature, a plausible lower bound on length, `/Font` and `/Page`
+present and the embedded typeface name found in the bytes - plus the comparative
+assertions that a fuller reading produces a longer document than a single-card
+one, which is how the sections are shown to be there at all without a fixture to
+diff against)
 
 **Sharp edges.**
 - Asserting on the format signature plus a page count is a cheap, stable way to
@@ -2606,6 +2629,13 @@ public void AddRenderArticle_registers_the_article_render_service_as_a_singleton
 `WikipediaPublisher/Tests/WikipediaPublisher.RenderArticle.Tests/RegisterServicesTests.cs`
 `WikipediaPublisher/WikipediaPublisher.RenderArticle/RegisterServices.cs`
 
+**Also shown by.**
+`InannaRosette/tests/libs/InannaRosette.Reading.Tests/RegisterServicesTests.cs`
+(a real `ServiceCollection` and provider asserting that all three services
+resolve, that they resolve to the concrete types the library ships, that each is
+a singleton, and that calling the extension twice neither duplicates a
+registration nor changes what comes back)
+
 **Sharp edges.**
 - Call the library's own method from the fixture. A fixture that registers the
   implementation itself proves the test's wiring and nothing about the
@@ -2714,3 +2744,307 @@ and `Report`, called from the hosted start once the boot sequence has returned)
 - Read the variables once, at one place in the startup, and do nothing at all when
   they are unset. That is what makes a hook like this safe to leave in the shipped
   application.
+
+### Pin every fixture to fixed ids and a fixed timestamp so tests can assert exact sentences
+
+**When you want this.** The code under test writes prose, names files or produces
+a document, and you want the suite to assert the exact words rather than "the
+text is not empty". That is only possible if every input the output is derived
+from is a constant: the same cards, the same positions, the same day, every run
+and every machine.
+
+**The MVVM shape.** Not a view-model concern. One internal static class in the
+test project owns every fixture and every assertion helper. Tests name a builder
+(`FullReading()`, `PartialReading()`) rather than assembling their own data, and
+the builders take the one or two values a test actually varies as optional
+parameters, so the rest stays constant.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/tests/libs/InannaRosette.Reading.Tests/TestData.cs
+internal static class TestData
+{
+    /// <summary>A fixed timestamp, so file names and serialized documents are reproducible.</summary>
+    public static readonly DateTime Created = new(2026, 9, 13, 10, 30, 0, DateTimeKind.Unspecified);
+
+    /// <summary>The nine card ids used for the "full rosette" fixture, station 0 first.</summary>
+    public static readonly int[] FullRosetteCardIds = [1, 2, 7, 12, 25, 30, 33, 18, 40];
+
+    /// <summary>The stations that are laid reversed in the "full rosette" fixture.</summary>
+    public static readonly int[] FullRosetteReversedStations = [2, 5, 8];
+
+    /// <summary>Builds one placement from a station index, a card id and an orientation.</summary>
+    public static PlacedCard Place(int positionIndex, int cardId, bool reversed = false)
+    {
+        var position = RosetteSpread.At(positionIndex)
+            ?? throw new ArgumentOutOfRangeException(nameof(positionIndex));
+        var card = DeckData.ById(cardId)
+            ?? throw new ArgumentOutOfRangeException(nameof(cardId));
+        return new PlacedCard(position, card, reversed);
+    }
+
+    /// <summary>An empty reading with a querent and a question but no cards.</summary>
+    public static RosetteReading EmptyReading(string querent = "Jeremy", string question = "What should I attend to?") =>
+        new() { Created = Created, Querent = querent, Question = question };
+
+    /// <summary>All nine stations filled, three of them reversed. Always the same cards.</summary>
+    public static RosetteReading FullReading(
+        string querent = "Jeremy",
+        string question = "What should I attend to this season?")
+    {
+        var reading = EmptyReading(querent, question);
+        for (var i = 0; i < 9; i++)
+        {
+            reading.Placements.Add(Place(i, FullRosetteCardIds[i], FullRosetteReversedStations.Contains(i)));
+        }
+        return reading;
+    }
+    // ...
+}
+```
+
+Because the day is a constant, the file name the report suggests is a value the
+test can write down in full:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/tests/libs/InannaRosette.Reading.Tests/PdfReportBuilderTests.cs
+    [Fact]
+    public void SuggestedFileName_names_the_querent_and_the_day()
+    {
+        //Arrange
+        var interpretation = TestData.Interpret(TestData.FullReading("Jeremy", "What now?"));
+
+        //Act
+        var name = TestData.Builder().SuggestedFileName(interpretation);
+
+        //Assert
+        name.Should().Be("Rosette-Reading-Jeremy-2026-09-13.pdf");
+    }
+```
+
+And because the cards are constants, so is every sentence written from them -
+the closing line character for character, and the heading each station gets:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/tests/libs/InannaRosette.Reading.Tests/ReadingInterpreterTests.cs
+    [Fact]
+    public void a_full_reading_ends_with_the_closing_blessing()
+    {
+        //Act
+        var interpretation = TestData.Interpret(TestData.FullReading());
+
+        //Assert - the exact line, character for character
+        interpretation.Closing.Should().Be("~ Blessed is the Queen of Heaven ~ Inanna Zami ~");
+        interpretation.Closing.Should().Be(ReadingInterpreter.ClosingBlessing);
+    }
+    // ...
+    [Fact]
+    public void a_petal_heading_carries_its_roman_numeral_and_the_heart_does_not()
+    {
+        //Act
+        var interpretation = TestData.Interpret(TestData.FullReading());
+
+        //Assert
+        interpretation.Positions[0].Heading.Should().StartWith("The Heart");
+        interpretation.Positions[1].Heading.Should().StartWith("I · Heaven");
+        interpretation.Positions[8].Heading.Should().StartWith("VIII · The Gift");
+    }
+```
+
+The same file also holds the assertion helpers the fixtures imply - `AllText()`,
+which flattens a whole interpretation into one searchable string, and
+`ContainsAscii()` / `CountAscii()`, which look for a run of bytes inside a
+generated document - so no test file writes its own scanner and every test
+compares the same way.
+
+**Where to look.**
+`InannaRosette/tests/libs/InannaRosette.Reading.Tests/TestData.cs`
+`InannaRosette/tests/libs/InannaRosette.Reading.Tests/ReadingInterpreterTests.cs`,
+`ReadingSerializerTests.cs` (whose `HandWritten` constant is the same idea for a
+document arriving from outside: a literal JSON document with the same fixed ids,
+positions and timestamp) and
+`PdfReportBuilderTests.cs`
+
+**Sharp edges.**
+- The fixtures name cards by `Card.Id`, which is a dense 1-based index into the
+  deck. Inserting a card in the middle of the deck data re-points every fixture,
+  and every exact sentence and heading the suite asserts moves with it. That is
+  the cost of the approach and it is worth writing down where the deck is
+  defined.
+- The timestamp has to be a constant, not `DateTime.Now`. A file name carrying
+  the day is assertable only because the day never changes; seed it from a clock
+  and the test silently degrades into "the name ends in .pdf".
+- Determinism has to reach all the way down. The interpreter here derives its
+  seed from the placements alone - station index, card id, orientation - so fixed
+  ids are what make the prose reproducible. A single `Random` or `DateTime` read
+  anywhere in the generator and no exact-sentence assertion can be written at all.
+- Let the builders take the varying values as optional parameters
+  (`FullReading("Enheduanna", "Should I finish the hymn?")`) rather than adding a
+  builder per test. A test that cares about the title then changes the title and
+  nothing else, and the nine cards behind it stay the same nine cards.
+
+### Test a parser through a counting sink that produces no document
+
+**When you want this.** You have written a parser whose only output is calls into
+a graphics API - a path, a canvas, a document page - and you want the grammar
+under test without constructing any of that. Every command form, every
+number-scanning quirk and every malformed input should be a one-line assertion
+that needs no output object at all.
+[Make a byte pump testable by writing to a sink interface instead of a control](BLUEPRINTS-Testing.md#make-a-byte-pump-testable-by-writing-to-a-sink-interface-instead-of-a-control)
+puts the same seam between a library and a control so tests can drive it with a
+fake; this recipe is the smaller, inward-facing version of the idea: the sink is
+private to the parser, the second implementation ships inside the production
+type, and the one method that reaches it exists for no reason but testing.
+
+**The MVVM shape.** Not a view-model concern. The parser drives a private `ISink`
+rather than the graphics type directly. One implementation builds the real
+geometry; a second counts what it is asked to draw and validates the numbers. A
+single public method wraps the counting one and says in its own doc comment that
+it is for the self-test.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs
+    /// <summary>
+    /// Parses <paramref name="pathData"/> and reports the number of drawing segments produced.
+    /// Throws <see cref="FormatException"/> on malformed input; used by the self-test.
+    /// </summary>
+    public static int CountSegments(string pathData)
+    {
+        var counter = new SegmentCounter();
+        Parse(pathData, counter);
+        return counter.Segments;
+    }
+
+    /// <summary>Receives the flattened path, in source coordinates.</summary>
+    private interface ISink
+    {
+        void MoveTo(double x, double y);
+        void LineTo(double x, double y);
+        void CurveTo(double c1X, double c1Y, double c2X, double c2Y, double x, double y);
+        void Close();
+    }
+```
+
+The counting sink is not a stub. It is the only implementation that checks the
+coordinates, because the real one hands them to a graphics type that would accept
+a `NaN` and produce a silently empty figure:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs
+    private sealed class SegmentCounter : ISink
+    {
+        public int Segments { get; private set; }
+
+        public void MoveTo(double x, double y) => Check(x, y);
+
+        public void LineTo(double x, double y)
+        {
+            Check(x, y);
+            Segments++;
+        }
+
+        public void CurveTo(double c1X, double c1Y, double c2X, double c2Y, double x, double y)
+        {
+            Check(c1X, c1Y);
+            Check(c2X, c2Y);
+            Check(x, y);
+            Segments++;
+        }
+
+        public void Close() => Segments++;
+
+        private static void Check(double x, double y)
+        {
+            if (double.IsNaN(x) || double.IsNaN(y) || double.IsInfinity(x) || double.IsInfinity(y))
+            {
+                throw new FormatException("Path produced a non-finite coordinate.");
+            }
+        }
+    }
+```
+
+A segment count turns out to be a surprisingly sharp assertion. It says how a
+command was interpreted, not merely that it was accepted - an arc becomes a known
+number of curves, a degenerate arc becomes a line, an arc that goes nowhere
+becomes nothing, and two spellings of the same figure have to agree:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/tests/libs/InannaRosette.Reading.Tests/SvgPathToPdfTests.cs
+    [Fact]
+    public void a_half_circle_arc_is_emitted_as_two_quarter_turns()
+    {
+        //Act
+        var segments = SvgPathToPdf.CountSegments("M20,50 A30,30 0 0 1 80,50");
+
+        //Assert - pieces of at most ninety degrees
+        segments.Should().Be(2);
+    }
+    // ...
+    [Fact]
+    public void an_implicit_line_to_follows_a_move_to()
+    {
+        //Arrange - the second and third coordinate pairs are implicit L commands
+        var explicitForm = SvgPathToPdf.CountSegments("M10,10 L20,20 L30,30");
+
+        //Act
+        var implicitForm = SvgPathToPdf.CountSegments("M10,10 20,20 30,30");
+
+        //Assert
+        implicitForm.Should().Be(explicitForm);
+    }
+```
+
+The refusals are a table, and each row names the fragment of the message the
+parser has to produce, so a rewrite that starts accepting nonsense fails loudly:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/tests/libs/InannaRosette.Reading.Tests/SvgPathToPdfTests.cs
+    [Theory]
+    [InlineData("!!!", "must begin with a command")]
+    [InlineData("hello", "must begin with a move-to")]
+    [InlineData("L10,10", "must begin with a move-to")]
+    [InlineData("M10,10 Z 5", "Unexpected number after a close-path")]
+    [InlineData("M10,10 L", "ended while a number was expected")]
+    [InlineData("M10,10 L,,", "ended while a number was expected")]
+    [InlineData("M10,10 Lx", "Expected a number")]
+    [InlineData("M0,0 A5,5 0 2 0 10,10", "Arc flag must be 0 or 1")]
+    [InlineData("M0,0 A5,5 0 1", "ended while an arc flag was expected")]
+    public void malformed_path_data_is_rejected_with_a_format_exception(string pathData, string messageFragment)
+    {
+        //Act
+        var thrown = Record.Exception(() => SvgPathToPdf.CountSegments(pathData));
+
+        //Assert
+        thrown.Should().BeOfType<FormatException>();
+        thrown.Message.Should().Contain(messageFragment);
+    }
+```
+
+The same counting method is what lets the suite sweep the application's whole
+corpus of art in two tests: every layer of every emblem, and every layer of the
+shared ornaments, parsed and required to produce at least one segment.
+
+**Where to look.**
+`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs`
+(`CountSegments`, `ISink`, `Builder` and `SegmentCounter`)
+`InannaRosette/tests/libs/InannaRosette.Reading.Tests/SvgPathToPdfTests.cs`
+
+**Sharp edges.**
+- Count the segments the sink is asked for, not the objects the graphics type
+  ends up holding. The real builder drops a zero-length line and re-opens a
+  sub-path after a close; if the assertion went through the built object the test
+  would be asserting the graphics library's behavior rather than the parser's.
+- Decide what a close-path counts as and write it into a test. Here `Close()`
+  increments, so a four-sided figure drawn with three line commands and a `Z`
+  counts four, and the test that says so is the documentation for everyone who
+  writes the next assertion.
+- The counting sink must be the strict one. Validation that lives only in the
+  test implementation is validation the shipped path never gets, so keep it to
+  checks whose failure means the input was malformed - a non-finite coordinate -
+  rather than checks about how the output is used.
+- A public method that exists for the self-test is worth saying so in its doc
+  comment. Otherwise it reads as API surface, and the next person adds an
+  overload to it.

@@ -2,7 +2,7 @@
 
 InannaRosette is "Rosette of Inanna", an oracle deck of the Divine Feminine of Sumer and
 Akkad laid out on a nine-station spread. The window is one page. On the left an altar
-carries an eight-petalled rosette drawn in gold hairlines: **The Heart** at the centre and
+carries an eight-petalled rosette drawn in gold hairlines: **The Heart** at the center and
 eight petals clockwise from the top - Heaven, The Morning Star, The Storehouse, The
 Descent, The Great Below, The Return, The Evening Star and The Gift. On the right a rail
 holds the deck stack and a fanned tray of whatever has been drawn. Clicking the stack (or
@@ -75,8 +75,8 @@ that a card may do.
 - How three panes are swapped with `Visibility`-typed computed properties and no converter
   anywhere in the application:
   [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties).
-- How a view model that hands out nine delegates to the page releases every one of them,
-  along with its ten commands:
+- How a view model that hands out eleven delegates to the page releases every one of
+  them, along with its ten commands:
   [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 - How the page keeps exactly one subscription to the view model for the chrome that cannot
   be bound, wired from whichever of `DataContextChanged` and `Loaded` arrives first:
@@ -119,6 +119,85 @@ that a card may do.
   [Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project),
   [Prove a registration extension registers what it promises](../BLUEPRINTS-Testing.md#prove-a-registration-extension-registers-what-it-promises),
   [Assert on a generated document without a golden file](../BLUEPRINTS-Testing.md#assert-on-a-generated-document-without-a-golden-file).
+- How three private fields and three transaction methods hold the whole scene while the
+  page owns nothing but the visuals, told what changed through a set of `Action` delegates:
+  [Keep the whole table in the view model and tell the page what changed](../BLUEPRINTS-MVVM.md#keep-the-whole-table-in-the-view-model-and-tell-the-page-what-changed).
+- How ten buttons and half a dozen captions all gate themselves from three counts
+  recomputed in one method, with the attributes as the audit trail:
+  [Derive every command and caption from three recomputed counts](../BLUEPRINTS-MVVM.md#derive-every-command-and-caption-from-three-recomputed-counts).
+- How one status line does both jobs - what just happened, and what to do next - without
+  the advice erasing the announcement:
+  [Keep a specific status line from being overwritten by the general guidance](../BLUEPRINTS-MVVM.md#keep-a-specific-status-line-from-being-overwritten-by-the-general-guidance).
+- How every service field is a working object before the container has said anything, and
+  the startup ordering that makes the designer guard survivable:
+  [Initialize service fields to working defaults before the container replaces them](../BLUEPRINTS-MVVM.md#initialize-service-fields-to-working-defaults-before-the-container-replaces-them).
+- How a command composes the whole report on a worker before it asks for a destination, so
+  a failure never costs the person a file dialog:
+  [Compose the document before asking where to save it](../BLUEPRINTS-MVVM.md#compose-the-document-before-asking-where-to-save-it).
+- How the three dialog shapes the application asks for by name are supplied by the page so
+  they keep the temple styling, and what each one means when a head leaves it null:
+  [Ask the page for dialogs so they keep the application's own styling](../BLUEPRINTS-PlatformServices.md#ask-the-page-for-dialogs-so-they-keep-the-applications-own-styling).
+- How the page that declared its view model in XAML is also the thing that disposes it,
+  from `Unloaded`, after doing its own teardown first:
+  [Dispose a view model the XAML declared from the page Unloaded](../BLUEPRINTS-MVVM.md#dispose-a-view-model-the-xaml-declared-from-the-page-unloaded).
+- How the page runs a whole drag-and-drop gesture - pointer capture, a grab offset, a
+  highlighted target and an accept radius - and ends it in a single view model call that
+  decides what the drop meant:
+  [Drag a card across the scene and snap it to the nearest station](../BLUEPRINTS-ViewsAndControls.md#drag-a-card-across-the-scene-and-snap-it-to-the-nearest-station).
+- How one pointer button answers three gestures, with a movement threshold that separates a
+  click from a drag and a double click timed in the page itself:
+  [Tell a press from a drag and hand roll a double click](../BLUEPRINTS-ViewsAndControls.md#tell-a-press-from-a-drag-and-hand-roll-a-double-click).
+- How a drawn scene on a `Canvas` recomputes every size, radius and label position in one
+  method that two events call:
+  [Rebuild the whole scene geometry in one Relayout method](../BLUEPRINTS-ViewsAndControls.md#rebuild-the-whole-scene-geometry-in-one-relayout-method).
+- How a control with forty data-driven variants draws its whole face in code at one fixed
+  design size and lets a `Viewbox` do every scale:
+  [Draw a control face procedurally inside a fixed design box](../BLUEPRINTS-ViewsAndControls.md#draw-a-control-face-procedurally-inside-a-fixed-design-box).
+- How run-time path geometry survives a head whose parser rejects elliptical arcs, through
+  a three-step fallback that flattens them and logs the fallback once:
+  [Parse path data through a fallback chain that flattens arcs](../BLUEPRINTS-ViewsAndControls.md#parse-path-data-through-a-fallback-chain-that-flattens-arcs).
+- How every animation in the application ends in the right visual state even where
+  animation support is thin:
+  [Begin every Storyboard inside a try that sets the final value](../BLUEPRINTS-ViewsAndControls.md#begin-every-storyboard-inside-a-try-that-sets-the-final-value).
+- How tracked small capitals are produced where the text element has no character-spacing
+  property:
+  [Fake letter spacing with thin spaces](../BLUEPRINTS-ViewsAndControls.md#fake-letter-spacing-with-thin-spaces).
+- How one resource dictionary carries an entire design system - palette, type scale,
+  control templates and the platform's own brush keys - with no theme dictionary, no
+  converter and no second palette anywhere:
+  [Write the whole design system as one application resource dictionary](../BLUEPRINTS-ThemingAndStyling.md#write-the-whole-design-system-as-one-application-resource-dictionary).
+- How one description of a picture serves both a XAML control and a printed report, with no
+  bitmap and no second drawing:
+  [Describe vector art once and render it through two renderers](../BLUEPRINTS-DocumentsAndData.md#describe-vector-art-once-and-render-it-through-two-renderers).
+- How the SVG path mini-language is parsed into the PDF library's own path type, arcs and
+  all, so the art stays vector at print resolution:
+  [Convert SVG path data into a PDF graphics path](../BLUEPRINTS-DocumentsAndData.md#convert-svg-path-data-into-a-pdf-graphics-path).
+- How a many-page document drawn by hand gets margins, a vertical cursor and page breaks
+  that the low-level drawing API does not provide:
+  [Give a hand-placed document a page cursor with margins and breaks](../BLUEPRINTS-DocumentsAndData.md#give-a-hand-placed-document-a-page-cursor-with-margins-and-breaks).
+- How letter-spaced capitals, justified copy with a ragged last line and headings that
+  shrink to fit are built out of one draw-string call, and why every block is measured
+  before it is committed:
+  [Typeset tracked capitals justified copy and fitted lines by hand](../BLUEPRINTS-DocumentsAndData.md#typeset-tracked-capitals-justified-copy-and-fitted-lines-by-hand).
+- Why every gradient stop in the report is an opaque blend, and what else in that drawing
+  layer quietly refuses what you asked for:
+  [Blend a tint to opaque because gradient stops ignore alpha](../BLUEPRINTS-DocumentsAndData.md#blend-a-tint-to-opaque-because-gradient-stops-ignore-alpha).
+- How a saved reading stores identity only and picks its text back up from the data tables,
+  and what that makes part of the file format:
+  [Save only identity and rehydrate the text from the data tables](../BLUEPRINTS-DocumentsAndData.md#save-only-identity-and-rehydrate-the-text-from-the-data-tables).
+- How written prose varies without becoming unassertable, from a seed the cards themselves
+  make:
+  [Make generated prose deterministic from a seed the data makes](../BLUEPRINTS-DocumentsAndData.md#make-generated-prose-deterministic-from-a-seed-the-data-makes).
+- Why the deck is assembled on first access rather than in a field initializer, and why the
+  rosette's four axes are arithmetic:
+  [Build a static data table lazily because field initializers run in order](../BLUEPRINTS-DocumentsAndData.md#build-a-static-data-table-lazily-because-field-initializers-run-in-order).
+- How a suite gets to assert the exact sentence a generator wrote and the exact file name
+  it suggested, by building every fixture from fixed card ids and one fixed timestamp:
+  [Pin every fixture to fixed ids and a fixed timestamp so tests can assert exact sentences](../BLUEPRINTS-Testing.md#pin-every-fixture-to-fixed-ids-and-a-fixed-timestamp-so-tests-can-assert-exact-sentences).
+- How a path parser whose only output is calls into a graphics API is tested command by
+  command with no document, no page and no geometry object, through a counting sink that
+  ships inside the parser:
+  [Test a parser through a counting sink that produces no document](../BLUEPRINTS-Testing.md#test-a-parser-through-a-counting-sink-that-produces-no-document).
 
 ## Building, running and testing
 
@@ -339,7 +418,9 @@ assumption, which is the contract the serializer depends on - change the card or
 every saved reading points at a different card. And the spread's clockwise-from-the-top
 ordering is asserted in `RosetteSpreadTests` by name, because it is the one thing in the
 folder that both the page geometry and the interpretation text silently assume.
-[Put the real work in a UI free library behind a service interface](../BLUEPRINTS-DocumentsAndData.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface)
+[Put the real work in a UI free library behind a service interface](../BLUEPRINTS-DocumentsAndData.md#put-the-real-work-in-a-ui-free-library-behind-a-service-interface),
+[Build a static data table lazily because field initializers run in order](../BLUEPRINTS-DocumentsAndData.md#build-a-static-data-table-lazily-because-field-initializers-run-in-order),
+[Pin every fixture to fixed ids and a fixed timestamp so tests can assert exact sentences](../BLUEPRINTS-Testing.md#pin-every-fixture-to-fixed-ids-and-a-fixed-timestamp-so-tests-can-assert-exact-sentences)
 
 ### The view model owns the table; the page owns the pictures
 
@@ -352,9 +433,12 @@ is one of its own, vacates whatever station the card was on, displaces any occup
 the tray with its own status line, writes the new state, invalidates the interpretation, and
 recounts.
 
-The page is told what happened through `IReadingTableBridge`, four `Action` delegates:
+The page is told what happened through `IReadingTableBridge`, six delegates:
 `CardAdded`, `CardMoved` (with a boolean asking for the "settling onto the altar"
-animation), `CardFlipped` and `TableCleared`. The page never asks the view model where a
+animation), `CardFlipped`, `CardCelebrated` for the one draw worth marking,
+`TableCleared`, and `DeckShuffled`, which is a `Func<..., Task>` rather than an
+`Action` because the view model holds `IsBusy` true until the page says the last
+frame of the riffle has been drawn. The page never asks the view model where a
 card is; it is told, and it looks at `ReadingCard.Station` and `ReadingCard.IsReversed` to
 decide what to draw. `ReadingCard` itself is the seam: a tiny class in the Core library
 whose two mutable properties have `internal set`, so the page holds the very same instances
@@ -371,7 +455,9 @@ branch writes its own status line and then suppresses the general guidance
 (`RefreshCounts(refreshGuidance: false)`), so the more specific message survives. And
 `_cards.Contains(card)` guards all three methods, because the page is handing back an object
 it was given and nothing else proves it is still part of this reading.
-[Assign every bridge through the interface that declares it](../BLUEPRINTS-PlatformServices.md#assign-every-bridge-through-the-interface-that-declares-it)
+[Assign every bridge through the interface that declares it](../BLUEPRINTS-PlatformServices.md#assign-every-bridge-through-the-interface-that-declares-it),
+[Keep the whole table in the view model and tell the page what changed](../BLUEPRINTS-MVVM.md#keep-the-whole-table-in-the-view-model-and-tell-the-page-what-changed),
+[Drag a card across the scene and snap it to the nearest station](../BLUEPRINTS-ViewsAndControls.md#drag-a-card-across-the-scene-and-snap-it-to-the-nearest-station)
 
 ### Drag, drop and snap: a gesture the page runs and the view model settles
 
@@ -402,6 +488,10 @@ capture may already be gone by the time the release arrives. `OnRootPointerMoved
 why: an unhandled move bubbles to the window manager, which then drags the macOS window
 instead of leaving the scene alone. And the double-click detection is hand-rolled from
 `DateTime.UtcNow`, so it does not follow the desktop's own double-click interval.
+[Drag a card across the scene and snap it to the nearest station](../BLUEPRINTS-ViewsAndControls.md#drag-a-card-across-the-scene-and-snap-it-to-the-nearest-station),
+[Tell a press from a drag and hand roll a double click](../BLUEPRINTS-ViewsAndControls.md#tell-a-press-from-a-drag-and-hand-roll-a-double-click),
+[Rebuild the whole scene geometry in one Relayout method](../BLUEPRINTS-ViewsAndControls.md#rebuild-the-whole-scene-geometry-in-one-relayout-method),
+[Keep the whole table in the view model and tell the page what changed](../BLUEPRINTS-MVVM.md#keep-the-whole-table-in-the-view-model-and-tell-the-page-what-changed)
 
 ### Writing the reading: deterministic prose from a seed the cards make
 
@@ -427,6 +517,8 @@ index before doing anything (`GroupBy(...).Select(g => g.First())`), because the
 is handed may have come from a file. And the templates are `internal` with a
 `using static` at the top of the interpreter, which keeps the sentence stock out of the
 public surface while leaving it testable through `InternalsVisibleTo`.
+[Make generated prose deterministic from a seed the data makes](../BLUEPRINTS-DocumentsAndData.md#make-generated-prose-deterministic-from-a-seed-the-data-makes),
+[Pin every fixture to fixed ids and a fixed timestamp so tests can assert exact sentences](../BLUEPRINTS-Testing.md#pin-every-fixture-to-fixed-ids-and-a-fixed-timestamp-so-tests-can-assert-exact-sentences)
 
 ### The printable report: a hand-placed document drawn straight onto XGraphics
 
@@ -447,7 +539,7 @@ glyph at a time, greedy word wrapping, justified body copy whose last line stays
 a `DrawFitted` that steps a font down until a line measures inside its column.
 `PdfCardPainter` draws the deck's own card design - gold double border, corner flourishes,
 numeral band, emblem medallion, name - at two levels of detail, rotating a reversed card a
-half turn about its own centre exactly as it lies on the table.
+half turn about its own center exactly as it lies on the table.
 
 Sharp edges met here. Every text block is *measured* before it is committed, so a heading is
 never left stranded at the foot of a page without its first paragraph. The colours in
@@ -455,9 +547,12 @@ never left stranded at the foot of a page without its first paragraph. The colou
 in `Ornament.cs`, written down three times in three type systems - the price of a UI-free
 library that must match the screen, and a real maintenance edge. `PdfPalette.Over()` exists
 because the renderer ignores the alpha channel of a gradient stop, so a tint has to be
-blended to an opaque colour by hand. And `Build()` returns bytes rather than writing a file,
+blended to an opaque color by hand. And `Build()` returns bytes rather than writing a file,
 which is what lets the tests parse the result without touching a disk.
-[Compose a fixed layout poster with the CodeBrix PdfDocuments library](../BLUEPRINTS-DocumentsAndData.md#compose-a-fixed-layout-poster-with-the-codebrix-pdfdocuments-library)
+[Compose a fixed layout poster with the CodeBrix PdfDocuments library](../BLUEPRINTS-DocumentsAndData.md#compose-a-fixed-layout-poster-with-the-codebrix-pdfdocuments-library),
+[Give a hand-placed document a page cursor with margins and breaks](../BLUEPRINTS-DocumentsAndData.md#give-a-hand-placed-document-a-page-cursor-with-margins-and-breaks),
+[Typeset tracked capitals justified copy and fitted lines by hand](../BLUEPRINTS-DocumentsAndData.md#typeset-tracked-capitals-justified-copy-and-fitted-lines-by-hand),
+[Blend a tint to opaque because gradient stops ignore alpha](../BLUEPRINTS-DocumentsAndData.md#blend-a-tint-to-opaque-because-gradient-stops-ignore-alpha)
 
 ### Merriweather twice: embedded for the page, packaged for the screen
 
@@ -491,7 +586,7 @@ outcome deterministic - do it later and the first font resolved wins.
 `Data/EmblemArt.cs` holds every emblem - the forty motifs the cards name, plus the Venus
 star, the rosette and the corner flourish - as a list of `EmblemLayer` records: SVG path data in a 0..100
 design box, a fill-or-stroke flag, a stroke width, an opacity and an "accent" flag saying
-the layer should take the card's secondary colour. Nothing else in the application describes
+the layer should take the card's secondary color. Nothing else in the application describes
 a picture.
 
 Both renderers read that same list. On screen, `CardView.LayerCanvas()` turns each layer into
@@ -501,7 +596,7 @@ is. In the PDF, `PdfOrnaments.DrawLayers()` turns each layer into an `XGraphicsP
 application: every command in both absolute and relative form, implicit repeated commands,
 implicit line-to after a move-to, numbers run together where a sign or a second decimal point
 makes the break unambiguous, quadratics raised to cubics exactly, and elliptical arcs
-converted with the endpoint-to-centre parameterisation of the SVG specification and emitted
+converted with the endpoint-to-center parameterization of the SVG specification and emitted
 as at most four cubic segments of ninety degrees or less.
 
 Sharp edges met here. Not every head's XAML path parser accepts arcs, so `ParseGeometry` in
@@ -513,6 +608,11 @@ close an unterminated sub-path, so a stroked figure is not silently joined back 
 a fill closes it anyway. And `SvgPathToPdf.CountSegments` exists purely so the parser can be
 tested without a PDF: it runs the same parse through a counting sink that throws on any
 non-finite coordinate.
+[Describe vector art once and render it through two renderers](../BLUEPRINTS-DocumentsAndData.md#describe-vector-art-once-and-render-it-through-two-renderers),
+[Convert SVG path data into a PDF graphics path](../BLUEPRINTS-DocumentsAndData.md#convert-svg-path-data-into-a-pdf-graphics-path),
+[Draw a control face procedurally inside a fixed design box](../BLUEPRINTS-ViewsAndControls.md#draw-a-control-face-procedurally-inside-a-fixed-design-box),
+[Parse path data through a fallback chain that flattens arcs](../BLUEPRINTS-ViewsAndControls.md#parse-path-data-through-a-fallback-chain-that-flattens-arcs),
+[Test a parser through a counting sink that produces no document](../BLUEPRINTS-Testing.md#test-a-parser-through-a-counting-sink-that-produces-no-document)
 
 ### Files, dialogs and the three bridges the page fills in
 
@@ -553,7 +653,9 @@ anything.
 [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model),
 [Clean up the path a file picker returns](../BLUEPRINTS-PlatformServices.md#clean-up-the-path-a-file-picker-returns),
 [Open a URL in the default browser from a view model](../BLUEPRINTS-PlatformServices.md#open-a-url-in-the-default-browser-from-a-view-model),
-[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show)
+[Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show),
+[Compose the document before asking where to save it](../BLUEPRINTS-MVVM.md#compose-the-document-before-asking-where-to-save-it),
+[Ask the page for dialogs so they keep the application's own styling](../BLUEPRINTS-PlatformServices.md#ask-the-page-for-dialogs-so-they-keep-the-applications-own-styling)
 
 ### Saving a reading: identity only, text rehydrated
 
@@ -577,6 +679,7 @@ now part of the file format; inserting a card in the middle of `DeckData` would 
 re-point every saved reading. The `Version` field is written but not yet checked on read,
 which is a hook rather than a mechanism. And `Created` falls back to `DateTime.Now` when the
 document carries the default value, so a hand-written file with no timestamp still opens.
+[Save only identity and rehydrate the text from the data tables](../BLUEPRINTS-DocumentsAndData.md#save-only-identity-and-rehydrate-the-text-from-the-data-tables)
 
 ### Startup: four heads, one App, and a window sized for a rosette
 
@@ -620,7 +723,8 @@ before the resolution - still has working objects behind every property.
 [Set the window's launch size](../BLUEPRINTS-AppStructureAndStartup.md#set-the-windows-launch-size),
 [Keep the window from shrinking below a minimum](../BLUEPRINTS-AppStructureAndStartup.md#keep-the-window-from-shrinking-below-a-minimum),
 [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method),
-[Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer)
+[Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer),
+[Initialize service fields to working defaults before the container replaces them](../BLUEPRINTS-MVVM.md#initialize-service-fields-to-working-defaults-before-the-container-replaces-them)
 
 ### A whole look from one resource dictionary
 
@@ -637,7 +741,7 @@ which is where a `ContentDialog` actually renders.
 
 What cannot be styled this way is drawn. The rosette, the nine dashed station slots, the rail
 chrome, the card faces, the lore panel and the interpretation panel's contents are all built
-in code onto `Canvas` layers, which is why `Ornament.cs` carries the same sixteen colour
+in code onto `Canvas` layers, which is why `Ornament.cs` carries the same sixteen color
 tokens as string constants and why `MainPage` has a small family of `Text()`, `Head()`,
 `Rule()` and `Caption()` factory helpers.
 
@@ -651,7 +755,11 @@ an unbounded width on these heads, so `InterpStack.Width` is pinned explicitly i
 application is started inside a `try`, falling back to setting the final value directly, so
 a head whose animation support is thin still ends up in the right visual state.
 [Re-key theme brushes so controls dialogs and picker chrome follow your palette](../BLUEPRINTS-ViewsAndControls.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette),
-[Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension)
+[Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension),
+[Write the whole design system as one application resource dictionary](../BLUEPRINTS-ThemingAndStyling.md#write-the-whole-design-system-as-one-application-resource-dictionary),
+[Begin every Storyboard inside a try that sets the final value](../BLUEPRINTS-ViewsAndControls.md#begin-every-storyboard-inside-a-try-that-sets-the-final-value),
+[Fake letter spacing with thin spaces](../BLUEPRINTS-ViewsAndControls.md#fake-letter-spacing-with-thin-spaces),
+[Rebuild the whole scene geometry in one Relayout method](../BLUEPRINTS-ViewsAndControls.md#rebuild-the-whole-scene-geometry-in-one-relayout-method)
 
 ### The status line, and ten buttons that gate themselves
 
@@ -680,7 +788,9 @@ a cancellation mechanism: nothing here can be cancelled mid-flight, so a very la
 simply takes as long as it takes with every button greyed.
 [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way),
 [Show and hide panes with computed Visibility properties](../BLUEPRINTS-MVVM.md#show-and-hide-panes-with-computed-visibility-properties),
-[Report a failure as status text instead of throwing](../BLUEPRINTS-MVVM.md#report-a-failure-as-status-text-instead-of-throwing)
+[Report a failure as status text instead of throwing](../BLUEPRINTS-MVVM.md#report-a-failure-as-status-text-instead-of-throwing),
+[Derive every command and caption from three recomputed counts](../BLUEPRINTS-MVVM.md#derive-every-command-and-caption-from-three-recomputed-counts),
+[Keep a specific status line from being overwritten by the general guidance](../BLUEPRINTS-MVVM.md#keep-a-specific-status-line-from-being-overwritten-by-the-general-guidance)
 
 ### A UI-free library, and the tests it makes possible
 
@@ -700,7 +810,7 @@ axes; `DeckTests` for what a seed guarantees and what drawing, returning and res
 partial cases; `ReadingSerializerTests` for the round trip, the exact camelCase document
 shape, and documents that are wrong; `SvgPathToPdfTests` for every command in both forms,
 the number-scanning quirks and the malformed input it must refuse; `PdfFontsTests` for the
-eight faces and the licence travelling inside the assembly and for registration being
+eight faces and the license traveling inside the assembly and for registration being
 idempotent; `PdfReportBuilderTests` for the bytes really being a PDF with the Merriweather
 subsets inside them; and `RegisterServicesTests` for `AddReading()` handing back all three
 services, as singletons, safely twice. `BasicTests` proves the host itself runs, as every
@@ -718,7 +828,9 @@ no temp directory at all.
 [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library),
 [Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project),
 [Prove a registration extension registers what it promises](../BLUEPRINTS-Testing.md#prove-a-registration-extension-registers-what-it-promises),
-[Assert on a generated document without a golden file](../BLUEPRINTS-Testing.md#assert-on-a-generated-document-without-a-golden-file)
+[Assert on a generated document without a golden file](../BLUEPRINTS-Testing.md#assert-on-a-generated-document-without-a-golden-file),
+[Pin every fixture to fixed ids and a fixed timestamp so tests can assert exact sentences](../BLUEPRINTS-Testing.md#pin-every-fixture-to-fixed-ids-and-a-fixed-timestamp-so-tests-can-assert-exact-sentences),
+[Test a parser through a counting sink that produces no document](../BLUEPRINTS-Testing.md#test-a-parser-through-a-counting-sink-that-produces-no-document)
 
 ## What this application does not show
 
@@ -744,10 +856,13 @@ It is one page, one view model and one library. It has:
 - No use of `SimpleViewModel`'s own `ConfirmDialog` / `ShowInfo` / `ShowError` helpers. The
   page wires an `IXamlRootGetter` so they *would* work, and that wiring is worth reading, but
   the application routes dialogs through its own bridge so it can style them.
-- No disposal of the view model. `MainViewModel.Dispose()` is written, and it is worth
-  reading as the reference for releasing ten commands and nine page-captured delegates, but
-  nothing in this folder calls it: the page unwires its `PropertyChanged` subscription from
-  `Unloaded` and stops there. An application with more than one page would need
+- No view-model lifetime beyond the one page. The view model *is* disposed: the page's
+  `OnPageUnloaded()` closes the detail panel, ends any drag or animation, unwires its one
+  subscription and then calls `(DataContext as IDisposable)?.Dispose()`, and
+  `MainViewModel.Dispose()` releases ten commands and eleven page-captured delegates. That
+  is the whole answer only because there is one page, and unloading it means the
+  application is going; an application that navigates away and back would have to give the
+  view model's lifetime to whatever owns the navigation instead. See
   [Dispose a view model the XAML declared from the page Unloaded](../BLUEPRINTS-MVVM.md#dispose-a-view-model-the-xaml-declared-from-the-page-unloaded).
 - No tests for the view model, the page or any head. The library is covered thoroughly and
   everything above it is not.

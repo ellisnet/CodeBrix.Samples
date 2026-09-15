@@ -12,10 +12,13 @@ caption color that reads on its own ink. They also cover the parts of a house
 style that are decisions rather than code: a type and radius scale, depth done
 with a surface and a hairline instead of a shadow, icons taken only from the
 shipped symbols font, and the habit of proving a capability on a real head with a
-throwaway page before a design leans on it. Reach for this file when you are
-choosing colors, offering the user more than one scheme, following the desktop's
-light and dark preference, or deciding what an application should look like before
-you write the markup.
+throwaway page before a design leans on it. One of them is the opposite case:
+an application that will never switch its look, with the whole design system -
+palette, type scale, control templates and the platform's own brush keys -
+written down in a single application resource dictionary. Reach for this file
+when you are choosing colors, offering the user more than one scheme, following
+the desktop's light and dark preference, or deciding what an application should
+look like before you write the markup.
 
 The markup side of the same subject lives in
 [BLUEPRINTS-ViewsAndControls.md](BLUEPRINTS-ViewsAndControls.md): the keys to
@@ -43,6 +46,7 @@ conventions the code blocks follow.
 - [Keep a text box's own colors while it is hovered or focused](#keep-a-text-boxs-own-colors-while-it-is-hovered-or-focused)
 - [Read the desktop preference in the page and decide what it means in the library](#read-the-desktop-preference-in-the-page-and-decide-what-it-means-in-the-library)
 - [Let a domain object carry the caption color for its own ink](#let-a-domain-object-carry-the-caption-color-for-its-own-ink)
+- [Write the whole design system as one application resource dictionary](#write-the-whole-design-system-as-one-application-resource-dictionary)
 
 ## Related blueprints
 
@@ -1499,3 +1503,188 @@ is the same items-over-view-models shape in a larger list.
   the eighth entry somebody adds later is where they will.
 - This is a fixed palette, not a theme. If the application later follows a color scheme,
   the ink stays where it is and only the ground it is drawn on moves.
+
+### Write the whole design system as one application resource dictionary
+
+**When you want this.** The application has one fixed look that it is never going
+to switch away from, and you want every color, typeface, text style and control
+shape written down in one place a reader can scroll through - no theme
+dictionaries, no converters, no second palette, no scheme-switching machinery.
+Two existing recipes cover pieces of this from the other direction:
+[Re-key theme brushes so controls dialogs and picker chrome follow your palette](BLUEPRINTS-ViewsAndControls.md#re-key-theme-brushes-so-controls-dialogs-and-picker-chrome-follow-your-palette)
+is about the override trick itself, and
+[Re-key every control brush family the platform ships](BLUEPRINTS-ThemingAndStyling.md#re-key-every-control-brush-family-the-platform-ships)
+is about covering every family when a scheme can change at run time. This recipe
+is about the dictionary as the whole design system: one file, read top to bottom,
+in which the overrides are simply the last section.
+
+**The MVVM shape.** Presentation only, no view-model involvement. The dictionary
+lives in the shared UI project's `App.xaml`, so it is compiled into every head
+and is in scope for the page, for the popup layer and for any control the
+application writes itself. The one decision that cannot be expressed as a
+resource - which of the platform's two base themes the overrides sit on - is made
+in the `App` constructor, before `InitializeComponent()`.
+
+**Code.**
+
+The file opens with the palette as named colors, the same values again as
+brushes, and then the derived brushes - translucent inks and hairlines - that are
+the ones most of the application actually names:
+
+```xml
+<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/App.xaml -->
+            <!-- ============================ PALETTE ============================ -->
+            <Color x:Key="NightColor">#0F0A1E</Color>
+            <Color x:Key="Night2Color">#1A1030</Color>
+            <!-- ... fourteen more named colors ... -->
+            <Color x:Key="MalachiteColor">#2E8B6B</Color>
+
+            <SolidColorBrush x:Key="NightBrush" Color="#0F0A1E" />
+            <SolidColorBrush x:Key="Night2Brush" Color="#1A1030" />
+            <!-- ... the same sixteen again as brushes ... -->
+            <SolidColorBrush x:Key="MalachiteBrush" Color="#2E8B6B" />
+
+            <!-- derived / translucent -->
+            <SolidColorBrush x:Key="BodyTextBrush" Color="#EBF4EBD9" />
+            <SolidColorBrush x:Key="MutedTextBrush" Color="#99F4EBD9" />
+            <SolidColorBrush x:Key="FaintTextBrush" Color="#66F4EBD9" />
+            <SolidColorBrush x:Key="GoldHairlineBrush" Color="#70C9A14A" />
+            <SolidColorBrush x:Key="GoldFaintBrush" Color="#40C9A14A" />
+            <SolidColorBrush x:Key="GoldGhostBrush" Color="#22E6C476" />
+            <!-- ... surfaces, the input ground and the shadow ... -->
+
+            <LinearGradientBrush x:Key="AppBackgroundBrush" StartPoint="0.1,0" EndPoint="0.9,1">
+                <GradientStop Color="#1A1030" Offset="0" />
+                <GradientStop Color="#0F0A1E" Offset="0.55" />
+                <GradientStop Color="#07050D" Offset="1" />
+            </LinearGradientBrush>
+```
+
+Then the typefaces and the type scale. The faces are named as file URIs into the
+font package rather than by family name, and each text style pairs one of them
+with a size, a weight and an ink from the palette above:
+
+```xml
+<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/App.xaml -->
+            <!-- ============================ FONTS ============================ -->
+            <FontFamily x:Key="MerriweatherFont">ms-appx:///CodeBrix.Platform.Fonts.Merriweather/Fonts/Merriweather.ttf</FontFamily>
+            <FontFamily x:Key="MerriweatherBoldFont">ms-appx:///CodeBrix.Platform.Fonts.Merriweather/Fonts/Merriweather-Bold.ttf</FontFamily>
+
+            <!-- ============================ TEXT STYLES ============================ -->
+            <!-- ... DisplayTextStyle, TitleTextStyle, SectionHeadingStyle ... -->
+            <Style x:Key="BodyTextStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource MerriweatherFont}" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="FontSize" Value="12.5" />
+                <Setter Property="LineHeight" Value="20" />
+                <Setter Property="Foreground" Value="{StaticResource BodyTextBrush}" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+            <!-- ... CaptionTextStyle and TrackedCapsStyle ... -->
+```
+
+The controls the application actually uses get a full template once, with their
+hover, pressed and disabled behavior as visual states, and every variant is then
+a `BasedOn` style that changes only what differs:
+
+```xml
+<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/App.xaml -->
+            <Style x:Key="TempleButtonStyle" TargetType="Button">
+                <!-- ... font, ink, border, padding, MinWidth, UseSystemFocusVisuals ... -->
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="RootGrid">
+                                <Border x:Name="Fill"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="3" />
+                                <!-- ... the ContentPresenter ... -->
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <Storyboard>
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Fill" Storyboard.TargetProperty="Background">
+                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="#E6C476" />
+                                                </ObjectAnimationUsingKeyFrames>
+                                                <!-- ... and the presenter's foreground ... -->
+                                            </Storyboard>
+                                        </VisualState>
+                                        <!-- ... Pressed, and Disabled as an opacity of 0.4 ... -->
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- ... TemplePrimaryButtonStyle, the same template with the gold fill ... -->
+
+            <Style x:Key="GhostButtonStyle" TargetType="Button" BasedOn="{StaticResource TempleButtonStyle}">
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+                <Setter Property="FontSize" Value="10.5" />
+                <Setter Property="Padding" Value="8,4,8,5" />
+                <Setter Property="MinWidth" Value="0" />
+            </Style>
+```
+
+The last section is the one that makes the rest hold together: the platform's own
+brush keys, redeclared with the same palette. Nothing in the application
+retemplates a text box or a dialog; they simply resolve these:
+
+```xml
+<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/App.xaml -->
+            <!-- ============================ TEXT INPUT ============================ -->
+            <SolidColorBrush x:Key="TextControlBackground" Color="#120C24" />
+            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#181030" />
+            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#1C1236" />
+            <!-- ... the border, foreground, placeholder and button families ... -->
+            <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#4C6FE0" />
+
+            <!-- ... TempleTextBoxStyle and PanelScrollViewerStyle ... -->
+
+            <!-- ============================ DIALOGS ============================ -->
+            <SolidColorBrush x:Key="ContentDialogBackground" Color="#1A1030" />
+            <SolidColorBrush x:Key="ContentDialogForeground" Color="#F4EBD9" />
+            <SolidColorBrush x:Key="ContentDialogBorderBrush" Color="#C9A14A" />
+            <SolidColorBrush x:Key="ContentDialogTopOverlay" Color="#1A1030" />
+            <SolidColorBrush x:Key="ContentDialogSeparatorBorderBrush" Color="#40C9A14A" />
+            <SolidColorBrush x:Key="ContentDialogSmokeFill" Color="#B0000000" />
+            <SolidColorBrush x:Key="ContentDialogLightDismissOverlayBackground" Color="#B0000000" />
+```
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.UI/App.xaml` (the whole file, read top to bottom)
+`InannaRosette/src/InannaRosette.UI/App.xaml.cs` (`RequestedTheme` set in the
+constructor, before `InitializeComponent()`)
+`InannaRosette/src/InannaRosette.UI/Controls/Ornament.cs` and
+`Views/MainPage.xaml`
+
+**Sharp edges.**
+- The overrides have to be in `Application.Resources`, not `Page.Resources`.
+  Dialogs and picker chrome render in the popup layer, which reads the
+  application's dictionary; the same keys on a page reach nothing that opens over
+  it.
+- The base theme is a code decision, not a resource. `RequestedTheme` is set in
+  the `App` constructor before `InitializeComponent()`, and the overrides refine
+  whatever that chose - declare a dark palette on top of the light base and the
+  keys you did not override will fight the ones you did.
+- Anything drawn rather than templated cannot see the dictionary, and this is the
+  real maintenance edge. The rosette, the card faces and the panels are built in
+  code, so `Ornament.cs` carries the same sixteen hex values again as string
+  constants (`Night`, `Gold`, `GoldDeep`, `Ivory`, and the rest). Two copies
+  already; a UI-free library that has to match the screen makes it three. Change
+  a color in one and the application is subtly two-toned until you find the
+  others.
+- A `BasedOn` style that re-`Setter`s `Template` replaces the template outright
+  rather than refining it, so a variant that changes only its hover color still
+  has to restate the whole control template. Keep the variants that differ by
+  brushes and padding as real `BasedOn` styles, and accept the duplication only
+  where the states themselves differ.
+- The face URIs point into the font package by file name. They are not validated
+  at build time, so a typo shows up as the platform's fallback face at run time
+  rather than as an error.

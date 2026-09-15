@@ -13,10 +13,13 @@ that forwards its paint call, or reads a fact back, through the contract it
 already implements never has to name the view model's type. Several recipes also
 cover what to do with what comes back, such as normalizing the path a picker
 returns, deciding which side of the seam a picker's policy belongs on, or keeping
-a single replace-file confirmation instead of two. Reach
-for this file when a command needs something the view model cannot do for
-itself, when the same feature has to work across several UI stacks, or when
-a head with no windowing system must still start and explain what it cannot do.
+a single replace-file confirmation instead of two. One goes the other way and
+hands the dialog shapes themselves back to the page, so an application with a
+strong look keeps it, with a written-down answer for every delegate a head
+leaves null. Reach for this file when a command needs something the view model
+cannot do for itself, when the same feature has to work across several UI
+stacks, or when a head with no windowing system must still start and explain
+what it cannot do.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -52,6 +55,7 @@ conventions the code blocks follow.
 - [Build a head's native picker behind a registered service](#build-a-heads-native-picker-behind-a-registered-service)
 - [Call the page's bridge from the setter that changed](#call-the-pages-bridge-from-the-setter-that-changed)
 - [Send the paint call back to the view model through the canvas bridge](#send-the-paint-call-back-to-the-view-model-through-the-canvas-bridge)
+- [Ask the page for dialogs so they keep the application's own styling](#ask-the-page-for-dialogs-so-they-keep-the-applications-own-styling)
 
 ## Related blueprints
 
@@ -137,7 +141,12 @@ anchors to:
 `Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.xaml.cs`,
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs`,
 `WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml.cs`,
-`WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml.cs`
+`WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml.cs`,
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+(`(DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot)` wired from
+`DataContextChanged`, in an application that then routes its own dialogs through
+a bridge so it can style them - the wiring is there so the `SimpleViewModel`
+helpers would work)
 
 **Sharp edges.**
 - A lambda, not the value. The page's `XamlRoot` is null until the page is in the
@@ -391,7 +400,12 @@ that satisfy it (Skia, WinUI 3, WPF),
 `WikipediaPublisher/Shared/ViewModels/MainViewModel.cs` and its four heads,
 `PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs` (the
 picker call kept in the view model behind a private static method, with
-`NotSupportedException` caught specifically)
+`NotSupportedException` caught specifically),
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+(`PickSavePathAsync(suggestedFileName, typeName, extension)` as a static method
+on the page, filled into `IReadingFileBridge`; the view model composes the report
+bytes before it asks where to put them, so a report that fails to compose never
+shows a dialog at all)
 
 **Sharp edges.**
 - The page code-behind needs `using System;` for the awaiter extension that makes
@@ -560,6 +574,11 @@ DataContextChanged += (_, _) =>
 `PdfSideBySide/src/PdfSideBySide.UI/Views/MainPage.xaml.cs`
 `PdfSideBySide/src/PdfSideBySide.LinuxFrameBuffer/Program.cs`
 
+**Also shown by.**
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+(`PickReadingPathAsync`, a `FileOpenPicker` filtered to `.json`, reached through a
+settable `Func<Task<string?>>` that a head with no dialog simply leaves null)
+
 **Sharp edges.**
 - Two degradation points, not one: the delegate may be null (no head wired it) and
   the delegate may return null (no dialog, or the person cancelled). Treat them
@@ -671,7 +690,12 @@ send every download to a literally named `My%20Models`),
 `WikipediaPublisher/Shared/Helpers/FileDialogHelper.cs` (linked into the shared
 library and the WinUI head only - the WPF head does not link it, because a WPF
 `SaveFileDialog` already returns a plain path),
-`WebcamPainter/src/WebcamPainter.Core/Helpers/FileDialogHelper.cs`
+`WebcamPainter/src/WebcamPainter.Core/Helpers/FileDialogHelper.cs`,
+`InannaRosette/src/InannaRosette.Core/Helpers/FileDialogHelper.cs`
+(`ToFileSystemPath` unescapes only when the text really carries a `%` followed by
+two hex digits, so a name like "100% done.pdf" is left alone and a plain path
+from a Win32 dialog passes through untouched, and `RemoveEmptyPlaceholder`
+deletes the picker's placeholder only when it is genuinely zero length)
 
 **Sharp edges.**
 - Decoding unconditionally would corrupt a legitimate name containing a percent
@@ -1116,6 +1140,12 @@ rows.Add(new IssueRowViewModel(item, palette, _showAssignees, now, OpenUrlAsync)
 `GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs`
 `GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/IssueRowViewModel.cs`
 `GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/RepositoryGroupViewModel.cs`
+
+**Also shown by.**
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+(`DoOpenSavedReport` handles both of `LaunchUriAsync`'s failure modes - a false
+return and a throw - in the one place the application asks the host to open
+anything, and the button that runs it lives on a page-built dialog)
 
 **Sharp edges.**
 - `LaunchUriAsync` reports two kinds of failure. A false return means nothing was willing
@@ -2612,7 +2642,13 @@ if (DataContext is MainViewModel viewModel)
 `Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.xaml.cs`,
 `WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml.cs`
 (the browser wiring reaches the view model through `IWebViewBridge` and stops
-there)
+there),
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs` and
+`InannaRosette/src/InannaRosette.Core/Services/IReadingTableBridge.cs`
+(one `DataContextChanged` handler that tests the data context against three
+bridge interfaces and `IXamlRootGetter` in turn rather than casting once to the
+view model, so each capability is independently absent-able and the page names no
+view-model type to install any of them)
 
 **Sharp edges.**
 - Wire from `DataContextChanged`, before `InitializeComponent()`. On some heads
@@ -3090,3 +3126,174 @@ bridge it implements rather than through the view model type)
 - Where two canvases show different things, only the one whose content is a
   decision needs this. WebcamPainter's self-view keeps its own renderer in the
   page, because it always shows exactly one thing.
+
+### Ask the page for dialogs so they keep the application's own styling
+
+**When you want this.** The application has a strong look, and a stock dialog in
+the middle of it is a hole. You want the view model to go on asking for a
+confirmation or a message in one line, but for the thing that appears to be built
+from the application's own resources.
+
+Two existing recipes cover the neighboring cases.
+[Confirm and inform from the view model with SimpleViewModel dialogs](BLUEPRINTS-MVVM.md#confirm-and-inform-from-the-view-model-with-simpleviewmodel-dialogs)
+is the right answer when the stock dialog is fine, and
+[Install UI dialogs into a headless model through handler delegates](BLUEPRINTS-PlatformServices.md#install-ui-dialogs-into-a-headless-model-through-handler-delegates)
+puts handler delegates on a library that must stay UI-free. This one is about
+choosing to hand the shapes back to the page purely so the page can keep the look,
+and about writing down what each delegate means when it is null.
+
+**The MVVM shape.** The view model declares one interface per family of
+capability, and this one holds the three dialog shapes the application actually
+asks for by name - a confirmation, a message, and a task-specific panel. The page
+implements all three from its own styles and resources and assigns them in its
+data-context handler. The view model calls each one through a small private helper
+that says, in code, what happens when the delegate is null, so a head that cannot
+show a dialog is a documented case rather than a crash.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/Services/IReadingDialogBridge.cs
+/// <summary>
+/// The dialogs this application asks for by name. <c>SimpleViewModel</c>'s own
+/// <c>ConfirmDialog</c> and <c>ShowError</c> helpers would do the job, but the temple styling —
+/// gold on lapis, the app's own button styles, a "Report saved" panel with an Open button — is
+/// a page concern, so the page supplies the three shapes the view model needs and keeps the
+/// look with them. A head that cannot show a dialog leaves them null; the view model then
+/// treats a confirmation as granted and reports failures in the status line only.
+/// </summary>
+public interface IReadingDialogBridge
+{
+    /// <summary>
+    /// Asks a yes/no question and returns true when the person pressed the primary button.
+    /// Signature: <c>Func&lt;title, message, primaryButtonCaption, Task&lt;bool&gt;&gt;</c>.
+    /// </summary>
+    Func<string, string, string, Task<bool>>? ConfirmAsync { get; set; }
+
+    /// <summary>Tells the person something and waits for them to close it.</summary>
+    Func<string, string, Task>? ShowMessageAsync { get; set; }
+
+    /// <summary>
+    /// Shows the "Report saved" panel for a finished PDF, whose Open button runs
+    /// <see cref="ViewModels.MainViewModel.OpenSavedReportCommand"/>.
+    /// </summary>
+    Func<string, Task>? ShowReportSavedAsync { get; set; }
+}
+```
+
+The page's implementations are ordinary dialog code that reaches into
+`Application.Current.Resources` for the application's own button styles, and turns
+a failure into a documented answer rather than an exception crossing back into the
+view model:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+private async Task<bool> ConfirmAsync(string title, string message, string primary)
+{
+    try
+    {
+        var dialog = new ContentDialog
+        {
+            Title = title,
+            Content = Text(message, 12.5, Ornament.Ivory, opacity: 0.9, wrap: true),
+            PrimaryButtonText = primary,
+            CloseButtonText = "Cancel",
+            PrimaryButtonStyle = (Style)Application.Current.Resources["TemplePrimaryButtonStyle"],
+            CloseButtonStyle = (Style)Application.Current.Resources["TempleButtonStyle"],
+            XamlRoot = XamlRoot,
+        };
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+    }
+    catch (Exception ex)
+    {
+        _log.LogWarning(ex, "Confirm dialog failed.");
+        return true;
+    }
+}
+```
+
+The third shape is the one a general-purpose helper could not have produced: a
+panel with content the application composed and a button of its own. Even there,
+the page does not act - the button runs the view model's command, so deciding to
+hand a file to the operating system stays a view-model decision.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+private async Task ShowReportSavedAsync(string path)
+{
+    var stack = new StackPanel { Spacing = 12, Width = 430 };
+    stack.Children.Add(Text("The report has been written to:", 12, Ornament.Ivory, opacity: 0.9, wrap: true));
+    stack.Children.Add(Text(path, 11, Ornament.GoldPale, wrap: true));
+
+    //Handing the file to the operating system is the view model's job, so the button runs
+    //  its command rather than starting anything itself
+    var open = new Button
+    {
+        Content = "Open",
+        Style = (Style)Application.Current.Resources["TempleButtonStyle"],
+        Command = ViewModel?.OpenSavedReportCommand,
+    };
+    // ... the button into a row, the row into the panel, the panel into a ContentDialog
+}
+```
+
+Every call goes through a helper that states the null policy once:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+//A head with no dialog cannot ask, so the answer is yes - exactly what the page's own
+//  dialog did when ContentDialog.ShowAsync threw
+private async Task<bool> Confirm(string title, string message, string primary)
+{
+    var confirm = ConfirmAsync;
+    return confirm == null || await confirm(title, message, primary);
+}
+
+private async Task ShowMessage(string title, string message)
+{
+    var show = ShowMessageAsync;
+    if (show == null)
+    {
+        InvokeOnMainThread(() => SetStatus($"{title}: {message}"));
+        return;
+    }
+
+    await show(title, message);
+}
+
+private async Task<string?> PickSavePath(string suggestedFileName, string typeName, string extension)
+{
+    var picker = PickSavePathAsync;
+    if (picker == null)
+    {
+        await ShowMessage("The file dialog is unavailable", "This head cannot save files.");
+        return null;
+    }
+
+    return await picker(suggestedFileName, typeName, extension);
+}
+```
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.Core/Services/IReadingDialogBridge.cs` and
+`IReadingFileBridge.cs`
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs` (the region
+"Head-capability bridges")
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs` (`ConfirmAsync`,
+`ShowMessageAsync`, `ShowReportSavedAsync`)
+
+**Sharp edges.**
+- Decide the null answer per delegate and write it down. A missing confirmation is
+  granted, because refusing would make a head with no dialog unable to do
+  anything; a missing message becomes status text, because the information is
+  still worth having; a missing picker becomes a message saying this head cannot
+  save. Silently doing nothing is the one answer that is always wrong.
+- The page's catch has to agree with the null case. Here the dialog's failure path
+  returns true for the same reason the null delegate does, so the behavior is the
+  same whether the head has no dialog or the dialog throws.
+- Capture the delegate into a local before testing and calling it. It is a mutable
+  property, and the page nulls all of them on unload.
+- The page still hands over a `XamlRoot` getter separately, so anything that does
+  use the stock helpers has somewhere to attach - see
+  [Give the view model a XamlRoot so its dialogs can show](BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
+  Styling the shapes yourself is a choice, not a replacement for that wiring.

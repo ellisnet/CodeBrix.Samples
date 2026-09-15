@@ -18,10 +18,16 @@ observes it, and a first load that waits until the page says it is on screen.
 A further group is about what the user picks and how much of it you load:
 enum-backed pickers, drop-downs whose choices depend on the current selection,
 alerting and reverting when the platform cannot honor a choice, and grids,
-trees and search boxes that fill lazily rather than all at once. Reach for this file
-when you are deciding what belongs on a view model rather than in a page,
-or when bound state has to survive background work, a slow service, or a
-user clicking faster than the application can answer.
+trees and search boxes that fill lazily rather than all at once. A last group
+is the view model of a drawn scene rather than of a form: the model the view
+model alone owns, with the page told what changed through delegates it filled
+in; every command predicate and every caption derived from a few counts
+recomputed in one place; a status line kept from being overwritten by the
+general guidance; service fields holding working objects before the container
+is ever asked; and a document composed in full before the save dialog is
+shown. Reach for this file when you are deciding what belongs on a view model
+rather than in a page, or when bound state has to survive background work, a
+slow service, or a user clicking faster than the application can answer.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -92,6 +98,11 @@ conventions the code blocks follow.
 - [Dispose a view model the XAML declared from the page Unloaded](#dispose-a-view-model-the-xaml-declared-from-the-page-unloaded)
 - [Fail a bound setter into the status line when a device refuses it](#fail-a-bound-setter-into-the-status-line-when-a-device-refuses-it)
 - [Switch devices off the UI thread and let the newest switch report](#switch-devices-off-the-ui-thread-and-let-the-newest-switch-report)
+- [Keep the whole table in the view model and tell the page what changed](#keep-the-whole-table-in-the-view-model-and-tell-the-page-what-changed)
+- [Derive every command and caption from three recomputed counts](#derive-every-command-and-caption-from-three-recomputed-counts)
+- [Keep a specific status line from being overwritten by the general guidance](#keep-a-specific-status-line-from-being-overwritten-by-the-general-guidance)
+- [Initialize service fields to working defaults before the container replaces them](#initialize-service-fields-to-working-defaults-before-the-container-replaces-them)
+- [Compose the document before asking where to save it](#compose-the-document-before-asking-where-to-save-it)
 
 ## Related blueprints
 
@@ -227,7 +238,10 @@ The page's side of the contract is a plain binding, with
 `PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`,
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`,
 `WikipediaPublisher/Shared/ViewModels/MainViewModel.cs`,
-`CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/ViewModels/ConversionViewModel.cs`
+`CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/ViewModels/ConversionViewModel.cs`,
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+(ten commands behind `??=` fields, and three counts plus one `IsBusy` from which
+every button's enablement and every caption in the application is derived)
 
 **Sharp edges.**
 - An asynchronous command body needs an explicit cast so the right
@@ -618,7 +632,11 @@ public class MainViewModel : SimpleViewModel
 `PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`,
 `JustBetweenUs/Shared/ViewModels/MainViewModel.cs` and
 `WikipediaPublisher/Shared/ViewModels/MainViewModel.cs` (both wrap the whole body
-in `if (!IsDesignMode(true)) { ... }` instead of returning early)
+in `if (!IsDesignMode(true)) { ... }` instead of returning early),
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+(the guard as the first line, with every service field initialized to a concrete
+library instance above it so design mode - which returns before the container is
+ever asked - still has working objects behind every property)
 
 **Sharp edges.**
 - The comment is part of the pattern: the guard must be the first line, before any
@@ -880,7 +898,11 @@ _session.DrawingChanged += (_, _) => InvokeOnMainThread(() => HasDrawing = _sess
 `NotionDocumentCreator/src/NotionDocumentCreator.Core/ViewModels/MainViewModel.cs`,
 `WikipediaPublisher/Shared/ViewModels/MainViewModel.cs`,
 `WebcamPainter/src/WebcamPainter.Core/ViewModels/MainViewModel.cs`,
-`PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`
+`PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`,
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+(the prose and the PDF both composed under `Task.Run` and everything that follows
+written back inside a single `InvokeOnMainThread`, including the `IsBusy = false`
+on each failure path)
 
 **Sharp edges.**
 - The comment in JustBetweenUs is the rule worth remembering: assigning a bound
@@ -1734,7 +1756,11 @@ public override void Dispose()
 `JustBetweenUs/Shared/ViewModels/MainViewModel.cs`,
 `NotionDocumentCreator/src/NotionDocumentCreator.Core/ViewModels/MainViewModel.cs`,
 `PainDiagram/Shared/ViewModels/MainViewModel.cs`,
-`WikipediaPublisher/Shared/ViewModels/MainViewModel.cs`
+`WikipediaPublisher/Shared/ViewModels/MainViewModel.cs`,
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+(`Dispose()` disposes and nulls ten commands and then nulls all eleven delegates
+of the three bridges, with a comment saying why: every one of them captures the
+page and would otherwise keep it alive through the view model)
 
 **Sharp edges.**
 - Null the field before disposing the object
@@ -2223,7 +2249,11 @@ private void SetViewerMode(ViewerMode mode, string hint, bool activateViewer = t
 **Also shown by.**
 `PdfSideBySide/src/PdfSideBySide.Core/ViewModels/DocumentPaneViewModel.cs`,
 `PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`,
-`PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`
+`PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`,
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+(`DeckPanelVisibility` and `InterpretationVisibility` as the two halves of one
+bool, plus a `StaleVisibility` badge with a rule of its own, in an application
+that has no value converter anywhere)
 
 **Sharp edges.**
 - The placeholder and the real content are siblings in the same grid cell, each
@@ -2643,7 +2673,11 @@ public string StatusText
 
 **Also shown by.**
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`
-(`StatusText = $"Could not load the ... sample: {ex.Message}"`)
+(`StatusText = $"Could not load the ... sample: {ex.Message}"`),
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+(a missing picker, a file that will not write and an interpretation that throws
+all end in `SetStatus(...)` or a styled dialog, with the caught exception going to
+the logger rather than to the person)
 
 **Sharp edges.**
 - The status property has a public getter and a private setter, so only the view
@@ -5983,6 +6017,15 @@ is about what that method does; this is about who calls it.
 `WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml.cs`
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs`
 
+**Also shown by.**
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+(the constructor subscribes `Unloaded` to a named `OnPageUnloaded()` method rather
+than to a lambda, because the page has teardown of its own to do first - closing
+the detail panel, ending a drag, stopping an animation and dropping its one
+subscription - and it sets a flag before the `(DataContext as
+IDisposable)?.Dispose()` line so nothing that runs afterwards reaches a disposed
+view model)
+
 **Sharp edges.**
 - This is the answer for a single-page application, where unloading the page means
   the application is going. A page that is navigated away from and back would get
@@ -6178,3 +6221,670 @@ device is slow enough to be seen.
   code path cannot null it between the check and the call.
 - The setter clears the "we have a frame" flag before the switch starts, so a
   command gated on it cannot run against the device that is on its way out.
+
+### Keep the whole table in the view model and tell the page what changed
+
+**When you want this.** The screen is a scene rather than a form - objects the
+person picks up, drags across the window and turns over - and you want the rule
+about where a thing may go, and what happens to whatever was already there,
+written once where a test can reach it, rather than spread through the pointer
+handlers that happen to trigger it.
+
+This is the whole-scene version of
+[Call the page's bridge from the setter that changed](BLUEPRINTS-PlatformServices.md#call-the-pages-bridge-from-the-setter-that-changed):
+there the view model tells the page one fact from the setter where it happened,
+and the page reacts. Here a handful of delegates carry every change to a model
+the view model alone owns, and the page's whole job is keeping its visuals
+matching it.
+
+**The MVVM shape.** Three private fields are the model: the deck, the list of
+cards that have left it, and a fixed-length array indexed by position. Three
+public methods are the only way to change them, and each one is a complete
+transaction - validate, vacate, displace, write, invalidate, recount. The page is
+told what to redraw through a bridge interface of `Action` delegates it fills in
+when it takes the view model as its data context. The objects handed across are
+plain model objects whose mutable properties have `internal set`, so the page
+holds the very same instances and reads them freely but cannot change one.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+//A fresh Deck is already shuffled; the cards that have left it live in _cards, and
+//  _stations is the same set again, indexed by the station each one was laid on.
+private Deck _deck = new();
+private readonly List<ReadingCard> _cards = new();
+private readonly ReadingCard?[] _stations = new ReadingCard?[StationCount];
+
+// ...
+
+/// <summary>Every card that has left the deck, laid or waiting.</summary>
+public IReadOnlyList<ReadingCard> Cards => _cards;
+
+/// <summary>The card laid at a station, or null when the station is empty.</summary>
+/// <param name="index">The station index, 0..8.</param>
+public ReadingCard? CardAt(int index) =>
+    index >= 0 && index < StationCount ? _stations[index] : null;
+```
+
+Every branch of the transaction is in one method, including the two that are easy
+to forget: a card arriving on an occupied position, and a card arriving from
+another position rather than from the tray.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+public void PlaceOnStation(ReadingCard? card, int station)
+{
+    if (card == null || station < 0 || station >= StationCount || !_cards.Contains(card)) { return; }
+
+    var occupant = _stations[station];
+    if (occupant != null && !ReferenceEquals(occupant, card))
+    {
+        occupant.Station = -1;
+        CardMoved?.Invoke(occupant, false);
+        SetStatus($"{occupant.Card.Name} was displaced and waits in the tray.");
+    }
+
+    if (card.Station >= 0 && card.Station < StationCount && ReferenceEquals(_stations[card.Station], card))
+    {
+        _stations[card.Station] = null;
+    }
+
+    card.Station = station;
+    _stations[station] = card;
+    CardMoved?.Invoke(card, false);
+
+    if (occupant == null || ReferenceEquals(occupant, card))
+    {
+        SetStatus($"{card.Card.Name} laid at {TitleOf(station)}.");
+    }
+
+    //The status line already names the card and its station, so it is not overwritten with
+    //  the general guidance
+    InvalidateInterpretation(hidePanel: false);
+    RefreshCounts(refreshGuidance: false);
+}
+```
+
+The bridge is a set of delegates rather than one, because "something changed" is
+not enough for a page that has to animate: the page needs to know whether a card
+appeared, moved, was turned over or went away, and one of them carries a boolean
+asking for a particular animation.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/Services/IReadingTableBridge.cs
+public interface IReadingTableBridge
+{
+    /// <summary>
+    /// A card has left the deck. Its <see cref="ReadingCard.Station"/> already says where it
+    /// belongs: the tray for an ordinary draw, a station for a reading that was just opened
+    /// from a file.
+    /// </summary>
+    Action<ReadingCard>? CardAdded { get; set; }
+
+    /// <summary>
+    /// A card is now somewhere else — laid on <see cref="ReadingCard.Station"/>, or back in the
+    /// tray. The boolean asks for the "settling onto the altar" animation, which a deliberate
+    /// lay uses and a drag (already at the pointer) does not.
+    /// </summary>
+    Action<ReadingCard, bool>? CardMoved { get; set; }
+
+    /// <summary>A card's orientation changed and its face has to be turned around.</summary>
+    Action<ReadingCard>? CardFlipped { get; set; }
+
+    // ... a celebration for one particular card, a "table cleared", and a shuffle the page
+    // ... animates and the view model awaits
+}
+```
+
+The page's side of a drop is four lines, and it asks the model object where it is
+rather than being told a position in the call.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+/// <summary>A card is now on a station, or back in the tray.</summary>
+private void ShowCardMoved(ReadingCard model, bool animate)
+{
+    var item = ItemFor(model);
+    if (item is null) { return; }
+
+    if (model.InTray)
+    {
+        item.View.ShowCloseButton = false;
+        LayoutTray();
+        UpdateSlotVisibility();
+        return;
+    }
+
+    PlaceVisual(item, animate);
+}
+
+/// <summary>A card was turned the other way up.</summary>
+private void ShowCardFlipped(ReadingCard model) => ItemFor(model)?.View.ToggleReversed();
+```
+
+`ReadingCard` is the seam that makes this safe. It is a small class in the Core
+library whose two mutable members are declared `public bool IsReversed { get;
+internal set; }` and `public int Station { get; internal set; } = -1;`, with a
+computed `InTray => Station < 0`. The page reads all three and writes none of
+them.
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs` (the regions
+"What is on the table" and "Head-capability bridges")
+`InannaRosette/src/InannaRosette.Core/ViewModels/ReadingCard.cs` and
+`src/InannaRosette.Core/Services/IReadingTableBridge.cs`
+`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs` (`ShowCardAdded`,
+`ShowCardMoved`, `ShowCardFlipped`, `ShowTableCleared`)
+
+**Sharp edges.**
+- Clear the old position before writing the new one. Without the
+  `ReferenceEquals(_stations[card.Station], card)` branch, dragging a card from
+  one position to another leaves a ghost occupying the first.
+- `_cards.Contains(card)` guards all three transaction methods. The page is
+  handing back an object it was given, and nothing else proves that object is
+  still part of this reading - a clear may have happened in between.
+- The delegate that announces a new card does not say where the card goes; the
+  page reads `ReadingCard.Station`. That is what lets a reading opened from a file
+  arrive with its cards already laid, through the same delegate an ordinary draw
+  uses.
+- Assign the delegates through the interface that declares them, not through a
+  cast to the view model's type - see
+  [Assign every bridge through the interface that declares it](BLUEPRINTS-PlatformServices.md#assign-every-bridge-through-the-interface-that-declares-it).
+  Every one of these delegates captures the page, so they all have to be nulled in
+  `Dispose()`.
+
+### Derive every command and caption from three recomputed counts
+
+**When you want this.** A screen with ten buttons and half a dozen captions, all
+of them answering the same few questions about the same model. You want to add
+the eleventh button without working out which five places have to learn about it.
+
+[Write bound properties and commands the family way](BLUEPRINTS-MVVM.md#write-bound-properties-and-commands-the-family-way)
+gives the idiom - `SetProperty`, lazily created commands, `[AffectsCommands]`.
+This recipe is about what you point that idiom at: not one bound property per
+question, but a small fixed set of counts that are recomputed from the model in
+one method after anything moves, with every predicate and every caption written
+as a computed property over them.
+
+**The MVVM shape.** The model lives in private fields. Three `int` properties and
+one `bool` are the only state the UI is allowed to gate on. Each count carries
+`[AffectsCommands]` naming the commands whose predicates read it and
+`[AffectsProperties]` naming the computed properties that read it; the busy flag
+carries `[AffectsAllCommands]`. One private method recomputes all three counts
+from the model, and every command and every model transaction ends by calling it.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+/// <summary>How many cards are still in the stack.</summary>
+[AffectsCommands(nameof(DrawCommand), nameof(AutoLayCommand))]
+[AffectsProperties(nameof(DeckCountText), nameof(CanDraw), nameof(CanAutoLay))]
+public int DeckRemaining
+{
+    get;
+    private set => SetProperty(ref field, value);
+}
+
+/// <summary>How many drawn cards are waiting in the tray.</summary>
+[AffectsCommands(nameof(ClearCommand))]
+[AffectsProperties(nameof(TrayCaption), nameof(CanClear))]
+public int TrayCount
+{
+    get;
+    private set => SetProperty(ref field, value);
+}
+
+/// <summary>How many of the nine stations hold a card.</summary>
+[AffectsCommands(nameof(AutoLayCommand), nameof(ClearCommand), nameof(InterpretCommand),
+    nameof(SaveReadingCommand))]
+[AffectsProperties(nameof(StationsText), nameof(CanAutoLay), nameof(CanClear), nameof(CanInterpret))]
+public int FilledStations
+{
+    get;
+    private set => SetProperty(ref field, value);
+}
+
+/// <summary>True while a command is working; every button waits for it.</summary>
+[AffectsAllCommands]
+[AffectsProperties(nameof(CanDraw), nameof(CanAutoLay), nameof(CanClear),
+    nameof(CanInterpret), nameof(CanCreatePdf))]
+public bool IsBusy
+{
+    get;
+    private set => SetProperty(ref field, value);
+}
+```
+
+Every predicate and every caption is then a one-line computed property over those
+four values, which is what makes the rules readable side by side instead of
+scattered through ten `CanXxx()` bodies:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+/// <summary>True when there is a card left to draw and nothing is in flight.</summary>
+public bool CanDraw => !IsBusy && DeckRemaining > 0;
+
+/// <summary>True when there is both an empty station and a card to fill it with.</summary>
+public bool CanAutoLay => !IsBusy && FilledStations < StationCount && DeckRemaining > 0;
+
+/// <summary>True when there is anything on the table or in the tray to clear.</summary>
+public bool CanClear => !IsBusy && (FilledStations > 0 || TrayCount > 0);
+
+/// <summary>True once at least one card is laid; a partial rosette still reads.</summary>
+public bool CanInterpret => !IsBusy && FilledStations >= 1;
+
+/// <summary>True once there is an interpretation the report can be built from.</summary>
+public bool CanCreatePdf => !IsBusy && HasInterpretation;
+
+/// <summary>"4 of 9 stations filled", for the right of the status strip.</summary>
+public string StationsText => $"{FilledStations} of {StationCount} stations filled";
+
+/// <summary>"37 cards remain", under the deck stack.</summary>
+public string DeckCountText => DeckRemaining == 1 ? "1 card remains" : $"{DeckRemaining} cards remain";
+
+/// <summary>"2 cards waiting", under the tray.</summary>
+public string TrayCaption => TrayCount == 0
+    ? "No cards drawn yet"
+    : TrayCount == 1 ? "1 card waiting" : $"{TrayCount} cards waiting";
+```
+
+The commands take those properties as their predicates directly
+(`new SimpleCommand(() => CanDraw, DoDraw)`), so the rule the button obeys and the
+rule the application can show are the same expression. One method is the only
+thing that writes the counts:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+//The three counts every button and caption is gated on, recomputed from the one source of
+//  truth after anything moves
+private void RefreshCounts(bool refreshGuidance = true)
+{
+    DeckRemaining = _deck.Remaining;
+    TrayCount = _cards.Count(c => c.InTray);
+    FilledStations = _stations.Count(s => s != null);
+    AssertWholePack();
+    if (refreshGuidance) { RefreshGuidance(); }
+}
+
+//The deck, the tray and the rosette are three parts of one pack: a card is in exactly one of
+//  them, always, and the three counts add up to the forty. Anything else means a card has
+//  been lost or copied, which is worth saying the moment it happens rather than when it turns
+//  up twice in the same reading. Debug builds only; the check costs nothing in Release.
+[System.Diagnostics.Conditional("DEBUG")]
+private void AssertWholePack()
+{
+    var total = DeckRemaining + TrayCount + FilledStations;
+    System.Diagnostics.Debug.Assert(total == DeckData.Cards.Count,
+        $"The pack does not add up: {DeckRemaining} in the deck + {TrayCount} in the tray + " +
+        $"{FilledStations} laid = {total}, not {DeckData.Cards.Count}.");
+}
+```
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs` (the regions
+"Bindable properties", "Computed properties" and "The status line")
+
+**Sharp edges.**
+- `[AffectsCommands]` cannot see through a computed property. `DrawCommand`'s
+  predicate is `() => CanDraw` and `CanDraw` reads `DeckRemaining`, so it is
+  `DeckRemaining` that has to name `DrawCommand` in its attribute. Naming
+  `CanDraw` instead would compile and refresh nothing.
+- Adding a fourth count is the moment to stop. The attributes are the audit: a
+  count that has to name nine commands is a sign that the gating question, not the
+  count, is what wants naming.
+- Recompute rather than adjust. `FilledStations` is counted out of the array every
+  time, so a transaction that displaces one card while laying another cannot leave
+  the count one out. A Debug-only assertion that the three counts still add up to
+  the whole pack catches the rest.
+- The busy flag is not a cancellation mechanism. Nothing here can be cancelled
+  mid-flight, so a long job simply holds every button disabled until it finishes;
+  see
+  [Run a long job from a command with progress cancellation and a busy flag](BLUEPRINTS-MVVM.md#run-a-long-job-from-a-command-with-progress-cancellation-and-a-busy-flag)
+  for the shape to reach for when it can be.
+- A loop that places several things should recount each time round with the
+  guidance suppressed and recount once properly at the end, or the status line
+  flickers through advice the person cannot act on yet.
+
+### Keep a specific status line from being overwritten by the general guidance
+
+**When you want this.** Your status line does two jobs: it tells the person what
+to do next, and it reports what just happened. The second keeps being erased by
+the first, because the same recount that follows an action is also what refreshes
+the advice.
+
+**The MVVM shape.** Two methods on the view model, and one flag between them.
+`SetStatus(text)` writes a sentence an action chose. `RefreshGuidance()` works the
+next step out from the model as a cascade, most specific state first. The single
+recount method takes an optional `refreshGuidance` parameter, defaulted to true;
+a command that has already said something particular passes false, and its
+sentence survives.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+/// <summary>Sets the status line explicitly, because an action just happened.</summary>
+/// <param name="text">The line to show.</param>
+public void SetStatus(string text) => StatusText = text;
+
+/// <summary>Works the guiding line out from the current state of the table.</summary>
+public void RefreshGuidance()
+{
+    if (ShowInterpretationPanel)
+    {
+        StatusText = IsInterpretationStale
+            ? "The table has changed since this reading was drawn. Press Interpret again to refresh it."
+            : "Read the interpretation, then create a PDF report to keep or share it.";
+        return;
+    }
+
+    if (FilledStations >= StationCount)
+    {
+        StatusText = "All nine stations are filled. Press Interpret to read the rosette.";
+    }
+    else if (FilledStations > 0)
+    {
+        StatusText = TrayCount > 0
+            ? "Drag a drawn card onto a petal, or press Interpret to read what is already laid."
+            : "Draw another card, or press Auto-lay to fill the remaining stations.";
+    }
+    else if (TrayCount > 0)
+    {
+        StatusText = "Drag a card from the tray onto a petal of the rosette. Double-click a laid card to reverse it.";
+    }
+    else if (DeckRemaining <= 0)
+    {
+        StatusText = "The deck is empty. Press Clear to send every card back under it.";
+    }
+    else
+    {
+        StatusText = "Click the deck (or press Draw) to take a card, then drag it onto a petal.";
+    }
+}
+```
+
+The suppression rides on the recount, so no caller has to remember two calls. It
+can even be computed, as it is here: the same method both returns a card and
+announces it, and only the announcing path holds the line.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+public void ReturnToTray(ReadingCard? card, bool announce)
+{
+    // ... validation, and vacating whatever station the card was on
+
+    card.Station = -1;
+    CardMoved?.Invoke(card, false);
+    if (announce) { SetStatus($"{card.Card.Name} returned to the tray."); }
+
+    InvalidateInterpretation(hidePanel: false);
+    RefreshCounts(refreshGuidance: !announce);
+}
+```
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs` (the region
+"The status line", and the `refreshGuidance:` arguments through "What is on the
+table" and the command bodies)
+
+**Sharp edges.**
+- The default has to be "refresh". Most calls want the advice, and the few that do
+  not are the ones worth marking at the call site; the other way round leaves
+  silent stale advice everywhere.
+- Order the cascade from most specific to least, and return early from the branch
+  that covers a whole mode. A panel that is showing has its own two sentences and
+  must not fall through to advice about the table behind it.
+- The guidance reads only the recomputed counts and the mode flags, never the
+  model fields. That is what lets it be called from anywhere, including from the
+  constructor before anything has happened.
+- A status line set from a background continuation still has to be marshalled;
+  `SetStatus` writes a bound property like any other. The commands here wrap those
+  calls in `InvokeOnMainThread`.
+
+### Initialize service fields to working defaults before the container replaces them
+
+**When you want this.** The page declares its view model in `<Page.DataContext>`,
+so the XAML designer constructs it, and the designer has no service container. The
+constructor returns early in design mode, which means every service field the rest
+of the class uses is still null.
+
+[Guard a view model constructor for the XAML designer](BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer)
+covers the guard itself. This recipe is about the two things that make the guard
+survivable: what the fields are initialized to, and the startup ordering that
+guarantees the real objects are in place before the first page is built.
+
+**The MVVM shape.** Each service field is declared with a working concrete
+instance as its initializer - the library's own default implementation, and a null
+logger for the logger. After the design-mode guard, the constructor asks the
+resolver for each one and keeps what it already has when the resolver has nothing:
+`GetService<T>() ?? _field`. Nothing in the class null-checks a service, and the
+designer gets a live object behind every bound property.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+//The library's default implementations stand in until the container's registrations
+//  replace them in the constructor, so design mode - which returns before that - still has
+//  working objects behind every property and nothing has to null-check them.
+private IReadingInterpreter _interpreter = new ReadingInterpreter();
+private IReadingSerializer _serializer = new ReadingSerializer();
+private IPdfReportBuilder _pdfBuilder = new PdfReportBuilder();
+private ILogger _log = NullLogger.Instance;
+
+// ...
+
+public MainViewModel()
+{
+    if (IsDesignMode(true)) { return; } //Leave as the first line of constructor
+
+    //The logger factory App.InitializeLogging() wired into the platform, when there is one
+    var loggerFactory = LogExtensionPoint.AmbientLoggerFactory;
+    if (loggerFactory != null) { _log = loggerFactory.CreateLogger<MainViewModel>(); }
+    _log.LogInformation("Main view model startup.");
+
+    _interpreter = GetService<IReadingInterpreter>() ?? _interpreter;
+    _serializer = GetService<IReadingSerializer>() ?? _serializer;
+    _pdfBuilder = GetService<IPdfReportBuilder>() ?? _pdfBuilder;
+
+    RefreshCounts();
+    RefreshGuidance();
+}
+```
+
+The other half is ordering. The resolver is created and the library registered
+into it, and design mode is turned off, before `InitializeComponent()` - so by the
+time the first page is navigated to and its own `InitializeComponent()` constructs
+the view model from `<Page.DataContext>`, `GetService<T>()` has somewhere to ask
+and the guard falls through.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/App.xaml.cs
+public App()
+{
+    //Merriweather is the app's voice: an old-style serif for a temple oracle
+    global::CodeBrix.Platform.UI.FeatureConfiguration.Font.DefaultTextFontFamily =
+        "ms-appx:///CodeBrix.Platform.Fonts.Merriweather/Fonts/Merriweather.ttf";
+
+    SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
+    {
+        //Register the app's services here
+        services.AddReading();
+    });
+    SimpleViewModel.SetIsDesignMode(false);
+
+    // ... the launch size, which must be set before any window exists
+
+    RequestedTheme = ApplicationTheme.Dark;
+    InitializeComponent();
+}
+```
+
+```xml
+<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml -->
+    <Page.DataContext>
+        <vm:MainViewModel />
+    </Page.DataContext>
+```
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+`InannaRosette/src/InannaRosette.UI/App.xaml.cs` and
+`src/InannaRosette.UI/Views/MainPage.xaml`
+
+**Sharp edges.**
+- The default instance has to be a real implementation, not a stub that throws. A
+  designer that constructs the view model will call into it the moment a bound
+  property is read.
+- `?? _field` rather than plain assignment. A registration that is missing then
+  degrades to the default instead of leaving a null field that fails much later,
+  at the first command.
+- The guard has to stay the first line. Anything above it - a logger lookup, a
+  field assignment with a side effect - runs in the designer too.
+- `SetIsDesignMode(false)` belongs with the registration, in the `App`
+  constructor, not in a page. A view model constructed before it runs takes the
+  design-mode path at run time and looks like a view model whose services all
+  failed to resolve.
+
+### Compose the document before asking where to save it
+
+**When you want this.** A command that produces a file and then asks the person
+where to put it. Asking first is the obvious order and the wrong one: a
+composition that fails after the dialog has been answered has already made the
+person choose a destination for nothing, and may have left a placeholder file
+behind at it.
+
+[Save a file through a native dialog from the view model](BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model)
+covers the picker bridge itself and what to do on a head that has none. This
+recipe is about where the picker call sits relative to the work.
+
+**The MVVM shape.** The command does the expensive composition first, on a worker,
+with the busy flag held and a status line saying so. Only once it holds the bytes
+does it clear the flag and ask the bridge for a path. Cancellation is a status
+line, not an error. Writing is its own guarded step, and the finished path lands
+in a bound property so the "open it" command can enable itself.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+private async Task DoCreatePdf()
+{
+    var interpretation = Interpretation;
+    // ... a guard that says "Press Interpret first" when there is nothing to report
+
+    byte[] bytes;
+    string suggested;
+    IsBusy = true;
+    SetStatus("Composing the report…");
+    try
+    {
+        //The report draws every card's art and embeds the fonts, which is far too much
+        //  work for the UI thread
+        suggested = _pdfBuilder.SuggestedFileName(interpretation);
+        bytes = await Task.Run(() => _pdfBuilder.Build(interpretation));
+    }
+    catch (Exception e)
+    {
+        _log.LogError(e, "PDF build failed.");
+        InvokeOnMainThread(() => IsBusy = false);
+        await ShowMessage("The report could not be composed", e.Message);
+        return;
+    }
+
+    InvokeOnMainThread(() => IsBusy = false);
+
+    string? path;
+    try
+    {
+        path = await PickSavePath(suggested, "PDF document", ".pdf");
+    }
+    catch (Exception e)
+    {
+        _log.LogError(e, "Save picker failed.");
+        await ShowMessage("The file dialog is unavailable", e.Message);
+        return;
+    }
+
+    if (string.IsNullOrWhiteSpace(path))
+    {
+        InvokeOnMainThread(() => SetStatus("The report was not saved."));
+        return;
+    }
+
+    try
+    {
+        await File.WriteAllBytesAsync(path, bytes);
+    }
+    catch (Exception e)
+    {
+        await ShowMessage("The report could not be written", e.Message);
+        return;
+    }
+
+    InvokeOnMainThread(() =>
+    {
+        LastSavedReportPath = path;
+        SetStatus($"Report saved to {path}");
+    });
+
+    var savedDialog = ShowReportSavedAsync;
+    if (savedDialog != null) { await savedDialog(path); }
+}
+```
+
+The library is also what names the file, so the suggested name comes out of the
+same object that composed the bytes rather than being assembled at the picker call
+site. Handing the finished file to the operating system is a separate command, and
+the one place in the application that asks the host to open anything:
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+//One place in the whole application asks the host to open a file. A refusal is a status
+//  line, never an exception that reaches the user.
+private async Task DoOpenSavedReport()
+{
+    if (!CanOpenSavedReport()) { return; }
+
+    var path = LastSavedReportPath;
+    try
+    {
+        //Uri.TryCreate(path, UriKind.Absolute) rejects a POSIX path such as /home/me/a.pdf,
+        //  which is exactly what the Linux and macOS heads hand back; the Uri constructor
+        //  over a full path accepts both shapes
+        var uri = new Uri(Path.GetFullPath(path));
+
+        var opened = await Windows.System.Launcher.LaunchUriAsync(uri);
+        if (!opened)
+        {
+            InvokeOnMainThread(() => SetStatus("No application was available to open that report."));
+        }
+    }
+    catch (Exception e)
+    {
+        InvokeOnMainThread(() => SetStatus($"That report could not be opened: {e.Message}"));
+    }
+}
+```
+
+**Where to look.**
+`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs` (`DoCreatePdf`,
+`DoSaveReading`, `DoOpenSavedReport`)
+`InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs`
+(`SuggestedFileName` beside `Build`)
+
+**Sharp edges.**
+- Clear the busy flag before the picker, not after. A modal native dialog can stay
+  open for as long as the person likes, and leaving every button disabled behind it
+  looks like the application has hung.
+- Launching a saved file needs `new Uri(Path.GetFullPath(path))`, not
+  `Uri.TryCreate(path, UriKind.Absolute, ...)`. The latter refuses a POSIX path,
+  which is exactly what the Linux and macOS heads hand back.
+- The launcher has two failure modes and both have to be handled in one place: it
+  can return false, and it can throw. Neither should reach the person as an
+  exception.
+- The cheaper sibling command composes first too - the JSON is serialized before
+  the picker is shown - so the rule is about order, not about how long the work
+  takes.
