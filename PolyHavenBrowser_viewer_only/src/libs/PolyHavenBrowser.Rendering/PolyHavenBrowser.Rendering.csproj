@@ -16,7 +16,7 @@
          control, so it keeps its own default RootNamespace (PolyHavenBrowser.Rendering)-->
     <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.254.167" />
 
-    <PackageReference Include="SharpGLTF.Runtime" Version="1.0.6" />
+    <PackageReference Include="SharpGLTF.Runtime" Version="1.0.7" />
     <PackageReference Include="Silk.NET.Vulkan" Version="2.23.0" />
     <PackageReference Include="SkiaSharp" Version="4.152.0" />
     <PackageReference Include="TinyEXR.NET" Version="1.1.0" />
