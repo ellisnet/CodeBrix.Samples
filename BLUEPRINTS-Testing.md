@@ -687,7 +687,7 @@ internal static class TestAssets
     }
 
     /// <summary>
-    /// Builds a single-triangle .glb via SharpGLTF.Toolkit: vertices (0,0,0), (1,0,0),
+    /// Builds a single-triangle .glb via CodeBrix.Graphics3D.Gltf2: vertices (0,0,0), (1,0,0),
     /// (0,1,0) with a red, double-sided material, optionally translated.
     /// </summary>
     public static byte[] BuildTriangleGlb(Vector3? translation = null) { /* ... */ }

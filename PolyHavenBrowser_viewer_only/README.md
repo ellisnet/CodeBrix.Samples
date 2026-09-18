@@ -316,6 +316,7 @@ assembly. The two side libraries enable `Nullable`, `ImplicitUsings` and
 | CodeBrix.Platform SkiaSharp Views | `SKXamlCanvas`, the surface the off-screen 3D frame and the CPU panorama are composited onto | `src/PolyHavenBrowser.UI/Views/MainPage.xaml`, `src/PolyHavenBrowser.Core/Display/ModelScenePainter.cs`, `src/PolyHavenBrowser.Core/Display/PanoramaScenePainter.cs` |
 | CodeBrix.Platform Graphics3DGL | `OffscreenGLContext`, the cross-platform off-screen native GL context, and transitively the `GL` binding the shader renderer draws with | `src/PolyHavenBrowser.Core/Display/OpenGlModelRenderEngine.cs`, `src/libs/PolyHavenBrowser.Rendering/GL/GlModelSceneRenderer.cs` |
 | CodeBrix.Platform Fonts (Roboto) | The bundled application font, set as the default text font family and also exposed as a `FontFamily` resource | `src/PolyHavenBrowser.UI/App.xaml`, `src/PolyHavenBrowser.UI/App.xaml.cs` |
+| CodeBrix.Graphics3D.Gltf2 | Reads `.gltf` and `.glb`, walks the node tree, and exposes material channels including `Transmission`; its builders make in-memory `.glb` fixtures in the tests | `src/libs/PolyHavenBrowser.Rendering/Models/GltfModelLoader.cs`, `tests/libs/PolyHavenBrowser.Rendering.Tests/TestData/TestAssets.cs` |
 | CodeBrix.Imaging | Decodes the downloaded JPEG, PNG and WebP maps and glTF embedded textures to `SKBitmap` or raw RGBA | `src/libs/PolyHavenBrowser.Rendering/Images/LdrImageDecoder.cs` |
 | CodeBrix.TestMocks | `Mock<T>` doubles for `IModelLoader`, `IModelSceneRenderer`, `IPolyHavenApiClient` and its factory | `tests/libs/PolyHavenBrowser.Rendering.Tests/Mocked/`, `tests/libs/PolyHavenBrowser.PolyHavenApiClient.Tests/Mocked/` |
 | SilverAssertions | The assertion style in both test projects | both projects under `tests/libs/` |
@@ -324,7 +325,6 @@ Third-party libraries:
 
 | Library | What it does in this application | Where |
 | --- | --- | --- |
-| SharpGLTF | Reads `.gltf` and `.glb`, walks the node tree, and exposes material channels including `Transmission`; its Toolkit builds in-memory `.glb` fixtures in the tests | `src/libs/PolyHavenBrowser.Rendering/Models/GltfModelLoader.cs`, `tests/libs/PolyHavenBrowser.Rendering.Tests/TestData/TestAssets.cs` |
 | Silk.NET.Vulkan | The whole Vulkan backend: instance, device, off-screen images, pipelines and readback | `src/libs/PolyHavenBrowser.Rendering/Vulkan/VulkanSceneRenderer.cs` |
 | TinyEXR.NET | Decodes OpenEXR images to linear floats | `src/libs/PolyHavenBrowser.Rendering/Images/ExrDecoder.cs` |
 | SkiaSharp | The `SKBitmap`, `SKImage` and `SKCanvas` types the painters, decoders and tone mapper work in | throughout `src/PolyHavenBrowser.Core/Display/` and `src/libs/PolyHavenBrowser.Rendering/` |
@@ -636,8 +636,8 @@ between frames, a textured material's color, the full path from a `.glb` to pixe
 depth-ordering regression, so all three backends prove the same behaviors. The Metal suite's pixel
 checks are written to be orientation-agnostic, scanning the whole image or picking a vertically
 symmetric center pixel, so they hold whether the readback is top-down or bottom-up. Fixtures are
-built in memory: `TestData/TestAssets.cs` hand-encodes Radiance bytes and uses SharpGLTF.Toolkit to
-build a `.glb`, so no binary assets are committed.
+built in memory: `TestData/TestAssets.cs` hand-encodes Radiance bytes and uses CodeBrix.Graphics3D.Gltf2
+to build a `.glb`, so no binary assets are committed.
 
 The API client tests are the offline counterpart. `StubHttpMessageHandler` matches routes by
 path-and-query or URL fragment, records every request and 404s anything unrouted, which is how the

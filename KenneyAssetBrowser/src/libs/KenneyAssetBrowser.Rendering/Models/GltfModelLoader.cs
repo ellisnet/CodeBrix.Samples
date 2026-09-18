@@ -1,11 +1,11 @@
 using System.Numerics;
-using SharpGLTF.Geometry;
-using SharpGLTF.Schema2;
+using CodeBrix.Graphics3D.Gltf2.Geometry;
+using CodeBrix.Graphics3D.Gltf2.Schema2;
 
 namespace KenneyAssetBrowser.Rendering;
 
 /// <summary>
-/// The default <see cref="IModelLoader"/>, backed by SharpGLTF. Loads .glb and .gltf
+/// The default <see cref="IModelLoader"/>, backed by CodeBrix.Graphics3D.Gltf2. Loads .glb and .gltf
 /// files (Kenney 3D kits ship a GLB per model, whose colormap texture sits beside it),
 /// bakes node transforms into the vertex data, generates smooth normals when the source
 /// has none, and decodes base color textures via CodeBrix.Imaging.

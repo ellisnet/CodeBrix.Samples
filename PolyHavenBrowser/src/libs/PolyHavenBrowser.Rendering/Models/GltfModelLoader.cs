@@ -1,10 +1,10 @@
 using System.Numerics;
-using SharpGLTF.Schema2;
+using CodeBrix.Graphics3D.Gltf2.Schema2;
 
 namespace PolyHavenBrowser.Rendering;
 
 /// <summary>
-/// The default <see cref="IModelLoader"/>, backed by SharpGLTF. Loads .glb and .gltf
+/// The default <see cref="IModelLoader"/>, backed by CodeBrix.Graphics3D.Gltf2. Loads .glb and .gltf
 /// files (the format Poly Haven serves for every model), bakes node transforms into the
 /// vertex data, generates smooth normals when the source has none, and decodes base
 /// color textures via CodeBrix.Imaging.

@@ -137,7 +137,7 @@ public class GlModelSceneRendererTests
     [Fact]
     public void full_pipeline_from_glb_to_pixels()
     {
-        //Arrange - end to end: SharpGLTF-built .glb → loader → GL renderer → pixels
+        //Arrange - end to end: CodeBrix.Graphics3D.Gltf2-built .glb → loader → GL renderer → pixels
         using var egl = RequireGl();
         var gl = egl.Gl;
         const uint size = 64;

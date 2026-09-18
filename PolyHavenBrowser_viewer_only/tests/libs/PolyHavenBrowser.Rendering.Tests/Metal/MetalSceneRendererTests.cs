@@ -76,7 +76,7 @@ public class MetalSceneRendererTests
     [Fact]
     public void full_pipeline_from_glb_to_pixels()
     {
-        //Arrange - end to end: SharpGLTF-built .glb → loader → Metal renderer → pixels
+        //Arrange - end to end: CodeBrix.Graphics3D.Gltf2-built .glb → loader → Metal renderer → pixels
         RequireMetal();
         const int size = 64;
         var model = new GltfModelLoader().Load(new MemoryStream(TestAssets.BuildTriangleGlb()));

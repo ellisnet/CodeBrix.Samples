@@ -271,6 +271,7 @@ project references only the one library it mirrors.
 | CodeBrix.Platform.AudioPlayer add-in | The `AudioPlayer` element that decodes and plays a pack's clips from a stream, and exposes the position and duration the scrubber binds to | `src/KenneyAssetBrowser.UI/Views/MainPage.xaml`, `src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs` |
 | CodeBrix.Platform.AppSettings add-in | The whole settings store - typed get and set, change events, startup auto-backup and pruning, corruption recovery, import and export - wrapped by this application's own facade | `src/libs/KenneyAssetBrowser.Settings/SettingsService.cs`, `src/libs/KenneyAssetBrowser.Settings/LoggingService.cs` |
 | CodeBrix.Compression | Zip reading: the archive type, its entries and entry streams; the tests also use its zip writer | `src/libs/KenneyAssetBrowser.AssetRead/BundleArchive.cs`, `tests/libs/KenneyAssetBrowser.AssetRead.Tests/TestZipBuilder.cs` |
+| CodeBrix.Graphics3D.Gltf2 | Reads `.glb` and `.gltf` documents and evaluates their scenes into triangles; its scene evaluation is what CPU-bakes the animation clips, and its builders make the tiny in-memory models the loader tests use | `src/libs/KenneyAssetBrowser.Rendering/Models/GltfModelLoader.cs`, `src/libs/KenneyAssetBrowser.Rendering/Models/AnimatedModel.cs`, `tests/libs/KenneyAssetBrowser.Rendering.Tests/TestData/TestAssets.cs` |
 | CodeBrix.Imaging | Decodes PNG, JPEG, WebP and the rest into RGBA, both as a bitmap for display and as raw bytes for a GPU texture upload | `src/libs/KenneyAssetBrowser.Rendering/Images/LdrImageDecoder.cs` |
 | CodeBrix.SkiaSvg | Rasterizes a pack's SVG art for the viewer and for grid thumbnails | `src/libs/KenneyAssetBrowser.Rendering/Images/SvgImageDecoder.cs` |
 | CodeBrix.Sqlite | Not referenced by the application directly; it arrives with the AppSettings add-in and its store type is named by the settings tests | `tests/libs/KenneyAssetBrowser.Settings.Tests/SettingsStoreTests.cs` |
@@ -279,7 +280,6 @@ Third-party libraries:
 
 | Library | What it does in this application | Where |
 | --- | --- | --- |
-| SharpGLTF (Runtime and Toolkit) | Reads `.glb` and `.gltf` documents and evaluates their scenes into triangles; the Toolkit's scene evaluation is what CPU-bakes the animation clips, and it also builds the tiny in-memory models the loader tests use | `src/libs/KenneyAssetBrowser.Rendering/Models/GltfModelLoader.cs`, `src/libs/KenneyAssetBrowser.Rendering/Models/AnimatedModel.cs`, `tests/libs/KenneyAssetBrowser.Rendering.Tests/TestData/TestAssets.cs` |
 | SkiaSharp | The bitmap, canvas, paint and typeface types the Rendering library draws with | `src/libs/KenneyAssetBrowser.Rendering/Images/`, `src/libs/KenneyAssetBrowser.Rendering/Tiled/TiledMapRenderer.cs` |
 | Microsoft.Extensions.Hosting and Logging.Console | The generic host that backs `SimpleServiceResolver`, and the Debug-only console logger factory | `src/KenneyAssetBrowser.Core/Helpers/HostHelper.cs`, `src/KenneyAssetBrowser.UI/App.xaml.cs` |
 | xUnit v3, Microsoft.NET.Test.Sdk, SilverAssertions | The test stack every test project uses | the three `tests/libs/*/*.csproj` |

@@ -1,4 +1,4 @@
-using SharpGLTF.Schema2;
+using CodeBrix.Graphics3D.Gltf2.Schema2;
 
 namespace KenneyAssetBrowser.Rendering;
 
