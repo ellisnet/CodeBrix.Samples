@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <!-- Match the namespace used by the app code -->
+    <RootNamespace>BrixInvaders</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.254.167" />
+    <PackageReference Include="CodeBrix.Platform.Fonts.Merriweather.OflLicenseForever" Version="1.0.248.1209" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\libs\BrixInvaders.GameLogic\BrixInvaders.GameLogic.csproj" />
+    <ProjectReference Include="..\libs\BrixInvaders.Assets\BrixInvaders.Assets.csproj" />
+    <ProjectReference Include="..\libs\BrixInvaders.Music\BrixInvaders.Music.csproj" />
+    <ProjectReference Include="..\libs\BrixInvaders.Game\BrixInvaders.Game.csproj" />
+  </ItemGroup>
+</Project>
