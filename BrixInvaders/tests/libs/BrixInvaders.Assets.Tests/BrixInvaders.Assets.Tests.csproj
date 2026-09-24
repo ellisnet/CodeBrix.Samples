@@ -15,15 +15,24 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
+    <!-- libSkiaSharp native for decoding the Kenney images on Linux in these tests (the game gets it from its
+         platform head). SkiaSharp itself already arrives through the engine package. -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.152.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="xunit.v3" Version="4.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The game's own Kenney bundles (CC0) and the promo image, copied beside the test executable in the same
+         assets/kenney layout the game ships. See FIXTURES-LICENSE.txt. They are None items rather than Content:
+         the CodeBrix.Platform build targets re-root every copy-to-output Content item of a non-head project under
+         $(AssemblyName)/, which on Linux collides with the extensionless test executable of the same name. -->
+    <None Include="..\..\..\assets\kenney\**\*" Link="assets\kenney\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

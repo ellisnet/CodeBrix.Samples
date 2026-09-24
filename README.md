@@ -17,8 +17,8 @@ knowing about: three applications (JustBetweenUs, PainDiagram and
 WikipediaPublisher) additionally carry native WinUI 3 and WPF heads that reuse
 the same view model without the CodeBrix.Platform UI stack, and JustBetweenUs
 adds a .NET MAUI head, the only mobile head in the repository, while
-CodeBrixVideoTool, GitHubIssueFinder and InannaRosette each build four of the
-six. Libraries are consumed as packages, never as source references, so each
+BrixInvaders, CodeBrixVideoTool, GitHubIssueFinder and InannaRosette each build
+four of the six. Libraries are consumed as packages, never as source references, so each
 application folder is self-contained and can be opened and built on its own.
 
 Everything in this repository is licensed under the Apache License, Version 2.0.
@@ -38,6 +38,7 @@ collect how-tos mined from all of them.
 
 | Application | What it is | Headline CodeBrix libraries |
 | --- | --- | --- |
+| [BrixInvaders](BrixInvaders/README.md) | Space Invaders game with five sectors, multi-section bosses, power-ups, high scores, keyboard and gamepad play, every sprite, sound and font read straight from five Kenney zips, and endless music written live by a model while it plays | CodeBrix.Platform.GameEngine with its KenneyAssets, Sdl2 and GeneratedMusic add-ins; the CodeBrix.Audio.MusicGeneration SkyTNT and MuPT models; the CodeBrix.Platform AppSettings add-in |
 | [CodeBrixVideoTool](CodeBrixVideoTool/README.md) | Desktop video converter and player for AV1 media, with chapter and caption drop-downs, a resolution and quality ladder, and long conversions run with live progress and cancellation | CodeBrix.Platform.VideoPlayer add-in, CodeBrix.VideoPlayback, CodeBrix.VideoPlayback.Authoring, CodeBrix.VideoProcessing |
 | [DRAKON.Brix](DRAKON.Brix/README.md) | The DRAKON Editor, a visual algorithm-language editor whose entire Tcl/Tk program runs unmodified on a managed Tcl interpreter and Tk toolkit inside one XAML page, generating source code in many target languages and exporting diagrams to PDF | CodeBrix.Platform.TclTk, CodeBrix.Platform.TclTk.Extras, CodeBrix.Platform.TkCanvas |
 | [GameEngineMusicDemo](GameEngineMusicDemo/README.md) | Control surface for the game engine's music system: buses, fades and crossfades, bar-quantized transitions, adaptive stems, MIDI through SFZ and Decent Sampler instruments, ducking, stingers and a global pause, with every asset generated on first run | CodeBrix.Platform.GameEngine |

@@ -19,4 +19,13 @@
     <ProjectReference Include="..\libs\BrixInvaders.Music\BrixInvaders.Music.csproj" />
     <ProjectReference Include="..\libs\BrixInvaders.Game\BrixInvaders.Game.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- The five Kenney bundles travel next to the executable as the .zip files they are downloaded as (plus
+         Kenney's bundle promo picture); the asset provider reads a bundle where it lies, from assets/kenney.
+         None items rather than Content: the CodeBrix.Platform build targets re-root every copy-to-output Content
+         item of a non-head project under $(AssemblyName)/, which would ship a second copy of the zips in a
+         BrixInvaders.Core folder beside the executable. None items flow to the heads at assets/kenney only. -->
+    <None Include="..\..\assets\**\*" Link="assets\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

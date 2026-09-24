@@ -1,5 +1,31 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+
+    <!-- Keep a distinct RootNamespace (not the app's "BrixInvaders") so a transitive
+         CodeBrix.Platform reference does not generate a duplicate GlobalStaticResources. -->
+    <RootNamespace>BrixInvaders.Music</RootNamespace>
+
+    <!-- The model and SoundFont packages copy their files (model weights, the SoundFont) into the output of every
+         project that reaches them. This library never loads them, so its own output skips the copy; the app heads
+         that reach these packages through BrixInvaders.Core still receive the files beside the executable. -->
+    <CodeBrixSkyTNTCopyAssetsToOutput>false</CodeBrixSkyTNTCopyAssetsToOutput>
+    <CodeBrixMuPTCopyAssetsToOutput>false</CodeBrixMuPTCopyAssetsToOutput>
+    <CodeBrixFluidR3GmCopyAssetsToOutput>false</CodeBrixFluidR3GmCopyAssetsToOutput>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- TEMPORARY local-feed version (see BrixInvaders/nuget.config); pinned to the published version when the
+         temporary feed is unwound. It brings the engine and CodeBrix.Audio.MusicGeneration with it. -->
+    <PackageReference Include="CodeBrix.Platform.GameEngine.GeneratedMusic.MitLicenseForever" Version="1.0.262.9000-brixinvaders.4" />
+
+    <!-- The synthesized General MIDI instruments ("ModestSynthGm"); also arrives through MusicGeneration, named here
+         because this library registers it. -->
+    <PackageReference Include="CodeBrix.Audio.ModestSynth.MitLicenseForever" Version="1.0.267.279" />
+
+    <!-- The two models and the recorded instrument library the player can choose between. -->
+    <PackageReference Include="CodeBrix.Audio.MusicGeneration.SkyTNT.ApacheLicenseForever" Version="1.0.266.271" />
+    <PackageReference Include="CodeBrix.Audio.MusicGeneration.MuPT.ApacheLicenseForever" Version="1.0.266.257" />
+    <PackageReference Include="CodeBrix.Audio.Samples.FluidR3Gm.MitLicenseForever" Version="1.0.264.1274" />
+  </ItemGroup>
 </Project>

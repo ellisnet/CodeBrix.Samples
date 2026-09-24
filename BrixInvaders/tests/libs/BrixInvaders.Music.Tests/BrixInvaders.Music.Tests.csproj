@@ -8,6 +8,12 @@
     <OutputType>Exe</OutputType>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+
+    <!-- The tests register the models and libraries but never load them: skip copying the model weights and the
+         SoundFont into the test output. -->
+    <CodeBrixSkyTNTCopyAssetsToOutput>false</CodeBrixSkyTNTCopyAssetsToOutput>
+    <CodeBrixMuPTCopyAssetsToOutput>false</CodeBrixMuPTCopyAssetsToOutput>
+    <CodeBrixFluidR3GmCopyAssetsToOutput>false</CodeBrixFluidR3GmCopyAssetsToOutput>
   </PropertyGroup>
 
   <ItemGroup>

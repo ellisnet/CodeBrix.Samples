@@ -1,5 +1,36 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+
+    <!-- Keep a distinct RootNamespace (not the app's "BrixInvaders") so a transitive
+         CodeBrix.Platform reference does not generate a duplicate GlobalStaticResources. -->
+    <RootNamespace>BrixInvaders.Game</RootNamespace>
+
+    <!-- The model and SoundFont packages (reached through BrixInvaders.Music) copy their files into the output of
+         every project that reaches them. This library never loads them, so its own output skips the copy; the app
+         heads still receive the files beside the executable. -->
+    <CodeBrixSkyTNTCopyAssetsToOutput>false</CodeBrixSkyTNTCopyAssetsToOutput>
+    <CodeBrixMuPTCopyAssetsToOutput>false</CodeBrixMuPTCopyAssetsToOutput>
+    <CodeBrixFluidR3GmCopyAssetsToOutput>false</CodeBrixFluidR3GmCopyAssetsToOutput>
   </PropertyGroup>
+
+  <!-- This library owns the CodeBrix.Platform.GameEngine references (engine core + Host layer in one
+       package, the Kenney asset provider, SDL2 gamepads and generated music); the app's .Core project
+       depends on this library rather than referencing the engine directly. -->
+  <ItemGroup>
+    <!-- TEMPORARY local-feed versions (see BrixInvaders/nuget.config); pinned to the published versions when the
+         temporary feed is unwound. -->
+    <PackageReference Include="CodeBrix.Platform.GameEngine.MitLicenseForever" Version="1.0.262.9000-brixinvaders.4" />
+    <PackageReference Include="CodeBrix.Platform.GameEngine.KenneyAssets.MitLicenseForever" Version="1.0.262.9000-brixinvaders.4" />
+    <PackageReference Include="CodeBrix.Platform.GameEngine.Sdl2.ZlibLicenseForever" Version="1.0.262.9000-brixinvaders.4" />
+    <PackageReference Include="CodeBrix.Platform.GameEngine.GeneratedMusic.MitLicenseForever" Version="1.0.262.9000-brixinvaders.4" />
+    <!-- Every persisted value (settings, high scores) goes through Settings/SettingsService over this add-in. -->
+    <PackageReference Include="CodeBrix.Platform.AppSettings.ApacheLicenseForever" Version="1.0.254.167" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BrixInvaders.GameLogic\BrixInvaders.GameLogic.csproj" />
+    <ProjectReference Include="..\BrixInvaders.Assets\BrixInvaders.Assets.csproj" />
+    <ProjectReference Include="..\BrixInvaders.Music\BrixInvaders.Music.csproj" />
+  </ItemGroup>
 </Project>

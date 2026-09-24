@@ -5,17 +5,17 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="clr-namespace:BrixInvaders.ViewModels;assembly=BrixInvaders.Core"
     xmlns:local="using:BrixInvaders.Views"
+    xmlns:game="clr-namespace:CodeBrix.Platform.GameEngine.Host.Rendering;assembly=CodeBrix.Platform.GameEngine.Host"
     FontFamily="{StaticResource MerriweatherFont}"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="Black">
 
     <Page.DataContext>
         <vm:MainViewModel />
     </Page.DataContext>
 
-    <Grid>
-        <TextBlock Text="{d:Binding Greeting}"
-                   FontSize="24"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center" />
+    <!-- The whole window is the game: the engine draws the HUD, the menus and every screen itself, and letterboxes
+         the 1280 x 720 playfield into whatever size the window is. -->
+    <Grid Background="Black">
+        <game:GameSurfaceCanvas x:Name="GameCanvas" />
     </Grid>
 </Page>

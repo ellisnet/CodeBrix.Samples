@@ -1,0 +1,144 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the BrixInvaders sample application, together with the licenses under
+which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here. That includes the game engine and its Kenney asset,
+gamepad and generated-music add-ins, the AppSettings add-in, and the music
+generation and audio libraries the generated music runs on.
+
+Note that the CodeBrix packages this application uses are not all under the
+same license; the family's package-name suffix records each one's license, so
+check the suffix in each csproj before shipping a derivative.
+
+------------------------------------------------------------------------
+Kenney asset packs  (bundled: assets/kenney/*.zip)
+------------------------------------------------------------------------
+Every picture, sprite, sound effect and in-game font in BrixInvaders comes
+from five asset packs by Kenney (https://kenney.nl), shipped as the zip files
+Kenney publishes them in. The zips are unmodified copies of Kenney's downloads:
+nothing in them is extracted, renamed, converted or repacked, and the game
+reads them where they lie at run time. The five packs, named as each pack's
+own license file names it:
+
+  - Space Shooter Remastered  (kenney_space-shooter-remastered.zip)
+      Its license.txt reads "Space Shooter (Remastered, plus fonts and
+      sounds) by Kenney Vleugels (www.kenney.nl)"; the game shows it as
+      "Space Shooter Remastered".
+  - Space Shooter Extension  (kenney_space-shooter-extension.zip)
+      "Space Shooter Extension by Kenney Vleugels (Kenney.nl)"
+  - Planets (1.0)  (kenney_planets.zip)
+      "Created/distributed by Kenney (www.kenney.nl)"
+  - Sci-Fi Sounds (1.0)  (kenney_sci-fi-sounds.zip)
+      "Created/distributed by Kenney (www.kenney.nl)"
+  - Digital Audio  (kenney_digital-audio.zip)
+      "Digital Audio by Kenney Vleugels (Kenney.nl)"
+
+Each zip contains Kenney's own license file, which is reproduced here in
+substance:
+
+  License: Creative Commons Zero (CC0)
+  http://creativecommons.org/publicdomain/zero/1.0/
+
+  You may use these assets in personal, educational and commercial projects.
+  Credit (Kenney or www.kenney.nl) would be nice but is not mandatory.
+
+The credit is given anyway, on every screen that shows Kenney content:
+"Ships, sounds and planets by Kenney - kenney.nl - CC0". The credits screen
+names every pack and links to https://kenney.nl, to Kenney's Patreon
+(https://www.patreon.com/kenney/) and to the full Kenney game assets bundle
+(https://kenney.itch.io/kenney-game-assets).
+
+------------------------------------------------------------------------
+Fonts  (inside kenney_space-shooter-remastered.zip, folder Bonus)
+------------------------------------------------------------------------
+The game draws all of its own text in KenVector Future and KenVector Future
+Thin (kenvector_future.ttf and kenvector_future_thin.ttf), which ship in the
+Bonus folder of the Space Shooter Remastered pack and are read from the zip at
+run time; no font file is copied into this application.
+
+The pack's license.txt - the only license file in the pack - covers everything
+the pack contains, the Bonus folder included, and states it as License (CC0),
+http://creativecommons.org/publicdomain/zero/1.0/.
+
+For completeness: the fonts were made with FontStruct, and the license field
+embedded in each font file's own name table says "Creative Commons Attribution
+Share Alike" (http://creativecommons.org/licenses/by-sa/3.0/), with the
+copyright line "Copyright Kenney 2013" and a pointer to the font's FontStruct
+page (http://fontstruct.com/fontstructions/show/904375 for KenVector Future,
+http://fontstruct.com/fontstructions/show/904448 for KenVector Future Thin).
+BrixInvaders uses the fonts unmodified, inside the unmodified pack, and
+credits Kenney for them on the same screens as the rest of the pack. The
+XAML default font, Merriweather, arrives inside its own NuGet package.
+
+------------------------------------------------------------------------
+Kenney bundle promo picture  (bundled: assets/kenney/Kenney_asset_bundle.png)
+------------------------------------------------------------------------
+Kenney_asset_bundle.png is Kenney's own marketing image for the Kenney game
+assets bundle. It is not part of any asset pack and carries no license file of
+its own. BrixInvaders shows it, unmodified and with credit, on its Kenney cards
+(the sector briefing, the sector-clear screen and the credits) as the link to
+where the bundle can be had, https://kenney.itch.io/kenney-game-assets. The
+picture and the Kenney name remain Kenney's.
+
+------------------------------------------------------------------------
+Music models and instruments  (arrive as NuGet packages, not bundled here)
+------------------------------------------------------------------------
+The music is written while the game runs by a music model and played through
+an instrument library. Nothing of either is committed in this folder: each
+arrives with its NuGet package, whose build copies its files beside the
+application's executable, and each package carries its own notices, which say
+the following.
+
+  - SkyTNT model  (CodeBrix.Audio.MusicGeneration.SkyTNT)
+      Model publisher: skytnt/midi-model-tv2o-medium, taken from a pinned
+      revision at https://huggingface.co/skytnt/midi-model-tv2o-medium. The
+      publisher identifies the model license as Apache-2.0 in its model card.
+      The package's copy is modified: both ONNX graphs are reduced with
+      weight-only INT4 quantization. The original model card, the license and
+      a provenance record travel with the model files. No training data is
+      included. The wrapper code is Apache-2.0, Jeremy Ellis and contributors.
+
+  - MuPT model  (CodeBrix.Audio.MusicGeneration.MuPT)
+      Model publisher: m-a-p/MuPT-v1-8192-190M, taken from a pinned revision
+      at https://huggingface.co/m-a-p/MuPT-v1-8192-190M. The publisher
+      identifies the model license as Apache-2.0 in its model card. The
+      package's copy is modified: the checkpoint is converted to GGUF and
+      quantized to Q4_K_M. The original model card, the license and a
+      provenance record travel with the model file. No training data is
+      included. The wrapper code is Apache-2.0, Jeremy Ellis and contributors.
+      MuPT runs on the model runner that arrives with the music generation
+      package; its notices name the native inference engine it bundles
+      (llama.cpp and ggml, MIT) among the other components it carries.
+
+  - FluidR3Gm instruments  (CodeBrix.Audio.Samples.FluidR3Gm)
+      The Fluid (R3) SoundFont, FluidR3_GM.sf2, by Frank Wen,
+      Copyright (c) 2000-2002, 2008 Frank Wen, released under the MIT
+      license. It is redistributed unmodified, taken from the upstream source
+      archive fluid-soundfont_3.1.orig.tar.gz in the Debian archive, and the
+      author's license and readme files are copied beside it as
+      LICENSE-FluidR3_GM.txt and README-FluidR3_GM.txt.
+
+  - ModestSynthGm instruments  (CodeBrix.Audio.ModestSynth)
+      Original CodeBrix code written from public algorithm descriptions; it
+      carries no third-party code and no recorded sound.
+
+  - The embedded replay  (CodeBrix.Audio.MusicGeneration)
+      When no model is available the music package plays one of the few
+      small pieces it carries inside its assembly. Its notices state that
+      these are the output of the two models above, run locally by the
+      package's author, and not third-party recordings or transcriptions.
+
+------------------------------------------------------------------------
+User content (opened at run time)
+------------------------------------------------------------------------
+None. BrixInvaders opens no user-supplied files. It keeps its own settings and
+high scores in a per-user settings store, and the only web access is a link
+the player chooses to open in a browser.
+
+No further third-party attribution notices apply to this sample.
