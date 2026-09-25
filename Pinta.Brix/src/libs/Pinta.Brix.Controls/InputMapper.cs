@@ -3,6 +3,7 @@
 // Maps CodeBrix.Platform input event data onto the engine's key and modifier
 // types (X11-keysym-valued Key structs, GDK-style modifier flags).
 
+using System;
 using Microsoft.UI.Xaml.Input;
 using Pinta.Brix.Engine;
 using Windows.System;
@@ -13,6 +14,9 @@ namespace Pinta.Brix.Controls;
 public static class InputMapper
 {
 	public static ModifierType ToModifierType (VirtualKeyModifiers modifiers, PointerPointProperties? props = null)
+		=> ToModifierType (modifiers, props, OperatingSystem.IsMacOS ());
+
+	internal static ModifierType ToModifierType (VirtualKeyModifiers modifiers, PointerPointProperties? props, bool isMacOS)
 	{
 		ModifierType state = ModifierType.None;
 		if (modifiers.HasFlag (VirtualKeyModifiers.Shift))
@@ -22,7 +26,7 @@ public static class InputMapper
 		if (modifiers.HasFlag (VirtualKeyModifiers.Menu))
 			state |= ModifierType.AltMask;
 		if (modifiers.HasFlag (VirtualKeyModifiers.Windows))
-			state |= ModifierType.SuperMask;
+			state |= WindowsModifierFlag (isMacOS);
 
 		if (props is not null) {
 			if (props.IsLeftButtonPressed)
@@ -36,6 +40,16 @@ public static class InputMapper
 		return state;
 	}
 
+	/// <summary>
+	/// The engine flag for the platform's Windows modifier. On macOS that
+	/// modifier is the Command key, which the engine - like GDK, which the
+	/// upstream code was written against - knows as MetaMask and treats as its
+	/// Ctrl (see ModifierTypeExtensions.IsControlPressed). Everywhere else it is
+	/// the Super/Windows key.
+	/// </summary>
+	internal static ModifierType WindowsModifierFlag (bool isMacOS)
+		=> isMacOS ? ModifierType.MetaMask : ModifierType.SuperMask;
+
 	//Modifier state tracked from the modifier keys' own down/up events. The
 	//CoreWindow.GetKeyState probe below returns nothing on the Skia heads
 	//(Window.Current is null there - the same platform gap that keeps XAML
@@ -46,12 +60,7 @@ public static class InputMapper
 	/// <summary>Records a modifier key transition; called by the canvas for every key event.</summary>
 	public static void NoteKey (VirtualKey key, bool down)
 	{
-		ModifierType mask = key switch {
-			VirtualKey.Shift or VirtualKey.LeftShift or VirtualKey.RightShift => ModifierType.ShiftMask,
-			VirtualKey.Control or VirtualKey.LeftControl or VirtualKey.RightControl => ModifierType.ControlMask,
-			VirtualKey.Menu or VirtualKey.LeftMenu or VirtualKey.RightMenu => ModifierType.AltMask,
-			_ => ModifierType.None,
-		};
+		ModifierType mask = ModifierMaskForKey (key, OperatingSystem.IsMacOS ());
 
 		if (mask == ModifierType.None)
 			return;
@@ -61,6 +70,16 @@ public static class InputMapper
 		else
 			tracked_modifiers &= ~mask;
 	}
+
+	/// <summary>The engine flag a modifier key sets, or None for any other key.</summary>
+	internal static ModifierType ModifierMaskForKey (VirtualKey key, bool isMacOS)
+		=> key switch {
+			VirtualKey.Shift or VirtualKey.LeftShift or VirtualKey.RightShift => ModifierType.ShiftMask,
+			VirtualKey.Control or VirtualKey.LeftControl or VirtualKey.RightControl => ModifierType.ControlMask,
+			VirtualKey.Menu or VirtualKey.LeftMenu or VirtualKey.RightMenu => ModifierType.AltMask,
+			VirtualKey.LeftWindows or VirtualKey.RightWindows => WindowsModifierFlag (isMacOS),
+			_ => ModifierType.None,
+		};
 
 	public static ToolKeyEventArgs ToKeyArgs (KeyRoutedEventArgs e)
 		=> new () {

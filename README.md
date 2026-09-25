@@ -81,9 +81,9 @@ time happens off the UI thread and marshals its results back.
 
 The .NET 10 SDK is the only universal prerequisite. Open the solution in the
 application's folder: most applications have a single `.slnx` there. The
-exceptions are JustBetweenUs, which has three OS-specific `.sln` files
-(`JustBetweenUs.Windows.sln`, `JustBetweenUs.Linux.sln`,
-`JustBetweenUs.MacOS.sln`) instead of a `.slnx`, and PainDiagram and
+exceptions are JustBetweenUs, which has three OS-specific `.slnx` files
+(`JustBetweenUs.Windows.slnx`, `JustBetweenUs.Linux.slnx`,
+`JustBetweenUs.MacOS.slnx`), and PainDiagram and
 WikipediaPublisher, which each have a cross-platform `.slnx` plus a
 `.Windows.slnx` that adds the native heads.
 

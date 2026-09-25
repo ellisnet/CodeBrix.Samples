@@ -665,7 +665,7 @@ each one onto the head.
 `PainDiagram/PainDiagram.Windows.slnx` and `PainDiagram/PainDiagram.WinUI/`
 `WikipediaPublisher/WikipediaPublisher.Windows.slnx`
 `JustBetweenUs/JustBetweenUs.WinUI/JustBetweenUs.WinUI.csproj` and
-`JustBetweenUs/JustBetweenUs.Windows.sln`
+`JustBetweenUs/JustBetweenUs.Windows.slnx`
 
 **Sharp edges.**
 - Without the platform mapping the solution will not build with Any CPU selected,
@@ -692,14 +692,14 @@ sharing the same project files.
 **Code.**
 
 ```text
-JustBetweenUs.Windows.sln   all six Skia heads + WinUI + WPF + Mobile + Encryption + tests
-JustBetweenUs.Linux.sln     Skia heads except WinWpfSkia + Encryption + tests
-JustBetweenUs.MacOS.sln     Skia heads except WinWpfSkia + Mobile + Encryption + tests
+JustBetweenUs.Windows.slnx  all six Skia heads + WinUI + WPF + Mobile + Encryption + tests
+JustBetweenUs.Linux.slnx    Skia heads except WinWpfSkia + Encryption + tests
+JustBetweenUs.MacOS.slnx    Skia heads except WinWpfSkia + Mobile + Encryption + tests
 ```
 
 **Where to look.**
-`JustBetweenUs/JustBetweenUs.Windows.sln`, `JustBetweenUs.Linux.sln`,
-`JustBetweenUs.MacOS.sln`
+`JustBetweenUs/JustBetweenUs.Windows.slnx`, `JustBetweenUs.Linux.slnx`,
+`JustBetweenUs.MacOS.slnx`
 `PainDiagram/PainDiagram.slnx` and `PainDiagram/PainDiagram.Windows.slnx`
 `WikipediaPublisher/WikipediaPublisher.slnx` and
 `WikipediaPublisher/WikipediaPublisher.Windows.slnx`

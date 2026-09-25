@@ -1,0 +1,33 @@
+<Solution>
+  <!-- JustBetweenUs.Linux.slnx
+       The Linux solution: the Skia heads except WinWpfSkia, the shared UI
+       shared-project, Core, the encryption library and its tests. No native
+       heads. JustBetweenUs.MacOS.slnx adds the MAUI head; JustBetweenUs.Windows.slnx
+       holds everything. -->
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="ARM CPU" />
+    <Platform Name="arm64" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/CodeBrixPlatform/">
+    <Project Path="CodeBrixPlatform/JustBetweenUs.Core/JustBetweenUs.Core.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.LinuxFrameBuffer/JustBetweenUs.LinuxFrameBuffer.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.LinuxWayland/JustBetweenUs.LinuxWayland.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.LinuxX11/JustBetweenUs.LinuxX11.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.MacOS/JustBetweenUs.MacOS.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.UI/JustBetweenUs.UI.shproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.Win32Skia/JustBetweenUs.Win32Skia.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+  </Folder>
+  <Folder Name="/Solution Items/Shared Assets/">
+    <File Path="Shared/Assets/star_icon.json" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/JustBetweenUs.Encryption.Tests/JustBetweenUs.Encryption.Tests.csproj" />
+  </Folder>
+  <Project Path="JustBetweenUs.Encryption/JustBetweenUs.Encryption.csproj" />
+</Solution>

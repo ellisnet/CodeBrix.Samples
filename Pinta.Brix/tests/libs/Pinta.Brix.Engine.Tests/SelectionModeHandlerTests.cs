@@ -50,14 +50,26 @@ public sealed class SelectionModeHandlerTests
 	}
 
 	/// <summary>
+	/// The engine's "Ctrl" (IsControlPressed) is the platform's primary modifier:
+	/// Ctrl everywhere except macOS, where - as in GDK, which the upstream code
+	/// was written against - it is the Command key, carried as MetaMask.
+	/// </summary>
+	private static readonly ModifierType primary_modifier =
+		OperatingSystem.IsMacOS () ? ModifierType.MetaMask : ModifierType.ControlMask;
+
+	public static readonly TheoryData<MouseButton, ModifierType, CombineMode> modifier_overrides = new () {
+		{ MouseButton.Left, primary_modifier, CombineMode.Union },
+		{ MouseButton.Left, ModifierType.AltMask, CombineMode.Intersect },
+		{ MouseButton.Right, ModifierType.None, CombineMode.Exclude },
+		{ MouseButton.Right, primary_modifier, CombineMode.Xor },
+	};
+
+	/// <summary>
 	/// The modifier overrides documented on the tool bar still apply on top of
 	/// the default mode.
 	/// </summary>
 	[Theory]
-	[InlineData (MouseButton.Left, ModifierType.ControlMask, CombineMode.Union)]
-	[InlineData (MouseButton.Left, ModifierType.AltMask, CombineMode.Intersect)]
-	[InlineData (MouseButton.Right, ModifierType.None, CombineMode.Exclude)]
-	[InlineData (MouseButton.Right, ModifierType.ControlMask, CombineMode.Xor)]
+	[MemberData (nameof (modifier_overrides))]
 	public void DetermineCombineMode_honours_modifier_overrides (
 		MouseButton button,
 		ModifierType modifiers,

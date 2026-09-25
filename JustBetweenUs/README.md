@@ -105,14 +105,14 @@ image assets can be pushed across completely different UI stacks.
 
 ## Building, running and testing
 
-There is no plain `JustBetweenUs.sln`. Three solutions sit beside this file, one
+There is no plain `JustBetweenUs.slnx`. Three solutions sit beside this file, one
 per operating system, each containing only the projects that can build there.
 
 | Solution | Open on | Contains |
 | --- | --- | --- |
-| `JustBetweenUs.Windows.sln` | Windows | Everything: all six Skia heads including WinWpfSkia, the shared UI shared-project, Core, the WinUI 3 head, the WPF head, the MAUI head, the encryption library and its test project |
-| `JustBetweenUs.Linux.sln` | Linux | The Skia heads except WinWpfSkia, the shared UI shared-project, Core, the encryption library and its test project. No native heads |
-| `JustBetweenUs.MacOS.sln` | macOS | The same set as the Linux solution, plus the MAUI head |
+| `JustBetweenUs.Windows.slnx` | Windows | Everything: all six Skia heads including WinWpfSkia, the shared UI shared-project, Core, the WinUI 3 head, the WPF head, the MAUI head, the encryption library and its test project |
+| `JustBetweenUs.Linux.slnx` | Linux | The Skia heads except WinWpfSkia, the shared UI shared-project, Core, the encryption library and its test project. No native heads |
+| `JustBetweenUs.MacOS.slnx` | macOS | The same set as the Linux solution, plus the MAUI head |
 
 Only WinWpfSkia is excluded from the non-Windows solutions. Win32Skia targets
 plain `net10.0`, so it restores and builds anywhere even though it only runs on
@@ -146,7 +146,10 @@ Prerequisites:
   this folder.
 - The MAUI head needs the .NET MAUI workloads installed. Its Windows target
   framework is added only when the build runs on Windows, and it builds
-  unpackaged. A Tizen target is present but commented out.
+  unpackaged. On an Intel Mac only its Android target is built, because the
+  iOS and Mac Catalyst targets need an Xcode newer than Intel Macs can run;
+  Apple Silicon Macs build all three. A Tizen target is present but commented
+  out.
 - The WinUI head needs Windows, the Windows App SDK and, for the packaged
   profile, MSIX tooling. Two launch profiles are defined, packaged and
   unpackaged, so you do not have to package the application to run it.
@@ -194,9 +197,9 @@ test class uses unconditionally exist only inside that conditional in
 
 ```text
 JustBetweenUs/
-  JustBetweenUs.Windows.sln           All nine heads plus the library and tests; open on Windows
-  JustBetweenUs.Linux.sln             Skia heads except WinWpfSkia, library and tests; open on Linux
-  JustBetweenUs.MacOS.sln             The Linux set plus the MAUI head; open on macOS
+  JustBetweenUs.Windows.slnx          All nine heads plus the library and tests; open on Windows
+  JustBetweenUs.Linux.slnx            Skia heads except WinWpfSkia, library and tests; open on Linux
+  JustBetweenUs.MacOS.slnx            The Linux set plus the MAUI head; open on macOS
   global.json                         Selects the Microsoft.Testing.Platform test runner
   README.md                           This file
   THIRD-PARTY-NOTICES.txt             Third-party attribution for the application
@@ -688,7 +691,7 @@ and [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAnd
 
 ### Three solutions, and the WinUI head's architectures
 
-The three `.sln` files exist because some heads only build on one operating system.
+The three `.slnx` files exist because some heads only build on one operating system.
 Each contains only what can build there, and all three share the same project files
 and the same "Solution Items" and "Shared Assets" folders, the latter surfacing
 `Shared/Assets` so the icons and the animation can be opened from the solution tree.
@@ -705,7 +708,7 @@ Windows App SDK package has been restored, and its `launchSettings.json` offers 
 packaged and an unpackaged profile.
 
 Read `JustBetweenUs.WinUI/JustBetweenUs.WinUI.csproj`, then the configuration block
-of `JustBetweenUs.Windows.sln`, then compare the three solutions' project lists. See
+of `JustBetweenUs.Windows.slnx`, then compare the three solutions' project lists. See
 [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere)
 and [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS-ProjectLayoutAndPackaging.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
 

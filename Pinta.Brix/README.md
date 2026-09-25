@@ -352,7 +352,11 @@ builds the engine's own `ToolMouseEventArgs` from the platform event - canvas
 coordinates, which button, which modifiers - and hands it to the tool manager.
 `InputMapper.cs` is the whole translation, and it carries the reason modifier
 state is tracked from the modifier keys' own down and up transitions rather than
-probed: the probe API returns nothing on the Skia heads. Pointer capture on press
+probed: the probe API returns nothing on the Skia heads. It also carries the one
+platform difference in modifiers: the engine keeps upstream Pinta's GDK
+convention, where "Ctrl" means the Command key on macOS (MetaMask), and
+CodeBrix.Platform reports Command as the Windows modifier, so on macOS that
+modifier maps to MetaMask and everywhere else to SuperMask. Pointer capture on press
 and release on the way out is what keeps a drag alive when it leaves the element,
 and on release the pressed-button flags are already cleared, so the released
 button has to be recovered from the update kind.

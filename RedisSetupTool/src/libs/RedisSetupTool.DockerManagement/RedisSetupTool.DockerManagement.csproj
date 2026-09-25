@@ -13,7 +13,7 @@
        enforced by the compiler rather than by discipline: a downstream project that names a
        CodeBrix.Docker type fails with CS0234. -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Docker.MitLicenseForever" Version="1.0.254.1406">
+    <PackageReference Include="CodeBrix.Docker.MitLicenseForever" Version="1.0.259.361">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>

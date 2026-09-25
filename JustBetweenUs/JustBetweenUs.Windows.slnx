@@ -1,0 +1,55 @@
+<Solution>
+  <!-- JustBetweenUs.Windows.slnx
+       The Windows solution: everything - all six Skia heads including WinWpfSkia,
+       the shared UI shared-project, Core, the native (non-Skia) WinUI 3 and WPF
+       heads, the MAUI head, the encryption library and its tests. Open this one
+       on a Windows machine. -->
+  <!-- JustBetweenUs.WinUI only declares Platforms x86/x64/ARM64 (no Any CPU),
+       so every solution platform is mapped to a concrete architecture for it;
+       every other project maps all of them to Any CPU. -->
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="ARM CPU" />
+    <Platform Name="arm64" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/CodeBrixPlatform/">
+    <Project Path="CodeBrixPlatform/JustBetweenUs.Core/JustBetweenUs.Core.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.LinuxFrameBuffer/JustBetweenUs.LinuxFrameBuffer.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.LinuxWayland/JustBetweenUs.LinuxWayland.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.LinuxX11/JustBetweenUs.LinuxX11.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.MacOS/JustBetweenUs.MacOS.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.UI/JustBetweenUs.UI.shproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.Win32Skia/JustBetweenUs.Win32Skia.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.WinWpfSkia/JustBetweenUs.WinWpfSkia.csproj" />
+  </Folder>
+  <Folder Name="/Mobile/">
+    <Project Path="Mobile/JustBetweenUs.Mobile.csproj">
+      <Deploy />
+    </Project>
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Solution Items/Shared Assets/">
+    <File Path="Shared/Assets/clipboard.svg" />
+    <File Path="Shared/Assets/padlock-icon.svg" />
+    <File Path="Shared/Assets/star_icon.json" />
+    <File Path="Shared/Assets/unlocked-icon.svg" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/JustBetweenUs.Encryption.Tests/JustBetweenUs.Encryption.Tests.csproj" />
+  </Folder>
+  <Project Path="JustBetweenUs.Encryption/JustBetweenUs.Encryption.csproj" />
+  <Project Path="JustBetweenUs.WinUI/JustBetweenUs.WinUI.csproj">
+    <Platform Solution="*|Any CPU" Project="x64" />
+    <Platform Solution="*|ARM CPU" Project="ARM64" />
+    <Platform Solution="*|arm64" Project="ARM64" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Deploy />
+  </Project>
+  <Project Path="JustBetweenUs.Wpf/JustBetweenUs.Wpf.csproj" />
+</Solution>
