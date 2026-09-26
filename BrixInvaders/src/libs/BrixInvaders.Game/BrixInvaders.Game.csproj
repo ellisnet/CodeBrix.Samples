@@ -27,7 +27,7 @@
     <!-- TEMPORARY: unpublished engine build - switch to the published version -->
     <PackageReference Include="CodeBrix.Platform.GameEngine.GeneratedMusic.MitLicenseForever" Version="1.0.268.9000-absorb.3" />
     <!-- Every persisted value (settings, high scores) goes through Settings/SettingsService over this add-in. -->
-    <PackageReference Include="CodeBrix.Platform.AppSettings.ApacheLicenseForever" Version="1.0.254.167" />
+    <PackageReference Include="CodeBrix.Platform.AppSettings.ApacheLicenseForever" Version="1.0.269.1395" />
   </ItemGroup>
 
   <ItemGroup>
