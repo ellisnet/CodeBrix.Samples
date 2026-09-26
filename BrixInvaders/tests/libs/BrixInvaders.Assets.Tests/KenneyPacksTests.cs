@@ -63,26 +63,4 @@ public class KenneyPacksTests
     [Fact]
     public void PromoCardPath_names_the_promo_image_in_the_folder() =>
         Path.GetFileName(KenneyPacks.PromoCardPath(TestAssets.Folder)).Should().Be("Kenney_asset_bundle.png");
-
-    [Fact]
-    public void PackCreditLine_uses_the_licence_title_or_else_the_display_name()
-    {
-        //Arrange
-        KenneyGameAssetProvider provider = TestAssets.Register();
-        KenneyPackSummary planets = provider.Packs.Single(pack => pack.Slug == KenneyPacks.PlanetsSlug);
-        KenneyPackSummary remastered = provider.Packs.Single(pack => pack.Slug == KenneyPacks.SpaceShooterRemasteredSlug);
-
-        //Act
-        string planetsLine = KenneyPacks.PackCreditLine(planets);
-        string remasteredLine = KenneyPacks.PackCreditLine(remastered);
-
-        //Assert
-        planetsLine.Should().Be("Planets (1.0) by Kenney (kenney.nl) - CC0");
-        remasteredLine.Should().Be($"{remastered.DisplayName} by Kenney (kenney.nl) - CC0");
-        remasteredLine.Should().NotContain("#");
-    }
-
-    [Fact]
-    public void PackCreditLine_rejects_null() =>
-        ((Action)(() => KenneyPacks.PackCreditLine(null))).Should().Throw<ArgumentNullException>();
 }

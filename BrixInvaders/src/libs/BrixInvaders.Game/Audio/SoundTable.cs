@@ -10,7 +10,10 @@ namespace BrixInvaders.Game.Audio;
 /// </summary>
 public static class SoundTable
 {
-    /// <summary>The events that deliberately make no sound (they are shown, not heard, or another event sounds).</summary>
+    /// <summary>
+    /// The events that make no sound here (they are shown, not heard, another event sounds, or the music director
+    /// plays them as stingers).
+    /// </summary>
     public static readonly IReadOnlyCollection<GameEventKind> SilentKinds = new HashSet<GameEventKind>
     {
         GameEventKind.WaveCleared,
@@ -25,6 +28,10 @@ public static class SoundTable
         GameEventKind.MeteorShowerStarted,
         GameEventKind.MeteorShowerEnded,
         GameEventKind.BossAppeared,
+
+        //The music director plays these two as stingers on the effects bus, with the music ducked under them
+        GameEventKind.BossIncoming,
+        GameEventKind.GameOver,
     };
 
     /// <summary>The cue a menu cursor move plays.</summary>
@@ -89,9 +96,6 @@ public static class SoundTable
             case GameEventKind.PlayerDestroyed:
                 cue = new SoundCue(SoundEffect.ExplosionLarge, 1f, 9);
                 return true;
-            case GameEventKind.GameOver:
-                cue = new SoundCue(SoundEffect.GameOver, 1f, 10);
-                return true;
             case GameEventKind.PowerUpCollected:
                 cue = gameEvent.PowerUp switch
                 {
@@ -125,9 +129,6 @@ public static class SoundTable
                 //Fires on every change; only a rise past x1 is worth a sound (a break is ChainBroken's job)
                 cue = new SoundCue(SoundEffect.ChainUp, 0.7f, 5);
                 return gameEvent.Value >= 2;
-            case GameEventKind.BossIncoming:
-                cue = new SoundCue(SoundEffect.BossWarning, 1f, 10);
-                return true;
             case GameEventKind.BossHit:
                 cue = gameEvent.Value == 1
                     ? new SoundCue(SoundEffect.ArmourHit, 0.45f, 3)

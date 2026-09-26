@@ -40,7 +40,7 @@ public sealed class StarField
     /// <param name="frame">The frame being built.</param>
     /// <param name="time">Seconds of scrolling.</param>
     /// <param name="speedFactor">A multiplier on every layer's speed (warp effects, the title's slow drift).</param>
-    public void Paint(FrameBuilder frame, double time, double speedFactor = 1.0)
+    public void Paint(FrameLists frame, double time, double speedFactor = 1.0)
     {
         ArgumentNullException.ThrowIfNull(frame);
         foreach (var star in _stars)
@@ -50,13 +50,14 @@ public sealed class StarField
             switch (star.Layer)
             {
                 case 0:
-                    frame.AddWorld(DrawCommand.Dot(star.X, y, 1.0, 0xFF9DB4D8, 0.55 * twinkle));
+                    frame.World.Circle(star.X, y, 1.0, 0xFF9DB4D8, alpha: 0.55 * twinkle);
                     break;
                 case 1:
-                    frame.AddWorld(DrawCommand.Dot(star.X, y, 1.6, 0xFFE6EEFF, 0.8 * twinkle));
+                    frame.World.Circle(star.X, y, 1.6, 0xFFE6EEFF, alpha: 0.8 * twinkle);
                     break;
                 default:
-                    frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.Star(star.Kind), star.X, y, 16, 16, time * 20 * (star.Phase - 0.5), twinkle));
+                    frame.World.Image(SpriteCatalog.Star(star.Kind), null, star.X, y, 16, 16, time * 20 * (star.Phase - 0.5),
+                        twinkle);
                     break;
             }
         }

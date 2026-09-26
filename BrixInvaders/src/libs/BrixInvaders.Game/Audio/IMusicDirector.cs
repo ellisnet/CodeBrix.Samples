@@ -59,7 +59,7 @@ public interface IMusicDirector
     /// <param name="boss">Whether a boss is on.</param>
     void ApplySettings(MusicSettings settings, int sector, bool boss);
 
-    /// <summary>One line saying what is playing (for the credits' music card); empty when nothing is.</summary>
+    /// <summary>One line saying what is playing (for logs and tests); empty when nothing is.</summary>
     string ActiveSource { get; }
 
     /// <summary>The game is shutting down.</summary>

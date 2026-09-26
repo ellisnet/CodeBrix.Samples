@@ -2,7 +2,7 @@ namespace BrixInvaders.GameLogic;
 
 /// <summary>
 /// Fixed dimensions of the logical playfield and the fixed simulation step. Everything in GameLogic is in these
-/// world units; the Game library letterboxes the playfield onto the window.
+/// world units; the Game library pins the engine render resolution to it, and the engine letterboxes it onto the window.
 /// </summary>
 public static class Playfield
 {

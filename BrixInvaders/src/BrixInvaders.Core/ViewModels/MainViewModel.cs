@@ -4,6 +4,9 @@ using BrixInvaders.Game.Audio;
 using BrixInvaders.Game.Credits;
 using BrixInvaders.Game.Hosting;
 using BrixInvaders.Game.Links;
+using CodeBrix.Platform.GameEngine;
+using CodeBrix.Platform.GameEngine.Audio;
+using CodeBrix.Platform.GameEngine.GeneratedMusic;
 using CodeBrix.Platform.GameEngine.Host.Rendering;
 using CodeBrix.Platform.Simple;
 using Microsoft.UI.Dispatching;
@@ -23,10 +26,6 @@ public interface IManageGameCanvas
     /// <summary>Called once, when the canvas has started for the first time.</summary>
     /// <param name="canvas">The started canvas.</param>
     void CanvasFirstStart(GameSurfaceCanvas canvas);
-
-    /// <summary>Called when the window is hidden (minimized) or shown again.</summary>
-    /// <param name="visible">Whether the window is now visible.</param>
-    void WindowVisibilityChanged(bool visible);
 }
 
 /// <summary>
@@ -71,10 +70,11 @@ public class MainViewModel : SimpleViewModel, IManageGameCanvas
         var dispatcher = DispatcherQueue.GetForCurrentThread();
 
         //The three seams the game library leaves to the app: generated music (the engine's UseGeneratedMusic), links
-        //  opened by the platform launcher on this (UI) thread, and credits that read the host's Kenney pack titles
-        //  and the music card lazily - both only when the credits screen opens, long after the host has loaded them.
-        var music = new GeneratedMusicDirector(new EngineMusicEngine());
-        var links = new LauncherLinkOpener(action => dispatcher != null && dispatcher.TryEnqueue(() => action()));
+        //  opened by the engine's link helper, and credits that read the host's Kenney pack titles and the music card
+        //  lazily - both only when the credits screen opens, long after the host has loaded them.
+        var music = new GeneratedMusicDirector(new EngineGeneratedMusicStarter(), MusicManager.Instance,
+            Engine.Instance.EngineDispatcher);
+        var links = new LauncherLinkOpener();
         BrixInvadersGameHost host = null;
         var credits = new KenneyCreditsContent(() => host?.PackCredits ?? Array.Empty<string>(), music.CreditLines);
         host = new BrixInvadersGameHost(canvas, music, links, credits);
@@ -83,13 +83,6 @@ public class MainViewModel : SimpleViewModel, IManageGameCanvas
 
         //Information keeps the game's own [BrixInvaders] lines on the console along with the engine's milestones
         Host.Initialize(logLevel: Microsoft.Extensions.Logging.LogLevel.Information);
-    }
-
-    /// <inheritdoc/>
-    public void WindowVisibilityChanged(bool visible)
-    {
-        if (Host == null) { return; }
-        if (visible) { Host.OnWindowShown(); } else { Host.OnWindowHidden(); }
     }
 
     #endregion

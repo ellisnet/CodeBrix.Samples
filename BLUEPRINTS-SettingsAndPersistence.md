@@ -5,10 +5,14 @@ the AppSettings add-in: wrapping the store in one application-named facade,
 opening it early enough that a static initializer can read from it, remembering
 a user's folder choice and the last window size, persisting small pieces of
 state such as a palette or a recent list through the same store, and flushing
-deferred writes at natural points rather than only at quit. A last recipe is
-the argument for the opposite arrangement - no store at all - for an
-application whose state lives on the resources it creates somewhere else and
-can be rebuilt from the labels they carry. Reach for this file when a value
+deferred writes at natural points rather than only at quit. Another recipe
+argues for the opposite arrangement - no store at all - for an application
+whose state lives on the resources it creates somewhere else and can be rebuilt
+from the labels they carry. The last two come from a game: a settings screen
+whose menu model changes a stored value and reports what kind of change it was,
+so the code that applies it lives somewhere else, and a facade that gives every
+stored value a typed, validated property - high-score tables included - behind
+an interface the tests implement in memory. Reach for this file when a value
 has to survive a restart, when the order in which the store opens relative to
 the rest of startup matters, or when you are deciding whether you need a store
 in the first place.
@@ -26,6 +30,8 @@ conventions the code blocks follow.
 - [Persist small pieces of application state through the same store](#persist-small-pieces-of-application-state-through-the-same-store)
 - [Flush deferred settings at natural points instead of at quit](#flush-deferred-settings-at-natural-points-instead-of-at-quit)
 - [Put identity in labels on the resource instead of a state file beside it](#put-identity-in-labels-on-the-resource-instead-of-a-state-file-beside-it)
+- [Let a menu model change stored settings and report what changed](#let-a-menu-model-change-stored-settings-and-report-what-changed)
+- [Type and validate every stored value behind an interface the game can fake](#type-and-validate-every-stored-value-behind-an-interface-the-game-can-fake)
 
 ## Related blueprints
 
@@ -108,6 +114,12 @@ public const string LastBundleKey = "KenneyAssetBrowser.Settings.LastBundleFile"
 `Pinta.Brix/src/libs/Pinta.Brix.Settings/SettingsService.cs`
 `Pinta.Brix/src/libs/Pinta.Brix.Settings/Pinta.Brix.Settings.csproj`
 
+**Also shown by.**
+`BrixInvaders/src/libs/BrixInvaders.Game/Settings/SettingsService.cs` (the
+facade in the game library rather than a library of its own, with a typed,
+validated property for every value - see
+[Type and validate every stored value behind an interface the game can fake](BLUEPRINTS-SettingsAndPersistence.md#type-and-validate-every-stored-value-behind-an-interface-the-game-can-fake))
+
 **Sharp edges.**
 - The add-in supplies the whole store - typed properties, change events, startup
   auto-backup and pruning, corruption recovery, import and export. Do not
@@ -154,6 +166,12 @@ a setting in its own constructor)
 reason, and then read immediately, because the remembered color scheme decides the
 application theme and that may be set only before initialization completes - see
 [Remember the chosen scheme and read it back before the first page](BLUEPRINTS-ThemingAndStyling.md#remember-the-chosen-scheme-and-read-it-back-before-the-first-page))
+`BrixInvaders/src/BrixInvaders.UI/App.xaml.cs` and
+`BrixInvaders/src/libs/BrixInvaders.Game/Hosting/GameStartup.cs` (the first
+statement of the `App` constructor, before the fonts and the container; the call
+is idempotent, and it is where an unattended autopilot run is given a scratch
+store - see
+[Let an autopilot play through the player's input path and keep its saves apart](BLUEPRINTS-Testing.md#let-an-autopilot-play-through-the-players-input-path-and-keep-its-saves-apart))
 
 **Sharp edges.**
 - The failure is quiet and order-dependent: a static constructor that runs before
@@ -555,3 +573,367 @@ half-finished creation roll itself back down the same path.
   application puts a development password in one and says so on the card; a real
   secret belongs somewhere else.
 
+### Let a menu model change stored settings and report what changed
+
+**When you want this.** A settings screen is a list of rows - volumes, a choice
+between named options, a toggle, the defaults for the next game, a destructive
+reset - and each change has to reach a different part of the application: the
+mixer, the music, the next game's setup. The screen may not even be XAML; here
+the game engine draws it. You want the meaning of every row in one testable
+place, and the code that reacts to a change in another.
+
+**The MVVM shape.** Three pieces, none of them a view. The screen state machine
+in the rules library only moves the cursor and emits "adjust this row by this
+much" and "activate this row" commands. A menu model in the game library owns
+what each row means: it reads and writes the value through the settings
+interface and returns an enum saying what changed. The game session routes that
+enum to the mixer, the music director or a deferred rebuild, and the painter asks
+the menu model for each row's label and value text. In an application with a
+XAML settings page, the view model would take the session's routing role and the
+menu model would stay as it is.
+
+**Code.**
+
+The state machine turns menu presses on the settings screen into commands that
+carry the row and the direction, and knows nothing about what the rows are:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.GameLogic/Screens/ScreenStateMachine.cs
+if (input.Left)
+{
+    _commands.Add(new ScreenCommand(ScreenCommandKind.AdjustSetting, SettingsCursor, -1));
+}
+
+if (input.Right)
+{
+    _commands.Add(new ScreenCommand(ScreenCommandKind.AdjustSetting, SettingsCursor, 1));
+}
+
+if (input.Confirm || input.Start)
+{
+    _commands.Add(new ScreenCommand(ScreenCommandKind.ActivateSetting, SettingsCursor));
+}
+```
+
+The menu model changes the stored value and says what kind of change it was. The
+reset row needs two confirms, and anything else disarms it:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Settings/SettingsMenu.cs
+public SettingsChange Adjust(int row, int delta)
+{
+    var step = Math.Sign(delta);
+    if (step == 0)
+    {
+        return SettingsChange.None;
+    }
+
+    ResetArmed = false;
+    switch (row)
+    {
+        case MasterVolumeRow:
+            _settings.MasterVolume = StepVolume(_settings.MasterVolume, step);
+            return SettingsChange.Volumes;
+        // ...
+        case MusicModelRow:
+            _settings.MusicGenerator = MusicChoices.NextGenerator(_settings.MusicGenerator, step);
+            return SettingsChange.MusicChoice;
+        // ...
+        case DefaultDifficultyRow:
+            _settings.Difficulty = (Difficulty)((((int)_settings.Difficulty + step) % 4 + 4) % 4);
+            return SettingsChange.Defaults;
+        default:
+            return SettingsChange.None;
+    }
+}
+
+/// <summary>Confirm on a row. Only "Reset high scores" reacts: the first confirm arms it, the second clears.</summary>
+/// <param name="row">The row.</param>
+/// <returns>What changed.</returns>
+public SettingsChange Activate(int row)
+{
+    if (row != ResetHighScoresRow)
+    {
+        ResetArmed = false;
+        return SettingsChange.None;
+    }
+
+    if (!ResetArmed)
+    {
+        ResetArmed = true;
+        ResetDone = false;
+        return SettingsChange.ResetArmed;
+    }
+
+    ResetArmed = false;
+    ResetDone = true;
+    _settings.ResetHighScores();
+    return SettingsChange.HighScoresReset;
+}
+```
+
+The session is the only place that knows who has to hear about each kind of
+change:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Session/GameSession.cs
+private void Apply(SettingsChange change)
+{
+    switch (change)
+    {
+        case SettingsChange.Volumes:
+            _sound.SetLevels(Settings.MasterVolume, Settings.EffectsVolume);
+            _music.SetVolumes(Settings.MasterVolume, Settings.MusicVolume, Settings.EffectsVolume);
+            break;
+        case SettingsChange.MusicChoice:
+            GameLog.Write($"settings: music {Settings.MusicGenerator} through {Settings.InstrumentLibrary}");
+            _music.ApplySettings(CreateMusicSettings(), Music is MusicMoment.Sector or MusicMoment.Boss ? MusicSector : 0,
+                Music == MusicMoment.Boss);
+            break;
+        case SettingsChange.GamepadProfile:
+            GameLog.Write($"settings: gamepad profile {Settings.GamepadProfile}");
+            break;
+        case SettingsChange.Defaults:
+            _rebuildMachine = true;
+            break;
+        case SettingsChange.HighScoresReset:
+            HighScores.ClearAll();
+            GameLog.Write("settings: every high-score table cleared");
+            break;
+    }
+}
+```
+
+And the painter draws every row from the menu model, including the armed state
+of the reset:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Screens/SettingsScreen.cs
+for (var row = 0; row < SettingsMenu.RowCount; row++)
+{
+    var y = 130 + (row * 56);
+    var selected = row == cursor;
+    if (selected)
+    {
+        frame.Overlay.Rectangle(Ui.CenterX, y, 860, 46, 0x402E7DD6, Palette.Accent, 1.5, 8);
+    }
+
+    frame.Overlay.Text(SettingsMenu.LabelOf(row).ToUpperInvariant(), Ui.CenterX - 410, y, frame.Font, 20,
+        selected ? Palette.Text : Palette.Dim, SKTextAlign.Left);
+    var value = session.SettingsMenu.ValueOf(row);
+    var armed = row == SettingsMenu.ResetHighScoresRow && session.SettingsMenu.ResetArmed;
+    frame.Overlay.Text(selected && row != SettingsMenu.ResetHighScoresRow ? $"<  {value}  >" : value, Ui.CenterX + 410,
+        y, frame.Font, 18, armed ? Palette.Danger : selected ? Palette.Accent : Palette.Text, SKTextAlign.Right);
+}
+```
+
+**Where to look.**
+`BrixInvaders/src/libs/BrixInvaders.Game/Settings/SettingsMenu.cs` and
+`Settings/SettingsChange.cs`
+`BrixInvaders/src/libs/BrixInvaders.Game/Session/GameSession.cs` (`Handle`,
+`Apply`, `ProcessCommands`)
+`BrixInvaders/src/libs/BrixInvaders.GameLogic/Screens/ScreenStateMachine.cs` (`UpdateSettings`)
+`BrixInvaders/src/libs/BrixInvaders.Game/Screens/SettingsScreen.cs`
+`BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Settings/SettingsMenuTests.cs`
+
+**Sharp edges.**
+- Return what changed instead of applying it. The menu model holds no mixer and
+  no music reference, so every row is tested against an in-memory settings
+  object with nothing else built.
+- A destructive row needs an armed state that everything else clears: a second
+  confirm acts, but an adjust, a confirm on another row, or reopening the screen
+  disarms it. Show the armed state in the row's value text, or the player cannot
+  tell the next press will erase something.
+- Writing a new default to the store does not change an object that was built
+  from the old one. The screen state machine holds the ship and difficulty it
+  offers first, so a changed default only sets a flag, and the session builds a
+  fresh machine from the stored settings once the player is back on the title.
+- Round a stepped value when you store it. Taking a tenth off 0.8 in floating
+  point does not give exactly 0.7, and the test that asserts the new level would
+  fail on the difference.
+- A change of music model or instruments goes to the music director along with
+  where the game is, so the director can decide whether it is a fresh session -
+  see [Start endless generated music with one call](BLUEPRINTS-GameEngine.md#start-endless-generated-music-with-one-call).
+
+### Type and validate every stored value behind an interface the game can fake
+
+**When you want this.** The application reads a dozen stored values - numbers
+with a range, enum choices, names from a fixed list, a table of records - and
+the code that uses them has to run in unit tests with no store open. This goes
+further than
+[Wrap the AppSettings add-in in one application named facade](BLUEPRINTS-SettingsAndPersistence.md#wrap-the-appsettings-add-in-in-one-application-named-facade),
+whose facade forwards generic reads and writes by key: here the facade gives
+every value its own typed, validated property, stores a table of records as JSON
+under one key per category, and the game reaches all of it through an interface
+that tests implement in memory.
+
+**The MVVM shape.** The static facade in the game library is the only type that
+calls the AppSettings add-in. An interface names exactly what the game session
+reads and writes; one small class implements it by forwarding to the facade, and
+the host constructs that class once the store is open. The session and the menu
+model take the interface, and the tests hand them an in-memory copy.
+
+**Code.**
+
+Each value is a typed property the add-in creates when the store opens; the
+getter validates what it reads, and the setter validates what it writes:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Settings/SettingsService.cs
+/// <summary>The chosen ship shape (0..2; default 0).</summary>
+public static int ShipShape
+{
+    get => Math.Clamp(Require(_shipShape).Value, 0, GameSetup.ShipShapeCount - 1);
+    set => Require(_shipShape).Set(Math.Clamp(value, 0, GameSetup.ShipShapeCount - 1));
+}
+// ...
+/// <summary>The default difficulty (default Pilot).</summary>
+public static Difficulty Difficulty
+{
+    get => Enum.TryParse(Require(_difficulty).Value, true, out Difficulty level) && Enum.IsDefined(level)
+        ? level
+        : Difficulty.Pilot;
+    set => Require(_difficulty).Set(value.ToString());
+}
+// ...
+/// <summary>The music generator name (default SkyTNT); an unknown stored name reads as the default.</summary>
+public static string MusicGenerator
+{
+    get => MusicChoices.IsGenerator(Require(_musicGenerator).Value)
+        ? MusicChoices.ResolveGenerator(_musicGenerator.Value)
+        : MusicChoices.DefaultGenerator;
+    set => Require(_musicGenerator).Set(MusicChoices.ResolveGenerator(value));
+}
+// ...
+private static void CreateProperties()
+{
+    _shipShape = AppSettingsService.Wrap(ShipShapeKey, 0);
+    _shipColour = AppSettingsService.Wrap(ShipColourKey, 0);
+    _difficulty = AppSettingsService.Wrap(DifficultyKey, nameof(Difficulty.Pilot));
+    // ...
+}
+
+private static T Require<T>(T property) where T : class
+{
+    RequireStore();
+    return property ?? throw new InvalidOperationException("SettingsService.Initialize has not run.");
+}
+```
+
+The high-score tables go into the same store as one JSON array per difficulty,
+through a record type that is the stored shape and nothing else. Loading goes
+back through the domain table's own insert, and anything malformed reads as no
+records:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Settings/SettingsService.cs
+public static HighScoreTable LoadHighScores()
+{
+    RequireStore();
+    var table = new HighScoreTable();
+    foreach (var difficulty in DifficultyTable.Levels)
+    {
+        foreach (var record in FromJson(AppSettingsService.Get(HighScoresKeyPrefix + difficulty, "[]")))
+        {
+            table.Insert(difficulty, record.Name, record.Score, record.Sector);
+        }
+    }
+
+    return table;
+}
+// ...
+public static IReadOnlyList<HighScoreRecord> FromJson(string json)
+{
+    if (string.IsNullOrWhiteSpace(json))
+    {
+        return Array.Empty<HighScoreRecord>();
+    }
+
+    try
+    {
+        var records = JsonSerializer.Deserialize<HighScoreRecord[]>(json);
+        return records == null
+            ? Array.Empty<HighScoreRecord>()
+            : records.Where(record => record != null && record.Score > 0).ToArray();
+    }
+    catch (JsonException)
+    {
+        return Array.Empty<HighScoreRecord>();
+    }
+}
+```
+
+The game sees an interface, and the class it runs with only forwards:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Settings/IGameSettings.cs
+/// <summary>
+/// The persisted preferences and records the game session reads and writes. <see cref="StoredGameSettings"/> keeps
+/// them in the AppSettings store through <see cref="SettingsService"/>; tests use an in-memory implementation.
+/// </summary>
+public interface IGameSettings
+{
+    /// <summary>The chosen ship shape, 0..2.</summary>
+    int ShipShape { get; set; }
+    // ...
+    /// <summary>Loads every high-score table.</summary>
+    /// <returns>The tables.</returns>
+    HighScoreTable LoadHighScores();
+
+    /// <summary>Saves one difficulty's table.</summary>
+    /// <param name="table">The tables.</param>
+    /// <param name="difficulty">The difficulty to save.</param>
+    void SaveHighScores(HighScoreTable table, Difficulty difficulty);
+    // ...
+}
+```
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Support/MemoryGameSettings.cs
+/// <summary>An in-memory <see cref="IGameSettings"/> with the documented defaults, recording saves.</summary>
+internal sealed class MemoryGameSettings : IGameSettings
+{
+    private readonly Dictionary<Difficulty, int> _cleared = new Dictionary<Difficulty, int>();
+    private HighScoreTable _stored = new HighScoreTable();
+    // ...
+    public double MasterVolume { get; set; } = SettingsService.DefaultMasterVolume;
+    // ...
+    public HighScoreTable LoadHighScores() => HighScoreTable.FromLines(_stored.ToLines());
+
+    public void SaveHighScores(HighScoreTable table, Difficulty difficulty)
+    {
+        SaveCount++;
+        _stored = HighScoreTable.FromLines(table.ToLines());
+    }
+    // ...
+}
+```
+
+**Where to look.**
+`BrixInvaders/src/libs/BrixInvaders.Game/Settings/SettingsService.cs`,
+`IGameSettings.cs`, `StoredGameSettings.cs` and `HighScoreRecord.cs`
+`BrixInvaders/src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs` (`OnInitializing`)
+`BrixInvaders/src/libs/BrixInvaders.Game/Session/GameSession.cs` (`SubmitHighScore`)
+`BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Settings/SettingsServiceTests.cs`
+`BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Support/MemoryGameSettings.cs`
+and `Support/TempSettingsStore.cs`
+`BrixInvaders/DESIGN.md` (the settings keys and their defaults)
+
+**Sharp edges.**
+- The typed properties exist only after the store opens. A read before that
+  would be a null reference deep inside a getter; checking first turns it into
+  an exception that says the store was never opened. Clear them again on
+  shutdown, so a test can close the store and open a fresh one.
+- Store an enum by name, parse it case-insensitively and check that the parsed
+  value is defined. A renamed member or a hand-edited store then costs one value
+  its default, not a crash at start-up.
+- Validate on read as well as on write. The store can hold a value an older
+  build wrote, or one outside today's range; clamping in the getter keeps it out
+  of the game.
+- Keep the stored record type apart from the domain type. The rules library's
+  high-score entry references nothing, and the record with settable properties is
+  the JSON shape a test pins exactly. Loading through the domain's insert re-ranks
+  and trims the table, so a stored table in the wrong order or too long still
+  loads correctly.
+- Save a record the moment it is made. The session writes the table when the
+  player enters a name, so a crash later in the run cannot lose it.

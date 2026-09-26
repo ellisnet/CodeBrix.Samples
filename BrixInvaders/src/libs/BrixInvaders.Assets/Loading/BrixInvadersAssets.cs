@@ -4,9 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using CodeBrix.Platform.GameEngine;
-using CodeBrix.Platform.GameEngine.Assets.Providers;
 using CodeBrix.Platform.GameEngine.Audio;
-using CodeBrix.Platform.GameEngine.Drawing;
 using CodeBrix.Platform.GameEngine.Drawing.Tilesheets;
 using CodeBrix.Platform.GameEngine.KenneyAssets;
 using CodeBrix.Platform.GameEngine.Rendering.Text;
@@ -33,7 +31,7 @@ public static class BrixInvadersAssets
 
     /// <summary>
     /// Registers the five Kenney zips beside the executable (<see cref="KenneyPacks.DefaultFolder"/>) with the engine
-    /// in ONE <c>UseKenneyAssets</c> call, and logs one line per pack plus the provider's warnings.
+    /// in ONE <c>RegisterKenneyAssets</c> call, and logs one line per pack plus the provider's warnings.
     /// </summary>
     /// <param name="engine">The initialized engine.</param>
     /// <returns>The Kenney asset provider now serving the <c>kenney:</c> keys.</returns>
@@ -43,7 +41,7 @@ public static class BrixInvadersAssets
 
     /// <summary>
     /// Registers the five Kenney zips found in <paramref name="folder"/> with the engine in ONE
-    /// <c>UseKenneyAssets</c> call, and logs one line per pack plus the provider's warnings.
+    /// <c>RegisterKenneyAssets</c> call, and logs one line per pack plus the provider's warnings.
     /// </summary>
     /// <param name="engine">The initialized engine.</param>
     /// <param name="folder">The folder holding the zips.</param>
@@ -53,8 +51,8 @@ public static class BrixInvadersAssets
     /// </param>
     /// <returns>The Kenney asset provider now serving the <c>kenney:</c> keys.</returns>
     /// <remarks>
-    /// Registering again is harmless: zips the provider already holds are not added a second time (which would
-    /// otherwise give them <c>-2</c> slugs and a second set of keys).
+    /// Registering again is harmless: the engine's <c>RegisterKenneyAssets</c> leaves out zips the provider already
+    /// holds (which would otherwise get <c>-2</c> slugs and a second set of keys) and reports them as already registered.
     /// </remarks>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="engine"/> or <paramref name="folder"/> is null.</exception>
     /// <exception cref="InvalidOperationException">
@@ -78,26 +76,13 @@ public static class BrixInvadersAssets
             throw new InvalidOperationException(NoPacksMessage(root, "none of the zips is there"));
         }
 
-        KenneyGameAssetProvider existing = FindProvider(engine);
-        int warningsBefore = existing?.Warnings.Count ?? 0;
-        string[] toAdd = zipPaths
-            .Where(path => existing is null || !existing.Packs.Any(pack => SamePath(pack.SourcePath, path)))
-            .ToArray();
-
-        KenneyGameAssetProvider provider = toAdd.Length > 0 || existing is null
-            ? engine.UseKenneyAssets(toAdd)
-            : existing;
-
-        List<KenneyPackSummary> packs = provider.Packs
-            .Where(pack => zipPaths.Any(path => SamePath(pack.SourcePath, path)))
-            .ToList();
-
-        if (packs.Count == 0)
+        KenneyAssetsRegistration registration = engine.RegisterKenneyAssets(zipPaths.ToArray());
+        if (registration.Packs.Count == 0)
         {
             throw new InvalidOperationException(NoPacksMessage(root, "none of the zips could be read"));
         }
 
-        foreach (KenneyPackSummary pack in packs)
+        foreach (KenneyPackSummary pack in registration.Packs)
         {
             Write(
                 $"{LogPrefix} pack {pack.Slug} ({pack.DisplayName}) - {pack.AssetCount} asset(s), " +
@@ -105,29 +90,27 @@ public static class BrixInvadersAssets
                 log);
         }
 
-        foreach (string missing in zipPaths.Where(path => !packs.Any(pack => SamePath(pack.SourcePath, path))))
+        foreach (KenneySourceResult unavailable in registration.Unavailable)
         {
-            Write($"{LogPrefix} WARNING: {Path.GetFileName(missing)} could not be read; its assets are missing", log);
+            Write($"{LogPrefix} WARNING: {unavailable}; its assets are missing", log);
         }
 
-        //The provider's Warnings only ever grow, so only what this registration added is reported here
-        List<string> newWarnings = provider.Warnings.Skip(warningsBefore).ToList();
-        if (newWarnings.Count == 0)
+        if (registration.Warnings.Count == 0)
         {
             Write($"{LogPrefix} provider warnings: none", log);
         }
 
-        foreach (string warning in newWarnings)
+        foreach (string warning in registration.Warnings)
         {
             Write($"{LogPrefix} WARNING: {warning}", log);
         }
 
-        return provider;
+        return registration.Provider;
     }
 
     /// <summary>Loads the remastered pack's atlas: ships, enemies, lasers, effects, shields, meteors, power-ups, HUD.</summary>
     /// <param name="engine">The engine the packs are registered with.</param>
-    /// <returns>The atlas tilesheet; address frames by name with <see cref="GetFrame"/>.</returns>
+    /// <returns>The atlas tilesheet; address frames by name (<c>atlas[frameName, 0, 0]</c>).</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="engine"/> is null.</exception>
     public static Tilesheet LoadMainAtlas(Engine engine) => LoadImage(engine, AssetKeys.Atlases.Main);
 
@@ -154,25 +137,6 @@ public static class BrixInvadersAssets
     /// <returns>The atlas tilesheet (<see cref="AssetKeys.Bosses.Atlas"/>).</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="engine"/> is null.</exception>
     public static Tilesheet LoadBossSheet(Engine engine) => LoadImage(engine, AssetKeys.Bosses.Atlas);
-
-    /// <summary>Gets one named frame of an atlas tilesheet.</summary>
-    /// <param name="atlas">An atlas tilesheet from one of the loaders.</param>
-    /// <param name="frameName">A frame name from <see cref="AssetKeys"/>, for example <c>AssetKeys.Enemies.Enemy(3, 2)</c>.</param>
-    /// <returns>The frame (<c>atlas[frameName, 0, 0]</c>).</returns>
-    /// <exception cref="ArgumentNullException">Thrown when an argument is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when the atlas has no frame of that name.</exception>
-    public static Frame GetFrame(Tilesheet atlas, string frameName)
-    {
-        ArgumentNullException.ThrowIfNull(atlas);
-        ArgumentNullException.ThrowIfNull(frameName);
-
-        if (atlas.GetRegion(frameName) is null)
-        {
-            throw new ArgumentException($"The atlas '{atlas.Name}' has no frame named '{frameName}'.", nameof(frameName));
-        }
-
-        return atlas[frameName, 0, 0];
-    }
 
     /// <summary>Gets the pixel size of one named frame of an atlas tilesheet.</summary>
     /// <param name="atlas">An atlas tilesheet from one of the loaders.</param>
@@ -318,14 +282,6 @@ public static class BrixInvadersAssets
         Engine.Logger.LogInformation("{Line}", line);
         log?.Invoke(line);
     }
-
-    private static KenneyGameAssetProvider FindProvider(Engine engine) =>
-        engine.Managers.AssetProviders.TryFind($"{KenneyPacks.ProviderId}:probe", out IGameAssetProvider found)
-            ? found as KenneyGameAssetProvider
-            : null;
-
-    private static bool SamePath(string left, string right) =>
-        string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.Ordinal);
 
     private static string NoPacksMessage(string folder, string reason) =>
         $"No Kenney pack could be read from '{folder}' ({reason}). The game ships the five Kenney zips " +

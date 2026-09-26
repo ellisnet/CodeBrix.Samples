@@ -2,11 +2,12 @@ using System;
 using System.Linq;
 using BrixInvaders.Assets;
 using BrixInvaders.Game.Credits;
-using BrixInvaders.Game.Input;
 using BrixInvaders.Game.Rendering;
 using BrixInvaders.Game.Screens;
 using BrixInvaders.Game.Tests.Support;
 using BrixInvaders.GameLogic;
+using CodeBrix.Platform.GameEngine.Drawing.Direct.DrawLists;
+using CodeBrix.Platform.GameEngine.Input.Actions;
 using SilverAssertions;
 using Xunit;
 
@@ -14,28 +15,28 @@ namespace BrixInvaders.Game.Tests.Screens;
 
 public class ScreenDirectorTests
 {
-    private static readonly string[] PackCredits = { "Space Shooter Remastered by Kenney (kenney.nl) - CC0" };
+    private static readonly string[] PackCredits = { "Space Shooter Remastered - Kenney (CC0)" };
 
-    private static (ScreenDirector Director, PaintContext Context, FrameBuilder Frame) Create(SessionDriver driver)
+    private static (ScreenDirector Director, PaintContext Context, TestFrame Frame) Create(SessionDriver driver)
     {
-        var frame = new FrameBuilder();
-        var context = new PaintContext(driver.Session, frame, new PlayfieldPainter(), new KenneyCreditsContent(() => PackCredits), PackCredits);
+        var frame = new TestFrame();
+        var context = new PaintContext(driver.Session, frame.Lists, new PlayfieldPainter(), new KenneyCreditsContent(() => PackCredits));
         return (new ScreenDirector(), context, frame);
     }
 
-    private static RenderFrame Paint(SessionDriver driver, InputDevice device = InputDevice.Keyboard)
+    private static TestFrame Paint(SessionDriver driver, InputDeviceKind device = InputDeviceKind.KeyboardMouse)
     {
         var (director, context, frame) = Create(driver);
         context.Device = device;
         director.Follow(driver.Session.CurrentScreen, context);
         director.Update(0.5);
-        frame.Clear();
+        frame.Lists.Clear();
         director.Paint(context);
-        return frame.Build();
+        return frame;
     }
 
-    private static bool HasText(RenderFrame frame, string text) =>
-        frame.Overlay.Any(command => command.Kind == DrawKind.Text && command.Text.Contains(text, StringComparison.Ordinal));
+    private static bool HasText(TestFrame frame, string text) =>
+        frame.Overlay.Any(command => command.Kind == DrawCommandKind.Text && command.Text.Contains(text, StringComparison.Ordinal));
 
     [Fact]
     public void CoversEveryScreen_is_true() => new ScreenDirector().CoversEveryScreen().Should().BeTrue();
@@ -79,7 +80,7 @@ public class ScreenDirectorTests
         HasText(frame, TitleScreen.GameTitle).Should().BeTrue();
         TitleScreen.MenuItems.Should().OnlyContain(item => HasText(frame, item));
         HasText(frame, KenneyPacks.CreditLine).Should().BeTrue();
-        frame.World.Count(command => command.Kind == DrawKind.Image && command.Image.Contains("#enemy", StringComparison.Ordinal))
+        frame.World.Count(command => command.Kind == DrawCommandKind.Image && command.Image.Contains("#enemy", StringComparison.Ordinal))
             .Should().BeGreaterThan(10);
     }
 
@@ -91,8 +92,8 @@ public class ScreenDirectorTests
         driver.ToTitle();
 
         //Act
-        var keyboard = Paint(driver, InputDevice.Keyboard);
-        var gamepad = Paint(driver, InputDevice.Gamepad);
+        var keyboard = Paint(driver, InputDeviceKind.KeyboardMouse);
+        var gamepad = Paint(driver, InputDeviceKind.Gamepad);
 
         //Assert
         HasText(keyboard, "[ENTER]").Should().BeTrue();
@@ -115,7 +116,7 @@ public class ScreenDirectorTests
         HasText(frame, KenneyCard.ZipLine).Should().BeTrue();
         HasText(frame, KenneyCard.BundleCaption).Should().BeTrue();
         frame.Overlay.Should().Contain(command => command.Image == SpriteCatalog.PromoCard);
-        frame.Hotspots.Should().Contain(hotspot => hotspot.Url == KenneyPacks.BundleUrl);
+        frame.Links.Should().Contain(KenneyPacks.BundleUrl);
     }
 
     [Fact]
@@ -192,7 +193,7 @@ public class ScreenDirectorTests
 
         //Assert
         HasText(frame, PackCredits[0]).Should().BeTrue();
-        frame.Hotspots.Select(hotspot => hotspot.Url).Should()
+        frame.Links.Should()
             .Contain(new[] { KenneyCreditsContent.PatreonUrl, KenneyCreditsContent.KenneySiteUrl, KenneyPacks.BundleUrl });
     }
 
@@ -254,13 +255,12 @@ public class ScreenDirectorTests
         var driver = new SessionDriver();
         driver.ToPlaying();
         driver.Wait(4.0, new GameInput(0.3, true, false));
-        var loadable = SpriteCatalog.AllAtlasFrames.Concat(SpriteCatalog.LoosePictures).Append(SpriteCatalog.PromoCard).ToHashSet();
 
         //Act
         var frame = Paint(driver);
 
         //Assert
-        frame.World.Concat(frame.Overlay).Where(command => command.Kind == DrawKind.Image).Select(command => command.Image)
-            .Should().OnlyContain(image => loadable.Contains(image));
+        frame.World.Should().Contain(command => command.Kind == DrawCommandKind.Image);
+        frame.Images.Missing.Should().BeEmpty("every key a painter draws is one the host loads");
     }
 }

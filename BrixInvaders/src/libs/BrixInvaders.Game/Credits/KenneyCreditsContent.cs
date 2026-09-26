@@ -21,7 +21,7 @@ public sealed class KenneyCreditsContent : ICreditsContent
     private readonly Func<IEnumerable<CreditsLine>> _musicLines;
 
     /// <summary>Creates the content.</summary>
-    /// <param name="packCredits">The credit line of every pack read (see <see cref="KenneyPacks.PackCreditLine"/>).</param>
+    /// <param name="packCredits">The credit line of every pack read (the Kenney provider's <c>CreditLines</c>).</param>
     /// <param name="musicLines">The music card lines; null for none.</param>
     public KenneyCreditsContent(Func<IEnumerable<string>> packCredits, Func<IEnumerable<CreditsLine>> musicLines = null)
     {

@@ -160,7 +160,8 @@ public static class MusicSetup
 
     /// <summary>
     /// What to pass to the provider's <c>FollowUp(string)</c> when the game moves on to a sector or its boss: the
-    /// preset of the generator that is playing. The session keeps its tempo and instrument library.
+    /// preset of the generator that is playing. The session keeps its instrument library and its session tempo; the
+    /// follow-up piece itself plays at its preset's own tempo, and the fresh pieces after it return to the session tempo.
     /// </summary>
     /// <param name="settings">The player's music settings (only the generator is read).</param>
     /// <param name="sector">The sector (0 = the title screen).</param>

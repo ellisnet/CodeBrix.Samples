@@ -1,5 +1,6 @@
 using BrixInvaders.Game.Input;
 using BrixInvaders.GameLogic;
+using CodeBrix.Platform.GameEngine.Input.Actions;
 
 namespace BrixInvaders.Game.Settings;
 
@@ -70,7 +71,7 @@ public sealed class StoredGameSettings : IGameSettings
     }
 
     /// <inheritdoc />
-    public InputDevice LastInputDevice
+    public InputDeviceKind LastInputDevice
     {
         get => SettingsService.LastInputDevice;
         set => SettingsService.LastInputDevice = value;

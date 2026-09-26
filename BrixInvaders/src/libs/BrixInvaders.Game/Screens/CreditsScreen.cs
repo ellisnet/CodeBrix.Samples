@@ -27,19 +27,19 @@ public sealed class CreditsScreen : ScreenPainter
             switch (line.Style)
             {
                 case CreditsLineStyle.Heading:
-                    frame.AddOverlay(DrawCommand.Label(line.Text, Ui.CenterX, y, 24, Palette.Accent));
+                    frame.Overlay.Text(line.Text, Ui.CenterX, y, frame.Font, 24, Palette.Accent);
                     y += 34;
                     break;
                 case CreditsLineStyle.Link:
-                    frame.AddOverlay(DrawCommand.Label(line.Text, Ui.CenterX, y, 17, Palette.Gold));
-                    frame.AddHotspot(new Hotspot(Ui.CenterX, y, 820, 26, line.Url));
+                    frame.Overlay.Text(line.Text, Ui.CenterX, y, frame.Font, 17, Palette.Gold);
+                    frame.Overlay.HitRegion(Ui.CenterX, y, 820, 26, line.Url);
                     y += 28;
                     break;
                 case CreditsLineStyle.Spacer:
                     y += 14;
                     break;
                 default:
-                    frame.AddOverlay(DrawCommand.Label(line.Text, Ui.CenterX, y, 15, Palette.Text, TextAnchor.Center, thin: true));
+                    frame.Overlay.Text(line.Text, Ui.CenterX, y, frame.ThinFont, 15, Palette.Text);
                     y += 24;
                     break;
             }

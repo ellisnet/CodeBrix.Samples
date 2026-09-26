@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using BrixInvaders.Game.Audio;
 using BrixInvaders.Music;
+using CodeBrix.Platform.GameEngine.GeneratedMusic;
 
 namespace BrixInvaders.Game.Credits;
 
@@ -27,7 +27,7 @@ public static class MusicCreditsCard
     /// <param name="source">What is really playing; null while the music is still starting.</param>
     /// <param name="chosen">The player's choices (used while nothing plays yet); null for the defaults.</param>
     /// <returns>The card's lines.</returns>
-    public static IReadOnlyList<CreditsLine> Lines(MusicSourceInfo source, MusicSettings chosen)
+    public static IReadOnlyList<CreditsLine> Lines(GeneratedMusicSourceInfo source, MusicSettings chosen)
     {
         string first;
         if (source == null)

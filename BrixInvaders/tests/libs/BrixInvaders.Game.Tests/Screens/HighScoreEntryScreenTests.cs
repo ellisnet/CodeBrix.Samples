@@ -1,5 +1,5 @@
-using BrixInvaders.Game.Input;
 using BrixInvaders.Game.Screens;
+using CodeBrix.Platform.GameEngine.Input.Actions;
 using SilverAssertions;
 using Xunit;
 
@@ -11,7 +11,7 @@ public class HighScoreEntryScreenTests
     public void FooterText_uses_gamepad_glyphs_and_mentions_the_stick_and_holding()
     {
         //Act
-        var text = HighScoreEntryScreen.FooterText(InputDevice.Gamepad, 0);
+        var text = HighScoreEntryScreen.FooterText(InputDeviceKind.Gamepad, 0);
 
         //Assert
         text.Should().Contain("[D-PAD] [STICK]");
@@ -24,7 +24,7 @@ public class HighScoreEntryScreenTests
     public void FooterText_uses_keyboard_glyphs_and_says_done_on_the_last_letter()
     {
         //Act
-        var text = HighScoreEntryScreen.FooterText(InputDevice.Keyboard, 2);
+        var text = HighScoreEntryScreen.FooterText(InputDeviceKind.KeyboardMouse, 2);
 
         //Assert
         text.Should().StartWith("[ARROWS]");

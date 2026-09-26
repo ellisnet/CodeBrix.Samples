@@ -59,19 +59,19 @@ public sealed class SectorBriefingScreen : ScreenPainter
         context.Playfield.PaintBackdrop(frame, SpriteCatalog.SectorBackground(sector), SpriteCatalog.SectorPlanet(sector),
             Ui.CenterX, 300, 560, 0.9);
 
-        frame.AddOverlay(DrawCommand.Label($"SECTOR {sector}", Ui.CenterX, 70, 24, Palette.Dim));
+        frame.Overlay.Text($"SECTOR {sector}", Ui.CenterX, 70, frame.Font, 24, Palette.Dim);
         Ui.Heading(frame, SectorRules.NameOf(sector).ToUpperInvariant(), 118, 50);
-        frame.AddOverlay(DrawCommand.Label(DescribeFeatures(SectorRules.IntroducedBy(SectorRules.DesignOf(sector))), Ui.CenterX, 176,
-            20, Palette.Gold));
+        frame.Overlay.Text(DescribeFeatures(SectorRules.IntroducedBy(SectorRules.DesignOf(sector))), Ui.CenterX, 176, frame.Font,
+            20, Palette.Gold);
         Ui.Panel(frame, Ui.CenterX, 236, 1000, 64, 0.8);
-        frame.AddOverlay(DrawCommand.Label(SectorRules.BriefingOf(sector), Ui.CenterX, 236, 16, Palette.Text, TextAnchor.Center, thin: true));
+        frame.Overlay.Text(SectorRules.BriefingOf(sector), Ui.CenterX, 236, frame.ThinFont, 16, Palette.Text);
 
         KenneyCard.Paint(context, Ui.CenterX, 440);
 
         var ready = OpenTime >= ScreenStateMachine.BriefingMinSeconds;
         var alpha = ready ? 0.6 + (0.4 * Math.Sin(OpenTime * 4)) : 0.3;
-        frame.AddOverlay(DrawCommand.Label($"{Prompts.Confirm(context.Device)} LAUNCH", Ui.CenterX, 610, 26, Palette.Accent,
-            TextAnchor.Center, false, alpha));
+        frame.Overlay.Text($"{Prompts.Confirm(context.Device)} LAUNCH", Ui.CenterX, 610, frame.Font, 26, Palette.Accent,
+            alpha: alpha);
         Ui.Footer(frame, $"{Prompts.Move(context.Device)} Move    {Prompts.Fire(context.Device, context.Profile)} Fire    " +
                          $"{Prompts.Bomb(context.Device, context.Profile)} Bomb    {Prompts.Pause(context.Device)} Pause");
         Ui.Message(context);

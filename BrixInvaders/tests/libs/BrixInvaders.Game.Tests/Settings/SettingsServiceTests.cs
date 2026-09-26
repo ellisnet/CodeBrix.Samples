@@ -3,6 +3,7 @@ using BrixInvaders.Game.Input;
 using BrixInvaders.Game.Settings;
 using BrixInvaders.Game.Tests.Support;
 using BrixInvaders.GameLogic;
+using CodeBrix.Platform.GameEngine.Input.Actions;
 using SilverAssertions;
 using Xunit;
 
@@ -38,7 +39,7 @@ public class SettingsServiceTests
         SettingsService.MusicGenerator.Should().Be("SkyTNT");
         SettingsService.InstrumentLibrary.Should().Be("ModestSynthGm");
         SettingsService.GamepadProfile.Should().Be(GamepadProfile.Classic);
-        SettingsService.LastInputDevice.Should().Be(InputDevice.Keyboard);
+        SettingsService.LastInputDevice.Should().Be(InputDeviceKind.KeyboardMouse);
         SettingsService.LastName.Should().Be("AAA");
         SettingsService.GetHighestSectorCleared(Difficulty.Ace).Should().Be(0);
         SettingsService.LoadHighScores().EntriesFor(Difficulty.Pilot).Should().BeEmpty();
@@ -60,7 +61,7 @@ public class SettingsServiceTests
         SettingsService.MusicGenerator = "mupt";
         SettingsService.InstrumentLibrary = "FluidR3Gm";
         SettingsService.GamepadProfile = GamepadProfile.Shoulder;
-        SettingsService.LastInputDevice = InputDevice.Gamepad;
+        SettingsService.LastInputDevice = InputDeviceKind.Gamepad;
         SettingsService.LastName = "jer";
         store.Reopen();
 
@@ -74,7 +75,7 @@ public class SettingsServiceTests
         SettingsService.MusicGenerator.Should().Be("MuPT");
         SettingsService.InstrumentLibrary.Should().Be("FluidR3Gm");
         SettingsService.GamepadProfile.Should().Be(GamepadProfile.Shoulder);
-        SettingsService.LastInputDevice.Should().Be(InputDevice.Gamepad);
+        SettingsService.LastInputDevice.Should().Be(InputDeviceKind.Gamepad);
         SettingsService.LastName.Should().Be("JER");
     }
 

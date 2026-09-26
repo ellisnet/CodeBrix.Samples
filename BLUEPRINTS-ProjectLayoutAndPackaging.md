@@ -148,6 +148,11 @@ projects
 (four heads rather than six, and every head repeating the "EXACTLY ONE platform
 head package" comment along with the `Nullable` and `ImplicitUsings` settings the
 shared UI files compiled into it require)
+`BrixInvaders/src/BrixInvaders.Core/BrixInvaders.Core.csproj` and the four head
+projects (the heads keep the "EXACTLY ONE platform head package" comment, but
+Core carries only the platform, font, hosting and logging packages; the engine,
+its add-ins and the AppSettings add-in belong to the game library, which Core
+references, and the csproj comment there states that ownership rule)
 
 **Sharp edges.**
 - A second runtime package on one head is a build the tooling will not warn you
@@ -357,6 +362,13 @@ also sees CodeBrix.Platform must claim a different one.
 `PalmVisualizer/src/libs/PalmVisualizer.Rendering/PalmVisualizer.Rendering.csproj`
 `PolyHavenBrowser/src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.csproj`
 `KenneyAssetBrowser/src/libs/KenneyAssetBrowser.Rendering/KenneyAssetBrowser.Rendering.csproj`
+
+**Also shown by.**
+`BrixInvaders/src/libs/BrixInvaders.Game/BrixInvaders.Game.csproj` and
+`BrixInvaders/src/libs/BrixInvaders.Music/BrixInvaders.Music.csproj` (neither
+hosts a XAML-facing type; both set the property because CodeBrix.Platform
+reaches them transitively through the engine packages, and the comment says so,
+while the rules library and the asset library keep their defaults)
 
 **Sharp edges.**
 - The symptom is a duplicate-type error on the generated per-head resources class,
@@ -771,6 +783,10 @@ using System.Runtime.CompilerServices;
 (`src/` with the shared UI project, the Core library and four heads, `src/libs/`
 with the domain library, `tests/libs/` mirroring it exactly, and one `.slnx`
 filing them under `Libraries` and `Tests` solution folders)
+`BrixInvaders/BrixInvaders.slnx` (four libraries and four mirrored test
+projects, with one deliberate exception to "libraries do not reference each
+other": the game library references the rules, asset and music libraries and is
+the one that composes them, so the view model builds only the game host)
 
 **Sharp edges.**
 - Each library owns the packages only it needs, and one of them usually states the
@@ -871,6 +887,13 @@ using CodeBrix.PdfDocuments.Pdf;
 `PdfSideBySide/src/libs/PdfSideBySide.PdfRender/Rendering/PageRenderer.cs`
 `PdfSideBySide/tests/libs/PdfSideBySide.PdfRender.Tests/Helpers/TestPdfs.cs`
 
+**Also shown by.**
+`BrixInvaders/src/libs/BrixInvaders.Music/BrixInvaders.Music.csproj` (the
+generated-music add-in brings the engine and the music generation library with
+it, and the synthesized instrument library arrives through them too, but it is
+named directly because this library registers it; the same file switches off the
+model and SoundFont copy for its own output, which it never loads from)
+
 **Sharp edges.**
 - The rasterizer brings the imaging library and the PDF authoring library with it,
   and the authoring library brings compression. That is why the renderer can encode
@@ -929,6 +952,11 @@ Every other application folder in the repository carries the same file.
 library for the report and through a font package for the screen - with the
 license text embedded beside the font files, and the application's own card
 texts, art and templates called out as original)
+`BrixInvaders/THIRD-PARTY-NOTICES.txt` (the bundled Kenney zips and their fonts,
+recording where a font file's own embedded license field disagrees with the
+pack's license, plus a section for the music models and recorded instruments
+that arrive as packages rather than being bundled, summarizing what their own
+notices say)
 
 **Sharp edges.**
 - Name the path each entry covers, so a reader can match a file on disk to its
@@ -1457,9 +1485,7 @@ tests read the files the application reads, at the same relative paths:
   application does. It is linked rather than copied: there is one corpus in this application.
 -->
 <ItemGroup>
-  <None Include="..\..\..\src\SimpleCbxVideoPlayer.Core\Assets\**\*"
-        Link="Assets\%(RecursiveDir)%(Filename)%(Extension)"
-        CopyToOutputDirectory="PreserveNewest" />
+  <None Include="..\..\..\src\SimpleCbxVideoPlayer.Core\Assets\**\*" Link="Assets\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
 </ItemGroup>
 ```
 
@@ -1468,6 +1494,16 @@ tests read the files the application reads, at the same relative paths:
 `SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/Assets/SampleAssets.cs` and
 `tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/SimpleCbxVideoPlayer.SkiaVideo.Tests.csproj`
 `SimpleCbxVideoPlayer/tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/SampleAssetsTests.cs`
+
+**Also shown by.**
+`BrixInvaders/src/BrixInvaders.Core/BrixInvaders.Core.csproj`,
+`BrixInvaders/src/libs/BrixInvaders.Assets/Packs/KenneyPacks.cs` and
+`BrixInvaders/tests/libs/BrixInvaders.Assets.Tests/BrixInvaders.Assets.Tests.csproj`
+(the corpus is five downloaded zips, copied as `None` items rather than content
+because the platform build targets re-root a non-head project's copy-to-output
+content under its assembly name; `DefaultFolder` resolves them under
+`AppContext.BaseDirectory`, and the test project links the same folder in the
+same layout)
 
 **Sharp edges.**
 - Resolve from `AppContext.BaseDirectory`, never from the current directory: a

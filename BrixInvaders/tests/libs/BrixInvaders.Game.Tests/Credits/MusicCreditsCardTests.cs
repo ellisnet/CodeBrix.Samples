@@ -1,7 +1,7 @@
 using System.Linq;
-using BrixInvaders.Game.Audio;
 using BrixInvaders.Game.Credits;
 using BrixInvaders.Music;
+using CodeBrix.Platform.GameEngine.GeneratedMusic;
 using SilverAssertions;
 using Xunit;
 
@@ -13,7 +13,7 @@ public class MusicCreditsCardTests
     public void Lines_name_the_playing_model_and_instrument_library()
     {
         //Arrange
-        var source = new MusicSourceInfo("SkyTNT", "ModestSynthGm", false);
+        var source = new GeneratedMusicSourceInfo("SkyTNT", "SkyTNT", "ModestSynthGm", false);
 
         //Act
         var lines = MusicCreditsCard.Lines(source, null);
@@ -27,7 +27,7 @@ public class MusicCreditsCardTests
     public void Lines_name_both_package_families_in_words_without_versions()
     {
         //Arrange
-        var source = new MusicSourceInfo("MuPT", "FluidR3Gm", false);
+        var source = new GeneratedMusicSourceInfo("MuPT", "MuPT", "FluidR3Gm", false);
 
         //Act
         var texts = MusicCreditsCard.Lines(source, null).Select(line => line.Text).ToList();
@@ -54,7 +54,7 @@ public class MusicCreditsCardTests
 
     [Fact]
     public void Lines_for_the_embedded_replay_do_not_claim_a_model() =>
-        MusicCreditsCard.Lines(new MusicSourceInfo("Replay", "ModestSynthGm", true), null)[0].Text.Should()
+        MusicCreditsCard.Lines(new GeneratedMusicSourceInfo("Replay", "Replay", "ModestSynthGm", true), null)[0].Text.Should()
             .NotContain("written live");
 
     [Fact]

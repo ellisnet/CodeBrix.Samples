@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using BrixInvaders.Assets;
 using BrixInvaders.Game.Credits;
 using BrixInvaders.Game.Hosting;
 using BrixInvaders.GameLogic;
 using BrixInvaders.Music;
+using CodeBrix.Platform.GameEngine;
 using CodeBrix.Platform.GameEngine.Audio;
 using CodeBrix.Platform.GameEngine.GeneratedMusic;
 
@@ -23,7 +25,7 @@ namespace BrixInvaders.Game.Audio;
 /// session, what is really playing (<c>[BrixInvaders] music: SkyTNT (SkyTNT) through ModestSynthGm, ...</c>).
 /// </para>
 /// <para>
-/// Volume: the player's music slider drives the engine's music bus (<c>AudioMixer.MusicVolume</c>) and the session's
+/// Volume: the player's music slider drives the engine's music bus (<see cref="IMusicManager.MusicVolume"/>) and the session's
 /// own level stays at 1, so the level is applied exactly once. Ducks are a separate multiplier on that bus, so the
 /// slider survives every duck.
 /// </para>
@@ -34,9 +36,15 @@ namespace BrixInvaders.Game.Audio;
 /// - the calmer feel for a menu a player may sit on - and it is back at full level a moment after Resume.
 /// </para>
 /// <para>
-/// The stingers are the game's own effects on the same events: the boss warning (<c>AssetKeys.Sfx.BossWarning</c>)
-/// and the game-over sting (<c>AssetKeys.Sfx.GameOver</c>) are triggered by the sound table on the effects bus at top
-/// priority - so they still sound with the music turned down - and this director ducks or fades the music under them.
+/// The stingers ride the EFFECTS bus, so they still sound with the music turned down: the boss warning
+/// (<c>AssetKeys.Sfx.BossWarning</c>) plays through <see cref="IMusicManager.PlayStingerOnBus"/> while the music ducks for
+/// the three-second warning, and the game-over sting (<c>AssetKeys.Sfx.GameOver</c>) through
+/// <see cref="IMusicManager.PlayStingerWithHeldDuck"/>, which holds the music down until the title.
+/// </para>
+/// <para>
+/// Tests pass fakes of the engine's own seams (<see cref="IGeneratedMusicStarter"/> and the
+/// <see cref="IGeneratedMusicSession"/> it returns, <see cref="IMusicManager"/>, <see cref="IEngineDispatcher"/>), so no
+/// model ever loads.
 /// </para>
 /// </remarks>
 public sealed class GeneratedMusicDirector : IMusicDirector
@@ -74,9 +82,12 @@ public sealed class GeneratedMusicDirector : IMusicDirector
     /// <summary>How long the music takes to come back up on the title after a game over.</summary>
     public static readonly TimeSpan GameOverRelease = TimeSpan.FromSeconds(1.5);
 
-    private readonly IMusicEngine _engine;
+    private readonly IGeneratedMusicStarter _starter;
+    private readonly IMusicManager _music;
+    private readonly IEngineDispatcher _dispatcher;
+    private readonly Action _registerEverything;
     private MusicSettings _settings = new MusicSettings();
-    private IMusicStream _stream;
+    private IGeneratedMusicSession _stream;
     private Action _detach;
     private int _streamNumber;
     private StreamingMusicState _loggedState = StreamingMusicState.Stopped;
@@ -88,10 +99,17 @@ public sealed class GeneratedMusicDirector : IMusicDirector
     private bool _stopped;
 
     /// <summary>Creates the director.</summary>
-    /// <param name="engine">The engine side (<see cref="EngineMusicEngine"/> in the game).</param>
-    public GeneratedMusicDirector(IMusicEngine engine)
+    /// <param name="starter">Starts generated-music sessions (<see cref="EngineGeneratedMusicStarter"/> in the game).</param>
+    /// <param name="music">The music bus, ducks and stingers (<see cref="MusicManager.Instance"/> in the game).</param>
+    /// <param name="dispatcher">The engine thread (<c>Engine.Instance.EngineDispatcher</c> in the game).</param>
+    /// <param name="registerEverything">Registers the instruments and models; null for <see cref="MusicSetup.RegisterEverything"/>.</param>
+    public GeneratedMusicDirector(IGeneratedMusicStarter starter, IMusicManager music, IEngineDispatcher dispatcher,
+        Action registerEverything = null)
     {
-        _engine = engine ?? throw new ArgumentNullException(nameof(engine));
+        _starter = starter ?? throw new ArgumentNullException(nameof(starter));
+        _music = music ?? throw new ArgumentNullException(nameof(music));
+        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        _registerEverything = registerEverything ?? (() => MusicSetup.RegisterEverything());
     }
 
     /// <summary>The player's music choices the running session was started with (a copy).</summary>
@@ -113,13 +131,13 @@ public sealed class GeneratedMusicDirector : IMusicDirector
     public bool IsGameOverFaded => _gameOverDuck != null;
 
     /// <inheritdoc />
-    public string ActiveSource => _stream?.Summary ?? string.Empty;
+    public string ActiveSource => _stream?.ActiveSourceSummary ?? string.Empty;
 
     /// <inheritdoc />
     public void Start(MusicSettings settings, double musicVolume)
     {
-        _engine.SetMusicVolume(musicVolume);
-        _engine.RegisterEverything();
+        _music.MusicVolume = (float)Math.Clamp(musicVolume, 0.0, 1.0);
+        _registerEverything();
         _settings = Normalize(settings);
         StartSession(SectorMusic.TitleSector, false, "start-up");
     }
@@ -147,7 +165,8 @@ public sealed class GeneratedMusicDirector : IMusicDirector
     {
         Sector = Math.Max(1, sector);
         Boss = true;
-        _engine.Duck(BossDuckDepth, BossAttack, BossHold, BossRelease);
+        _music.PlayStingerOnBus(AssetKeys.Sfx.BossWarning, AudioBus.Sfx);
+        _music.Duck(BossDuckDepth, BossAttack, BossHold, BossRelease);
         GameLog.Write($"music: boss of sector {Sector} - ducked to {BossDuckDepth:0.##} under the boss-warning stinger");
         FollowUp(MusicSetup.FollowUpFor(_settings, Sector, boss: true), $"boss of sector {Sector}");
     }
@@ -156,10 +175,7 @@ public sealed class GeneratedMusicDirector : IMusicDirector
     public void OnGameOver()
     {
         ReleasePauseDuck();
-        if (_gameOverDuck == null)
-        {
-            _gameOverDuck = _engine.PushDuck(GameOverDuckDepth, GameOverFade, GameOverRelease);
-        }
+        _gameOverDuck ??= _music.PlayStingerWithHeldDuck(AssetKeys.Sfx.GameOver, GameOverDuckDepth, GameOverFade, GameOverRelease);
 
         GameLog.Write($"music: game over - fading down to {GameOverDuckDepth:0.##} under the game-over stinger; the session plays on");
     }
@@ -169,7 +185,7 @@ public sealed class GeneratedMusicDirector : IMusicDirector
     {
         if (_pauseDuck == null)
         {
-            _pauseDuck = _engine.PushDuck(PauseDuckDepth, PauseAttack, PauseRelease);
+            _pauseDuck = _music.PushDuck(PauseDuckDepth, PauseAttack, PauseRelease);
         }
 
         GameLog.Write($"music: paused - ducked to {PauseDuckDepth:0.##} (the music plays on under the pause menu)");
@@ -183,7 +199,7 @@ public sealed class GeneratedMusicDirector : IMusicDirector
     }
 
     /// <inheritdoc />
-    public void SetVolumes(double master, double music, double effects) => _engine.SetMusicVolume(music);
+    public void SetVolumes(double master, double music, double effects) => _music.MusicVolume = (float)Math.Clamp(music, 0.0, 1.0);
 
     /// <inheritdoc />
     public void ApplySettings(MusicSettings settings, int sector, bool boss)
@@ -229,7 +245,7 @@ public sealed class GeneratedMusicDirector : IMusicDirector
 
     /// <summary>The credits screen's music card for what is playing now.</summary>
     /// <returns>The card's lines.</returns>
-    public IReadOnlyList<CreditsLine> CreditLines() => MusicCreditsCard.Lines(_stream?.Source, _settings);
+    public IReadOnlyList<CreditsLine> CreditLines() => MusicCreditsCard.Lines(_stream?.ActiveSourceInfo, _settings);
 
     private static MusicSettings Normalize(MusicSettings settings)
     {
@@ -285,10 +301,10 @@ public sealed class GeneratedMusicDirector : IMusicDirector
         GameLog.Write($"music: {(_streamNumber == 1 ? "starting" : "fresh session")} ({reason}) - {options.Generator} through " +
                       $"{options.InstrumentLibrary}, {options.Preset} at {options.BeatsPerMinute:0} BPM");
 
-        IMusicStream stream;
+        IGeneratedMusicSession stream;
         try
         {
-            stream = _engine.Start(options);
+            stream = _starter.Start(options);
         }
         catch (Exception failure)
         {
@@ -301,7 +317,7 @@ public sealed class GeneratedMusicDirector : IMusicDirector
         stream.StateChanged += OnStreamStateChanged;
         LogState(stream, number);
 
-        void OnStreamStateChanged(object sender, EventArgs args) => _engine.Post(() => LogState(stream, number));
+        void OnStreamStateChanged(object sender, EventArgs args) => _dispatcher.Post(() => LogState(stream, number));
 
         _detach = () => stream.StateChanged -= OnStreamStateChanged;
     }
@@ -318,7 +334,7 @@ public sealed class GeneratedMusicDirector : IMusicDirector
         _stream = null;
     }
 
-    private void LogState(IMusicStream stream, int number)
+    private void LogState(IGeneratedMusicSession stream, int number)
     {
         if (_stopped || number != _streamNumber)
         {
@@ -354,7 +370,7 @@ public sealed class GeneratedMusicDirector : IMusicDirector
         if (state == StreamingMusicState.Playing && !_sourceLogged)
         {
             _sourceLogged = true;
-            GameLog.Write($"music: {stream.Summary}");
+            GameLog.Write($"music: {stream.ActiveSourceSummary}");
         }
     }
 

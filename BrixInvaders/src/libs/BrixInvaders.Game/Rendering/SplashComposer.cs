@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using BrixInvaders.Assets;
 using BrixInvaders.GameLogic;
+using CodeBrix.Platform.GameEngine.Drawing.Direct.DrawLists;
 using SkiaSharp;
 
 namespace BrixInvaders.Game.Rendering;
@@ -23,7 +24,7 @@ public static class SplashComposer
     /// <param name="typeface">The Kenney future typeface.</param>
     /// <param name="thinTypeface">The thin face.</param>
     /// <returns>A PNG stream positioned at its start.</returns>
-    public static Stream Compose(ImageLibrary images, SKTypeface typeface, SKTypeface thinTypeface)
+    public static Stream Compose(DrawImageLibrary images, SKTypeface typeface, SKTypeface thinTypeface)
     {
         ArgumentNullException.ThrowIfNull(images);
         using var bitmap = new SKBitmap(Width, Height, SKColorType.Rgba8888, SKAlphaType.Premul);
@@ -59,7 +60,7 @@ public static class SplashComposer
         }
     }
 
-    private static void DrawPlanet(SKCanvas canvas, ImageLibrary images)
+    private static void DrawPlanet(SKCanvas canvas, DrawImageLibrary images)
     {
         var planet = images.Get(SpriteCatalog.Planet(7));
         if (planet == null)
@@ -79,7 +80,7 @@ public static class SplashComposer
             new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear), paint);
     }
 
-    private static void DrawFleet(SKCanvas canvas, ImageLibrary images)
+    private static void DrawFleet(SKCanvas canvas, DrawImageLibrary images)
     {
         using var silhouette = new SKPaint
         {

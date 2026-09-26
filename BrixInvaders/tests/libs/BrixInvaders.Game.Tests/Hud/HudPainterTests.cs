@@ -2,7 +2,9 @@ using System;
 using System.Linq;
 using BrixInvaders.Game.Hud;
 using BrixInvaders.Game.Rendering;
+using BrixInvaders.Game.Tests.Support;
 using BrixInvaders.GameLogic;
+using CodeBrix.Platform.GameEngine.Drawing.Direct.DrawLists;
 using SilverAssertions;
 using Xunit;
 
@@ -60,15 +62,15 @@ public class HudPainterTests
     {
         //Arrange
         var game = new GameSimulation(new GameSetup(Difficulty.Cadet, shipShape: 1, shipColour: 2));
-        var frame = new FrameBuilder();
+        var frame = new TestFrame();
 
         //Act
-        HudPainter.Paint(frame, game, 0);
+        HudPainter.Paint(frame.Lists, game, 0);
 
         //Assert
         frame.World.Should().BeEmpty();
-        frame.Overlay.Should().Contain(command => command.Kind == DrawKind.Text && command.Text == "SCORE");
+        frame.Overlay.Should().Contain(command => command.Kind == DrawCommandKind.Text && command.Text == "SCORE");
         frame.Overlay.Count(command => command.Image == SpriteCatalog.LifeIcon(1, 2)).Should().Be(game.Player.Lives);
-        frame.Overlay.Should().Contain(command => command.Kind == DrawKind.Text && command.Text.StartsWith("SECTOR 1", StringComparison.Ordinal));
+        frame.Overlay.Should().Contain(command => command.Kind == DrawCommandKind.Text && command.Text.StartsWith("SECTOR 1", StringComparison.Ordinal));
     }
 }

@@ -2,6 +2,7 @@ using System.Globalization;
 using BrixInvaders.Game.Hud;
 using BrixInvaders.Game.Rendering;
 using BrixInvaders.GameLogic;
+using SkiaSharp;
 
 namespace BrixInvaders.Game.Screens;
 
@@ -22,9 +23,10 @@ public sealed class HighScoresScreen : ScreenPainter
         foreach (var level in DifficultyTable.Levels)
         {
             var selected = level == shown;
-            frame.AddOverlay(DrawCommand.Rect(tabX, 130, 200, 40, selected ? 0x602E7DD6 : Palette.Panel, selected ? Palette.Accent : Palette.PanelEdge,
-                selected ? 2 : 1, 8));
-            frame.AddOverlay(DrawCommand.Label(level.ToString().ToUpperInvariant(), tabX, 131, 18, selected ? Palette.Text : Palette.Dim));
+            frame.Overlay.Rectangle(tabX, 130, 200, 40, selected ? 0x602E7DD6 : Palette.Panel,
+                selected ? Palette.Accent : Palette.PanelEdge, selected ? 2 : 1, 8);
+            frame.Overlay.Text(level.ToString().ToUpperInvariant(), tabX, 131, frame.Font, 18,
+                selected ? Palette.Text : Palette.Dim);
             tabX += 220;
         }
 
@@ -32,7 +34,7 @@ public sealed class HighScoresScreen : ScreenPainter
         var entries = session.HighScores.EntriesFor(shown);
         if (entries.Count == 0)
         {
-            frame.AddOverlay(DrawCommand.Label("NO SCORES YET - GO AND SET ONE", Ui.CenterX, 400, 20, Palette.Dim));
+            frame.Overlay.Text("NO SCORES YET - GO AND SET ONE", Ui.CenterX, 400, frame.Font, 20, Palette.Dim);
         }
 
         var highlight = shown == session.Screens.Difficulty ? session.LastHighScoreRank : -1;
@@ -40,11 +42,12 @@ public sealed class HighScoresScreen : ScreenPainter
         {
             var y = 190 + (i * 42);
             var color = i == highlight ? Palette.Good : i == 0 ? Palette.Gold : Palette.Text;
-            frame.AddOverlay(DrawCommand.Label($"{i + 1}.", Ui.CenterX - 300, y, 22, color, TextAnchor.Right));
-            frame.AddOverlay(DrawCommand.Label(entries[i].Name, Ui.CenterX - 250, y, 22, color, TextAnchor.Left));
-            frame.AddOverlay(DrawCommand.Label(HudPainter.FormatScore(entries[i].Score), Ui.CenterX + 150, y, 22, color, TextAnchor.Right));
-            frame.AddOverlay(DrawCommand.Label($"SECTOR {entries[i].Sector.ToString(CultureInfo.InvariantCulture)}", Ui.CenterX + 330, y,
-                16, Palette.Dim, TextAnchor.Right, thin: true));
+            frame.Overlay.Text($"{i + 1}.", Ui.CenterX - 300, y, frame.Font, 22, color, SKTextAlign.Right);
+            frame.Overlay.Text(entries[i].Name, Ui.CenterX - 250, y, frame.Font, 22, color, SKTextAlign.Left);
+            frame.Overlay.Text(HudPainter.FormatScore(entries[i].Score), Ui.CenterX + 150, y, frame.Font, 22, color,
+                SKTextAlign.Right);
+            frame.Overlay.Text($"SECTOR {entries[i].Sector.ToString(CultureInfo.InvariantCulture)}", Ui.CenterX + 330, y,
+                frame.ThinFont, 16, Palette.Dim, SKTextAlign.Right);
         }
 
         Ui.Footer(frame, $"{Prompts.Navigate(context.Device)} Difficulty    {Prompts.Back(context.Device)} Back");

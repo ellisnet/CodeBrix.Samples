@@ -126,13 +126,14 @@ public class SoundTableTests
     }
 
     [Fact]
-    public void the_boss_warning_and_game_over_outrank_everything()
+    public void the_boss_warning_and_game_over_are_left_to_the_music_directors_stingers()
     {
         //Act
-        SoundTable.TryGetCue(new GameEvent(GameEventKind.BossIncoming), out var warning);
-        SoundTable.TryGetCue(new GameEvent(GameEventKind.PlayerFired), out var laser);
+        var warning = SoundTable.TryGetCue(new GameEvent(GameEventKind.BossIncoming), out _);
+        var gameOver = SoundTable.TryGetCue(new GameEvent(GameEventKind.GameOver), out _);
 
         //Assert
-        warning.Priority.Should().BeGreaterThan(laser.Priority);
+        warning.Should().BeFalse();
+        gameOver.Should().BeFalse();
     }
 }

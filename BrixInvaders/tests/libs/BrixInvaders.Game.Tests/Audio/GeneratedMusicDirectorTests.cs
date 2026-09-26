@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using BrixInvaders.Assets;
 using BrixInvaders.Game.Audio;
 using BrixInvaders.Game.Credits;
 using BrixInvaders.Game.Hosting;
@@ -22,7 +23,7 @@ public class GeneratedMusicDirectorTests
     private static (GeneratedMusicDirector Director, FakeMusicEngine Engine) Started(MusicSettings settings = null, double volume = 0.8)
     {
         var engine = new FakeMusicEngine();
-        var director = new GeneratedMusicDirector(engine);
+        var director = engine.CreateDirector();
         director.Start(settings ?? Choices(), volume);
         return (director, engine);
     }
@@ -48,7 +49,7 @@ public class GeneratedMusicDirectorTests
     {
         //Arrange
         var engine = new FakeMusicEngine();
-        var director = new GeneratedMusicDirector(engine);
+        var director = engine.CreateDirector();
 
         //Act
         director.Start(Choices(), 0.6);
@@ -76,7 +77,7 @@ public class GeneratedMusicDirectorTests
         var sessionLevel = engine.Started[0].MasterVolume;
 
         //Assert
-        engine.Volumes.Should().Equal(0.6);
+        engine.Volumes.Should().Equal(0.6f);
         sessionLevel.Should().Be(1f);
     }
 
@@ -114,7 +115,7 @@ public class GeneratedMusicDirectorTests
     {
         //Arrange
         var engine = new FakeMusicEngine { StartFailure = new InvalidOperationException("no engine") };
-        var director = new GeneratedMusicDirector(engine);
+        var director = engine.CreateDirector();
 
         //Act
         director.Start(Choices(), 1.0);
@@ -163,7 +164,7 @@ public class GeneratedMusicDirectorTests
     }
 
     [Fact]
-    public void OnBoss_ducks_the_music_and_follows_up_with_the_boss_preset()
+    public void OnBoss_plays_the_warning_stinger_on_the_effects_bus_ducks_the_music_and_follows_up_with_the_boss_preset()
     {
         //Arrange
         var (director, engine) = Started();
@@ -174,13 +175,14 @@ public class GeneratedMusicDirectorTests
 
         //Assert
         engine.TimedDucks.Should().Equal(GeneratedMusicDirector.BossDuckDepth);
+        engine.Stingers.Should().Equal($"{AssetKeys.Sfx.BossWarning} on {AudioBus.Sfx}");
         engine.Current.FollowUps.Last().Should().Be(SectorMusic.For(3).PresetFor(MusicChoices.SkyTNT, boss: true));
         engine.Started.Should().HaveCount(1);
         director.Boss.Should().BeTrue();
     }
 
     [Fact]
-    public void OnGameOver_fades_the_music_down_and_keeps_the_session_alive()
+    public void OnGameOver_plays_the_stinger_on_the_effects_bus_fades_the_music_down_and_keeps_the_session_alive()
     {
         //Arrange
         var (director, engine) = Started();
@@ -193,6 +195,7 @@ public class GeneratedMusicDirectorTests
         engine.PushedDucks.Should().HaveCount(1);
         engine.PushedDucks[0].Depth.Should().Be(GeneratedMusicDirector.GameOverDuckDepth);
         engine.PushedDucks[0].IsReleased.Should().BeFalse();
+        engine.Stingers.Should().Equal($"{AssetKeys.Sfx.GameOver} on {AudioBus.Sfx}");
         engine.Started.Should().HaveCount(1, "the session plays on for the title");
         engine.Current.FollowUps.Should().HaveCount(1);
         director.IsGameOverFaded.Should().BeTrue();
@@ -263,7 +266,7 @@ public class GeneratedMusicDirectorTests
         director.SetVolumes(0.5, 0.25, 0.75);
 
         //Assert
-        engine.Volumes.Should().Equal(1.0, 0.25);
+        engine.Volumes.Should().Equal(1f, 0.25f);
         engine.Started.Should().HaveCount(1);
     }
 
@@ -335,7 +338,7 @@ public class GeneratedMusicDirectorTests
     {
         //Arrange
         var engine = new FakeMusicEngine();
-        var director = new GeneratedMusicDirector(engine);
+        var director = engine.CreateDirector();
 
         //Act
         var lines = CaptureLog(() =>
@@ -486,5 +489,5 @@ public class GeneratedMusicDirectorTests
 
     [Fact]
     public void ActiveSource_is_empty_before_the_music_has_started() =>
-        new GeneratedMusicDirector(new FakeMusicEngine()).ActiveSource.Should().BeEmpty();
+        new FakeMusicEngine().CreateDirector().ActiveSource.Should().BeEmpty();
 }

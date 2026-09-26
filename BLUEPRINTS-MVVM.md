@@ -24,8 +24,10 @@ model alone owns, with the page told what changed through delegates it filled
 in; every command predicate and every caption derived from a few counts
 recomputed in one place; a status line kept from being overwritten by the
 general guidance; service fields holding working objects before the container
-is ever asked; and a document composed in full before the save dialog is
-shown. Reach for this file when you are deciding what belongs on a view model
+is ever asked; a document composed in full before the save dialog is shown;
+and a view model with no bindings at all that builds a game host's seams and
+closes the application when the game asks to quit. Reach for this file when
+you are deciding what belongs on a view model
 rather than in a page, or when bound state has to survive background work, a
 slow service, or a user clicking faster than the application can answer.
 
@@ -103,6 +105,7 @@ conventions the code blocks follow.
 - [Keep a specific status line from being overwritten by the general guidance](#keep-a-specific-status-line-from-being-overwritten-by-the-general-guidance)
 - [Initialize service fields to working defaults before the container replaces them](#initialize-service-fields-to-working-defaults-before-the-container-replaces-them)
 - [Compose the document before asking where to save it](#compose-the-document-before-asking-where-to-save-it)
+- [Build a game host's seams in the view model and close the application from its quit event](#build-a-game-hosts-seams-in-the-view-model-and-close-the-application-from-its-quit-event)
 
 ## Related blueprints
 
@@ -6888,3 +6891,111 @@ private async Task DoOpenSavedReport()
 - The cheaper sibling command composes first too - the JSON is serialized before
   the picker is shown - so the rule is about order, not about how long the work
   takes.
+
+### Build a game host's seams in the view model and close the application from its quit event
+
+**When you want this.** The whole page is a game surface, so the view model has
+no bound properties and no commands - but it still has to own the game host, give
+it the few things only the application can provide, and act when the game asks
+to quit. Those requests arrive on the engine's thread, not the UI thread.
+[Hand the view model a game canvas at its first real layout size](BLUEPRINTS-GameEngine.md#hand-the-view-model-a-game-canvas-at-its-first-real-layout-size)
+covers the moment the canvas reaches the view model; this is what the view model
+does with it once the canvas is in hand.
+
+**The MVVM shape.** The view model keeps the family shape - the design-mode guard
+and the property and command regions, which here say why they are empty - and
+implements the canvas interface the page calls. When the canvas arrives, on the
+UI thread, the view model captures that thread's dispatcher queue, builds the
+host's seams, constructs the host, and turns the host's quit event into an
+application exit posted back to the UI thread. The page stays a canvas and a
+few forwarding lines.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/BrixInvaders.Core/ViewModels/MainViewModel.cs
+#region | Bindable properties |
+
+//The game draws everything itself (HUD and menus included), so the page has no bindable state.
+
+#endregion
+
+#region | Commands and their implementations |
+
+//No commands: every control is a key, a gamepad button or a click on the game surface.
+
+#endregion
+```
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/BrixInvaders.Core/ViewModels/MainViewModel.cs
+public void CanvasFirstStart(GameSurfaceCanvas canvas)
+{
+    //The GPU tier (unless BRIXINVADERS_USE_CPU=1) and the pinned 1280 x 720 render resolution MUST be set before
+    //  the first access to canvas.Host - the render tier cannot change once the scene pipeline exists.
+    BrixInvadersGameHost.PrepareCanvas(canvas);
+
+    var dispatcher = DispatcherQueue.GetForCurrentThread();
+
+    //The three seams the game library leaves to the app: generated music (the engine's UseGeneratedMusic), links
+    //  opened by the engine's link helper, and credits that read the host's Kenney pack titles and the music card
+    //  lazily - both only when the credits screen opens, long after the host has loaded them.
+    var music = new GeneratedMusicDirector(new EngineGeneratedMusicStarter(), MusicManager.Instance,
+        Engine.Instance.EngineDispatcher);
+    var links = new LauncherLinkOpener();
+    BrixInvadersGameHost host = null;
+    var credits = new KenneyCreditsContent(() => host?.PackCredits ?? Array.Empty<string>(), music.CreditLines);
+    host = new BrixInvadersGameHost(canvas, music, links, credits);
+    Host = host;
+    Host.QuitRequested += () => dispatcher?.TryEnqueue(() => Application.Current.Exit());
+
+    //Information keeps the game's own [BrixInvaders] lines on the console along with the engine's milestones
+    Host.Initialize(logLevel: Microsoft.Extensions.Logging.LogLevel.Information);
+}
+```
+
+Every seam is optional on the host, with a default that works, so a test or
+another application can build it from a canvas alone:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs
+public BrixInvadersGameHost(GameSurfaceCanvas renderSurface, IMusicDirector music = null, IExternalLinkOpener links = null,
+    ICreditsContent credits = null)
+    : base(renderSurface)
+{
+    _music = music ?? new SilentMusicDirector();
+    _links = links ?? new LoggingLinkOpener();
+    _creditsOverride = credits;
+}
+
+/// <summary>Raised (on the engine thread) when the player chooses Quit on the title; the app closes itself.</summary>
+public event Action QuitRequested;
+```
+
+**Where to look.**
+`BrixInvaders/src/BrixInvaders.Core/ViewModels/MainViewModel.cs`
+`BrixInvaders/src/BrixInvaders.UI/Views/MainPage.xaml.cs` and `Views/MainPage.xaml`
+`BrixInvaders/src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs`
+(constructor, `QuitRequested`, `OnEngineInitialized`)
+`BrixInvaders/src/libs/BrixInvaders.Game/Session/GameSession.cs` (`QuitRequested`)
+
+**Sharp edges.**
+- Capture the dispatcher queue while you are on the UI thread. The canvas's
+  first-start callback runs there; the quit event does not, and
+  `GetForCurrentThread()` called from the engine thread has no queue to give. (The
+  link requests need no queue of their own: the engine's link helper reaches the
+  UI thread itself.)
+- Never exit from the engine thread. The quit event is raised from inside the
+  game's step; enqueue the exit so it runs on the thread that owns the window.
+- Two seams that need each other can meet through a closure. The credits content
+  reads the host's pack list, and the host takes the credits content; a local
+  that the lambda reads later closes the loop, because the credits are read only
+  when their screen opens.
+- Build the seams here only when they need something the view model has at this
+  moment - a UI-thread queue, a canvas. When construction should be substitutable
+  in tests, ask a registered factory instead, as in
+  [Register a factory and let the view model ask it for what it owns](BLUEPRINTS-AppStructureAndStartup.md#register-a-factory-and-let-the-view-model-ask-it-for-what-it-owns).
+- Keep the empty regions and the design-mode guard. A view model with no bound
+  state today is still the page's data context, and the guard keeps the designer
+  from starting anything - see
+  [Guard a view model constructor for the XAML designer](BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).

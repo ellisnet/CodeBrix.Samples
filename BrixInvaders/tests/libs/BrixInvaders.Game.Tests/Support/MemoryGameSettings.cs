@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using BrixInvaders.Game.Input;
 using BrixInvaders.Game.Settings;
 using BrixInvaders.GameLogic;
+using CodeBrix.Platform.GameEngine.Input.Actions;
 
 namespace BrixInvaders.Game.Tests.Support;
 
@@ -29,7 +30,7 @@ internal sealed class MemoryGameSettings : IGameSettings
 
     public GamepadProfile GamepadProfile { get; set; }
 
-    public InputDevice LastInputDevice { get; set; }
+    public InputDeviceKind LastInputDevice { get; set; }
 
     public string LastName { get; set; } = SettingsService.DefaultLastName;
 

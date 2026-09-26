@@ -48,6 +48,19 @@ public class AssetKeysTests
     }
 
     [Fact]
+    public void the_providers_key_check_finds_every_key_and_both_atlases_frames()
+    {
+        //Act
+        var check = TestAssets.Register().CheckKeys(AssetKeyCatalog.AllKeys);
+
+        //Assert
+        check.MissingKeys.Should().BeEmpty();
+        check.Keys.Should().HaveCount(AssetKeyCatalog.AllKeys.Count);
+        check[AssetKeys.Atlases.Main].AtlasFrameCount.Should().Be(294);
+        check.CountsByKind[GameAssetKind.SpriteAtlas].Should().Be(2);
+    }
+
+    [Fact]
     public void every_key_is_of_the_kind_its_group_expects()
     {
         //Arrange
@@ -188,7 +201,6 @@ public class AssetKeysTests
         (enemy.Width, enemy.Height).Should().Be((93, 84));
         (core.Width, core.Height).Should().Be((172, 151));
         BrixInvadersAssets.LoadEnemySheet(TestAssets.Engine).Should().BeSameAs(main);
-        BrixInvadersAssets.GetFrame(main, AssetKeys.Lasers.PlayerBolt).Tilesheet.Should().BeSameAs(main);
     }
 
     [Fact]
@@ -242,17 +254,4 @@ public class AssetKeysTests
     [Fact]
     public void LoadPlanet_rejects_an_index_outside_0_to_9() =>
         ((Action)(() => BrixInvadersAssets.LoadPlanet(TestAssets.Engine, 10))).Should().Throw<ArgumentOutOfRangeException>();
-
-    [Fact]
-    public void GetFrame_names_the_atlas_and_frame_when_the_frame_is_missing()
-    {
-        //Arrange
-        Tilesheet main = BrixInvadersAssets.LoadMainAtlas(TestAssets.Engine);
-
-        //Act
-        Action act = () => BrixInvadersAssets.GetFrame(main, "noSuchFrame");
-
-        //Assert
-        act.Should().Throw<ArgumentException>().Which.Message.Should().Contain("noSuchFrame");
-    }
 }

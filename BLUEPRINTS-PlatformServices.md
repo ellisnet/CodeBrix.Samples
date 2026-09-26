@@ -16,7 +16,10 @@ returns, deciding which side of the seam a picker's policy belongs on, or keepin
 a single replace-file confirmation instead of two. One goes the other way and
 hands the dialog shapes themselves back to the page, so an application with a
 strong look keeps it, with a written-down answer for every delegate a head
-leaves null. Reach for this file when a command needs something the view model
+leaves null. The last recipe moves the hop out of the view model altogether: a
+UI-free library on a thread of its own opens a link through a delegate that
+posts to the UI thread, and learns from a task whether a browser took it.
+Reach for this file when a command needs something the view model
 cannot do for itself, when the same feature has to work across several UI
 stacks, or when a head with no windowing system must still start and explain
 what it cannot do.
@@ -56,6 +59,7 @@ conventions the code blocks follow.
 - [Call the page's bridge from the setter that changed](#call-the-pages-bridge-from-the-setter-that-changed)
 - [Send the paint call back to the view model through the canvas bridge](#send-the-paint-call-back-to-the-view-model-through-the-canvas-bridge)
 - [Ask the page for dialogs so they keep the application's own styling](#ask-the-page-for-dialogs-so-they-keep-the-applications-own-styling)
+- [Open a link from the game engine thread with ExternalLinks and answer with a task](#open-a-link-from-the-game-engine-thread-with-externallinks-and-answer-with-a-task)
 
 ## Related blueprints
 
@@ -1146,6 +1150,10 @@ rows.Add(new IssueRowViewModel(item, palette, _showAssignees, now, OpenUrlAsync)
 (`DoOpenSavedReport` handles both of `LaunchUriAsync`'s failure modes - a false
 return and a throw - in the one place the application asks the host to open
 anything, and the button that runs it lives on a page-built dialog)
+`BrixInvaders/src/libs/BrixInvaders.Game/Links/LauncherLinkOpener.cs` (the launch
+asked for on the game engine's thread, through the engine's link helper, rather than
+from a view model - see
+[Open a link from the game engine thread with ExternalLinks and answer with a task](BLUEPRINTS-PlatformServices.md#open-a-link-from-the-game-engine-thread-with-externallinks-and-answer-with-a-task))
 
 **Sharp edges.**
 - `LaunchUriAsync` reports two kinds of failure. A false return means nothing was willing
@@ -1228,6 +1236,12 @@ public void SetImage (ImageSurface surface)
 `Pinta.Brix/src/libs/Pinta.Brix.Engine/Services/NullClipboardService.cs`
 `Pinta.Brix/src/libs/Pinta.Brix.Controls/PlatformServices.cs`
 `Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.xaml.cs`
+
+**Also shown by.**
+`BrixInvaders/src/libs/BrixInvaders.Game/Links/LoggingLinkOpener.cs` and
+`Audio/SilentMusicDirector.cs` (two null objects the game host substitutes for a
+missing seam in its constructor - see
+[Open a link from the game engine thread with ExternalLinks and answer with a task](BLUEPRINTS-PlatformServices.md#open-a-link-from-the-game-engine-thread-with-externallinks-and-answer-with-a-task))
 
 **Sharp edges.**
 - Clipboard image writing is not supported by every backend; the code notes it and
@@ -3297,3 +3311,117 @@ private async Task<string?> PickSavePath(string suggestedFileName, string typeNa
   use the stock helpers has somewhere to attach - see
   [Give the view model a XamlRoot so its dialogs can show](BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
   Styling the shapes yourself is a choice, not a replacement for that wiring.
+
+### Open a link from the game engine thread with ExternalLinks and answer with a task
+
+**When you want this.** Game code running on the engine's thread needs to open a web
+page - a credits link, a "get the bundle" card - and find out whether a browser took
+it, while the platform launcher has to be called from the UI thread; the engine's
+`ExternalLinks.OpenAsync` bridges the two.
+[Open a URL in the default browser from a view model](BLUEPRINTS-PlatformServices.md#open-a-url-in-the-default-browser-from-a-view-model)
+calls the launcher from a view model already on the UI thread, and
+[Marshal a save dialog onto the UI thread from a command handler](BLUEPRINTS-PlatformServices.md#marshal-a-save-dialog-onto-the-ui-thread-from-a-command-handler)
+makes the hop in the page. Here the game engine's own link helper makes the hop, and
+the game keeps a one-method seam of its own so its tests never open a browser.
+
+**The MVVM shape.** The game library declares a one-method interface returning
+`Task<bool>` and documents which thread calls it. Its launcher implementation checks
+that the link is a web address and hands it to the engine's
+`ExternalLinks.OpenAsync`, which launches it on the UI thread (posting through the
+engine's UI dispatcher when called from the engine thread) and answers false instead
+of failing. The view model only constructs it. The caller on the engine thread never
+blocks: it attaches a continuation and learns the answer on a later step.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Links/IExternalLinkOpener.cs
+/// <remarks>
+/// <see cref="Open"/> is called on the ENGINE thread; an implementation that needs the UI thread (a launcher)
+/// marshals there itself and completes the task when it knows the answer. A false result shows
+/// "No browser was available." on the screen for a few seconds.
+/// </remarks>
+public interface IExternalLinkOpener
+{
+    /// <summary>Opens a link.</summary>
+    /// <param name="url">The absolute URL.</param>
+    /// <returns>True when a browser took the link; false when none was available.</returns>
+    Task<bool> Open(string url);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Links/LauncherLinkOpener.cs
+public LauncherLinkOpener(Func<Uri, Task<bool>> open = null)
+{
+    _open = open ?? (uri => ExternalLinks.OpenAsync(uri));
+}
+
+/// <inheritdoc />
+public async Task<bool> Open(string url)
+{
+    if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+        (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+    {
+        GameLog.Write($"link: '{url}' is not a web address - nothing was opened");
+        return false;
+    }
+
+    var opened = await _open(uri);
+    GameLog.Write(opened ? $"link: the browser took {uri}" : $"link: {uri} could not be opened");
+    return opened;
+}
+```
+
+The view model has nothing to supply:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/BrixInvaders.Core/ViewModels/MainViewModel.cs
+var links = new LauncherLinkOpener();
+```
+
+And the test replaces the engine helper with a recorder, which is how it proves that
+only web addresses ever reach it:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Links/LauncherLinkOpenerTests.cs
+[Theory]
+[InlineData("")]
+[InlineData("not a link")]
+[InlineData("file:///etc/passwd")]
+public async Task Open_refuses_anything_but_a_web_address(string url)
+{
+    //Arrange
+    var opener = new LauncherLinkOpener(Launcher(true));
+
+    //Act
+    var opened = await opener.Open(url).WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+    //Assert
+    opened.Should().BeFalse();
+    _opened.Should().BeEmpty();
+}
+```
+
+**Where to look.**
+`BrixInvaders/src/libs/BrixInvaders.Game/Links/IExternalLinkOpener.cs`,
+`LauncherLinkOpener.cs` and `LoggingLinkOpener.cs`
+`BrixInvaders/src/BrixInvaders.Core/ViewModels/MainViewModel.cs` (`CanvasFirstStart`)
+`BrixInvaders/src/libs/BrixInvaders.Game/Session/GameSession.cs` (`OpenLink`,
+`UpdateMessage`)
+`BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Links/LauncherLinkOpenerTests.cs`
+
+**Sharp edges.**
+- Every path must complete the task. The engine's helper answers false for a link it
+  could not open - no UI thread to post to, a launcher that refuses or throws - rather
+  than faulting; a task left pending is a link the player clicked that nothing ever
+  reports on.
+- The engine must have started before a link is opened from its thread: the helper
+  reaches the UI thread through the engine's UI dispatcher.
+- Refuse anything that is not an http or https address before handing it on. A link
+  that came from content could otherwise hand the launcher a `file:` address.
+- Do not wait on the task from the engine thread. The session attaches a
+  continuation that sets an interlocked flag, and its next step turns the flag
+  into the on-screen "No browser was available." message.
+- The default opener, used when the application supplies none, logs the link and
+  answers false, so the player sees the same message rather than nothing.

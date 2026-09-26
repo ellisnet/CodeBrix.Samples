@@ -1,6 +1,7 @@
 using System;
 using BrixInvaders.Assets;
 using BrixInvaders.Game.Rendering;
+using SkiaSharp;
 
 namespace BrixInvaders.Game.Screens;
 
@@ -37,19 +38,19 @@ public static class KenneyCard
         var previewX = left + 90;
         foreach (var preview in SpriteCatalog.PackPreviews)
         {
-            frame.AddOverlay(DrawCommand.Sprite(preview, previewX, top + 70, 150, 100));
+            frame.Overlay.Image(preview, null, previewX, top + 70, 150, 100);
             previewX += 160;
         }
 
-        frame.AddOverlay(DrawCommand.Label(KenneyPacks.CreditLine, left + 20, top + 150, 17, Palette.Text, TextAnchor.Left));
-        frame.AddOverlay(DrawCommand.Label(ZipLine, left + 20, top + 180, 14, Palette.Dim, TextAnchor.Left, thin: true));
+        frame.Overlay.Text(KenneyPacks.CreditLine, left + 20, top + 150, frame.Font, 17, Palette.Text, SKTextAlign.Left);
+        frame.Overlay.Text(ZipLine, left + 20, top + 180, frame.ThinFont, 14, Palette.Dim, SKTextAlign.Left);
 
         var promoX = x + (Width / 2) - 170;
         var promoY = top + 88;
-        frame.AddOverlay(DrawCommand.Sprite(SpriteCatalog.PromoCard, promoX, promoY, 230, 153));
-        frame.AddOverlay(DrawCommand.Label(BundleCaption, promoX, top + 186, 11, Palette.Accent, TextAnchor.Center));
-        frame.AddOverlay(DrawCommand.Label($"{Prompts.Link(context.Device)} or click to open", promoX, top + 208, 11, Palette.Dim,
-            TextAnchor.Center, thin: true));
-        frame.AddHotspot(new Hotspot(promoX, top + 110, 300, 210, KenneyPacks.BundleUrl));
+        frame.Overlay.Image(SpriteCatalog.PromoCard, null, promoX, promoY, 230, 153);
+        frame.Overlay.Text(BundleCaption, promoX, top + 186, frame.Font, 11, Palette.Accent);
+        frame.Overlay.Text($"{Prompts.Link(context.Device)} or click to open", promoX, top + 208, frame.ThinFont, 11,
+            Palette.Dim);
+        frame.Overlay.HitRegion(promoX, top + 110, 300, 210, KenneyPacks.BundleUrl);
     }
 }

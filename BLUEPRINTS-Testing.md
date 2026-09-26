@@ -16,13 +16,17 @@ and proving that a library's own registration method registers what it
 promises. They go on to the runs that need the whole application: a scripted
 run on a real head, kept in a library behind a narrow interface onto the page,
 and an open-ended diagnostic hook that drives a live application from an
-environment variable. The last pair is about assertions that can be exact:
+environment variable. A pair after that is about assertions that can be exact:
 fixtures pinned to fixed identifiers and a fixed timestamp, so the suite can
 assert the sentence a generator wrote and the file name it suggested, and a
 parser driven through a counting sink so its grammar is tested with no output
-document at all. Reach for this file when you are adding a test project to
-an application, or when something you need to prove will not run in a bare test
-host.
+document at all. The last three come from a game: a whole game session walked
+through its screens against a recording fake for every seam it takes, every
+asset key read back by reflection and proved against the real asset zips, and
+an autopilot that plays the running game through the player's own input path
+while its saves are kept apart. Reach for this file when you are adding a test
+project to an application, or when something you need to prove will not run in
+a bare test host.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -62,6 +66,9 @@ conventions the code blocks follow.
 - [Drive a running application from an environment variable and report to the log](#drive-a-running-application-from-an-environment-variable-and-report-to-the-log)
 - [Pin every fixture to fixed ids and a fixed timestamp so tests can assert exact sentences](#pin-every-fixture-to-fixed-ids-and-a-fixed-timestamp-so-tests-can-assert-exact-sentences)
 - [Test a parser through a counting sink that produces no document](#test-a-parser-through-a-counting-sink-that-produces-no-document)
+- [Drive a game session through recording fakes for every seam it takes](#drive-a-game-session-through-recording-fakes-for-every-seam-it-takes)
+- [Read every asset key back by reflection and prove each one against the real zips](#read-every-asset-key-back-by-reflection-and-prove-each-one-against-the-real-zips)
+- [Let an autopilot play through the player's input path and keep its saves apart](#let-an-autopilot-play-through-the-players-input-path-and-keep-its-saves-apart)
 
 ## Related blueprints
 
@@ -235,6 +242,11 @@ and `InannaRosette/global.json`
 (the runner selected once for the whole folder in `global.json` and again in the
 csproj, whose `AssemblyName` carries a comment pinning it to the exact name the
 library's `InternalsVisibleTo` grants)
+`BrixInvaders/tests/libs/BrixInvaders.Game.Tests/BrixInvaders.Game.Tests.csproj`
+and `AssemblyInfo.cs` (the same two properties and comment, plus the music
+packages' model and SoundFont copy switched off because no test loads them, and
+parallelization turned off for the whole assembly because the settings store and
+the log sink are process-global)
 
 **Sharp edges.**
 - The output type must be `Exe`. The comment appears in every one of these
@@ -336,6 +348,12 @@ condition.
 `KenneyAssetBrowser/tests/libs/KenneyAssetBrowser.Rendering.Tests/KenneyAssetBrowser.Rendering.Tests.csproj`
 `PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/PalmVisualizer.Rendering.Tests.csproj`
 
+**Also shown by.**
+`BrixInvaders/tests/libs/BrixInvaders.Game.Tests/BrixInvaders.Game.Tests.csproj`
+(the Linux Skia native for tests that only build engine draw lists: a text or
+picture command holds a real typeface or image, so the game's painter tests need
+the native library although nothing is ever rendered)
+
 **Sharp edges.**
 - In a running application the head's runtime package supplies these; a bare test
   host does not. The list is exactly what your library touches: the graphics
@@ -387,6 +405,10 @@ internal constructor).
 (its own file at the library root holding nothing but the attribute, which is
 what makes the interpretation templates, the page-flow cursor and the PDF palette
 testable while they stay off the public surface)
+`BrixInvaders/src/libs/BrixInvaders.Music/InternalsVisibleTo.cs` (with the
+documented internal test accessor `MusicSetup.ResetForTesting`, which lets
+`MusicSetupTests` run the once-only registration again, and the internal
+constructor of the per-sector music entry)
 
 **Sharp edges.**
 - Every library that has tests carries the file, even one whose tests only touch
@@ -1610,6 +1632,14 @@ public class SettingsStoreTests : IDisposable
 matching file under `Pinta.Brix.FileFormats.Tests/`
 `KenneyAssetBrowser/tests/libs/KenneyAssetBrowser.Settings.Tests/SettingsStoreTests.cs`
 
+**Also shown by.**
+`BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Support/TempSettingsStore.cs`
+and `AssemblyInfo.cs` (the fresh-folder-per-test approach: a disposable helper
+opens the store in a new temporary folder, can close and reopen it to prove a
+value reached the disk, and deletes the folder on dispose; the assembly turns
+test parallelization off because the store and the game's log sink are both
+process-global)
+
 **Sharp edges.**
 - A module initializer is what guarantees the store is open before a static
   constructor in the library under test runs; a fixture would be too late.
@@ -2124,6 +2154,12 @@ public void IsRequested_is_true_only_for_the_exact_opt_in_value()
 `GameEngineMusicDemo/src/libs/GameEngineMusicDemo.Game/GameEngineMusicDemoWalkthrough.cs`
 `GameEngineMusicDemo/tests/libs/GameEngineMusicDemo.Game.Tests/GameEngineMusicDemoWalkthroughTests.cs`
 and `src/libs/GameEngineMusicDemo.Game/InternalsVisibleTo.cs`
+
+**Also shown by.**
+`BrixInvaders/src/libs/BrixInvaders.Game/Session/AutoPilot.cs` (an opt-in
+unattended run in the shipped game library that plays through the player's own
+input path - see
+[Let an autopilot play through the player's input path and keep its saves apart](BLUEPRINTS-Testing.md#let-an-autopilot-play-through-the-players-input-path-and-keep-its-saves-apart))
 
 **Sharp edges.**
 - Opt in on one exact value, and pin that with a test. An environment variable
@@ -3048,3 +3084,447 @@ shared ornaments, parsed and required to produce at least one segment.
 - A public method that exists for the self-test is worth saying so in its doc
   comment. Otherwise it reads as API surface, and the next person adds an
   overload to it.
+
+### Drive a game session through recording fakes for every seam it takes
+
+**When you want this.** Most of an application's behavior - which screen follows
+which, what is saved and when, what the music is told, what happens when a link
+cannot open - lives in one object that the running application drives step by
+step. You want to walk that object through whole flows in a unit test, press by
+press, and assert on everything it asked of the outside world.
+
+**The MVVM shape.** The session is a plain class in the game library that takes
+every outside dependency through its constructor as an interface: stored
+settings, sound output, the music director and a link opener. The host builds it
+with the real implementations. The test project keeps one hand-written fake per
+seam in a shared `Support` folder, each recording what it was asked as plain
+data, and a driver class that builds a session around them and knows how to get
+from one screen to the next with real menu input.
+
+**Code.**
+
+The session asks for four seams and nothing else:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Session/GameSession.cs
+public GameSession(IGameSettings settings, ISoundOutput sound, IMusicDirector music, IExternalLinkOpener links, int seed)
+{
+    Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+    _sound = sound ?? throw new ArgumentNullException(nameof(sound));
+    _music = music ?? throw new ArgumentNullException(nameof(music));
+    _links = links ?? throw new ArgumentNullException(nameof(links));
+    _seeds = new Random(seed);
+    HighScores = settings.LoadHighScores();
+    SettingsMenu = new SettingsMenu(settings);
+    Screens = CreateMachine();
+}
+```
+
+The driver builds the session around the fakes, lets a test adjust the stored
+settings first, and moves between screens with the same presses a player makes:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Support/SessionDriver.cs
+public SessionDriver(Action<MemoryGameSettings> configure = null, int seed = 11)
+{
+    configure?.Invoke(Settings);
+    Session = new GameSession(Settings, Sound, Music, Links, seed);
+}
+// ...
+public MemoryGameSettings Settings { get; } = new MemoryGameSettings();
+
+public RecordingSoundOutput Sound { get; } = new RecordingSoundOutput();
+
+public RecordingMusicDirector Music { get; } = new RecordingMusicDirector();
+
+public FakeLinkOpener Links { get; } = new FakeLinkOpener();
+
+public GameSession Session { get; }
+
+public void Press(MenuInput input) => Session.Update(Step, input, GameInput.None);
+// ...
+public void ToBriefing()
+{
+    ToTitle();
+    Press(Confirm);
+    Press(Confirm);
+    Press(Confirm);
+}
+
+public void ToPlaying()
+{
+    ToBriefing();
+    Wait(ScreenStateMachine.BriefingMinSeconds + Step);
+    Press(Confirm);
+}
+```
+
+A recording fake keeps every call as a short string, so an assertion reads like
+the policy it checks:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Support/RecordingMusicDirector.cs
+/// <summary>Records every call the game makes to the music seam, as short strings ("OnSector(1)").</summary>
+internal sealed class RecordingMusicDirector : IMusicDirector
+{
+    public List<string> Calls { get; } = new List<string>();
+    // ...
+    public void OnSector(int sector) => Calls.Add($"OnSector({sector})");
+
+    public void OnBoss(int sector) => Calls.Add($"OnBoss({sector})");
+    // ...
+    public void SetVolumes(double master, double music, double effects) => Calls.Add($"SetVolumes({master}, {music}, {effects})");
+    // ...
+}
+```
+
+A test is then a walk through the menus and a look at what each seam recorded:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Session/ScreenFlowTests.cs
+[Fact]
+public void volume_changes_reach_the_mixer_and_the_music_director()
+{
+    //Arrange
+    var driver = new SessionDriver();
+    driver.ToTitle();
+    driver.Press(SessionDriver.Down);
+    driver.Press(SessionDriver.Down);
+    driver.Press(SessionDriver.Confirm);
+
+    //Act
+    driver.Press(SessionDriver.Left);
+
+    //Assert
+    driver.Session.CurrentScreen.Should().Be(GameScreen.Settings);
+    driver.Settings.MasterVolume.Should().Be(0.7);
+    driver.Sound.Levels.Last().Should().Be((0.7, 0.8));
+    driver.Music.Calls.Last().Should().Be("SetVolumes(0.7, 0.6, 0.8)");
+}
+```
+
+**Where to look.**
+`BrixInvaders/src/libs/BrixInvaders.Game/Session/GameSession.cs`
+`BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Support/` (`SessionDriver.cs`,
+`MemoryGameSettings.cs`, `RecordingSoundOutput.cs`, `RecordingMusicDirector.cs`,
+`FakeLinkOpener.cs`)
+`BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Session/ScreenFlowTests.cs` and
+`Session/AutoPilotTests.cs`
+`BrixInvaders/tests/libs/BrixInvaders.Game.Tests/AssemblyInfo.cs`
+
+**Sharp edges.**
+- Let the test configure the fakes before the session exists. The session reads
+  the high scores, the defaults and the unlocked sectors in its constructor, so
+  a setting changed afterwards is not the one it started with.
+- Move between screens with real presses, not by setting the current screen.
+  The flow then goes through the same state machine the player uses, and the
+  driver's helpers are the one place to change when a screen is added.
+- Record calls as data a test can compare whole - short strings, tuples, the
+  options object itself. A list of strings fails with a readable diff when the
+  order of calls changes.
+- Give each fake the one knob a failure path needs, such as the link opener's
+  result, rather than a general mocking setup; the tests of the no-browser
+  message only flip that flag.
+- The music director's fake stands in for the whole music policy. The director
+  itself is tested one seam lower, against a fake of the engine calls, so neither
+  suite needs a model or an audio device - see
+  [Put the music policy behind an interface and test it against fakes of the engine's music interfaces](BLUEPRINTS-GameEngine.md#put-the-music-policy-behind-an-interface-and-test-it-against-fakes-of-the-engines-music-interfaces).
+
+### Read every asset key back by reflection and prove each one against the real zips
+
+**When you want this.** The application addresses its art, sounds and fonts by
+string keys and frame names kept as constants in one class, and a misspelled key
+only shows up as a missing picture in play. You want a test that covers every
+key the moment someone adds it, without a second list in the test to keep in
+step. The Kenney recipe,
+[Register downloaded Kenney zip files with RegisterKenneyAssets and load sprites, sounds and fonts from them](BLUEPRINTS-GameEngine.md#register-downloaded-kenney-zip-files-with-registerkenneyassets-and-load-sprites-sounds-and-fonts-from-them),
+says to prove every key against the real zips; this is how.
+
+**The MVVM shape.** Not a view-model concern. The asset library keeps its keys as
+`const` strings in nested classes and follows one stated convention. A small
+catalog class in the same library reads those constants back by reflection. The
+test project copies the real zips beside the test binary, registers them with the
+engine once, and asks the engine's provider about every key the catalog returns.
+
+**Code.**
+
+The convention is stated in the constants class and followed by every group: an
+asset group holds only asset keys, and a frame group names its atlas in an
+`Atlas` constant and holds frame names beside it:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Assets/Keys/AssetKeys.cs
+/// <summary>The player's ships (3 shapes x 4 colours), their damage overlays and the HUD life icons.</summary>
+public static class Ships
+{
+    /// <summary>The atlas these frames are cut from.</summary>
+    public const string Atlas = "kenney:space-shooter-remastered/Spritesheet/sheet";
+
+    /// <summary>Player ship shape 1, blue.</summary>
+    public const string PlayerShip1Blue = "playerShip1_blue";
+    // ...
+}
+```
+
+The catalog reads every constant back out and sorts it by that convention:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Assets/Keys/AssetKeyCatalog.cs
+private static IEnumerable<(Type Group, FieldInfo Field, string Value)> Constants() =>
+    typeof(AssetKeys).GetNestedTypes(BindingFlags.Public)
+        .SelectMany(group => group
+            .GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(field => field.IsLiteral && field.FieldType == typeof(string))
+            .Select(field => (group, field, (string)field.GetRawConstantValue())));
+
+private static IReadOnlyList<string> ReadAllKeys() =>
+    Constants()
+        .Where(constant => constant.Value.StartsWith(KeyPrefix, StringComparison.Ordinal))
+        .Select(constant => constant.Value)
+        .Distinct(StringComparer.Ordinal)
+        .ToList();
+
+private static IReadOnlyList<AtlasFrameGroup> ReadFrameGroups() =>
+    Constants()
+        .GroupBy(constant => constant.Group)
+        .Where(group => group.Any(constant => constant.Field.Name == AtlasFieldName))
+        .Select(group => new AtlasFrameGroup(
+            group.Key.Name,
+            group.Single(constant => constant.Field.Name == AtlasFieldName).Value,
+            group.Where(constant => constant.Field.Name != AtlasFieldName)
+                .Select(constant => constant.Value)
+                .Distinct(StringComparer.Ordinal)
+                .ToList()))
+        .ToList();
+```
+
+The tests ask the provider about every key, with its exact spelling, and look
+every frame up in its atlas:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/tests/libs/BrixInvaders.Assets.Tests/AssetKeysTests.cs
+[Fact]
+public void every_key_resolves_through_the_provider_with_its_exact_spelling()
+{
+    //Arrange
+    List<string> problems = [];
+
+    //Act
+    foreach (string key in AssetKeyCatalog.AllKeys)
+    {
+        if (!_providers.TryDescribe(key, out GameAssetDescriptor descriptor) || descriptor is null)
+        {
+            problems.Add($"not found: {key}");
+        }
+        else if (!string.Equals(descriptor.Key, key, StringComparison.Ordinal))
+        {
+            problems.Add($"spelled '{key}', provider says '{descriptor.Key}'");
+        }
+        else if (descriptor.Properties[KenneyAssetProperties.Materializable] != "true")
+        {
+            problems.Add($"not materializable: {key}");
+        }
+    }
+
+    //Assert
+    problems.Should().BeEmpty();
+    AssetKeyCatalog.AllKeys.Should().Contain(AssetKeys.Atlases.Main);
+}
+
+[Fact]
+public void every_frame_the_game_relies_on_exists_in_its_atlas()
+{
+    //Arrange
+    List<string> missing = [];
+
+    //Act
+    foreach (AtlasFrameGroup group in AssetKeyCatalog.FrameGroups)
+    {
+        Tilesheet atlas = BrixInvadersAssets.LoadImage(TestAssets.Engine, group.AtlasKey);
+        missing.AddRange(group.FrameNames
+            .Where(frame => atlas.GetRegion(frame) is null)
+            .Select(frame => $"{group.GroupName}: {frame}"));
+    }
+    // ...
+}
+```
+
+The zips reach the test binary the same way they reach the game:
+
+```xml
+<!-- From CodeBrix.Samples/BrixInvaders/tests/libs/BrixInvaders.Assets.Tests/BrixInvaders.Assets.Tests.csproj -->
+<ItemGroup>
+  <!-- The game's own Kenney bundles (CC0) and the promo image, copied beside the test executable in the same
+       assets/kenney layout the game ships. See FIXTURES-LICENSE.txt. They are None items rather than Content:
+       the CodeBrix.Platform build targets re-root every copy-to-output Content item of a non-head project under
+       $(AssemblyName)/, which on Linux collides with the extensionless test executable of the same name. -->
+  <None Include="..\..\..\assets\kenney\**\*" Link="assets\kenney\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+</ItemGroup>
+```
+
+**Where to look.**
+`BrixInvaders/src/libs/BrixInvaders.Assets/Keys/AssetKeys.cs` (the class remarks
+state the convention) and `Keys/AssetKeyCatalog.cs`
+`BrixInvaders/src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs` (`LoadAssets`:
+the same catalog checked by the Kenney provider's `CheckKeys` and summarized in the
+start-up log)
+`BrixInvaders/tests/libs/BrixInvaders.Assets.Tests/AssetKeysTests.cs`,
+`TestAssets.cs`, `AssemblyInfo.cs` and `BrixInvaders.Assets.Tests.csproj`
+
+**Sharp edges.**
+- A list of keys written out in the test drifts from the constants. Reading the
+  constants back means a key is under test from the moment it is declared.
+- Reflection finds only what the convention describes, so write the convention
+  down where the constants are. Here the remarks on the constants class say what
+  an asset group and a frame group are, and the catalog's grouping follows them.
+- Compare spellings ordinally. The engine's tilesheet registry is ordinal, so a
+  key that differs only in case can be found by a lenient lookup and still miss
+  at draw time; the test checks the provider's own spelling against the
+  constant.
+- Keys built by helper methods - a ship from a shape and a color - are not
+  constants and the catalog cannot see them. Test every combination of each
+  helper separately, as the same test class does.
+- Registering the zips touches the engine's process-wide registries, so the
+  asset test assembly runs its tests one at a time.
+
+### Let an autopilot play through the player's input path and keep its saves apart
+
+**When you want this.** You want an unattended run of the real application that
+gets deep into it - through the menus, into play, to the boss, to game over and
+the save of a high score - so the log can be read afterwards, and you do not want
+those runs to touch the player's own settings or records. This differs from
+[Drive a running application from an environment variable and report to the log](BLUEPRINTS-Testing.md#drive-a-running-application-from-an-environment-variable-and-report-to-the-log),
+which evaluates whatever script the variable holds: here the variable switches on
+one fixed behavior that supplies input exactly where a player would, and the same
+variable moves the settings store somewhere disposable. It is closer to
+[Check audible-only behavior with an opt-in unattended walkthrough](BLUEPRINTS-Testing.md#check-audible-only-behavior-with-an-opt-in-unattended-walkthrough),
+which also lives in the shipped library and reports only to the log, but a
+walkthrough calls the library's own methods in a fixed order, while the autopilot
+plays through the same input path as the keyboard and gamepad.
+
+**The MVVM shape.** Not a view-model concern. A small class in the game library
+reads the session's state each step and answers with a menu press and a play
+input, reusing the pilot the attract-mode demo already has. The host consults it
+only when the player gave no input that step. The start-up code that opens the
+settings store checks the same variable and opens a scratch store instead.
+
+**Code.**
+
+The autopilot is a decision per screen, with a pause on each before it confirms,
+and the demo's pilot during play:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Session/AutoPilot.cs
+public static bool IsRequested() => Environment.GetEnvironmentVariable(Variable) == "1";
+// ...
+public MenuInput Menu(GameSession session)
+{
+    ArgumentNullException.ThrowIfNull(session);
+    var screens = session.Screens;
+    var waited = screens.ScreenTime >= MenuDelaySeconds;
+    return screens.CurrentScreen switch
+    {
+        GameScreen.Title when waited && screens.TitleCursor == TitleMenuItem.Play => new MenuInput(confirm: true),
+        GameScreen.Title when waited => new MenuInput(up: true),
+        GameScreen.ShipSelect or GameScreen.DifficultySelect or GameScreen.SectorBriefing or GameScreen.SectorClear
+            or GameScreen.HighScoreEntry or GameScreen.HighScores when waited => new MenuInput(confirm: true),
+        GameScreen.GameOver when screens.ScreenTime >= ScreenStateMachine.GameOverMinSeconds + 1 => new MenuInput(confirm: true),
+        _ => MenuInput.None,
+    };
+}
+// ...
+public GameInput Play(GameSession session)
+{
+    ArgumentNullException.ThrowIfNull(session);
+    return session.CurrentScreen == GameScreen.Playing && session.Game != null ? _pilot.Decide(session.Game) : GameInput.None;
+}
+```
+
+The host fills in only what the player left empty, so the keyboard and a
+gamepad still work alongside it:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs
+var menu = GameControls.ReadMenu(_input, clicked);
+var play = GameControls.ReadPlay(_input);
+if (_autoPilot != null)
+{
+    menu = menu.HasAnyInput ? menu : _autoPilot.Menu(_session);
+    play = play.HasAnyInput ? play : _autoPilot.Play(_session);
+}
+
+_session.Update(Playfield.FixedStep, menu, play);
+```
+
+The store opens once, and an autopilot run gets a scratch folder:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Hosting/GameStartup.cs
+public static string OpenSettingsStore()
+{
+    if (!SettingsService.IsInitialized)
+    {
+        if (AutoPilot.IsRequested())
+        {
+            var folder = Path.Combine(Path.GetTempPath(), AutoPilotSettingsFolderName);
+            Directory.CreateDirectory(folder);
+            SettingsService.Initialize(folder);
+        }
+        else
+        {
+            SettingsService.Initialize();
+        }
+    }
+
+    return SettingsService.DirectoryPath ?? string.Empty;
+}
+```
+
+Because the autopilot only reads a session and returns inputs, a unit test can
+let it play:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Session/AutoPilotTests.cs
+[Fact]
+public void the_autopilot_reaches_play_and_plays()
+{
+    //Arrange
+    var driver = new SessionDriver();
+    var pilot = new AutoPilot();
+    driver.ToTitle();
+
+    //Act
+    Drive(driver, pilot, 12);
+
+    //Assert
+    driver.Session.CurrentScreen.Should().Be(GameScreen.Playing);
+    driver.Session.Game.StepCount.Should().BeGreaterThan(200);
+    driver.Session.Events.Should().Contain(gameEvent => gameEvent.Kind == GameEventKind.PlayerFired);
+}
+```
+
+**Where to look.**
+`BrixInvaders/src/libs/BrixInvaders.Game/Session/AutoPilot.cs`
+`BrixInvaders/src/libs/BrixInvaders.Game/Hosting/GameStartup.cs`
+`BrixInvaders/src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs` (the
+`_autoPilot` field, `OnEngineInitialized` and `Step`)
+`BrixInvaders/src/BrixInvaders.UI/App.xaml.cs` (the first call to `OpenSettingsStore`)
+`BrixInvaders/src/libs/BrixInvaders.GameLogic/Attract/AttractPilot.cs`
+`BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Session/AutoPilotTests.cs`
+
+**Sharp edges.**
+- Supply input only where the player supplied none. The run then goes through
+  exactly the code a player's presses go through, and a person watching can
+  take over at any moment.
+- Wait on each screen before confirming. Some screens ignore a confirm until
+  they have been up for a minimum time, the title's cursor has to be walked to
+  Play first, and the log reads better with every screen actually shown.
+- Choose the store's folder where the store is first opened. The store is
+  process-global and opens once, from the `App` constructor, and the host's later
+  call does nothing; a switch checked anywhere later would be too late to keep
+  the run's high scores out of the player's table.
+- Reuse the pilot the game already has for its attract demo. The autopilot adds
+  only the menu walking, so it plays real games with the same rules and needs no
+  tuning of its own.
+- Write one log line saying the autopilot is on. A log from an unattended run
+  that does not say so is easy to mistake for a player's session.

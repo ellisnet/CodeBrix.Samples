@@ -93,7 +93,7 @@ public sealed class PlayfieldPainter
     /// <param name="planetY">Planet centre Y.</param>
     /// <param name="planetSize">Planet diameter.</param>
     /// <param name="planetAlpha">Planet opacity.</param>
-    public void PaintBackdrop(FrameBuilder frame, SpaceBackground background, string planet, double planetX, double planetY,
+    public void PaintBackdrop(FrameLists frame, SpaceBackground background, string planet, double planetX, double planetY,
         double planetSize, double planetAlpha = 1)
     {
         ArgumentNullException.ThrowIfNull(frame);
@@ -104,13 +104,13 @@ public sealed class PlayfieldPainter
         {
             for (double x = 0; x < Playfield.Width; x += tile)
             {
-                frame.AddWorld(DrawCommand.Sprite(image, x + (tile / 2), y + (tile / 2), tile + 1, tile + 1));
+                frame.World.Image(image, null, x + (tile / 2), y + (tile / 2), tile + 1, tile + 1);
             }
         }
 
         if (planet != null)
         {
-            frame.AddWorld(DrawCommand.Sprite(planet, planetX, planetY, planetSize, planetSize, ScrollTime * 0.6, planetAlpha));
+            frame.World.Image(planet, null, planetX, planetY, planetSize, planetSize, ScrollTime * 0.6, planetAlpha);
         }
 
         _stars.Paint(frame, ScrollTime);
@@ -120,7 +120,7 @@ public sealed class PlayfieldPainter
     /// <param name="frame">The frame.</param>
     /// <param name="game">The game.</param>
     /// <param name="time">Seconds (for animation).</param>
-    public void PaintGame(FrameBuilder frame, GameSimulation game, double time)
+    public void PaintGame(FrameLists frame, GameSimulation game, double time)
     {
         ArgumentNullException.ThrowIfNull(frame);
         ArgumentNullException.ThrowIfNull(game);
@@ -137,7 +137,7 @@ public sealed class PlayfieldPainter
         foreach (var flash in _flashes)
         {
             var size = 34 + (flash.Age / FlashSeconds * 24);
-            frame.AddWorld(DrawCommand.Sprite(flash.Image, flash.X, flash.Y, size, size, flash.Age * 400, 1 - (flash.Age / FlashSeconds)));
+            frame.World.Image(flash.Image, null, flash.X, flash.Y, size, size, flash.Age * 400, 1 - (flash.Age / FlashSeconds));
         }
     }
 
@@ -150,11 +150,11 @@ public sealed class PlayfieldPainter
     /// <param name="size">Draw size.</param>
     /// <param name="rotation">Clockwise degrees.</param>
     /// <param name="alpha">Opacity.</param>
-    public static void PaintEnemy(FrameBuilder frame, EnemyRole role, EnemyColour colour, double x, double y, double size,
+    public static void PaintEnemy(FrameLists frame, EnemyRole role, EnemyColour colour, double x, double y, double size,
         double rotation = 0, double alpha = 1)
     {
         ArgumentNullException.ThrowIfNull(frame);
-        frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.Enemy(role, colour), x, y, size, size, rotation, alpha));
+        frame.World.Image(SpriteCatalog.Enemy(role, colour), null, x, y, size, size, rotation, alpha);
     }
 
     /// <summary>Draws a player ship with its thrust flame (used by ship select and the title too).</summary>
@@ -166,27 +166,17 @@ public sealed class PlayfieldPainter
     /// <param name="scale">Size multiplier on the normal draw box.</param>
     /// <param name="time">Seconds (flame flicker).</param>
     /// <param name="overlay">Whether to draw in the overlay list instead of the world list.</param>
-    public static void PaintShip(FrameBuilder frame, int shape, int colour, double x, double y, double scale, double time,
+    public static void PaintShip(FrameLists frame, int shape, int colour, double x, double y, double scale, double time,
         bool overlay = false)
     {
         ArgumentNullException.ThrowIfNull(frame);
         var flicker = (int)(time * 20);
-        var flame = DrawCommand.Sprite(SpriteCatalog.Thrust(flicker), x, y + (PlayerDrawHeight * 0.55 * scale),
-            14 * scale, 32 * scale, 0, 0.9);
-        var ship = DrawCommand.Sprite(SpriteCatalog.PlayerShip(shape, colour), x, y, PlayerDrawWidth * scale, PlayerDrawHeight * scale);
-        if (overlay)
-        {
-            frame.AddOverlay(flame);
-            frame.AddOverlay(ship);
-        }
-        else
-        {
-            frame.AddWorld(flame);
-            frame.AddWorld(ship);
-        }
+        var list = overlay ? frame.Overlay : frame.World;
+        list.Image(SpriteCatalog.Thrust(flicker), null, x, y + (PlayerDrawHeight * 0.55 * scale), 14 * scale, 32 * scale, 0, 0.9);
+        list.Image(SpriteCatalog.PlayerShip(shape, colour), null, x, y, PlayerDrawWidth * scale, PlayerDrawHeight * scale);
     }
 
-    private static void PaintDrops(FrameBuilder frame, GameSimulation game, double time)
+    private static void PaintDrops(FrameLists frame, GameSimulation game, double time)
     {
         foreach (var drop in game.PowerUps.Drops)
         {
@@ -197,11 +187,11 @@ public sealed class PlayfieldPainter
 
             var blinking = drop.Age > PowerUpSystem.DropLifetime - 2.0 && ((int)(time * 8) % 2 == 0);
             var bob = Math.Sin((time * 4) + drop.Id) * 3;
-            frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.PowerUp(drop.Kind), drop.X, drop.Y + bob, 34, 34, 0, blinking ? 0.35 : 1));
+            frame.World.Image(SpriteCatalog.PowerUp(drop.Kind), null, drop.X, drop.Y + bob, 34, 34, 0, blinking ? 0.35 : 1);
         }
     }
 
-    private static void PaintMeteors(FrameBuilder frame, GameSimulation game)
+    private static void PaintMeteors(FrameLists frame, GameSimulation game)
     {
         foreach (var meteor in game.Meteors.Meteors)
         {
@@ -211,12 +201,12 @@ public sealed class PlayfieldPainter
             }
 
             var size = meteor.Size == MeteorSize.Big ? 74 : 38;
-            frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.Meteor(meteor.Id, meteor.Size), meteor.X, meteor.Y, size, size,
-                meteor.Rotation * 180 / Math.PI));
+            frame.World.Image(SpriteCatalog.Meteor(meteor.Id, meteor.Size), null, meteor.X, meteor.Y, size, size,
+                meteor.Rotation * 180 / Math.PI);
         }
     }
 
-    private static void PaintBoss(FrameBuilder frame, GameSimulation game, double time)
+    private static void PaintBoss(FrameLists frame, GameSimulation game, double time)
     {
         var boss = game.Boss;
         if (boss == null || boss.State == BossState.Gone)
@@ -233,7 +223,8 @@ public sealed class PlayfieldPainter
             var y = box.CenterY;
             if (section.IsDestroyed)
             {
-                frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.Puff(section.Id + (int)(time * 6)), x, y, box.Width, box.Height, time * 40, 0.55));
+                frame.World.Image(SpriteCatalog.Puff(section.Id + (int)(time * 6)), null, x, y, box.Width, box.Height, time * 40,
+                    0.55);
                 continue;
             }
 
@@ -241,29 +232,30 @@ public sealed class PlayfieldPainter
             switch (section.Kind)
             {
                 case BossSectionKind.Core:
-                    frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.BossSection(section.Kind, boss.Design), x, y,
-                        box.Width * 1.35, box.Height * 1.6, SpriteCatalog.BossShipFacing, flicker));
+                    frame.World.Image(SpriteCatalog.BossSection(section.Kind, boss.Design), null, x, y, box.Width * 1.35,
+                        box.Height * 1.6, SpriteCatalog.BossShipFacing, flicker);
                     if (boss.IsCoreArmoured && !dying)
                     {
-                        frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.EnemyShield, x, y, box.Width * 1.25, box.Height * 1.5, 0,
-                            0.35 + (0.1 * Math.Sin(time * 5))));
+                        frame.World.Image(SpriteCatalog.EnemyShield, null, x, y, box.Width * 1.25, box.Height * 1.5, 0,
+                            0.35 + (0.1 * Math.Sin(time * 5)));
                     }
 
                     break;
                 case BossSectionKind.Turret:
-                    frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.BossSection(section.Kind, boss.Design), x, y, box.Width, box.Height, 0, flicker));
-                    frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.BossTurretGun, x, y + 14, box.Width * 0.45, box.Height * 0.8,
-                        AimDegrees(x, y, game.Player.X, game.Player.Y), flicker));
+                    frame.World.Image(SpriteCatalog.BossSection(section.Kind, boss.Design), null, x, y, box.Width, box.Height, 0,
+                        flicker);
+                    frame.World.Image(SpriteCatalog.BossTurretGun, null, x, y + 14, box.Width * 0.45, box.Height * 0.8,
+                        AimDegrees(x, y, game.Player.X, game.Player.Y), flicker);
                     break;
                 default:
-                    frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.BossSection(section.Kind, boss.Design), x, y,
-                        box.Width * 1.2, box.Height * 1.2, SpriteCatalog.BossShipFacing, flicker));
+                    frame.World.Image(SpriteCatalog.BossSection(section.Kind, boss.Design), null, x, y, box.Width * 1.2,
+                        box.Height * 1.2, SpriteCatalog.BossShipFacing, flicker);
                     break;
             }
         }
     }
 
-    private static void PaintEnemies(FrameBuilder frame, GameSimulation game, double time)
+    private static void PaintEnemies(FrameLists frame, GameSimulation game, double time)
     {
         foreach (var enemy in game.Enemies)
         {
@@ -276,13 +268,13 @@ public sealed class PlayfieldPainter
             PaintEnemy(frame, enemy.Role, enemy.Colour, enemy.X, enemy.Y, EnemyDrawSize, tilt);
             if (enemy.HasShield)
             {
-                frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.EnemyShield, enemy.X, enemy.Y, 74, 74, time * 30,
-                    0.55 + (0.15 * Math.Sin((time * 6) + enemy.Id))));
+                frame.World.Image(SpriteCatalog.EnemyShield, null, enemy.X, enemy.Y, 74, 74, time * 30,
+                    0.55 + (0.15 * Math.Sin((time * 6) + enemy.Id)));
             }
         }
     }
 
-    private static void PaintUfo(FrameBuilder frame, GameSimulation game)
+    private static void PaintUfo(FrameLists frame, GameSimulation game)
     {
         var ufo = game.Ufo;
         if (ufo == null)
@@ -290,16 +282,17 @@ public sealed class PlayfieldPainter
             return;
         }
 
-        frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.Ufo(ufo.Id), ufo.X, ufo.Y, 60, 60, ufo.X * 0.8));
+        frame.World.Image(SpriteCatalog.Ufo(ufo.Id), null, ufo.X, ufo.Y, 60, 60, ufo.X * 0.8);
     }
 
-    private static void PaintProjectiles(FrameBuilder frame, GameSimulation game)
+    private static void PaintProjectiles(FrameLists frame, GameSimulation game)
     {
         foreach (var bolt in game.Projectiles.PlayerBolts)
         {
             if (bolt.IsAlive)
             {
-                frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.PlayerBolt(bolt.IsPiercing), bolt.X, bolt.Y, 9, 30, HeadingDegrees(bolt) + 90));
+                frame.World.Image(SpriteCatalog.PlayerBolt(bolt.IsPiercing), null, bolt.X, bolt.Y, 9, 30,
+                    HeadingDegrees(bolt) + 90);
             }
         }
 
@@ -307,7 +300,7 @@ public sealed class PlayfieldPainter
         {
             if (bolt.IsAlive)
             {
-                frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.EnemyBolt, bolt.X, bolt.Y, 8, 24, HeadingDegrees(bolt) + 90));
+                frame.World.Image(SpriteCatalog.EnemyBolt, null, bolt.X, bolt.Y, 8, 24, HeadingDegrees(bolt) + 90);
             }
         }
 
@@ -315,13 +308,13 @@ public sealed class PlayfieldPainter
         {
             if (missile.IsAlive)
             {
-                frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.Missile, missile.X, missile.Y, 18, 36,
-                    HeadingDegrees(missile) + SpriteCatalog.MissileArtOffset));
+                frame.World.Image(SpriteCatalog.Missile, null, missile.X, missile.Y, 18, 36,
+                    HeadingDegrees(missile) + SpriteCatalog.MissileArtOffset);
             }
         }
     }
 
-    private void PaintPlayer(FrameBuilder frame, GameSimulation game, double time)
+    private void PaintPlayer(FrameLists frame, GameSimulation game, double time)
     {
         var player = game.Player;
         if (!player.IsPresent)
@@ -334,8 +327,8 @@ public sealed class PlayfieldPainter
         var alpha = player.IsInvulnerable && ((int)(time * 12) % 2 == 0) ? 0.35 : 1.0;
         if (game.PowerUps.IsActive(PowerUpKind.SpeedBoost))
         {
-            frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.SpeedStreak, player.X - 30, player.Y + 26, 10, 40, 0, 0.7 * alpha));
-            frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.SpeedStreak, player.X + 30, player.Y + 26, 10, 40, 0, 0.7 * alpha));
+            frame.World.Image(SpriteCatalog.SpeedStreak, null, player.X - 30, player.Y + 26, 10, 40, 0, 0.7 * alpha);
+            frame.World.Image(SpriteCatalog.SpeedStreak, null, player.X + 30, player.Y + 26, 10, 40, 0, 0.7 * alpha);
         }
 
         var parts = ShipLoadout.PartsFor(shape, ShipLoadout.ActiveKinds(game.PowerUps));
@@ -343,25 +336,25 @@ public sealed class PlayfieldPainter
         PaintParts(frame, game, parts, ShipPartLayer.UnderHull, shape, alpha, time);
 
         var flicker = (int)(time * 20);
-        frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.Thrust(flicker), player.X, player.Y + 36, 16, 34, 0, 0.9 * alpha));
-        frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.PlayerShip(shape, colour), player.X, player.Y, PlayerDrawWidth,
-            PlayerDrawHeight, 0, alpha));
+        frame.World.Image(SpriteCatalog.Thrust(flicker), null, player.X, player.Y + 36, 16, 34, 0, 0.9 * alpha);
+        frame.World.Image(SpriteCatalog.PlayerShip(shape, colour), null, player.X, player.Y, PlayerDrawWidth, PlayerDrawHeight,
+            0, alpha);
         var damage = SpriteCatalog.DamageOverlay(shape, player.DamageTier);
         if (damage != null)
         {
-            frame.AddWorld(DrawCommand.Sprite(damage, player.X, player.Y, PlayerDrawWidth, PlayerDrawHeight, 0, alpha));
+            frame.World.Image(damage, null, player.X, player.Y, PlayerDrawWidth, PlayerDrawHeight, 0, alpha);
         }
 
         PaintParts(frame, game, parts, ShipPartLayer.OverHull, shape, alpha, time);
 
         if (player.ShieldStrength > 0)
         {
-            frame.AddWorld(DrawCommand.Sprite(SpriteCatalog.PlayerShield(player.ShieldStrength), player.X, player.Y - 4, 118, 104, 0,
-                0.75 + (0.15 * Math.Sin(time * 6))));
+            frame.World.Image(SpriteCatalog.PlayerShield(player.ShieldStrength), null, player.X, player.Y - 4, 118, 104, 0,
+                0.75 + (0.15 * Math.Sin(time * 6)));
         }
     }
 
-    private static void PaintParts(FrameBuilder frame, GameSimulation game, IReadOnlyList<ShipPart> parts, ShipPartLayer layer,
+    private static void PaintParts(FrameLists frame, GameSimulation game, IReadOnlyList<ShipPart> parts, ShipPartLayer layer,
         int shape, double alpha, double time)
     {
         var scale = ShipLoadout.HullScale(shape);
@@ -392,8 +385,8 @@ public sealed class PlayfieldPainter
                     break;
             }
 
-            frame.AddWorld(DrawCommand.Sprite(image, player.X + (part.X * scale), player.Y + (part.Y * scale), part.Width * scale,
-                part.Height * scale, part.Rotation, partAlpha));
+            frame.World.Image(image, null, player.X + (part.X * scale), player.Y + (part.Y * scale), part.Width * scale,
+                part.Height * scale, part.Rotation, partAlpha);
         }
     }
 

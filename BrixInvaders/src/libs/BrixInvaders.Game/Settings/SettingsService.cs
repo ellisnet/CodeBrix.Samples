@@ -6,6 +6,7 @@ using BrixInvaders.Game.Input;
 using BrixInvaders.GameLogic;
 using BrixInvaders.Music;
 using CodeBrix.Platform.AppSettings;
+using CodeBrix.Platform.GameEngine.Input.Actions;
 
 namespace BrixInvaders.Game.Settings;
 
@@ -62,6 +63,9 @@ public static class SettingsService
 
     /// <summary>Key: the device that produced the last input (Keyboard or Gamepad).</summary>
     public const string LastInputDeviceKey = KeyPrefix + "LastInputDevice";
+
+    private const string KeyboardDevice = "Keyboard";
+    private const string GamepadDevice = "Gamepad";
 
     /// <summary>Key: the last name entered on a high-score table.</summary>
     public const string LastNameKey = KeyPrefix + "LastName";
@@ -176,13 +180,13 @@ public static class SettingsService
         set => Require(_gamepadProfile).Set(value.ToString());
     }
 
-    /// <summary>The device that produced the last input (default Keyboard).</summary>
-    public static InputDevice LastInputDevice
+    /// <summary>The device that produced the last input (default Keyboard), stored as "Keyboard" or "Gamepad".</summary>
+    public static InputDeviceKind LastInputDevice
     {
-        get => Enum.TryParse(Require(_lastInputDevice).Value, true, out InputDevice device) && Enum.IsDefined(device)
-            ? device
-            : InputDevice.Keyboard;
-        set => Require(_lastInputDevice).Set(value.ToString());
+        get => string.Equals(Require(_lastInputDevice).Value, GamepadDevice, StringComparison.OrdinalIgnoreCase)
+            ? InputDeviceKind.Gamepad
+            : InputDeviceKind.KeyboardMouse;
+        set => Require(_lastInputDevice).Set(value == InputDeviceKind.Gamepad ? GamepadDevice : KeyboardDevice);
     }
 
     /// <summary>The last name entered on a high-score table (default "AAA").</summary>
@@ -355,7 +359,7 @@ public static class SettingsService
         _musicGenerator = AppSettingsService.Wrap(MusicGeneratorKey, MusicChoices.DefaultGenerator);
         _instrumentLibrary = AppSettingsService.Wrap(InstrumentLibraryKey, MusicChoices.DefaultInstrumentLibrary);
         _gamepadProfile = AppSettingsService.Wrap(GamepadProfileKey, nameof(GamepadProfile.Classic));
-        _lastInputDevice = AppSettingsService.Wrap(LastInputDeviceKey, nameof(InputDevice.Keyboard));
+        _lastInputDevice = AppSettingsService.Wrap(LastInputDeviceKey, KeyboardDevice);
         _lastName = AppSettingsService.Wrap(LastNameKey, DefaultLastName);
     }
 

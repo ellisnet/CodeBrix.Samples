@@ -1,5 +1,6 @@
 using BrixInvaders.Game.Rendering;
 using BrixInvaders.Game.Settings;
+using SkiaSharp;
 
 namespace BrixInvaders.Game.Screens;
 
@@ -30,20 +31,20 @@ public sealed class SettingsScreen : ScreenPainter
             var selected = row == cursor;
             if (selected)
             {
-                frame.AddOverlay(DrawCommand.Rect(Ui.CenterX, y, 860, 46, 0x402E7DD6, Palette.Accent, 1.5, 8));
+                frame.Overlay.Rectangle(Ui.CenterX, y, 860, 46, 0x402E7DD6, Palette.Accent, 1.5, 8);
             }
 
-            frame.AddOverlay(DrawCommand.Label(SettingsMenu.LabelOf(row).ToUpperInvariant(), Ui.CenterX - 410, y, 20,
-                selected ? Palette.Text : Palette.Dim, TextAnchor.Left));
+            frame.Overlay.Text(SettingsMenu.LabelOf(row).ToUpperInvariant(), Ui.CenterX - 410, y, frame.Font, 20,
+                selected ? Palette.Text : Palette.Dim, SKTextAlign.Left);
             var value = session.SettingsMenu.ValueOf(row);
             var armed = row == SettingsMenu.ResetHighScoresRow && session.SettingsMenu.ResetArmed;
-            frame.AddOverlay(DrawCommand.Label(selected && row != SettingsMenu.ResetHighScoresRow ? $"<  {value}  >" : value,
-                Ui.CenterX + 410, y, 18, armed ? Palette.Danger : selected ? Palette.Accent : Palette.Text, TextAnchor.Right));
+            frame.Overlay.Text(selected && row != SettingsMenu.ResetHighScoresRow ? $"<  {value}  >" : value, Ui.CenterX + 410,
+                y, frame.Font, 18, armed ? Palette.Danger : selected ? Palette.Accent : Palette.Text, SKTextAlign.Right);
         }
 
         if (!string.IsNullOrEmpty(GamepadStatus))
         {
-            frame.AddOverlay(DrawCommand.Label(GamepadStatus, Ui.CenterX, 672, 13, Palette.Dim, TextAnchor.Center, thin: true));
+            frame.Overlay.Text(GamepadStatus, Ui.CenterX, 672, frame.ThinFont, 13, Palette.Dim);
         }
 
         Ui.Footer(frame, $"{Prompts.Navigate(context.Device)} Up/Down row, Left/Right change    " +

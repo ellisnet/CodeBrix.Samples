@@ -13,10 +13,10 @@ Ships, sounds and planets by Kenney - kenney.nl - CC0.
 | Item | Value |
 | --- | --- |
 | Logical playfield | 1280 x 720 world units, origin top-left, x right, y down |
-| Letterboxing | the Game library scales the playfield uniformly to the window and letterboxes the rest |
+| Letterboxing | the Game library pins the render resolution to the playfield; the engine scales it uniformly to the window and letterboxes the rest |
 | HUD band | top 48 units (drawn over the play area; nothing spawns in it) |
 | Side margin | 24 units: formations, bosses and the player never cross x < 24 or x > 1256 |
-| Fixed step | 1/60 s (`Playfield.FixedStep`); the Game library calls `GameSimulation.Step(dt, input)` once per fixed step |
+| Fixed step | 1/60 s (`Playfield.FixedStep`); the engine's fixed-step hook runs at that rate (at most 5 steps a cycle, frozen while the engine is paused) and the Game library calls `GameSimulation.Step(dt, input)` once per fixed step |
 | Collisions | axis-aligned rectangles (`Box`), centre + half size; touching edges do not collide |
 | Randomness | one `GameRandom` (xorshift64*) per game, seeded by `GameSetup.Seed` |
 | Determinism | same `GameSetup` + same inputs = same game, step for step (fenced by golden-seed tests) |
@@ -364,6 +364,10 @@ difficulty.
 Per frame the Game library calls `ScreenStateMachine.Update(dt, menuInput)`, steps the simulation while the
 screen is Playing (or Attract), calls `NotifySectorCleared` / `NotifyGameOver` / `NotifyAttractEnded` from the
 simulation's events, then acts on `ScreenStateMachine.Commands`.
+After a cycle's steps the open screen paints into two engine draw lists in playfield pixels - the world (under the
+particles) and the overlay (HUD and menus, over everything) - which are then published for the engine to draw. A link
+on a card or on the credits screen is a hit region on the overlay list, and a click is tested against the published
+list.
 
 Attract mode runs its own `GameSimulation` (Cadet, sector 1, any seed) driven by `AttractPilot.Decide`.
 
@@ -387,7 +391,12 @@ Attract mode runs its own `GameSimulation` (Cadet, sector 1, any seed) driven by
 
 Keyboard and gamepad work simultaneously. `GameInput` (in play): MoveAxis -1..1, Fire (held), Bomb (held,
 edge-detected). `MenuInput` (screens): edge-triggered Up, Down, Left, Right, Confirm, Back, Pause, Start,
-KenneyLink, Other.
+KenneyLink, Other. Both are read from the engine's input-action map (`InputActionMap`) once per fixed step, through
+named actions bound in two profiles (Classic and Shoulder); the engine polls the map every cycle, so a key or button
+press shorter than a step still counts. Every key of the active profile is claimed on the engine's keyboard adapter,
+so it stays with the game and never reaches an application accelerator or focus move. W, S, Z, X, P, Right Shift and
+the gamepad's X, Back and shoulder buttons are bound to an Other action: they count as input (they wake the title from
+attract mode) and do nothing else.
 
 | Action | Keyboard | Gamepad (Classic) | Gamepad (Shoulder) | Maps to |
 | --- | --- | --- | --- | --- |
@@ -411,7 +420,9 @@ Menu directions (arrows, D-pad, left stick) repeat while held: the press acts at
 until released. The stick counts as a direction past 0.5 and is released below 0.3; after a release that axis
 ignores the stick for 0.08 s either way, because a released stick springs back past centre and the overshoot must
 not read as a push the opposite way. Anything held when the game starts neither presses nor repeats until released.
-Confirm, Back, Pause, Start and the Kenney link stay single edges. The repeat clock is the host's elapsed cycle time.
+Confirm, Back, Pause, Start and the Kenney link stay single edges. The repeat clock advances one fixed step per step.
+All of these numbers are the game's, handed to the engine's input-action map (its repeat timing, stick press and
+release thresholds, settle time and dead zone).
 
 ## 14. Persistence keys
 
@@ -491,18 +502,21 @@ Why these:
 | --- | --- |
 | Title / menus | the session started at start-up keeps playing; screen changes never restart it |
 | Sector briefing / start of a sector | `provider.FollowUp(MusicSetup.FollowUpFor(settings, sector))` - the new preset takes over at a bar line |
-| Boss warning (`BossIncoming`) | engine music duck (under the boss-warning stinger the sound table plays on the effects bus), then `provider.FollowUp(MusicSetup.FollowUpFor(settings, sector, boss: true))` |
+| Boss warning (`BossIncoming`) | the boss-warning stinger on the effects bus (`MusicManager.PlayStingerOnBus`) with a timed engine music duck under it, then `provider.FollowUp(MusicSetup.FollowUpFor(settings, sector, boss: true))` |
 | Sector clear | `FollowUp` to the next sector's preset when its briefing opens |
 | Pause | the pause menu is a game pause (the engine keeps running), so the music is DUCKED under it (`MusicManager.PushDuck`, 0.35) rather than suspended - it keeps breathing quietly and is back at full level a moment after Resume |
-| Window minimized | the engine's GLOBAL pause (`Engine.Pause()` from the window's `VisibilityChanged`): the loop parks and every voice suspends, music included; a pause request is latched so the pause menu is up on the first cycle after the window is shown again (`Engine.Resume()`) |
-| Game over | fade the music down on the engine's music bus (a held duck to 0.2) under the game-over stinger the sound table plays, keep the session alive; back on the title restore the level and `FollowUp(MusicSetup.FollowUpFor(settings, SectorMusic.TitleSector))` |
+| Window minimized | the engine's GLOBAL pause (the app attaches the engine's `GameWindowLifecycle` to its window): the loop parks and every voice suspends, music included; the host's `OnWindowHidden` latches a pause request first, so the pause menu is up on the first step after the window is shown again |
+| Game over | the game-over stinger on the effects bus with the music held down to 0.2 under it (`MusicManager.PlayStingerWithHeldDuck`), keep the session alive; back on the title restore the level and `FollowUp(MusicSetup.FollowUpFor(settings, SectorMusic.TitleSector))` |
 | Settings: model or library changed | `Engine.UseGeneratedMusic(MusicSetup.OptionsFor(settings, currentSector))` again - a fresh session with its own fade-in |
 
-A follow-up keeps the session's tempo and instrument library: the BPM column applies where a session STARTS (the
-title at start-up, or wherever the player changes the model or library); the boss BPM applies when a session starts
-during a boss fight. Follow-ups change the character of the music; the session keeps one pulse.
+A follow-up keeps the session's instrument library and its session tempo, but the follow-up piece itself is not
+held to that tempo: it plays at whatever tempo its preset produces. The fresh pieces that continue after it are
+carried back to the session tempo (the add-in sets the Carry tempo policy whenever the options name a tempo). The
+BPM column is the session tempo where a session STARTS (the title at start-up, or wherever the player changes the
+model or library); the boss BPM applies when a session starts during a boss fight. Follow-ups change the character
+of the music; the pulse can move while a follow-up piece plays and returns to the session tempo after it.
 
-Volume: the player's Music volume slider drives the engine's music bus (`AudioMixer.MusicVolume`); pass
+Volume: the player's Music volume slider drives the engine's music bus (`MusicManager.MusicVolume`); pass
 `MusicSettings.MusicVolume = 1` so the level is not applied twice (or drive the level through `MusicVolume` and leave
 the bus at 1 - one or the other, never both).
 
@@ -512,8 +526,9 @@ the bus at 1 - one or the other, never both).
 
 Ships, sounds and planets by Kenney - kenney.nl - CC0. Every screen that shows Kenney content says so; the
 briefing, sector-clear and credits screens carry the Kenney card and the clickable bundle link
-`https://kenney.itch.io/kenney-game-assets` (mouse click, K or gamepad Y). The credits screen lists every pack (its
-licence title, or its display name when the licence has no usable title line), links to `https://kenney.nl` and
+`https://kenney.itch.io/kenney-game-assets` (mouse click, K or gamepad Y). The credits screen lists every pack (the
+Kenney provider's credit line: its licence title, or its display name when the licence has no usable title line,
+then "- Kenney (CC0)"), links to `https://kenney.nl` and
 Kenney's Patreon (`https://www.patreon.com/kenney/`), and ends with the music card - which model is writing the music
 and which instrument library plays it, read from the running music. When no browser can be opened the screen shows
 "No browser was available." for 4 s.

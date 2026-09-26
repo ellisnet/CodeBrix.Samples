@@ -25,7 +25,7 @@ public sealed class TitleScreen : ScreenPainter
     /// <summary>Draws the drifting title fleet (also behind the splash's composed card).</summary>
     /// <param name="frame">The frame.</param>
     /// <param name="time">Seconds.</param>
-    public static void PaintFleet(FrameBuilder frame, double time)
+    public static void PaintFleet(FrameLists frame, double time)
     {
         ArgumentNullException.ThrowIfNull(frame);
         var sway = Math.Sin(time * 0.45) * 150;
@@ -59,16 +59,16 @@ public sealed class TitleScreen : ScreenPainter
         PaintFleet(frame, context.Time);
 
         var pulse = 0.85 + (0.15 * Math.Sin(OpenTime * 2));
-        frame.AddOverlay(DrawCommand.Label(GameTitle, Ui.CenterX + 4, 134, 84, 0xB0000000));
-        frame.AddOverlay(DrawCommand.Label(GameTitle, Ui.CenterX, 130, 84, Palette.Accent, TextAnchor.Center, false, pulse));
-        frame.AddOverlay(DrawCommand.Label("DEFEND THE SECTORS", Ui.CenterX, 190, 20, Palette.Text, TextAnchor.Center, thin: true));
+        frame.Overlay.Text(GameTitle, Ui.CenterX + 4, 134, frame.Font, 84, 0xB0000000);
+        frame.Overlay.Text(GameTitle, Ui.CenterX, 130, frame.Font, 84, Palette.Accent, alpha: pulse);
+        frame.Overlay.Text("DEFEND THE SECTORS", Ui.CenterX, 190, frame.ThinFont, 20, Palette.Text);
 
         var screens = context.Session.Screens;
         var best = context.Session.HighScores.BestScore(screens.Difficulty);
         if (best > 0)
         {
-            frame.AddOverlay(DrawCommand.Label($"BEST ON {screens.Difficulty.ToString().ToUpperInvariant()}: " +
-                best.ToString("N0", CultureInfo.InvariantCulture), Ui.CenterX, 226, 16, Palette.Gold));
+            frame.Overlay.Text($"BEST ON {screens.Difficulty.ToString().ToUpperInvariant()}: " +
+                best.ToString("N0", CultureInfo.InvariantCulture), Ui.CenterX, 226, frame.Font, 16, Palette.Gold);
         }
 
         Ui.Panel(frame, Ui.CenterX, 430, 480, 330, 0.85);
@@ -77,7 +77,7 @@ public sealed class TitleScreen : ScreenPainter
             Ui.MenuRow(frame, MenuItems[i], Ui.CenterX, 310 + (i * 60), (int)screens.TitleCursor == i, context.Time);
         }
 
-        frame.AddOverlay(DrawCommand.Label(KenneyPacks.CreditLine, Ui.CenterX, 634, 14, Palette.Text, TextAnchor.Center, thin: true));
+        frame.Overlay.Text(KenneyPacks.CreditLine, Ui.CenterX, 634, frame.ThinFont, 14, Palette.Text);
         Ui.Footer(frame, $"{Prompts.Navigate(context.Device)} Choose    {Prompts.Confirm(context.Device)} Select");
         Ui.Message(context);
     }

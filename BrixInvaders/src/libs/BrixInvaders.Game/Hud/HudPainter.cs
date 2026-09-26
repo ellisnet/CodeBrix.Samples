@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using BrixInvaders.Game.Rendering;
 using BrixInvaders.GameLogic;
+using SkiaSharp;
 
 namespace BrixInvaders.Game.Hud;
 
@@ -59,28 +60,28 @@ public static class HudPainter
     /// <param name="frame">The frame.</param>
     /// <param name="game">The game.</param>
     /// <param name="time">Seconds (for pulsing).</param>
-    public static void Paint(FrameBuilder frame, GameSimulation game, double time)
+    public static void Paint(FrameLists frame, GameSimulation game, double time)
     {
         ArgumentNullException.ThrowIfNull(frame);
         ArgumentNullException.ThrowIfNull(game);
 
-        frame.AddOverlay(DrawCommand.Rect(Playfield.Width / 2, BandHeight / 2, Playfield.Width, BandHeight, 0xA0040A18));
-        frame.AddOverlay(DrawCommand.Rect(Playfield.Width / 2, BandHeight, Playfield.Width, 2, 0xFF1E3A5F));
+        frame.Overlay.Rectangle(Playfield.Width / 2, BandHeight / 2, Playfield.Width, BandHeight, 0xA0040A18);
+        frame.Overlay.Rectangle(Playfield.Width / 2, BandHeight, Playfield.Width, 2, 0xFF1E3A5F);
 
         //Score and chain, left
-        frame.AddOverlay(DrawCommand.Label("SCORE", 24, 16, 13, Palette.Dim, TextAnchor.Left));
-        frame.AddOverlay(DrawCommand.Label(FormatScore(game.Score), 24, 34, 22, Palette.Gold, TextAnchor.Left));
+        frame.Overlay.Text("SCORE", 24, 16, frame.Font, 13, Palette.Dim, SKTextAlign.Left);
+        frame.Overlay.Text(FormatScore(game.Score), 24, 34, frame.Font, 22, Palette.Gold, SKTextAlign.Left);
         var multiplier = game.Scoring.ChainMultiplier;
-        frame.AddOverlay(DrawCommand.Label(FormatChain(game.Scoring.ChainCount, multiplier), 250, 26, 16,
-            multiplier > 1 ? Palette.Accent : Palette.Dim, TextAnchor.Left));
+        frame.Overlay.Text(FormatChain(game.Scoring.ChainCount, multiplier), 250, 26, frame.Font, 16,
+            multiplier > 1 ? Palette.Accent : Palette.Dim, SKTextAlign.Left);
 
         //Sector and wave, centre
         var stage = game.Phase is StagePhase.BossWarning or StagePhase.BossFight
             ? "BOSS"
             : $"WAVE {Math.Min(game.Wave, SectorRules.WavesPerSector)}/{SectorRules.WavesPerSector}";
-        frame.AddOverlay(DrawCommand.Label($"SECTOR {game.Sector} - {SectorRules.NameOf(game.Sector).ToUpperInvariant()}",
-            Playfield.Width / 2, 16, 14, Palette.Text, TextAnchor.Center, thin: true));
-        frame.AddOverlay(DrawCommand.Label(stage, Playfield.Width / 2, 34, 16, Palette.Accent));
+        frame.Overlay.Text($"SECTOR {game.Sector} - {SectorRules.NameOf(game.Sector).ToUpperInvariant()}", Playfield.Width / 2,
+            16, frame.ThinFont, 14, Palette.Text);
+        frame.Overlay.Text(stage, Playfield.Width / 2, 34, frame.Font, 16, Palette.Accent);
 
         //Lives and bombs, right
         var lifeIcon = SpriteCatalog.LifeIcon(game.Setup.ShipShape, game.Setup.ShipColour);
@@ -88,47 +89,49 @@ public static class HudPainter
         var shown = Math.Min(lives, 5);
         for (var i = 0; i < shown; i++)
         {
-            frame.AddOverlay(DrawCommand.Sprite(lifeIcon, Playfield.Width - 36 - (i * 30), 16, 26, 20));
+            frame.Overlay.Image(lifeIcon, null, Playfield.Width - 36 - (i * 30), 16, 26, 20);
         }
 
         if (lives > shown)
         {
-            frame.AddOverlay(DrawCommand.Label($"x{lives}", Playfield.Width - 36 - (shown * 30), 17, 14, Palette.Text, TextAnchor.Right));
+            frame.Overlay.Text($"x{lives}", Playfield.Width - 36 - (shown * 30), 17, frame.Font, 14, Palette.Text,
+                SKTextAlign.Right);
         }
 
         for (var i = 0; i < game.Player.Bombs; i++)
         {
-            frame.AddOverlay(DrawCommand.Sprite(SpriteCatalog.BombIcon, Playfield.Width - 36 - (i * 28), 36, 20, 20));
+            frame.Overlay.Image(SpriteCatalog.BombIcon, null, Playfield.Width - 36 - (i * 28), 36, 20, 20);
         }
 
-        frame.AddOverlay(DrawCommand.Label("BOMBS", Playfield.Width - 36 - (Math.Max(game.Player.Bombs, 1) * 28), 37, 11,
-            Palette.Dim, TextAnchor.Right));
+        frame.Overlay.Text("BOMBS", Playfield.Width - 36 - (Math.Max(game.Player.Bombs, 1) * 28), 37, frame.Font, 11,
+            Palette.Dim, SKTextAlign.Right);
 
         PaintPowerUps(frame, game);
         PaintBossBar(frame, game, time);
         PaintBanner(frame, game, time);
     }
 
-    private static void PaintPowerUps(FrameBuilder frame, GameSimulation game)
+    private static void PaintPowerUps(FrameLists frame, GameSimulation game)
     {
         var x = 24.0;
         const double y = 700;
         foreach (var timer in game.PowerUps.ActiveTimers())
         {
-            frame.AddOverlay(DrawCommand.Sprite(SpriteCatalog.PowerUp(timer.Key), x + 12, y - 2, 22, 22));
-            frame.AddOverlay(DrawCommand.Label($"{PowerUpName(timer.Key)} {Math.Ceiling(timer.Value):0}", x + 28, y, 13,
-                timer.Value < 3 ? Palette.Danger : Palette.Text, TextAnchor.Left));
+            frame.Overlay.Image(SpriteCatalog.PowerUp(timer.Key), null, x + 12, y - 2, 22, 22);
+            frame.Overlay.Text($"{PowerUpName(timer.Key)} {Math.Ceiling(timer.Value):0}", x + 28, y, frame.Font, 13,
+                timer.Value < 3 ? Palette.Danger : Palette.Text, SKTextAlign.Left);
             x += 128;
         }
 
         if (game.Player.ShieldStrength > 0)
         {
-            frame.AddOverlay(DrawCommand.Sprite(SpriteCatalog.PowerUp(PowerUpKind.ShieldBubble), x + 12, y - 2, 22, 22));
-            frame.AddOverlay(DrawCommand.Label($"SHIELD {game.Player.ShieldStrength}", x + 28, y, 13, Palette.Accent, TextAnchor.Left));
+            frame.Overlay.Image(SpriteCatalog.PowerUp(PowerUpKind.ShieldBubble), null, x + 12, y - 2, 22, 22);
+            frame.Overlay.Text($"SHIELD {game.Player.ShieldStrength}", x + 28, y, frame.Font, 13, Palette.Accent,
+                SKTextAlign.Left);
         }
     }
 
-    private static void PaintBossBar(FrameBuilder frame, GameSimulation game, double time)
+    private static void PaintBossBar(FrameLists frame, GameSimulation game, double time)
     {
         var boss = game.Boss;
         if (boss == null || boss.State is BossState.Gone or BossState.Dying)
@@ -140,13 +143,14 @@ public static class HudPainter
         const double y = 64;
         var fraction = Math.Clamp(boss.HealthFraction, 0, 1);
         var fill = fraction > 0.5 ? 0xFF46D27A : fraction > 0.25 ? 0xFFF0BE3C : 0xFFEB463C;
-        frame.AddOverlay(DrawCommand.Rect(Playfield.Width / 2, y, width + 6, 16, 0xDC141820, 0xFFEBF1F7, 1, 3));
-        frame.AddOverlay(DrawCommand.Rect((Playfield.Width / 2) - (width / 2) + (width * fraction / 2), y, width * fraction, 10, fill, 0, 0, 2,
-            boss.IsCoreArmoured ? 0.75 + (0.25 * Math.Sin(time * 6)) : 1));
-        frame.AddOverlay(DrawCommand.Label($"BOSS - PHASE {boss.Phase}/{boss.PhaseCount}", Playfield.Width / 2, y + 18, 11, Palette.Dim));
+        frame.Overlay.Rectangle(Playfield.Width / 2, y, width + 6, 16, 0xDC141820, 0xFFEBF1F7, 1, 3);
+        frame.Overlay.Rectangle((Playfield.Width / 2) - (width / 2) + (width * fraction / 2), y, width * fraction, 10, fill, 0,
+            0, 2, boss.IsCoreArmoured ? 0.75 + (0.25 * Math.Sin(time * 6)) : 1);
+        frame.Overlay.Text($"BOSS - PHASE {boss.Phase}/{boss.PhaseCount}", Playfield.Width / 2, y + 18, frame.Font, 11,
+            Palette.Dim);
     }
 
-    private static void PaintBanner(FrameBuilder frame, GameSimulation game, double time)
+    private static void PaintBanner(FrameLists frame, GameSimulation game, double time)
     {
         var banner = BannerFor(game);
         if (banner == null)
@@ -156,12 +160,12 @@ public static class HudPainter
 
         var warning = game.Phase == StagePhase.BossWarning;
         var alpha = warning ? 0.55 + (0.45 * Math.Abs(Math.Sin(time * 5))) : 1;
-        frame.AddOverlay(DrawCommand.Label(banner, Playfield.Width / 2, 330, 46, warning ? Palette.Danger : Palette.Accent,
-            TextAnchor.Center, false, alpha));
+        frame.Overlay.Text(banner, Playfield.Width / 2, 330, frame.Font, 46, warning ? Palette.Danger : Palette.Accent,
+            alpha: alpha);
         if (game.Phase == StagePhase.WaveIntro && game.Wave == 1)
         {
-            frame.AddOverlay(DrawCommand.Label(SectorRules.NameOf(game.Sector).ToUpperInvariant(), Playfield.Width / 2, 380, 20,
-                Palette.Text, TextAnchor.Center, thin: true));
+            frame.Overlay.Text(SectorRules.NameOf(game.Sector).ToUpperInvariant(), Playfield.Width / 2, 380, frame.ThinFont, 20,
+                Palette.Text);
         }
     }
 }

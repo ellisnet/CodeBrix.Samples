@@ -1,5 +1,6 @@
 using BrixInvaders.Game.Hosting;
 using BrixInvaders.Helpers;
+using CodeBrix.Platform.GameEngine.Host.Hosting;
 using CodeBrix.Platform.Simple;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
@@ -59,26 +60,9 @@ public partial class App : Application
             rootFrame.Navigate(typeof(Views.MainPage), args.Arguments);
         }
 
-        //Minimizing the window pauses the whole engine (the loop parks and the audio, music included, suspends)
-        //  and the game shows its own pause overlay when the window comes back. Workspace switches do not pause.
-        MainWindow.VisibilityChanged += (_, e) =>
-        {
-            if (rootFrame.Content is Views.MainPage page)
-            {
-                page.OnWindowVisibilityChanged(e.Visible);
-            }
-        };
-
-        //Window activation hands keyboard focus back to the game canvas (alt-tab away and back, or raising the
-        //  window from another application, otherwise leaves the keyboard dead until the canvas is clicked).
-        MainWindow.Activated += (_, e) =>
-        {
-            if (e.WindowActivationState != global::Windows.UI.Core.CoreWindowActivationState.Deactivated &&
-                rootFrame.Content is Views.MainPage page)
-            {
-                page.OnWindowActivated();
-            }
-        };
+        //Minimizing the window pauses the whole engine (loop and audio) and the game shows its own pause overlay when
+        //  the window comes back; activating the window hands keyboard focus back to the game canvas.
+        GameWindowLifecycle.Attach(MainWindow);
 
         MainWindow.Activate();
     }

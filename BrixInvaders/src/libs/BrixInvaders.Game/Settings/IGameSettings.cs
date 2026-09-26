@@ -1,5 +1,6 @@
 using BrixInvaders.Game.Input;
 using BrixInvaders.GameLogic;
+using CodeBrix.Platform.GameEngine.Input.Actions;
 
 namespace BrixInvaders.Game.Settings;
 
@@ -37,7 +38,7 @@ public interface IGameSettings
     GamepadProfile GamepadProfile { get; set; }
 
     /// <summary>The device that produced the last input.</summary>
-    InputDevice LastInputDevice { get; set; }
+    InputDeviceKind LastInputDevice { get; set; }
 
     /// <summary>The last name entered on a high-score table.</summary>
     string LastName { get; set; }

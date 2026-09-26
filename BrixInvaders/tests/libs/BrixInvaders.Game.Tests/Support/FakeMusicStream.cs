@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
-using BrixInvaders.Game.Audio;
 using CodeBrix.Platform.GameEngine.Audio;
 using CodeBrix.Platform.GameEngine.GeneratedMusic;
 
 namespace BrixInvaders.Game.Tests.Support;
 
 /// <summary>A scripted generated-music session: the test moves its state and it records the follow-ups asked of it.</summary>
-internal sealed class FakeMusicStream : IMusicStream
+internal sealed class FakeMusicStream : IGeneratedMusicSession
 {
     public FakeMusicStream(GeneratedMusicOptions options)
     {
@@ -25,11 +24,13 @@ internal sealed class FakeMusicStream : IMusicStream
 
     public StreamingMusicState State { get; private set; }
 
-    public string Summary { get; set; } = string.Empty;
+    public string ActiveSourceSummary { get; set; } = string.Empty;
 
-    public MusicSourceInfo Source { get; set; }
+    public GeneratedMusicSourceInfo ActiveSourceInfo { get; set; }
 
     public Exception Fault { get; set; }
+
+    public Exception GenerationError { get; set; }
 
     public int StarvationGapCount { get; set; }
 
@@ -47,6 +48,8 @@ internal sealed class FakeMusicStream : IMusicStream
         FollowUps.Add(preset);
     }
 
+    public void FollowUp(GeneratedMusicOptions options) => FollowUp(options.Preset);
+
     public void MoveTo(StreamingMusicState state)
     {
         State = state;
@@ -55,8 +58,8 @@ internal sealed class FakeMusicStream : IMusicStream
 
     public void PlayModel(string generator, string library)
     {
-        Source = new MusicSourceInfo(generator, library, false);
-        Summary = $"{generator} ({generator}) through {library}, voiced by test";
+        ActiveSourceInfo = new GeneratedMusicSourceInfo(generator, generator, library, false);
+        ActiveSourceSummary = $"{generator} ({generator}) through {library}, voiced by test";
         MoveTo(StreamingMusicState.Playing);
     }
 }

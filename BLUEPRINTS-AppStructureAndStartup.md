@@ -15,8 +15,9 @@ head to an existing one, or chasing a startup problem such as an application
 that launches and then does nothing, a head whose window renders blank,
 or a head that needs a picker or software keyboard opted in and folders computed
 for it. Later recipes deal with sharing one view model across native heads,
-detecting at run time which head is hosting you, and letting each head register
-the hardware implementations it alone may reference.
+detecting at run time which head is hosting you, letting each head register
+the hardware implementations it alone may reference, and writing every
+diagnostic line through one prefixed log that tests can capture.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -43,6 +44,7 @@ conventions the code blocks follow.
 - [Register hardware implementations from each head and ask a finder for the best one](#register-hardware-implementations-from-each-head-and-ask-a-finder-for-the-best-one)
 - [Compute the framebuffer picker's folders from the environment](#compute-the-framebuffer-pickers-folders-from-the-environment)
 - [Register a factory and let the view model ask it for what it owns](#register-a-factory-and-let-the-view-model-ask-it-for-what-it-owns)
+- [Write every diagnostic line through one prefixed log that tests can capture](#write-every-diagnostic-line-through-one-prefixed-log-that-tests-can-capture)
 
 ## Related blueprints
 
@@ -1791,3 +1793,116 @@ public static IServiceCollection AddPdfRender(this IServiceCollection services)
   method and not in the constructor.
 - `TryAdd` rather than `Add` in a library extension lets an application register
   its own implementation first and keeps a second call to the extension harmless.
+
+### Write every diagnostic line through one prefixed log that tests can capture
+
+**When you want this.** You want a run's console output to read as a story of
+what the application did - where the store is, what was loaded, every screen
+change, every save - easy to filter from the platform's own lines, and you want
+tests to assert that a given line was written.
+
+**The MVVM shape.** Not a view-model concern. One static class in the library
+that does the work owns the prefix and the destinations: the debugger output,
+the engine's logger, and an optional sink. Every part of the library writes
+through it, each line starting with a word that names the part. The console
+logger that finally prints it is the application's, installed at start-up; the
+view model only chooses the level the engine logs at.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Hosting/GameLog.cs
+/// <summary>The game's log: every line carries the <c>[BrixInvaders]</c> prefix and goes to Debug and the engine logger.</summary>
+public static class GameLog
+{
+    /// <summary>The prefix of every line.</summary>
+    public const string Prefix = "[BrixInvaders]";
+
+    /// <summary>An extra receiver for every line (tests capture the log through it); null for none.</summary>
+    public static Action<string> Sink { get; set; }
+
+    /// <summary>Writes one line.</summary>
+    /// <param name="message">The message, without the prefix.</param>
+    public static void Write(string message)
+    {
+        var line = $"{Prefix} {message}";
+        Debug.WriteLine(line);
+        Engine.Logger.LogInformation("{Line}", line);
+        Sink?.Invoke(line);
+    }
+}
+```
+
+Each start-up step writes one line that carries the value, not just the event:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs
+protected override void OnInitializing()
+{
+    GameLog.Write("starting");
+    GameLog.Write($"settings store: {GameStartup.OpenSettingsStore()}");
+    _settings = new StoredGameSettings();
+
+    //Pin the output format BEFORE anything plays: effects preload at this rate and the generated music renders at it
+    AudioSystem.Initialize(MusicSetup.RecommendedSampleRate, MusicSetup.RecommendedChannels);
+    GameLog.Write($"audio: output pinned at {MusicSetup.RecommendedSampleRate} Hz, {MusicSetup.RecommendedChannels} channels");
+}
+```
+
+A test captures the lines through the sink and clears it whatever happens:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Session/ScreenFlowTests.cs
+var lines = new List<string>();
+var changes = new List<(GameScreen, GameScreen)>();
+driver.Session.ScreenChanged += (from, to) => changes.Add((from, to));
+GameLog.Sink = lines.Add;
+try
+{
+    //Act
+    driver.ToTitle();
+    driver.Press(SessionDriver.Confirm);
+}
+finally
+{
+    GameLog.Sink = null;
+}
+
+//Assert
+lines.Should().Contain("[BrixInvaders] screen: Splash -> Title");
+lines.Should().Contain("[BrixInvaders] screen: Title -> ShipSelect");
+```
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/tests/libs/BrixInvaders.Game.Tests/AssemblyInfo.cs
+//The settings tests open the process-global AppSettings store and the log sink is process-global too, so the
+//  collections run one at a time.
+[assembly: Parallelization(Mode = ParallelMode.None)]
+```
+
+**Where to look.**
+`BrixInvaders/src/libs/BrixInvaders.Game/Hosting/GameLog.cs`
+`BrixInvaders/src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs` (the
+`CodeBrixGameHost overrides` region, one line per start-up step)
+`BrixInvaders/src/BrixInvaders.Core/ViewModels/MainViewModel.cs` (the level passed
+to `Host.Initialize`)
+`BrixInvaders/src/BrixInvaders.UI/App.xaml.cs` (`InitializeLogging`)
+`BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Session/ScreenFlowTests.cs` and
+`AssemblyInfo.cs`
+`BrixInvaders/README.md` ("Diagnosing a run" lists every prefix word)
+
+**Sharp edges.**
+- A fixed prefix plus a first word naming the part - `settings store:`,
+  `music:`, `screen:` - lets one filter pull a single subsystem out of a run, and
+  keeps the application's lines apart from the platform's. Keep a table of the
+  words where a reader will find it; this application keeps it in its README.
+- The engine logger prints only as much as the level the host was initialized
+  with, and only when the application installed a console logger - here in Debug
+  builds only, as in
+  [Turn on console logging only in Debug builds](BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
+  Initialize the host at a level that lets these lines through.
+- The sink is static, so it is process-global. Set it in a `try`, clear it in the
+  `finally`, and run that test assembly without parallelization, or one test
+  collects another test's lines.
+- Write the value along with the event - the folder, the rate, the from and to
+  of a screen change - so the log answers the question without a debugger.

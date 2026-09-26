@@ -21,16 +21,17 @@ public sealed class GameOverScreen : ScreenPainter
 
         Ui.Veil(frame, System.Math.Min(1, OpenTime / 1.5));
         Ui.Heading(frame, "GAME OVER", 250, 72);
-        frame.AddOverlay(DrawCommand.Label($"FINAL SCORE {HudPainter.FormatScore(screens.FinalScore)}", Ui.CenterX, 340, 30, Palette.Gold));
+        frame.Overlay.Text($"FINAL SCORE {HudPainter.FormatScore(screens.FinalScore)}", Ui.CenterX, 340, frame.Font, 30,
+            Palette.Gold);
         if (game != null)
         {
-            frame.AddOverlay(DrawCommand.Label($"SECTOR {game.Sector} - {game.Setup.Difficulty.ToString().ToUpperInvariant()}",
-                Ui.CenterX, 384, 18, Palette.Text, TextAnchor.Center, thin: true));
+            frame.Overlay.Text($"SECTOR {game.Sector} - {game.Setup.Difficulty.ToString().ToUpperInvariant()}", Ui.CenterX, 384,
+                frame.ThinFont, 18, Palette.Text);
         }
 
         if (screens.PendingHighScore)
         {
-            frame.AddOverlay(DrawCommand.Label("A NEW HIGH SCORE!", Ui.CenterX, 440, 28, Palette.Good));
+            frame.Overlay.Text("A NEW HIGH SCORE!", Ui.CenterX, 440, frame.Font, 28, Palette.Good);
         }
 
         if (OpenTime >= ScreenStateMachine.GameOverMinSeconds)

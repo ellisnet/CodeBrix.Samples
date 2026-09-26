@@ -1,7 +1,7 @@
 using System.Linq;
 using BrixInvaders.Assets;
-using BrixInvaders.Game.Audio;
 using BrixInvaders.Game.Credits;
+using CodeBrix.Platform.GameEngine.GeneratedMusic;
 using CodeBrix.Platform.GameEngine.KenneyAssets;
 using SilverAssertions;
 using Xunit;
@@ -14,13 +14,13 @@ public class KenneyCreditsContentTests
     public void GetLines_credits_every_pack_and_links_to_Kenney()
     {
         //Arrange
-        var content = new KenneyCreditsContent(() => new[] { "Planets by Kenney (kenney.nl) - CC0" });
+        var content = new KenneyCreditsContent(() => new[] { "Planets (1.0) - Kenney (CC0)" });
 
         //Act
         var lines = content.GetLines();
 
         //Assert
-        lines.Select(line => line.Text).Should().Contain(new[] { KenneyPacks.CreditLine, "Planets by Kenney (kenney.nl) - CC0" });
+        lines.Select(line => line.Text).Should().Contain(new[] { KenneyPacks.CreditLine, "Planets (1.0) - Kenney (CC0)" });
         lines.Where(line => line.Style == CreditsLineStyle.Link).Select(line => line.Url).Should()
             .Equal(KenneyCreditsContent.KenneySiteUrl, KenneyCreditsContent.PatreonUrl, KenneyPacks.BundleUrl);
     }
@@ -59,8 +59,8 @@ public class KenneyCreditsContentTests
             LicenseTitle = title,
             SourcePath = KenneyPacks.FileNames[i],
         }).ToList();
-        var music = MusicCreditsCard.Lines(new MusicSourceInfo("SkyTNT", "ModestSynthGm", false), null);
-        var content = new KenneyCreditsContent(() => packs.Select(KenneyPacks.PackCreditLine), () => music);
+        var music = MusicCreditsCard.Lines(new GeneratedMusicSourceInfo("SkyTNT", "SkyTNT", "ModestSynthGm", false), null);
+        var content = new KenneyCreditsContent(() => packs.Select(pack => pack.CreditLine), () => music);
 
         //Act
         var lines = content.GetLines();
@@ -69,10 +69,11 @@ public class KenneyCreditsContentTests
         var texts = lines.Select(line => line.Text).ToList();
         foreach (var title in titles)
         {
-            texts.Should().Contain($"{title} by Kenney (kenney.nl) - CC0");
+            texts.Should().Contain($"{title} - Kenney (CC0)");
         }
 
         lines.Select(line => line.Url).Should().Contain(new[] { "https://kenney.nl", "https://www.patreon.com/kenney/" });
+        texts.Should().Contain(text => text.Contains("kenney.nl") && text.Contains("CC0"));
         texts.Should().Contain("Music written live by SkyTNT through ModestSynthGm");
     }
 }

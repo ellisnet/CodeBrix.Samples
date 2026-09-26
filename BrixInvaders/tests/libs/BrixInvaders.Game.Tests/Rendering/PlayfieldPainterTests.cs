@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BrixInvaders.Game.Hosting;
 using BrixInvaders.Game.Rendering;
+using BrixInvaders.Game.Tests.Support;
 using BrixInvaders.GameLogic;
 using SilverAssertions;
 using Xunit;
@@ -12,11 +13,11 @@ public class PlayfieldPainterTests
 {
     private const int MaxSteps = 60 * 60 * 10;
 
-    private static RenderFrame Paint(PlayfieldPainter painter, GameSimulation game)
+    private static TestFrame Paint(PlayfieldPainter painter, GameSimulation game)
     {
-        var frame = new FrameBuilder();
-        painter.PaintGame(frame, game, game.Time);
-        return frame.Build();
+        var frame = new TestFrame();
+        painter.PaintGame(frame.Lists, game, game.Time);
+        return frame;
     }
 
     private static bool AnyVisibleActive(GameSimulation game) => ShipLoadout.ActiveKinds(game.PowerUps).Count > 0;
@@ -44,7 +45,7 @@ public class PlayfieldPainterTests
         var game = new GameSimulation(new GameSetup(Difficulty.Pilot, shipShape: 2));
         var lines = new List<string>();
         GameLog.Sink = lines.Add;
-        RenderFrame frame;
+        TestFrame frame;
         try
         {
             //Act
@@ -73,8 +74,8 @@ public class PlayfieldPainterTests
         var lines = new List<string>();
         Paint(painter, game);
         GameLog.Sink = lines.Add;
-        RenderFrame upgraded;
-        RenderFrame bare;
+        TestFrame upgraded;
+        TestFrame bare;
         IReadOnlyList<ShipPart> parts;
         try
         {

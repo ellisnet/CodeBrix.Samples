@@ -1,8 +1,8 @@
 using System;
 using BrixInvaders.Game.Hud;
-using BrixInvaders.Game.Input;
 using BrixInvaders.Game.Rendering;
 using BrixInvaders.GameLogic;
+using CodeBrix.Platform.GameEngine.Input.Actions;
 
 namespace BrixInvaders.Game.Screens;
 
@@ -18,22 +18,22 @@ public sealed class HighScoreEntryScreen : ScreenPainter
         context.Playfield.StarSpeed = 0.5;
         context.Playfield.PaintBackdrop(frame, Assets.SpaceBackground.DarkPurple, SpriteCatalog.Planet(9), 1080, 560, 480, 0.8);
         Ui.Heading(frame, "NEW HIGH SCORE", 120, 52);
-        frame.AddOverlay(DrawCommand.Label(HudPainter.FormatScore(screens.FinalScore), Ui.CenterX, 190, 34, Palette.Gold));
-        frame.AddOverlay(DrawCommand.Label($"ON {screens.Difficulty.ToString().ToUpperInvariant()}", Ui.CenterX, 230, 16, Palette.Text,
-            TextAnchor.Center, thin: true));
+        frame.Overlay.Text(HudPainter.FormatScore(screens.FinalScore), Ui.CenterX, 190, frame.Font, 34, Palette.Gold);
+        frame.Overlay.Text($"ON {screens.Difficulty.ToString().ToUpperInvariant()}", Ui.CenterX, 230, frame.ThinFont, 16,
+            Palette.Text);
 
         for (var i = 0; i < NameEntry.Length; i++)
         {
             var x = Ui.CenterX + ((i - 1) * 110);
             var selected = i == entry.Cursor && !entry.IsComplete;
-            frame.AddOverlay(DrawCommand.Rect(x, 360, 90, 110, selected ? 0x602E7DD6 : Palette.Panel, selected ? Palette.Accent : Palette.PanelEdge,
-                selected ? 3 : 2, 10));
-            frame.AddOverlay(DrawCommand.Label(entry.LetterAt(i).ToString(), x, 362, 64, selected ? Palette.Text : Palette.Dim));
+            frame.Overlay.Rectangle(x, 360, 90, 110, selected ? 0x602E7DD6 : Palette.Panel,
+                selected ? Palette.Accent : Palette.PanelEdge, selected ? 3 : 2, 10);
+            frame.Overlay.Text(entry.LetterAt(i).ToString(), x, 362, frame.Font, 64, selected ? Palette.Text : Palette.Dim);
             if (selected)
             {
                 var bob = Math.Sin(OpenTime * 6) * 3;
-                frame.AddOverlay(DrawCommand.Label("^", x, 296 - bob, 22, Palette.Accent));
-                frame.AddOverlay(DrawCommand.Label("v", x, 428 + bob, 22, Palette.Accent));
+                frame.Overlay.Text("^", x, 296 - bob, frame.Font, 22, Palette.Accent);
+                frame.Overlay.Text("v", x, 428 + bob, frame.Font, 22, Palette.Accent);
             }
         }
 
@@ -47,9 +47,9 @@ public sealed class HighScoreEntryScreen : ScreenPainter
     /// <param name="device">The device the prompts follow.</param>
     /// <param name="cursor">The letter under the cursor, 0..2 (Confirm finishes on the last one).</param>
     /// <returns>The footer text.</returns>
-    public static string FooterText(InputDevice device, int cursor)
+    public static string FooterText(InputDeviceKind device, int cursor)
     {
-        var navigate = device == InputDevice.Gamepad ? $"{Prompts.Navigate(device)} {Prompts.Move(device)}" : Prompts.Navigate(device);
+        var navigate = device == InputDeviceKind.Gamepad ? $"{Prompts.Navigate(device)} {Prompts.Move(device)}" : Prompts.Navigate(device);
         var confirm = cursor >= NameEntry.Length - 1 ? "Done" : "Next";
         return $"{navigate} Up/Down letter (hold to scroll), Left/Right move    " +
                $"{Prompts.Confirm(device)} {confirm}    {Prompts.Back(device)} Previous";

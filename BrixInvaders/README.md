@@ -60,7 +60,7 @@ bundle card and the links on the credits screen.
   all Kenney parts, all gone when the power-up runs out.
 - **Bosses.** A boss warning sounds after the sixth wave. The boss weaves across the
   top, its core armored until every other section is destroyed, and it changes its
-  attack pattern as it loses health; the engine's health bar tracks it.
+  attack pattern as it loses health; a health bar at the top of the screen tracks it.
 - **Scoring.** Every hit adds to a chain, and every ten in a row raises the multiplier,
   up to five times; a shot that leaves the screen without hitting anything breaks the
   chain. Game over with a qualifying score asks for three letters or digits, entered
@@ -83,49 +83,116 @@ weights, the settings keys and the per-sector music table.
 
 ## What this sample shows a CodeBrix.Platform developer
 
-- Hand the view model the game canvas once it has a real layout size, choose the
-  render tier and pin the render resolution before anything reads the canvas's host,
-  and let the view model own the game host:
+- Hand the view model the game canvas at its first real layout size, through a
+  one-method interface the page calls from the canvas's first-started event:
   [Hand the view model a game canvas at its first real layout size](../BLUEPRINTS-GameEngine.md#hand-the-view-model-a-game-canvas-at-its-first-real-layout-size).
-- Ship the Kenney zips exactly as they were downloaded, register them in one call and
-  load sprites from their atlases, sounds and fonts by asset key:
-  [Register downloaded Kenney zip files and load sprites, sounds and fonts from them](../BLUEPRINTS-GameEngine.md#register-downloaded-kenney-zip-files-and-load-sprites-sounds-and-fonts-from-them).
+- Choose the render tier and pin the render resolution to a fixed playfield before
+  anything reads the canvas's host, and let the engine letterbox the playfield into any
+  window and hand link clicks over in playfield pixels:
+  [Pin a fixed playfield size and let the engine letterbox drawings and clicks](../BLUEPRINTS-GameEngine.md#pin-a-fixed-playfield-size-and-let-the-engine-letterbox-drawings-and-clicks).
+- Build the game host's seams in a view model with no bindings and no commands, and
+  close the application on the UI thread when the game asks to quit:
+  [Build a game host's seams in the view model and close the application from its quit event](../BLUEPRINTS-MVVM.md#build-a-game-hosts-seams-in-the-view-model-and-close-the-application-from-its-quit-event).
+- Attach the engine's window helper in one call, so the whole engine pauses while the
+  window is minimized and keyboard focus comes back on activation, and come back to the
+  game's own pause menu:
+  [Pause the engine while the window is minimized with GameWindowLifecycle and come back to the game's pause menu](../BLUEPRINTS-GameEngine.md#pause-the-engine-while-the-window-is-minimized-with-gamewindowlifecycle-and-come-back-to-the-games-pause-menu).
+- Ship the Kenney zips exactly as they were downloaded, register them in one call,
+  check every key the game uses and credit every pack from the provider, and load
+  sprites from their atlases, sounds and fonts by asset key:
+  [Register downloaded Kenney zip files with RegisterKenneyAssets and load sprites, sounds and fonts from them](../BLUEPRINTS-GameEngine.md#register-downloaded-kenney-zip-files-with-registerkenneyassets-and-load-sprites-sounds-and-fonts-from-them).
 - Start endless generated music with one call, move it on at a bar line for each
   sector and boss, and start a fresh session only when the player changes the model or
   the instruments:
   [Start endless generated music with one call](../BLUEPRINTS-GameEngine.md#start-endless-generated-music-with-one-call).
+- Put the whole music policy behind one interface with a silent default, reach the
+  engine only through its own music interfaces, and pin every rule with a fake of
+  those and a recording director:
+  [Put the music policy behind an interface and test it against fakes of the engine's music interfaces](../BLUEPRINTS-GameEngine.md#put-the-music-policy-behind-an-interface-and-test-it-against-fakes-of-the-engines-music-interfaces).
+- Duck the music under the pause menu instead of suspending it, play the game-over
+  stinger on the effects bus with a deeper duck held until the title, and release both
+  on every way out:
+  [Duck the music for a pause menu and hold a game-over duck with PlayStingerWithHeldDuck until the title](../BLUEPRINTS-GameEngine.md#duck-the-music-for-a-pause-menu-and-hold-a-game-over-duck-with-playstingerwithheldduck-until-the-title).
+- Keep each sector's presets and tempo in a table of plain data, offer the models
+  and instrument libraries by their registry names on the settings screen, and let
+  tests hold the table to the packages' preset lists:
+  [Keep the music for each level in a table the tests can read](../BLUEPRINTS-GameEngine.md#keep-the-music-for-each-level-in-a-table-the-tests-can-read).
+- Credit the model and instruments that are really playing, including when the
+  model is warming up or missing:
+  [Show the player which model and instruments are really playing](../BLUEPRINTS-GameEngine.md#show-the-player-which-model-and-instruments-are-really-playing).
 - Pin the audio output format before the first effect is preloaded, so the effects and
   the generated music agree on one rate:
   [Pin the audio device format before anything plays](../BLUEPRINTS-GameEngine.md#pin-the-audio-device-format-before-anything-plays).
-- Duck the music under the boss warning and hold it down on the game-over screen and
-  under the pause menu, with the fire-and-forget and the handle forms of a duck:
+- Duck the music under the boss warning with the timed form of a duck, and hold it
+  down on the game-over screen and under the pause menu with the handle form:
   [Duck the music for exactly as long as a line lasts](../BLUEPRINTS-GameEngine.md#duck-the-music-for-exactly-as-long-as-a-line-lasts).
-- Sample the keyboard and every connected gamepad into one input, latch menu presses
-  between fixed steps, and let the last device used choose the on-screen prompts:
-  [Read keyboard and gamepad together and switch on-screen prompts](../BLUEPRINTS-GameEngine.md#read-keyboard-and-gamepad-together-and-switch-on-screen-prompts).
+- Bind named actions to keys, gamepad buttons, D-pad and stick directions with the
+  engine's input-action map, read the keyboard and every connected gamepad once per
+  fixed step without losing a short tap, and let the last device used choose the
+  on-screen prompts:
+  [Read keyboard and gamepad together through an InputActionMap and switch on-screen prompts](../BLUEPRINTS-GameEngine.md#read-keyboard-and-gamepad-together-through-an-inputactionmap-and-switch-on-screen-prompts).
+- Repeat a held menu direction at a steady rate and never read a released stick's
+  spring-back as a push the other way:
+  [Repeat a held menu direction with InputRepeat and ignore a stick springing back](../BLUEPRINTS-GameEngine.md#repeat-a-held-menu-direction-with-inputrepeat-and-ignore-a-stick-springing-back).
 - Compose a splash picture from the game's own assets at start-up, show it through the
   engine's splash overlay and hand over to the title when it finishes or the player
   skips it:
   [Show a splash card and hand over to a title screen](../BLUEPRINTS-GameEngine.md#show-a-splash-card-and-hand-over-to-a-title-screen).
+- Give every screen a painter of its own that follows the screen state machine, and
+  test the screens by reading the draw lists they produce:
+  [Paint each game screen with its own painter and test the screens as draw lists](../BLUEPRINTS-GameEngine.md#paint-each-game-screen-with-its-own-painter-and-test-the-screens-as-draw-lists).
+- Build each frame into two engine draw lists on the engine thread and paint their
+  published copies from two engine draw-list drawings, one under the particles and
+  one over everything:
+  [Build each frame as engine DrawList commands and paint only the published copy](../BLUEPRINTS-GameEngine.md#build-each-frame-as-engine-drawlist-commands-and-paint-only-the-published-copy).
+- Show each active power-up on the player's ship with Kenney parts layered under and
+  over the hull:
+  [Show power-ups on the player's ship by layering sprite parts over the hull](../BLUEPRINTS-GameEngine.md#show-power-ups-on-the-players-ship-by-layering-sprite-parts-over-the-hull).
+- Use the engine's particles on a pixel layer (no tile grid) between the game's own
+  world and overlay drawings, driven from the rules' events:
+  [Stack engine particles on a pixel layer between your own world and overlay drawings](../BLUEPRINTS-GameEngine.md#stack-engine-particles-on-a-pixel-layer-between-your-own-world-and-overlay-drawings).
 - Keep the rules in a library with no engine, no Skia and no I/O, stepped at a fixed
-  rate from the engine loop and fenced by golden-seed tests:
-  [Keep a deterministic game simulation apart from the engine](../BLUEPRINTS-GameEngine.md#keep-a-deterministic-game-simulation-apart-from-the-engine).
+  rate from the engine's fixed-step hook and fenced by golden-seed tests:
+  [Keep a deterministic game simulation apart from the engine and step it from OnFixedUpdate](../BLUEPRINTS-GameEngine.md#keep-a-deterministic-game-simulation-apart-from-the-engine-and-step-it-from-onfixedupdate).
 - Keep every setting and high score behind one application-named facade over the
   AppSettings add-in, opened first thing in the `App` constructor:
   [Wrap the AppSettings add-in in one application named facade](../BLUEPRINTS-SettingsAndPersistence.md#wrap-the-appsettings-add-in-in-one-application-named-facade)
   and
   [Open the settings store before any other startup work](../BLUEPRINTS-SettingsAndPersistence.md#open-the-settings-store-before-any-other-startup-work).
-- Point the settings store at a throwaway folder in tests and in unattended runs, so
-  neither ever reaches the player's high scores:
+- Give the settings screen a menu model that changes the stored value and says
+  what changed, and let the session route each kind of change to the mixer, the
+  music or the next game:
+  [Let a menu model change stored settings and report what changed](../BLUEPRINTS-SettingsAndPersistence.md#let-a-menu-model-change-stored-settings-and-report-what-changed).
+- Give every stored value a typed, validated property, keep the high-score tables
+  as one JSON value per difficulty, and let the game reach all of it through an
+  interface the tests implement in memory:
+  [Type and validate every stored value behind an interface the game can fake](../BLUEPRINTS-SettingsAndPersistence.md#type-and-validate-every-stored-value-behind-an-interface-the-game-can-fake).
+- Open the settings store in a fresh temporary folder for each test that needs it,
+  deleted when the test is done, so no test ever reaches the player's high scores:
   [Point a process-global store at a throwaway folder in tests](../BLUEPRINTS-Testing.md#point-a-process-global-store-at-a-throwaway-folder-in-tests).
+- Walk the whole game session through its screens in unit tests, with a
+  recording fake for every seam it takes and a driver that presses the same
+  buttons a player does:
+  [Drive a game session through recording fakes for every seam it takes](../BLUEPRINTS-Testing.md#drive-a-game-session-through-recording-fakes-for-every-seam-it-takes).
+- Read every asset key back out of the constants class by reflection and prove
+  each one against the real zips copied beside the test binary:
+  [Read every asset key back by reflection and prove each one against the real zips](../BLUEPRINTS-Testing.md#read-every-asset-key-back-by-reflection-and-prove-each-one-against-the-real-zips).
 - Open a web link from the game through a small interface the view model supplies,
   with a no-op default that only logs:
   [Put a platform service behind an interface with a no-op default](../BLUEPRINTS-PlatformServices.md#put-a-platform-service-behind-an-interface-with-a-no-op-default)
   and
   [Open a URL in the default browser from a view model](../BLUEPRINTS-PlatformServices.md#open-a-url-in-the-default-browser-from-a-view-model).
-- Drive the whole game unattended from an environment switch and read what happened
-  from the log:
-  [Drive a running application from an environment variable and report to the log](../BLUEPRINTS-Testing.md#drive-a-running-application-from-an-environment-variable-and-report-to-the-log).
+- Open a link from the engine thread through the engine's link helper, answer with a
+  task, and test it with a recorder standing in for the helper:
+  [Open a link from the game engine thread with ExternalLinks and answer with a task](../BLUEPRINTS-PlatformServices.md#open-a-link-from-the-game-engine-thread-with-externallinks-and-answer-with-a-task).
+- Drive the whole game unattended from an environment switch - an autopilot that
+  plays through the player's own input path, with its settings and scores kept in a
+  scratch store chosen where the store first opens - and read what happened from the
+  log:
+  [Let an autopilot play through the player's input path and keep its saves apart](../BLUEPRINTS-Testing.md#let-an-autopilot-play-through-the-players-input-path-and-keep-its-saves-apart)
+  (compare
+  [Drive a running application from an environment variable and report to the log](../BLUEPRINTS-Testing.md#drive-a-running-application-from-an-environment-variable-and-report-to-the-log),
+  a hook that runs whatever script the variable holds).
 - Let the game library own the engine packages and the Core project depend on it, with
   a root namespace of its own so the generated resources type is not declared twice:
   [Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace).
@@ -147,6 +214,9 @@ weights, the settings keys and the per-sector music table.
 - Install a console logger only in Debug builds, so the game's diagnostic lines appear
   in a Debug run and a Release run stays quiet:
   [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
+- Write every diagnostic line through one prefixed log that reaches the console
+  in Debug builds and a sink the tests capture:
+  [Write every diagnostic line through one prefixed log that tests can capture](../BLUEPRINTS-AppStructureAndStartup.md#write-every-diagnostic-line-through-one-prefixed-log-that-tests-can-capture).
 - Guard the view model constructor against the XAML designer:
   [Guard a view model constructor for the XAML designer](../BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
 - Set up xUnit v3 test projects the family's runner discovers, each library naming
@@ -200,10 +270,11 @@ tests open the real zips, copied beside the test binary, and prove that every as
 the game uses resolves; the music tests check the registration, the choices and the
 per-sector table, and build the music options for every model, instrument library and
 sector without loading a model or opening an audio device; the game tests drive the
-screen flow, the input mapper, the settings facade (against a throwaway store), the
-music director and the credits against fakes. None of them needs a window, a sound card
-or a gamepad. The repository's `global.json` selects the Microsoft.Testing.Platform
-runner, and each test project runs with:
+screen flow, the game's controls over the engine input-action map, the settings
+facade (against a throwaway store), the music director and the credits against
+fakes. None of them needs a window, a sound card or a gamepad. The repository's
+`global.json` selects the Microsoft.Testing.Platform runner, and each test project
+runs with:
 
 ```text
 dotnet test --project tests/libs/BrixInvaders.GameLogic.Tests/BrixInvaders.GameLogic.Tests.csproj
@@ -225,12 +296,13 @@ which part of the game wrote it:
 | `[BrixInvaders] settings store:` | Where the settings and high scores are kept |
 | `[BrixInvaders] audio:` | The output format pinned at start-up |
 | `[BrixInvaders] gamepad:` | Whether gamepad support is available and which controllers are connected |
-| `[BrixInvaders] assets:` | One line per Kenney pack read, the provider's warnings, and a summary of every asset key the game uses |
+| `[BrixInvaders] assets:` | One line per Kenney pack read, the provider's warnings, and the provider's check of every asset key the game uses |
 | `[BrixInvaders] sounds:`, `fonts:`, `pictures:` | What was loaded from the packs, and anything missing |
 | `[BrixInvaders] music:` | What is registered, whether each model's files were found, every state change of the music, what is really playing, and every follow-up |
 | `[BrixInvaders] screen:` | Every screen change |
 | `[BrixInvaders] performance:` | Frames a second and draw commands, now and then |
 | `[BrixInvaders] input:`, `link:`, `high scores:` | Presses on the title, links opened, scores saved |
+| `[BrixInvaders] window:` | The window being minimized (the engine pauses; the pause menu waits for the player) |
 
 The engine adds its own lines about the music track and the generated music under the
 same run. A missing model shows up as a `music:` line saying that the embedded replay
@@ -280,14 +352,14 @@ BrixInvaders/
         Formation/, Enemies/, Bosses/   The marching formation, enemy behaviors and multi-section bosses
         Player/, Projectiles/, PowerUps/, Hazards/, Collision/, Scoring/, Difficulty/, Sectors/, Attract/, Core/
       BrixInvaders.Assets/              The Kenney zips: pack names, every asset key, one-call registration, typed loaders
-        Packs/, Keys/, Loading/, Audio/, Fonts/, Diagnostics/
+        Packs/, Keys/, Loading/, Audio/, Fonts/
       BrixInvaders.Music/               Model and instrument choices, the per-sector music table, the options builder
         Choices/, Sectors/, Setup/
       BrixInvaders.Game/                The game host and everything drawn, heard and pressed
-        Hosting/                        BrixInvadersGameHost, start-up, key bindings, the game log
+        Hosting/                        BrixInvadersGameHost, start-up, the game log
         Session/                        GameSession: screens, simulations and commands; the autopilot
         Screens/, Hud/, Rendering/      One painter per screen, the HUD, draw lists, particles, the splash
-        Input/                          Keyboard and gamepad sampling into one input
+        Input/                          The action names, binding profiles and input numbers
         Audio/                          The sound table and the generated-music director
         Settings/                       The settings facade over the AppSettings add-in
         Credits/, Links/                Credits content and the link opener seams
@@ -373,10 +445,10 @@ instruments.
 | CodeBrix.Platform | The application framework: `Application`, `Window`, `Frame`, `Page`, the default-font feature configuration, and the "Simple" toolkit (`SimpleViewModel`, `SimpleServiceResolver`, `IHostBuilderProvider`, `CodeBrixPlatformHostBuilder`) | `src/BrixInvaders.Core/BrixInvaders.Core.csproj`, `src/BrixInvaders.UI/`, `src/BrixInvaders.Core/ViewModels/MainViewModel.cs` |
 | CodeBrix.Platform runtime for each head | Exactly one runtime package per head supplies that head's windowing and Skia surface | The four head csproj files and their `Program.cs` |
 | CodeBrix.Platform.Fonts.Merriweather | The default XAML font; the game itself draws its text in Kenney's fonts | `src/BrixInvaders.Core/BrixInvaders.Core.csproj`, `src/BrixInvaders.UI/App.xaml.cs` |
-| CodeBrix.Platform.GameEngine | The engine loop, `CodeBrixGameHost`, `GameSurfaceCanvas` and its CPU and GPU render tiers, scenes, direct drawings, particles, the splash overlay, the health bar, input, the audio system, the effects voice pool and the music manager. One package supplies both the engine core and the Host layer | `src/libs/BrixInvaders.Game/`, `src/libs/BrixInvaders.Assets/`, `src/BrixInvaders.UI/Views/MainPage.xaml` |
+| CodeBrix.Platform.GameEngine | The engine loop, `CodeBrixGameHost`, `GameSurfaceCanvas` and its CPU and GPU render tiers, scenes, direct drawings, the draw lists the game paints every frame into, particles, the splash overlay, the input-action map, the window lifecycle helper, the link helper, the audio system, the effects voice pool and the music manager. One package supplies both the engine core and the Host layer | `src/libs/BrixInvaders.Game/`, `src/libs/BrixInvaders.Assets/`, `src/BrixInvaders.UI/Views/MainPage.xaml`, `src/BrixInvaders.UI/App.xaml.cs` |
 | CodeBrix.Platform.GameEngine.KenneyAssets | Reads the five Kenney zips where they lie and serves their sprites, atlases, sounds and fonts by asset key | `src/libs/BrixInvaders.Assets/Loading/BrixInvadersAssets.cs`, `src/libs/BrixInvaders.Assets/Keys/AssetKeys.cs` |
-| CodeBrix.Platform.GameEngine.Sdl2 | Gamepads, hot-plugged at any time | `src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs`, `src/libs/BrixInvaders.Game/Hosting/KeyBindings.cs` |
-| CodeBrix.Platform.GameEngine.GeneratedMusic | Endless generated music on the engine's music bus, started with one call and moved on with follow-ups | `src/libs/BrixInvaders.Music/Setup/MusicSetup.cs`, `src/libs/BrixInvaders.Game/Audio/EngineMusicEngine.cs`, `src/libs/BrixInvaders.Game/Audio/GeneratedMusicDirector.cs` |
+| CodeBrix.Platform.GameEngine.Sdl2 | Gamepads, hot-plugged at any time | `src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs`, `src/libs/BrixInvaders.Game/Input/GameControls.cs` |
+| CodeBrix.Platform.GameEngine.GeneratedMusic | Endless generated music on the engine's music bus, started with one call and moved on with follow-ups | `src/libs/BrixInvaders.Music/Setup/MusicSetup.cs`, `src/libs/BrixInvaders.Game/Audio/GeneratedMusicDirector.cs`, `src/BrixInvaders.Core/ViewModels/MainViewModel.cs` |
 | CodeBrix.Audio.MusicGeneration.SkyTNT and CodeBrix.Audio.MusicGeneration.MuPT | The two music models the player chooses between | `src/libs/BrixInvaders.Music/BrixInvaders.Music.csproj`, `src/libs/BrixInvaders.Music/Setup/MusicSetup.cs` |
 | CodeBrix.Audio.ModestSynth and CodeBrix.Audio.Samples.FluidR3Gm | The synthesized and the recorded General MIDI instrument libraries the player chooses between | `src/libs/BrixInvaders.Music/BrixInvaders.Music.csproj`, `src/libs/BrixInvaders.Music/Setup/MusicSetup.cs` |
 | CodeBrix.Platform.AppSettings | Stores the settings and the high-score tables between runs, behind one application-named facade | `src/libs/BrixInvaders.Game/Settings/SettingsService.cs`, `src/BrixInvaders.UI/App.xaml.cs` |
@@ -386,7 +458,7 @@ Third-party libraries:
 
 | Library | What it does in this application | Where |
 | --- | --- | --- |
-| SkiaSharp | Composes the splash picture and draws the game's draw lists; it arrives with the engine package | `src/libs/BrixInvaders.Game/Rendering/` |
+| SkiaSharp | Composes the splash picture and supplies the colors, typefaces and pictures the game's draw lists carry; it arrives with the engine package, and the asset and game test projects add its Linux native library, which a head would otherwise supply | `src/libs/BrixInvaders.Game/Rendering/`, `tests/libs/BrixInvaders.Assets.Tests/`, `tests/libs/BrixInvaders.Game.Tests/` |
 | Microsoft.Extensions.Hosting | `Host.CreateDefaultBuilder()` behind an `IHostBuilderProvider`, which `SimpleServiceResolver` uses to build the container | `src/BrixInvaders.Core/Helpers/HostHelper.cs` |
 | Microsoft.Extensions.Logging.Console | The console logger wired into the platform's ambient logger in Debug builds | `src/BrixInvaders.UI/App.xaml.cs` |
 | xUnit v3 and Microsoft.Testing.Platform | The test framework and the runner for the test projects | `tests/libs/*/` |
@@ -401,11 +473,17 @@ the window is. The page forwards the canvas's first start to the view model thro
 `IManageGameCanvas`, and the view model does the two things that have to happen before
 the canvas builds its scene pipeline - choose the render tier and pin the render
 resolution - then builds the host with its three seams: the music director, the link
-opener that marshals to the UI thread for the platform launcher, and the credits
-content. Quit on the title raises an event the view model answers by closing the
-application on the UI thread. Read `src/BrixInvaders.UI/Views/MainPage.xaml.cs`, then
+opener that hands web links to the engine's link helper, and the credits content. Quit
+on the title raises an event the view model answers by closing the application on the
+UI thread. Read `src/BrixInvaders.UI/Views/MainPage.xaml.cs`, then
 `CanvasFirstStart` in `src/BrixInvaders.Core/ViewModels/MainViewModel.cs` and
-`PrepareCanvas` in `src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs`.
+`PrepareCanvas` in `src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs`. See
+[Build a game host's seams in the view model and close the application from its quit event](../BLUEPRINTS-MVVM.md#build-a-game-hosts-seams-in-the-view-model-and-close-the-application-from-its-quit-event),
+[Pin a fixed playfield size and let the engine letterbox drawings and clicks](../BLUEPRINTS-GameEngine.md#pin-a-fixed-playfield-size-and-let-the-engine-letterbox-drawings-and-clicks),
+[Pause the engine while the window is minimized with GameWindowLifecycle and come back to the game's pause menu](../BLUEPRINTS-GameEngine.md#pause-the-engine-while-the-window-is-minimized-with-gamewindowlifecycle-and-come-back-to-the-games-pause-menu),
+[Open a link from the game engine thread with ExternalLinks and answer with a task](../BLUEPRINTS-PlatformServices.md#open-a-link-from-the-game-engine-thread-with-externallinks-and-answer-with-a-task)
+and
+[Show the player which model and instruments are really playing](../BLUEPRINTS-GameEngine.md#show-the-player-which-model-and-instruments-are-really-playing).
 
 ### The host's start-up order
 
@@ -413,36 +491,48 @@ application on the UI thread. Read `src/BrixInvaders.UI/Views/MainPage.xaml.cs`,
 engine calls them: open the settings store and pin the audio output, set up the mouse
 and gamepad input, register the zips and load the sounds and fonts, load the
 atlases and loose pictures, build the scene and the direct drawings (the world layer,
-the particle surface, the boss health bar and the overlay), create the game session,
-start the music, and finally show the splash. Each step writes one `[BrixInvaders]`
+the particle surface and the overlay), create the game session and attach the
+input-action map, start the music, and finally show the splash. Each step writes one `[BrixInvaders]`
 line, so a run's log reads as the start-up sequence. Read the `CodeBrixGameHost
-overrides` region of the host.
+overrides` region of the host. See
+[Stack engine particles on a pixel layer between your own world and overlay drawings](../BLUEPRINTS-GameEngine.md#stack-engine-particles-on-a-pixel-layer-between-your-own-world-and-overlay-drawings)
+and
+[Write every diagnostic line through one prefixed log that tests can capture](../BLUEPRINTS-AppStructureAndStartup.md#write-every-diagnostic-line-through-one-prefixed-log-that-tests-can-capture).
 
 ### A fixed step inside a variable loop
 
-The engine loop runs as fast as it can; the rules advance in fixed steps. Every engine
-cycle the host samples input, adds the elapsed time to an accumulator and runs as many
-fixed steps as it holds, capped so a stall cannot make the game run away, then builds
-an immutable frame of draw commands that the two drawings read on the render side. The
-simulation never sees a variable time step, and the renderer never sees a half-updated
-game. Read `OnCycle`, `Step` and `BuildFrame` in the host. See
-[Keep a deterministic game simulation apart from the engine](../BLUEPRINTS-GameEngine.md#keep-a-deterministic-game-simulation-apart-from-the-engine).
+The engine loop runs as fast as it can; the rules advance in fixed steps. The host
+turns on the engine's fixed-step hook at the rules' rate, and the engine calls the
+host's `OnFixedUpdate` once per step - capped so a stall cannot make the game run away,
+and frozen while the engine is paused. Each step reads the input-action map and advances
+the game; after a cycle's steps, `OnAfterFixedUpdates` has the screens fill the engine draw lists
+and publishes them, and the two drawings paint only the published copies. The simulation never sees a variable
+time step, and the renderer never sees a half-updated game. Read `OnFixedUpdate`,
+`Step`, `OnAfterFixedUpdates` and `BuildFrame` in the host. See
+[Keep a deterministic game simulation apart from the engine and step it from OnFixedUpdate](../BLUEPRINTS-GameEngine.md#keep-a-deterministic-game-simulation-apart-from-the-engine-and-step-it-from-onfixedupdate),
+[Build each frame as engine DrawList commands and paint only the published copy](../BLUEPRINTS-GameEngine.md#build-each-frame-as-engine-drawlist-commands-and-paint-only-the-published-copy)
+and
+[Paint each game screen with its own painter and test the screens as draw lists](../BLUEPRINTS-GameEngine.md#paint-each-game-screen-with-its-own-painter-and-test-the-screens-as-draw-lists).
 
 ### Music that follows the game without restarting
 
 `GeneratedMusicDirector` is the whole music policy in one class behind an interface, so
 the session's tests drive it with a fake. The session calls it only when the musical
 moment really changes - the title, a sector, a boss, game over. A sector or a boss is a
-follow-up that takes over at a bar line; the boss warning ducks the music under the
-game's own warning sound; game over holds a duck until the title; the pause menu holds
-a lighter one. The class comment explains why pause is a duck rather than a suspension:
+follow-up that takes over at a bar line; the boss warning plays as an engine stinger on
+the effects bus with the music ducked under it; the game-over stinger holds a duck until
+the title; the pause menu holds a lighter one. The class comment explains why pause is a duck rather than a suspension:
 the pause menu is a game pause while the engine keeps running, and a suspended stream
 can come back through a moment of silence. The music slider drives the engine's music
 bus, and the session's own level stays at full, so the level is applied exactly once.
 Read `src/libs/BrixInvaders.Game/Audio/GeneratedMusicDirector.cs` beside
 `src/libs/BrixInvaders.Music/Setup/MusicSetup.cs` and
 `src/libs/BrixInvaders.Music/Sectors/SectorMusic.cs`. See
-[Start endless generated music with one call](../BLUEPRINTS-GameEngine.md#start-endless-generated-music-with-one-call).
+[Start endless generated music with one call](../BLUEPRINTS-GameEngine.md#start-endless-generated-music-with-one-call),
+[Put the music policy behind an interface and test it against fakes of the engine's music interfaces](../BLUEPRINTS-GameEngine.md#put-the-music-policy-behind-an-interface-and-test-it-against-fakes-of-the-engines-music-interfaces),
+[Duck the music for a pause menu and hold a game-over duck with PlayStingerWithHeldDuck until the title](../BLUEPRINTS-GameEngine.md#duck-the-music-for-a-pause-menu-and-hold-a-game-over-duck-with-playstingerwithheldduck-until-the-title)
+and
+[Keep the music for each level in a table the tests can read](../BLUEPRINTS-GameEngine.md#keep-the-music-for-each-level-in-a-table-the-tests-can-read).
 
 ### What this application does not show
 

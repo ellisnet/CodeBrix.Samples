@@ -105,20 +105,4 @@ public static class KenneyPacks
     /// <returns>The full path of <see cref="PromoCardFile"/>.</returns>
     public static string PromoCardPath(string folder = null) =>
         Path.Combine(Path.GetFullPath(folder ?? DefaultFolder), PromoCardFile);
-
-    /// <summary>
-    /// Gets the line a credits screen shows for one registered pack: its licence title when the licence carries a
-    /// usable one, else its display name.
-    /// </summary>
-    /// <param name="pack">The pack summary from <see cref="KenneyGameAssetProvider.Packs"/>.</param>
-    /// <returns>For example <c>Planets (1.0) by Kenney (kenney.nl) - CC0</c>.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="pack"/> is null.</exception>
-    public static string PackCreditLine(KenneyPackSummary pack)
-    {
-        ArgumentNullException.ThrowIfNull(pack);
-
-        string title = string.IsNullOrWhiteSpace(pack.LicenseTitle) ? pack.DisplayName : pack.LicenseTitle;
-
-        return $"{title} by Kenney (kenney.nl) - CC0";
-    }
 }

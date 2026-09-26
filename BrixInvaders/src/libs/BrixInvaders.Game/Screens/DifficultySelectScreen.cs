@@ -30,8 +30,7 @@ public sealed class DifficultySelectScreen : ScreenPainter
         {
             var selected = level == screens.Difficulty;
             Ui.MenuRow(frame, level.ToString().ToUpperInvariant(), Ui.CenterX, y, selected, context.Time);
-            frame.AddOverlay(DrawCommand.Label(Describe(level), Ui.CenterX, y + 28, 13, selected ? Palette.Text : Palette.Dim,
-                TextAnchor.Center, thin: true));
+            frame.Overlay.Text(Describe(level), Ui.CenterX, y + 28, frame.ThinFont, 13, selected ? Palette.Text : Palette.Dim);
             y += 78;
         }
 
@@ -39,9 +38,9 @@ public sealed class DifficultySelectScreen : ScreenPainter
         var sectorText = unlocked > 1
             ? $"START AT SECTOR  < {screens.StartSector} >   ({unlocked} unlocked)"
             : "START AT SECTOR 1   (clear sectors to unlock more)";
-        frame.AddOverlay(DrawCommand.Label(sectorText, Ui.CenterX, 540, 18, Palette.Gold));
-        frame.AddOverlay(DrawCommand.Label(SectorRules.NameOf(screens.StartSector).ToUpperInvariant(), Ui.CenterX, 572, 16,
-            Palette.Text, TextAnchor.Center, thin: true));
+        frame.Overlay.Text(sectorText, Ui.CenterX, 540, frame.Font, 18, Palette.Gold);
+        frame.Overlay.Text(SectorRules.NameOf(screens.StartSector).ToUpperInvariant(), Ui.CenterX, 572, frame.ThinFont, 16,
+            Palette.Text);
         Ui.Footer(frame, $"{Prompts.Navigate(context.Device)} Up/Down level, Left/Right sector    " +
                          $"{Prompts.Confirm(context.Device)} Launch    {Prompts.Back(context.Device)} Back");
     }

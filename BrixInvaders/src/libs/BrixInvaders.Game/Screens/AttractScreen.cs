@@ -20,7 +20,7 @@ public sealed class AttractScreen : ScreenPainter
         context.Playfield.PaintGame(context.Frame, attract, context.Time);
         HudPainter.Paint(context.Frame, attract, context.Time);
         var alpha = 0.6 + (0.4 * Math.Sin(OpenTime * 3));
-        context.Frame.AddOverlay(DrawCommand.Label("DEMO", Ui.CenterX, 150, 48, Palette.Accent, TextAnchor.Center, false, alpha));
-        context.Frame.AddOverlay(DrawCommand.Label("PRESS ANY KEY OR BUTTON", Ui.CenterX, 196, 18, Palette.Text));
+        context.Frame.Overlay.Text("DEMO", Ui.CenterX, 150, context.Frame.Font, 48, Palette.Accent, alpha: alpha);
+        context.Frame.Overlay.Text("PRESS ANY KEY OR BUTTON", Ui.CenterX, 196, context.Frame.Font, 18, Palette.Text);
     }
 }
