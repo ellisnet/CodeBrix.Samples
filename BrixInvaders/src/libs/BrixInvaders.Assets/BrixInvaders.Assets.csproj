@@ -4,9 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- TEMPORARY: unpublished engine build - switch to the published version -->
-    <PackageReference Include="CodeBrix.Platform.GameEngine.MitLicenseForever" Version="1.0.268.9000-absorb.3" />
-    <!-- TEMPORARY: unpublished engine build - switch to the published version -->
-    <PackageReference Include="CodeBrix.Platform.GameEngine.KenneyAssets.MitLicenseForever" Version="1.0.268.9000-absorb.3" />
+    <PackageReference Include="CodeBrix.Platform.GameEngine.MitLicenseForever" Version="1.0.270.1082" />
+    <PackageReference Include="CodeBrix.Platform.GameEngine.KenneyAssets.MitLicenseForever" Version="1.0.270.1096" />
   </ItemGroup>
 </Project>
