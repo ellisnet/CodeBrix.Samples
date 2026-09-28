@@ -765,8 +765,8 @@ game-over screen; see
   released, and a pushed duck lasts exactly as long as you hold the handle.
 - `PlayStinger` plays on the music bus, so the music slider and its own duck turn
   the stinger down with the music. For a cue that must stay at full level, the
-  engine's `PlayStingerOnBus` and `PlayStingerWithHeldDuck` play it on the effects
-  bus.
+  engine's `PlayStingerOnBus` with `AudioBus.Sfx`, and `PlayStingerWithHeldDuck` by
+  default, play it on the effects bus.
 - Clone the resource per line. Two lines sharing one instance fight over the same
   playback position and one completion event.
 - Dispose the duck and unload the clone from the voice's own completion event, and
@@ -1210,7 +1210,7 @@ are holding.
 profile of named actions. The game keeps only its action names, its bindings and its
 numbers in one static class; the host attaches the map to the engine and reads it once
 per fixed step into the plain values the rules take - held input for play,
-edge-triggered presses for menus. The map remembers which device was used last; the
+presses for menus. The map remembers which device was used last; the
 screens draw their prompts from it, and the settings facade stores it for the next run.
 
 **Code.**
@@ -1745,7 +1745,7 @@ private void BuildFrame()
   added. Keep the tilesheets and fonts alive for as long as any published list may
   use them.
 - Two lists are published one after the other, so on the GPU tier the overlay can
-  be one frame newer than the world for a single paint. Nothing in a shooter shows
+  be one frame newer than the world for a single paint. Nothing in this game shows
   it; a game that needs the two to match exactly can publish one object holding both
   snapshots and use the drawing's source-function constructor.
 - Build a frame only after a cycle that ran at least one fixed step - the engine's
@@ -2004,7 +2004,7 @@ recipe adds its hold-to-repeat timing and its stick settle time.
 repeat clocks and the stick-as-direction reading, both driven by the step length
 passed to `Update` and never by a wall clock. The game only supplies its numbers and
 picks the repeat interval for the screen on show; the rules library only ever sees
-edge-triggered menu presses.
+menu presses, a repeat arriving as one more press.
 
 **Code.**
 
@@ -2892,7 +2892,7 @@ case InstrumentLibraryRow:
   use, so a test that reads it is what turns a typo into a failure.
 - Store the registry name, never the label, and resolve it without regard to case
   when it is read back. The settings facade returns the default for a stored name
-  the game no longer offers, so an old settings file cannot stop the music.
+  the game does not offer, so an old settings file cannot stop the music.
 - The title has no boss. Asking for boss music on the title is an argument error
   in the options builder rather than a quiet repeat of the title music.
 - The tempo column is used only where a session starts, at start-up or after a

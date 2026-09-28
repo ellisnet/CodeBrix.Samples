@@ -205,8 +205,9 @@ weights, the settings keys and the per-sector music table.
 - Organize the application as a shared UI project, a Core project, four libraries
   under `src/libs` and mirrored test projects under `tests/libs`:
   [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project).
-- Carry every shared package in the Core project and give each head exactly one
-  platform runtime package:
+- Carry the platform, font, hosting and logging packages in the Core project, leave
+  the engine packages to the game library, and give each head exactly one platform
+  runtime package:
   [Carry every package in one Core library and give each head exactly one runtime package](../BLUEPRINTS-ProjectLayoutAndPackaging.md#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package).
 - Keep every head's `Program.Main` to the same few lines, differing only in the call
   that names the platform:
@@ -300,6 +301,11 @@ which part of the game wrote it:
 | `[BrixInvaders] sounds:`, `fonts:`, `pictures:` | What was loaded from the packs, and anything missing |
 | `[BrixInvaders] music:` | What is registered, whether each model's files were found, every state change of the music, what is really playing, and every follow-up |
 | `[BrixInvaders] screen:` | Every screen change |
+| `[BrixInvaders] splash:` | What the splash card was composed from, or that it could not be shown |
+| `[BrixInvaders] new game:`, `game over:` | The setup a game started with; the score, sector and difficulty it ended on |
+| `[BrixInvaders] loadout:` | The ship's power-up parts as they change |
+| `[BrixInvaders] settings:` | Every stored value the menus change: defaults, music choice, gamepad profile, cleared high scores |
+| `[BrixInvaders] attract:`, `autopilot:` | The demo pilot taking over and how its game ended; the hands-off switch being on |
 | `[BrixInvaders] performance:` | Frames a second and draw commands, now and then |
 | `[BrixInvaders] input:`, `link:`, `high scores:` | Presses on the title, links opened, scores saved |
 | `[BrixInvaders] window:` | The window being minimized (the engine pauses; the pause menu waits for the player) |

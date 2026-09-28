@@ -1889,7 +1889,7 @@ to `Host.Initialize`)
 `BrixInvaders/src/BrixInvaders.UI/App.xaml.cs` (`InitializeLogging`)
 `BrixInvaders/tests/libs/BrixInvaders.Game.Tests/Session/ScreenFlowTests.cs` and
 `AssemblyInfo.cs`
-`BrixInvaders/README.md` ("Diagnosing a run" lists every prefix word)
+`BrixInvaders/README.md` ("Diagnosing a run" tables the prefix words)
 
 **Sharp edges.**
 - A fixed prefix plus a first word naming the part - `settings store:`,
