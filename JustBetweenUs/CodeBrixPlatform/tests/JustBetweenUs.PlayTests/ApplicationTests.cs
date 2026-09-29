@@ -26,7 +26,14 @@ public sealed partial class ApplicationTests : PageTest, IClassFixture<AppFixtur
     private Locator Dialog => Page.GetByRole(AriaRole.Dialog);
 
     public ApplicationTests(AppFixture fixture) : base(fixture.Application) => _fixture = fixture;
-    public async ValueTask InitializeAsync() => await _fixture.ResetAsync();
+    public async ValueTask InitializeAsync()
+    {
+        // xUnit supplies the traits of the executing row, including deferred MemberData rows.
+        var test = (Xunit.v3.IXunitTest)TestContext.Current.Test;
+        test.Traits.TryGetValue(PlayTestOrientationAttribute.CaseTraitName, out var caseOrientations);
+        var orientation = PlayTestOrientationAttribute.Resolve(test.TestMethod.Method, caseOrientations);
+        await _fixture.ResetAsync(orientation);
+    }
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     private async Task CloseDialogAsync()

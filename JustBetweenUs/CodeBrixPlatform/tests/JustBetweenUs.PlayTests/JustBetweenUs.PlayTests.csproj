@@ -8,7 +8,9 @@
     <IsPackable>false</IsPackable>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
-    <PlayTestPackageVersion Condition="'$(PlayTestPackageVersion)' == ''">1.0.272.1-playtest.1</PlayTestPackageVersion>
+    <PlayTestPackageVersion Condition="'$(PlayTestPackageVersion)' == ''">1.0.272.1-playtest.3</PlayTestPackageVersion>
+    <!-- Optional project preference. Code and CODEBRIX_PLAYTEST_ORIENTATION take precedence. -->
+    <CodeBrixPlayTestPreferredOrientation Condition="'$(CodeBrixPlayTestPreferredOrientation)' == ''">Landscape</CodeBrixPlayTestPreferredOrientation>
     <!-- Sibling clone's temporary feed; override for a different checkout layout. -->
     <PlayTestPackageFeed Condition="'$(PlayTestPackageFeed)' == ''">$(MSBuildThisFileDirectory)../../../../../CodeBrix.Platform/nugets/PlayTest</PlayTestPackageFeed>
     <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);$(PlayTestPackageFeed)</RestoreAdditionalProjectSources>

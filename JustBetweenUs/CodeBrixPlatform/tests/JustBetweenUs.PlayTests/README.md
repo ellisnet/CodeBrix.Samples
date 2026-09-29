@@ -30,11 +30,52 @@ The headed window is a live, view-only canvas. Resize or move it normally;
 physical keyboard/mouse input does not operate the app. The tests operate the
 actual controls. Unset `CODEBRIX_PLAYTEST_HEADED` (or use `0`) for headless runs.
 
-Set `CODEBRIX_PLAYTEST_ORIENTATION=portrait` to run the same suite in a separate
-1080×1920 virtual screen; otherwise it runs at 1920×1080. `SLOWMO` and `ORIENTATION`
-are interpreted by this sample fixture. `HEADED` is interpreted by PlayTest itself.
+The fixture preference is resolved in this order: explicit `Orientation` in
+`AppFixture.InitializeAsync()`, `CODEBRIX_PLAYTEST_ORIENTATION`, the `.csproj`
+`CodeBrixPlayTestPreferredOrientation` property, then Landscape. The sample leaves
+the code override unset and declares the project preference as Landscape.
+Set `CODEBRIX_PLAYTEST_ORIENTATION=portrait` for a portrait default, or put this
+in the test `.csproj` to make portrait the normal preference without an environment
+variable:
+
+```xml
+<CodeBrixPlayTestPreferredOrientation>Portrait</CodeBrixPlayTestPreferredOrientation>
+```
+
+`SLOWMO` is interpreted by this sample fixture; orientation preferences and
+`HEADED` are interpreted by PlayTest itself. Each test without an explicit
+requirement starts at the fixture preference, even after an opposite-orientation
+test. Landscape is 1920×1080; portrait is 1080×1920, both at scale 1.
+The preview's proportions follow the fixture preference and stay stable when
+test orientation changes. Opposite-orientation frames have black bars at the
+sides or above/below. Manual window resizing still works. Screenshots capture
+the actual virtual screen without preview bars.
+
 For a Wayland-only preview set `SDL_VIDEODRIVER=wayland`; for an X11 preview use
 `SDL_VIDEODRIVER=x11`. SDL3 otherwise chooses an available display backend.
+
+`OrientationTests.cs` demonstrates opt-in requirements at both levels:
+
+```csharp
+[Fact]
+[PlayTestOrientation(ScreenOrientation.Portrait)]
+public async Task Method_can_require_portrait() { /* test */ }
+
+[Theory]
+[PlayTestOrientation(ScreenOrientation.Landscape)]
+[InlineData("portrait case", Traits = new[] { "PlayTestOrientation", "Portrait" })]
+[InlineData("landscape case")] // inherits the method requirement
+public async Task Example(string scenario) { /* test */ }
+```
+
+The row trait overrides the method attribute, which overrides the fixture
+preference. `ApplicationTests.InitializeAsync()` reads the executing xUnit test's
+traits (including deferred theory rows) and passes the resolved requirement to
+`AppFixture.ResetAsync()`. That installs a fresh page after setting orientation.
+The hook is required: the runner-neutral attribute does not run setup by itself.
+The orientation tests check layout, display information, PNG dimensions, actual
+encryption/decryption, and restoration of the default after repeated changes.
+`OrientationPreferenceTests.cs` checks preference precedence and invalid values.
 
 The fixture launches one application per test process and installs a fresh
 `MainPage` before each test. Parallelization is disabled. Tests assert returned
@@ -51,10 +92,10 @@ The temporary package feed defaults to the sibling
 
 ```sh
 # Run in the CodeBrix.Platform repository; choose an unused prerelease version.
-python3 build/pack-playtest-preview.py --version 1.0.272.1-playtest.2
+python3 build/pack-playtest-preview.py --version 1.0.272.1-playtest.4
 ```
 
-Then pass `-p:PlayTestPackageVersion=1.0.272.1-playtest.2` to `dotnet test` or update
+Then pass `-p:PlayTestPackageVersion=1.0.272.1-playtest.4` to `dotnet test` or update
 the project default. Use `-p:PlayTestPackageFeed=/path/to/feed` for another checkout
 layout. Copy all three produced packages (core, base Skia runtime, and PlayTest)
 to the other machine's feed. The new head requires the matching core's friend
@@ -66,18 +107,35 @@ application windows. Clipboard tests are deliberately isolated from the desktop
 clipboard. Windows, macOS and visible Wayland execution need validation on
 their respective desktops; cross-platform package assets alone do not prove it.
 
-Validated on Linux x64 with local package set `1.0.271.1-playtest.4`:
+Validated on Linux x64 with local package set `1.0.272.1-playtest.3`:
 
-- All 37 tests pass headlessly at 1920×1080 and 1080×1920.
-- All 37 tests also pass with the live X11 preview at 1920×1080 and 500ms
-  action pauses (about two minutes for the full suite).
-- The portrait run also passes with `DISPLAY` and `WAYLAND_DISPLAY` unset.
-- Headed startup passes with SDL's dummy display driver, including launching and
-  shutting down the separate preview process; no desktop window is opened by
-  that check. Resizing behavior and physical-input isolation still require
-  interactive confirmation on the desktop.
-- The repository's dependency gate accepts the produced core package with zero
-  errors and zero warnings.
+- All 63 tests pass with the live X11 preview using both landscape and portrait
+  defaults, including mixed-orientation cases, at 200ms action pauses.
+- All 63 tests pass headlessly with a Portrait project preference and no
+  orientation environment variable. A separate launch verified that an explicit
+  Landscape environment setting overrides that compiled Portrait preference;
+  its application screenshot is 1920×1080.
+- The suite includes both method-level requirements, four explicit row
+  requirements, rows inheriting a method requirement, and deferred theory rows.
+- Repeated orientation changes preserve correct layout, display information,
+  screenshot dimensions and input behavior. Display orientation events and
+  retaining existing page state are also checked.
+- Invalid project values are rejected by the package's MSBuild target.
+- The preview integration check verifies all eight frame/window combinations
+  across repeated switches. Window sizes remain 960×540 and 540×960 respectively;
+  opposite-orientation content is centered with black bars. Its dummy-driver
+  checks cover clean EOF, invalid dimensions, truncated headers and truncated
+  pixel data.
+- The dependency gate accepts the produced core package with zero errors and
+  zero warnings. NuGet packing retains the core package's existing NU5100
+  warnings for its deliberately separate Skia runtime assembly folder.
 
-The current `1.0.272.1-playtest.1` package replaces the preview title's em dash
-with an ASCII hyphen to avoid the missing-glyph box observed on the X11 desktop.
+To repeat the preview pixel checks, run from the sibling `CodeBrix.Platform`
+repository after building these tests (requires X11, xdotool, ImageMagick's
+`import`, and Pillow):
+
+```sh
+python3 build/test-scripts/playtest-preview-orientation.py \
+  --test-output ../CodeBrix.Samples/JustBetweenUs/CodeBrixPlatform/tests/JustBetweenUs.PlayTests/bin/Release/net10.0 \
+  --artifacts /tmp/playtest-preview-orientation
+```

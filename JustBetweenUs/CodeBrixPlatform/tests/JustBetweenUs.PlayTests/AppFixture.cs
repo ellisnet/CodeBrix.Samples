@@ -14,16 +14,16 @@ public sealed class AppFixture : IAsyncLifetime
 {
     public PlayTestApplication Application { get; private set; }
     public MainPage View { get; private set; }
+    public ScreenOrientation PageCreationOrientation { get; private set; }
 
     public async ValueTask InitializeAsync()
     {
-        var orientation = Environment.GetEnvironmentVariable("CODEBRIX_PLAYTEST_ORIENTATION");
-        if (!string.IsNullOrEmpty(orientation) && orientation != "portrait" && orientation != "landscape")
-            throw new ArgumentException("CODEBRIX_PLAYTEST_ORIENTATION must be landscape or portrait.");
         var slowMo = Environment.GetEnvironmentVariable("CODEBRIX_PLAYTEST_SLOWMO");
         Application = await PlayTestApplication.LaunchAsync(() => new App(), new()
         {
-            Orientation = orientation == "portrait" ? ScreenOrientation.Portrait : ScreenOrientation.Landscape,
+            // Leave Orientation unset to use environment -> project preference -> Landscape.
+            // Setting Orientation explicitly here overrides both environment and project preferences.
+            ConfigurationAssembly = typeof(AppFixture).Assembly,
             SlowMo = string.IsNullOrEmpty(slowMo) ? 0 : float.Parse(slowMo, CultureInfo.InvariantCulture),
         });
         await Assertions.Expect(Application.Page.GetByRole(AriaRole.Dialog)).ToContainTextAsync("Paul Ainsworth");
@@ -31,9 +31,13 @@ public sealed class AppFixture : IAsyncLifetime
         await Assertions.Expect(Application.Page.GetByRole(AriaRole.Dialog)).ToHaveCountAsync(0);
     }
 
-    public async Task ResetAsync()
+    public async Task ResetAsync(ScreenOrientation? orientation = null)
     {
-        await Application.Page.SetContentAsync(() => View = new MainPage());
+        await Application.Page.SetContentAsync(() =>
+        {
+            PageCreationOrientation = Application.Orientation;
+            return View = new MainPage();
+        }, orientation);
         await Assertions.Expect(Application.Page.GetByRole(AriaRole.Dialog)).ToContainTextAsync("Paul Ainsworth");
         await Application.Page.GetByRole(AriaRole.Button, new() { Name = "OK", Exact = true }).ClickAsync();
         await Assertions.Expect(Application.Page.GetByRole(AriaRole.Dialog)).ToHaveCountAsync(0);
