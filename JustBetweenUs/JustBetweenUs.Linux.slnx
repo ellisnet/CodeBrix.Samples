@@ -27,6 +27,7 @@
     <File Path="Shared/Assets/star_icon.json" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="CodeBrixPlatform/tests/JustBetweenUs.PlayTests/JustBetweenUs.PlayTests.csproj" />
     <Project Path="tests/JustBetweenUs.Encryption.Tests/JustBetweenUs.Encryption.Tests.csproj" />
   </Folder>
   <Project Path="JustBetweenUs.Encryption/JustBetweenUs.Encryption.csproj" />
