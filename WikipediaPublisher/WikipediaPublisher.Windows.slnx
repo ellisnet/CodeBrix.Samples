@@ -28,11 +28,13 @@
     <Deploy Solution="Debug|x64" />
   </Project>
   <Project Path="WikipediaPublisher.Wpf/WikipediaPublisher.Wpf.csproj" />
+  <Folder Name="/CodeBrixPlatform/Tests/">
+    <Project Path="tests/WikipediaPublisher.PlayTests/WikipediaPublisher.PlayTests.csproj" />
+  </Folder>
   <Folder Name="/Libraries/">
     <Project Path="WikipediaPublisher.RenderArticle/WikipediaPublisher.RenderArticle.csproj" />
   </Folder>
   <Folder Name="/Tests/">
-    <Project Path="tests/WikipediaPublisher.PlayTests/WikipediaPublisher.PlayTests.csproj" />
     <Project Path="Tests/WikipediaPublisher.RenderArticle.Tests/WikipediaPublisher.RenderArticle.Tests.csproj" />
   </Folder>
 </Solution>

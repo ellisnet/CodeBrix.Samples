@@ -24,6 +24,9 @@
     <Project Path="CodeBrixPlatform/JustBetweenUs.Win32Skia/JustBetweenUs.Win32Skia.csproj" />
     <Project Path="CodeBrixPlatform/JustBetweenUs.WinWpfSkia/JustBetweenUs.WinWpfSkia.csproj" />
   </Folder>
+  <Folder Name="/CodeBrixPlatform/Tests/">
+    <Project Path="CodeBrixPlatform/tests/JustBetweenUs.PlayTests/JustBetweenUs.PlayTests.csproj" />
+  </Folder>
   <Folder Name="/Mobile/">
     <Project Path="Mobile/JustBetweenUs.Mobile.csproj">
       <Deploy />
@@ -40,7 +43,6 @@
     <File Path="Shared/Assets/unlocked-icon.svg" />
   </Folder>
   <Folder Name="/Tests/">
-    <Project Path="CodeBrixPlatform/tests/JustBetweenUs.PlayTests/JustBetweenUs.PlayTests.csproj" />
     <Project Path="tests/JustBetweenUs.Encryption.Tests/JustBetweenUs.Encryption.Tests.csproj" />
   </Folder>
   <Project Path="JustBetweenUs.Encryption/JustBetweenUs.Encryption.csproj" />
