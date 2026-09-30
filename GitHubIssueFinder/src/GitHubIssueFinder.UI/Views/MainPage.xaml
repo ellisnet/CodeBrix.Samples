@@ -1,4 +1,4 @@
-<Page
+<Page xmlns:a="using:Microsoft.UI.Xaml.Automation"
     x:Class="GitHubIssueFinder.Views.MainPage"
     xmlns="clr-namespace:Microsoft.UI.Xaml.Controls;assembly=CodeBrix.Platform.UI"
     xmlns:d="clr-namespace:Microsoft.UI.Xaml.Data;assembly=CodeBrix.Platform.UI"
@@ -48,7 +48,7 @@
                     <FontIcon Glyph="&#xE790;" FontSize="16"
                               Foreground="{StaticResource TextSecondaryBrush}"
                               VerticalAlignment="Center" />
-                    <ComboBox Width="210" CornerRadius="6" TabIndex="6"
+                    <ComboBox a:AutomationProperties.AutomationId="SelectedScheme" a:AutomationProperties.Name="Selected Scheme" Width="210" CornerRadius="6" TabIndex="6"
                               VerticalAlignment="Center"
                               ItemsSource="{d:Binding SchemeOptions}"
                               SelectedItem="{d:Binding SelectedScheme, Mode=TwoWay}"
@@ -89,7 +89,7 @@
                                      binding whose fallback is a theme resource, and that fallback
                                      is lost when the element theme is switched at run time, which
                                      takes the placeholder text with it. -->
-                                <TextBox Width="260" CornerRadius="6" TabIndex="1"
+                                <TextBox a:AutomationProperties.AutomationId="Owner" a:AutomationProperties.Name="Owner" Width="260" CornerRadius="6" TabIndex="1"
                                          Padding="30,6,8,6" FontSize="13"
                                          PlaceholderForeground="{StaticResource TextTertiaryBrush}"
                                          PlaceholderText="GitHub user or organization"
@@ -102,7 +102,7 @@
                             </Grid>
 
                             <Grid Margin="0,3,14,3">
-                                <TextBox Width="260" CornerRadius="6" TabIndex="2"
+                                <TextBox a:AutomationProperties.AutomationId="Assignee" a:AutomationProperties.Name="Assignee" Width="260" CornerRadius="6" TabIndex="2"
                                          Padding="30,6,8,6" FontSize="13"
                                          PlaceholderForeground="{StaticResource TextTertiaryBrush}"
                                          PlaceholderText="Leave empty for unassigned"
@@ -114,14 +114,14 @@
                                           Margin="10,0,0,0" IsHitTestVisible="False" />
                             </Grid>
 
-                            <CheckBox Content="Include closed issues" FontSize="13" TabIndex="3"
+                            <CheckBox a:AutomationProperties.AutomationId="IncludeClosed" a:AutomationProperties.Name="Include Closed" Content="Include closed issues" FontSize="13" TabIndex="3"
                                       Margin="0,3,14,3" VerticalAlignment="Center"
                                       IsChecked="{d:Binding IncludeClosed, Mode=TwoWay}" />
 
                             <Button Margin="0,3,8,3" CornerRadius="6" Padding="16,7" TabIndex="4"
                                     FontWeight="SemiBold" VerticalAlignment="Center"
                                     Style="{StaticResource AccentButtonStyle}"
-                                    Command="{d:Binding SearchCommand}">
+                                    a:AutomationProperties.Name="Search" Command="{d:Binding SearchCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <FontIcon Glyph="&#xE721;" FontSize="14"
                                               VerticalAlignment="Center" />
@@ -135,7 +135,7 @@
                             <Button Margin="0,3,0,3" CornerRadius="6" Padding="16,7" TabIndex="5"
                                     VerticalAlignment="Center"
                                     BorderThickness="1"
-                                    Command="{d:Binding CancelCommand}">
+                                    a:AutomationProperties.Name="Cancel" Command="{d:Binding CancelCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <FontIcon Glyph="&#xE711;" FontSize="14"
                                               VerticalAlignment="Center" />

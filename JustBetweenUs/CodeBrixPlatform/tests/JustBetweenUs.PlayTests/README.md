@@ -15,20 +15,23 @@ dotnet test --project CodeBrixPlatform/tests/JustBetweenUs.PlayTests/JustBetween
 To watch the application on Linux or macOS:
 
 ```sh
-CODEBRIX_PLAYTEST_HEADED=1 CODEBRIX_PLAYTEST_SLOWMO=200 dotnet test --project CodeBrixPlatform/tests/JustBetweenUs.PlayTests/JustBetweenUs.PlayTests.csproj -c Release
+CODEBRIX_PLAYTEST_HEADED=1 dotnet test --project CodeBrixPlatform/tests/JustBetweenUs.PlayTests/JustBetweenUs.PlayTests.csproj -c Release
 ```
 
 In PowerShell:
 
 ```powershell
 $env:CODEBRIX_PLAYTEST_HEADED = "1"
-$env:CODEBRIX_PLAYTEST_SLOWMO = "200"
 dotnet test --project CodeBrixPlatform/tests/JustBetweenUs.PlayTests/JustBetweenUs.PlayTests.csproj -c Release
 ```
 
 The headed window is a live, view-only canvas. Resize or move it normally;
 physical keyboard/mouse input does not operate the app. The tests operate the
 actual controls. Unset `CODEBRIX_PLAYTEST_HEADED` (or use `0`) for headless runs.
+Headed runs default to 250 ms between actions; headless runs default to zero.
+Set `CODEBRIX_PLAYTEST_SLOWMO` to override the delay, including `0` for full speed.
+An explicit `PlayTestOptions.SlowMo` in code takes precedence over the environment;
+the fixture leaves it unset so the head applies these preferences.
 
 The fixture preference is resolved in this order: explicit `Orientation` in
 `AppFixture.InitializeAsync()`, `CODEBRIX_PLAYTEST_ORIENTATION`, the `.csproj`
@@ -42,8 +45,39 @@ variable:
 <CodeBrixPlayTestPreferredOrientation>Portrait</CodeBrixPlayTestPreferredOrientation>
 ```
 
-`SLOWMO` is interpreted by this sample fixture; orientation preferences and
-`HEADED` are interpreted by PlayTest itself. Each test without an explicit
+The simulated OS theme defaults to Light, independently of your desktop theme.
+To run in Dark mode, set `CODEBRIX_PLAYTEST_THEME=dark` or put this in the test
+`.csproj`:
+
+```xml
+<PropertyGroup>
+  <CodeBrixPlayTestPreferredTheme>Dark</CodeBrixPlayTestPreferredTheme>
+</PropertyGroup>
+```
+
+The environment variable takes precedence over the project preference; setting
+it to `light` overrides a Dark project preference. Names are case-insensitive.
+An unset or empty variable falls back to the project, then Light; invalid values
+are errors. The sample explicitly declares Light as its project preference.
+PlayTest applies the simulated OS theme before app construction, including system
+colors and theme resources, and keeps it fixed for the process. The app may still
+explicitly choose its own theme. Preview, screenshots and headless tests share
+the same rendering, and orientation changes leave the theme unchanged.
+
+For a visible Dark run on Linux or macOS:
+
+```sh
+CODEBRIX_PLAYTEST_THEME=dark CODEBRIX_PLAYTEST_HEADED=1 dotnet test --project CodeBrixPlatform/tests/JustBetweenUs.PlayTests/JustBetweenUs.PlayTests.csproj -c Release
+```
+
+In PowerShell, set `$env:CODEBRIX_PLAYTEST_THEME = "dark"` before running the same
+`dotnet test` command. `ThemePreferenceTests.cs` covers precedence and invalid
+values; `ThemeTests.cs` checks the startup theme, system colors, theme resources,
+rendered PNG pixels, and an explicit page theme override. Theme screenshots are
+saved as `TestResults/PlayTest/JustBetweenUs-Light.png` or `JustBetweenUs-Dark.png`.
+
+`SLOWMO`, theme/orientation preferences and `HEADED` are interpreted by PlayTest
+itself. Each test without an explicit
 requirement starts at the fixture preference, even after an opposite-orientation
 test. Landscape is 1920×1080; portrait is 1080×1920, both at scale 1.
 The preview's proportions follow the fixture preference and stay stable when
@@ -92,22 +126,51 @@ The temporary package feed defaults to the sibling
 
 ```sh
 # Run in the CodeBrix.Platform repository; choose an unused prerelease version.
-python3 build/pack-playtest-preview.py --version 1.0.272.1-playtest.4
+python3 build/pack-playtest-preview.py --version 1.0.272.1-playtest.9
 ```
 
-Then pass `-p:PlayTestPackageVersion=1.0.272.1-playtest.4` to `dotnet test` or update
+Then pass `-p:PlayTestPackageVersion=1.0.272.1-playtest.9` to `dotnet test` or update
 the project default. Use `-p:PlayTestPackageFeed=/path/to/feed` for another checkout
 layout. Copy all three produced packages (core, base Skia runtime, and PlayTest)
 to the other machine's feed. The new head requires the matching core's friend
 assembly declarations. The regular Platform release build also includes PlayTest
 in its normal package set.
 
-The prototype does not automate native OS dialogs, GPU-only controls or multiple
-application windows. Clipboard tests are deliberately isolated from the desktop
+File/folder pickers accept scripted paths or explicit cancellation without showing
+native UI. The prototype does not automate other native OS dialogs, GPU-only
+controls or multiple application windows. Clipboard tests are deliberately isolated from the desktop
 clipboard. Windows, macOS and visible Wayland execution need validation on
 their respective desktops; cross-platform package assets alone do not prove it.
 
-Validated on Linux x64 with local package set `1.0.272.1-playtest.3`:
+This project uses local package set `1.0.272.1-playtest.8`. Its 80 cases exercise
+JustBetweenUs and PlayTest configuration. The 15 generic picker/control cases
+have moved to `samples/CodeBrixPlatform/PlayTestDemo/tests/PlayTestDemo.PlayTests`
+in the CodeBrix.Platform repository. That dedicated demo owns their UI; this
+suite no longer substitutes unrelated controls for the JustBetweenUs page.
+See [shared sample guidance](../../../../PlayTestSupport/README.md) for picker
+examples and the additional application suites.
+
+All 80 cases pass with `.8` in visible/dark/landscape mode and `SLOWMO` unset,
+using the head's new 250 ms default.
+
+Theme support validated on Linux x64 with local package set `1.0.272.1-playtest.4`:
+
+- All 80 tests pass in the visible X11 landscape preview with the environment
+  theme set to Dark and 500ms action pauses, including mixed-orientation cases.
+- All 80 tests pass headlessly with the default Light preference and no theme
+  environment variable, and with a Dark project preference and no theme variable.
+- An additional application launch verifies that an explicit Light environment
+  value overrides the compiled Dark project preference, including startup,
+  system colors, theme resources, PNG pixels and encryption/decryption.
+- Configuration tests cover absent/empty settings, case-insensitive values,
+  precedence and invalid values. MSBuild accepts mixed-case Dark and rejects
+  invalid project values or a configured preference with GenerateAssemblyInfo=false.
+- The system-color preference is available before constructing the app; the
+  framework applies Application.RequestedTheme at launch, after construction.
+- The produced core package passes its dependency gate with zero errors and
+  zero warnings. The project and default build remain Light and Landscape.
+
+Earlier orientation validation with local package set `1.0.272.1-playtest.3`:
 
 - All 63 tests pass with the live X11 preview using both landscape and portrait
   defaults, including mixed-orientation cases, at 200ms action pauses.

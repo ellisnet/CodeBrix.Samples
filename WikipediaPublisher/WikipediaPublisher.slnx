@@ -16,6 +16,7 @@
   </Folder>
   <Project Path="WikipediaPublisher.RenderArticle/WikipediaPublisher.RenderArticle.csproj" />
   <Folder Name="/Tests/">
+    <Project Path="tests/WikipediaPublisher.PlayTests/WikipediaPublisher.PlayTests.csproj" />
     <Project Path="Tests/WikipediaPublisher.RenderArticle.Tests/WikipediaPublisher.RenderArticle.Tests.csproj" />
   </Folder>
 </Solution>

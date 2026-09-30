@@ -13,6 +13,7 @@
     <Project Path="src/libs/GitHubIssueFinder.Settings/GitHubIssueFinder.Settings.csproj" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/GitHubIssueFinder.PlayTests/GitHubIssueFinder.PlayTests.csproj" />
     <Project Path="tests/libs/GitHubIssueFinder.GitHub.Tests/GitHubIssueFinder.GitHub.Tests.csproj" />
     <Project Path="tests/libs/GitHubIssueFinder.Settings.Tests/GitHubIssueFinder.Settings.Tests.csproj" />
   </Folder>

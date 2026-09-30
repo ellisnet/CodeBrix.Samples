@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../../PlayTestSupport/CodeBrix.Sample.PlayTests.props" />
+  <PropertyGroup>
+    <RootNamespace>GitHubIssueFinder.PlayTests</RootNamespace>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+  <Import Project="../../src/GitHubIssueFinder.UI/GitHubIssueFinder.UI.projitems" Label="Shared" />
+  <ItemGroup>
+    <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
+    <ProjectReference Include="../../src/GitHubIssueFinder.Core/GitHubIssueFinder.Core.csproj" />
+  </ItemGroup>
+</Project>

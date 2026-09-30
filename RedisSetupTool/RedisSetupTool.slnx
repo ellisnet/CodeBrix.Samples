@@ -16,6 +16,7 @@
     <Project Path="src/libs/RedisSetupTool.TerminalView/RedisSetupTool.TerminalView.csproj" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/RedisSetupTool.PlayTests/RedisSetupTool.PlayTests.csproj" />
     <Project Path="tests/libs/RedisSetupTool.DockerManagement.Tests/RedisSetupTool.DockerManagement.Tests.csproj" />
     <Project Path="tests/libs/RedisSetupTool.RedisManagement.Tests/RedisSetupTool.RedisManagement.Tests.csproj" />
     <Project Path="tests/libs/RedisSetupTool.TerminalView.Tests/RedisSetupTool.TerminalView.Tests.csproj" />

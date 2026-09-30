@@ -16,6 +16,7 @@
     <Project Path="src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.csproj" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/PolyHavenBrowser.PlayTests/PolyHavenBrowser.PlayTests.csproj" />
     <Project Path="tests/libs/PolyHavenBrowser.CreateDocument.Tests/PolyHavenBrowser.CreateDocument.Tests.csproj" />
     <Project Path="tests/libs/PolyHavenBrowser.PolyHavenApiClient.Tests/PolyHavenBrowser.PolyHavenApiClient.Tests.csproj" />
     <Project Path="tests/libs/PolyHavenBrowser.Rendering.Tests/PolyHavenBrowser.Rendering.Tests.csproj" />

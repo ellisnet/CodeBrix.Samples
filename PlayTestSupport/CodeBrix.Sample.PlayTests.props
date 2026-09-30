@@ -1,30 +1,24 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
-    <RootNamespace>JustBetweenUs.PlayTests</RootNamespace>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
     <PlayTestPackageVersion Condition="'$(PlayTestPackageVersion)' == ''">1.0.272.1-playtest.8</PlayTestPackageVersion>
-    <!-- Optional project preference. Code and CODEBRIX_PLAYTEST_ORIENTATION take precedence. -->
     <CodeBrixPlayTestPreferredOrientation Condition="'$(CodeBrixPlayTestPreferredOrientation)' == ''">Landscape</CodeBrixPlayTestPreferredOrientation>
-    <!-- Optional simulated OS theme. CODEBRIX_PLAYTEST_THEME takes precedence; omission defaults to Light. -->
     <CodeBrixPlayTestPreferredTheme Condition="'$(CodeBrixPlayTestPreferredTheme)' == ''">Light</CodeBrixPlayTestPreferredTheme>
-    <!-- Sibling clone's temporary feed; override for a different checkout layout. -->
-    <PlayTestPackageFeed Condition="'$(PlayTestPackageFeed)' == ''">$(MSBuildThisFileDirectory)../../../../../CodeBrix.Platform/nugets/PlayTest</PlayTestPackageFeed>
+    <PlayTestPackageFeed Condition="'$(PlayTestPackageFeed)' == ''">$(MSBuildThisFileDirectory)../../CodeBrix.Platform/nugets/PlayTest</PlayTestPackageFeed>
     <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);$(PlayTestPackageFeed)</RestoreAdditionalProjectSources>
     <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI</DefineConstants>
   </PropertyGroup>
-  <Import Project="../../JustBetweenUs.UI/JustBetweenUs.UI.projitems" Label="Shared" />
   <ItemGroup>
-    <ProjectReference Include="../../JustBetweenUs.Core/JustBetweenUs.Core.csproj" />
     <PackageReference Include="CodeBrix.Platform.PlayTest.ApacheLicenseForever" Version="$(PlayTestPackageVersion)" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
-    <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
     <PackageReference Include="xunit.v3" Version="4.0.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" PrivateAssets="all" />
+    <Compile Include="$(MSBuildThisFileDirectory)SampleFixture.cs" Link="Support/SampleFixture.cs" />
   </ItemGroup>
 </Project>

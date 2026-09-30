@@ -16,6 +16,7 @@
     <Project Path="src/libs/KenneyAssetBrowser.Rendering/KenneyAssetBrowser.Rendering.csproj" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/KenneyAssetBrowser.PlayTests/KenneyAssetBrowser.PlayTests.csproj" />
     <Project Path="tests/libs/KenneyAssetBrowser.Settings.Tests/KenneyAssetBrowser.Settings.Tests.csproj" />
     <Project Path="tests/libs/KenneyAssetBrowser.AssetRead.Tests/KenneyAssetBrowser.AssetRead.Tests.csproj" />
     <Project Path="tests/libs/KenneyAssetBrowser.Rendering.Tests/KenneyAssetBrowser.Rendering.Tests.csproj" />
