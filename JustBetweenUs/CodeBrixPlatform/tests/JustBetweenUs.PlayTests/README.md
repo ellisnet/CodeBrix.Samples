@@ -126,12 +126,12 @@ The temporary package feed defaults to the sibling
 
 ```sh
 # Run in the CodeBrix.Platform repository; choose an unused prerelease version.
-python3 build/pack-playtest-preview.py --version 1.0.272.1-playtest.9
+python3 build/pack-playtest-preview.py --version 1.0.272.1-playtest.12
 ```
 
-Then pass `-p:PlayTestPackageVersion=1.0.272.1-playtest.9` to `dotnet test` or update
+Then pass `-p:PlayTestPackageVersion=1.0.272.1-playtest.12` to `dotnet test` or update
 the project default. Use `-p:PlayTestPackageFeed=/path/to/feed` for another checkout
-layout. Copy all three produced packages (core, base Skia runtime, and PlayTest)
+layout. Copy the produced packages (core, base Skia runtime, PlayTest, and WebView)
 to the other machine's feed. The new head requires the matching core's friend
 assembly declarations. The regular Platform release build also includes PlayTest
 in its normal package set.
@@ -139,10 +139,10 @@ in its normal package set.
 File/folder pickers accept scripted paths or explicit cancellation without showing
 native UI. The prototype does not automate other native OS dialogs, GPU-only
 controls or multiple application windows. Clipboard tests are deliberately isolated from the desktop
-clipboard. Windows, macOS and visible Wayland execution need validation on
-their respective desktops; cross-platform package assets alone do not prove it.
+clipboard. See the shared sample guidance for Windows and Wayland validation;
+macOS execution still needs validation on its own desktop.
 
-This project uses local package set `1.0.272.1-playtest.8`. Its 80 cases exercise
+This project uses local package set `1.0.272.1-playtest.12`. Its 80 cases exercise
 JustBetweenUs and PlayTest configuration. The 15 generic picker/control cases
 have moved to `samples/CodeBrixPlatform/PlayTestDemo/tests/PlayTestDemo.PlayTests`
 in the CodeBrix.Platform repository. That dedicated demo owns their UI; this

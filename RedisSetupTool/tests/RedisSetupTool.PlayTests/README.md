@@ -27,7 +27,7 @@ Set `CODEBRIX_PLAYTEST_SLOWMO` to override the delay, including `0` for full spe
 
 Coverage: Dashboard, all seven navigation destinations, container search/filter, console picker/cancel, unreachable-daemon recovery, image search, and portrait layout.
 
-A strict in-memory IDockerManager replaces the daemon. Unsupported calls throw; no Docker process or endpoint is used. The real topology catalog and validation remain available, with a fixed port-preview fixture. Startup automation is temporarily disabled and restored on disposal. Creating/destroying instances, live terminal sessions and Redis operations are not covered.
+A strict in-memory IDockerManager and IRedisTopologyService replace daemon operations. The real topology catalog remains available; validation returns a controlled empty result and port previews use a fixed plan. Unsupported calls throw, and resolving the concrete DockerManager is forbidden in the fixture. Replacing only IDockerManager is insufficient because the production topology service takes the concrete DockerManager. Docker Desktop need not be running. Startup automation is temporarily disabled and restored on disposal. Topology validation, creating/destroying instances, live terminal sessions and Redis operations are not covered.
 
 Screenshots go under the test output's `TestResults/PlayTest/`; fixture data goes under `TestResults/PlayTestData/`. Failed locator actions include a screenshot and UI-tree description. Data and screenshots remain for inspection.
 

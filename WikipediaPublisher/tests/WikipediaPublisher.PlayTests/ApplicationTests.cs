@@ -67,7 +67,7 @@ public sealed class ApplicationTests(AppFixture fixture) : SampleTest<AppFixture
     {
         Fixture.Application.Orientation.Should().Be(orientation);
         // Use the real WebView API only to measure the link. The click travels through
-        // PlayTest's pointer input and the control's normal WPE input bridge.
+        // PlayTest's pointer input and the control's native browser input bridge.
         var operation = await Page.EvaluateAsync(() =>
             ((Microsoft.UI.Xaml.Controls.WebView2)Fixture.View.FindName("Browser")).ExecuteScriptAsync(
                 "(() => { const r = document.querySelector('a').getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()"));
@@ -75,6 +75,27 @@ public sealed class ApplicationTests(AppFixture fixture) : SampleTest<AppFixture
         var bounds = await Page.GetByTestId("Browser").BoundingBoxAsync();
         await Page.Mouse.ClickAsync(bounds.X + (float)position.RootElement.GetProperty("x").GetDouble(),
             bounds.Y + (float)position.RootElement.GetProperty("y").GetDouble());
+        await Fixture.Application.WaitForAsync(() => Fixture.Model.ArticleUrl,
+            url => url == new Uri(Fixture.Origin, "wiki/Fixture_Article").AbsoluteUri);
+        await Expect(Page.GetByText("Ready to publish this article.", new() { Exact = true })).ToBeVisibleAsync();
+    }
+
+    [Theory]
+    [InlineData(ScreenOrientation.Landscape, Traits = new[] { "PlayTestOrientation", "Landscape" })]
+    [InlineData(ScreenOrientation.Portrait, Traits = new[] { "PlayTestOrientation", "Portrait" })]
+    public async Task Embedded_browser_link_receives_real_keyboard_input(ScreenOrientation orientation)
+    {
+        Fixture.Application.Orientation.Should().Be(orientation);
+        var bounds = await Page.GetByTestId("Browser").BoundingBoxAsync();
+        // Focus the browser's blank margin, then use its normal tab order and Enter.
+        await Page.Mouse.ClickAsync(bounds.X + 20, bounds.Y + 20);
+        (await Page.EvaluateAsync(() => Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Fixture.View.XamlRoot)))
+            .Should().Be(await Page.EvaluateAsync(() => Fixture.View.FindName("Browser")));
+        await Page.Keyboard.PressAsync("Tab");
+        var focus = await Page.EvaluateAsync(() =>
+            ((Microsoft.UI.Xaml.Controls.WebView2)Fixture.View.FindName("Browser")).ExecuteScriptAsync("document.activeElement.tagName"));
+        (await focus).Should().Be("\"A\"");
+        await Page.Keyboard.PressAsync("Enter");
         await Fixture.Application.WaitForAsync(() => Fixture.Model.ArticleUrl,
             url => url == new Uri(Fixture.Origin, "wiki/Fixture_Article").AbsoluteUri);
         await Expect(Page.GetByText("Ready to publish this article.", new() { Exact = true })).ToBeVisibleAsync();

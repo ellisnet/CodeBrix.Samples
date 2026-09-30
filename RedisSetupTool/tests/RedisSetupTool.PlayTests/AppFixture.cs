@@ -18,6 +18,7 @@ namespace RedisSetupTool.PlayTests;
 public sealed class AppFixture : SampleFixture<MainPage>
 {
     private readonly IDockerManager _docker = DispatchProxy.Create<IDockerManager, DockerFixture>();
+    private readonly IRedisTopologyService _topologies = DispatchProxy.Create<IRedisTopologyService, TopologyFixture>();
     private string _previousAutomation;
     public DockerFixture Docker => (DockerFixture)_docker;
     public MainViewModel Model => (MainViewModel)View.DataContext;
@@ -31,6 +32,11 @@ public sealed class AppFixture : SampleFixture<MainPage>
     protected override Microsoft.UI.Xaml.Application CreateApplication() => new App(services =>
     {
         services.AddSingleton(_docker);
+        services.AddSingleton(_topologies);
+        // RedisTopologyService takes the concrete manager, bypassing IDockerManager.
+        // Fail at resolution if any service accidentally reaches the real daemon.
+        services.AddSingleton<DockerManager>(_ => throw new InvalidOperationException(
+            "PlayTests must not construct a real DockerManager."));
         services.AddSingleton<IHostPortAllocator, FixturePorts>();
     });
 
@@ -38,6 +44,7 @@ public sealed class AppFixture : SampleFixture<MainPage>
     {
         Docker.Reachable = true;
         Docker.UnexpectedCalls.Clear();
+        ((TopologyFixture)_topologies).UnexpectedCalls.Clear();
         return Task.CompletedTask;
     }
 
@@ -45,6 +52,9 @@ public sealed class AppFixture : SampleFixture<MainPage>
     {
         await Application.WaitForAsync(() => Model.IsBusy, busy => !busy);
         await Application.EvaluateAsync(() => Model.PauseAutoRefresh());
+        if (((TopologyFixture)_topologies).UnexpectedCalls.Count != 0)
+            throw new InvalidOperationException("Unexpected topology fixture calls: " +
+                string.Join(", ", ((TopologyFixture)_topologies).UnexpectedCalls));
     }
 
     protected override void Cleanup() =>
@@ -97,6 +107,29 @@ public class DockerFixture : DispatchProxy
     {
         await Task.CompletedTask;
         yield break;
+    }
+}
+
+// These UI cases browse the real catalog but do not create or validate instances.
+// Keep all daemon-backed topology operations behind the same strict test boundary.
+public class TopologyFixture : DispatchProxy
+{
+    public List<string> UnexpectedCalls { get; } = new();
+
+    protected override object Invoke(MethodInfo method, object[] args) => method.Name switch
+    {
+        "get_Catalog" => TopologyCatalog.All,
+        "Describe" => TopologyCatalog.Get((TopologyId)args[0]),
+        "Validate" => Array.Empty<string>(),
+        "PreviewPortsAsync" => Task.FromResult(new PortPlan { DataPorts = new[] { 16379 } }),
+        "DiscoverAsync" => Task.FromResult<IReadOnlyList<TopologyInstance>>(Array.Empty<TopologyInstance>()),
+        _ => Unexpected(method.Name),
+    };
+
+    private object Unexpected(string name)
+    {
+        UnexpectedCalls.Add(name);
+        throw new InvalidOperationException("Topology fixture does not implement " + name);
     }
 }
 
