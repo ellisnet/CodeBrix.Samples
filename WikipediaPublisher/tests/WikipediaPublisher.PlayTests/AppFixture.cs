@@ -73,38 +73,60 @@ internal sealed class WikiServer : IDisposable
     }
     private async Task ServeAsync()
     {
+        var requests = new List<Task>();
         try
         {
             while (!_stop.IsCancellationRequested)
             {
-                using var client = await _listener.AcceptTcpClientAsync(_stop.Token);
-                await using var stream = client.GetStream();
-                using var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, true);
-                var line = await reader.ReadLineAsync(_stop.Token);
-                var target = line?.Split(' ')[1] ?? "/";
-                while (!string.IsNullOrEmpty(await reader.ReadLineAsync(_stop.Token))) { }
-                var search = target.StartsWith("/w/index.php?", StringComparison.Ordinal);
-                var article = target.StartsWith("/wiki/Fixture_Article", StringComparison.Ordinal);
-                var title = article ? "Fixture Article" : "Offline Wikipedia fixture";
-                var html = "<!doctype html><html><head><meta charset='utf-8'><title>" + title
-                    + "</title><style>body{font:24px sans-serif;margin:48px;background:#fff;color:#202122}h1{font-size:40px}a{color:#36c}</style></head><body><h1>"
-                    + title + "</h1><hr><p>A local article for repeatable browser and publishing tests.</p>"
-                    + "<p><a href='/wiki/Fixture_Article'>Read Fixture Article</a></p></body></html>";
-                var bytes = Encoding.UTF8.GetBytes(html);
-                var header = (search ? "HTTP/1.1 302 Found\r\nLocation: /wiki/Fixture_Article\r\n" : "HTTP/1.1 200 OK\r\n")
-                    + "Content-Type: text/html; charset=utf-8\r\nContent-Length: " + bytes.Length + "\r\nConnection: close\r\n\r\n";
-                await stream.WriteAsync(Encoding.ASCII.GetBytes(header), _stop.Token);
-                await stream.WriteAsync(bytes, _stop.Token);
+                var client = await _listener.AcceptTcpClientAsync(_stop.Token);
+                // WebKit can open a speculative connection without sending a request.
+                // Keep accepting so it cannot block navigation on another connection.
+                requests.Add(ServeClientAsync(client));
             }
         }
         catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
         catch (SocketException) when (_stop.IsCancellationRequested) { }
+        finally { await Task.WhenAll(requests); }
+    }
+    private async Task ServeClientAsync(TcpClient client)
+    {
+        using (client)
+        try
+        {
+            await using var stream = client.GetStream();
+            using var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, true);
+            var line = await reader.ReadLineAsync(_stop.Token);
+            if (string.IsNullOrEmpty(line)) return;
+            var target = line.Split(' ')[1];
+            while (true)
+            {
+                var requestHeader = await reader.ReadLineAsync(_stop.Token);
+                if (requestHeader == null) return;
+                if (requestHeader.Length == 0) break;
+            }
+            var search = target.StartsWith("/w/index.php?", StringComparison.Ordinal);
+            var article = target.StartsWith("/wiki/Fixture_Article", StringComparison.Ordinal);
+            var title = article ? "Fixture Article" : "Offline Wikipedia fixture";
+            var html = "<!doctype html><html><head><meta charset='utf-8'><title>" + title
+                + "</title><style>body{font:24px sans-serif;margin:48px;background:#fff;color:#202122}h1{font-size:40px}a{color:#36c}</style></head><body><h1>"
+                + title + "</h1><hr><p>A local article for repeatable browser and publishing tests.</p>"
+                + "<p><a href='/wiki/Fixture_Article'>Read Fixture Article</a></p></body></html>";
+            var bytes = Encoding.UTF8.GetBytes(html);
+            var header = (search ? "HTTP/1.1 302 Found\r\nLocation: /wiki/Fixture_Article\r\n" : "HTTP/1.1 200 OK\r\n")
+                + "Content-Type: text/html; charset=utf-8\r\nContent-Length: " + bytes.Length + "\r\nConnection: close\r\n\r\n";
+            await stream.WriteAsync(Encoding.ASCII.GetBytes(header), _stop.Token);
+            await stream.WriteAsync(bytes, _stop.Token);
+        }
+        catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
+        // Page replacement can abandon a connection while its response is being sent.
+        catch (IOException) { }
+        catch (SocketException) { }
     }
     public void Dispose()
     {
         _stop.Cancel();
         _listener.Stop();
-        _loop?.GetAwaiter().GetResult();
-        _stop.Dispose();
+        try { _loop?.GetAwaiter().GetResult(); }
+        finally { _stop.Dispose(); }
     }
 }

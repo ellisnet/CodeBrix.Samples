@@ -8,7 +8,7 @@ The five new projects import `CodeBrix.Sample.PlayTests.props` for the common he
 | [KenneyAssetBrowser](../KenneyAssetBrowser/tests/KenneyAssetBrowser.PlayTests/README.md) | 8 | Folder picker, ZIP catalog, images, zoom, text viewer |
 | [PolyHavenBrowser](../PolyHavenBrowser/tests/PolyHavenBrowser.PlayTests/README.md) | 8 | API catalog, thumbnails, search, sort, folder picker |
 | [RedisSetupTool](../RedisSetupTool/tests/RedisSetupTool.PlayTests/README.md) | 12 | Navigation, daemon snapshot, filtering, recovery, console picker |
-| [WikipediaPublisher](../WikipediaPublisher/tests/WikipediaPublisher.PlayTests/README.md) | 10 | Embedded browser, input, save picker, publishing workflow |
+| [WikipediaPublisher](../WikipediaPublisher/tests/WikipediaPublisher.PlayTests/README.md) | 12 | Embedded browser, input, save picker, publishing workflow, HTTP fixture |
 
 JustBetweenUs keeps its existing fixture and 80 application/configuration cases. Its 15 generic picker/control cases now live in `samples/CodeBrixPlatform/PlayTestDemo/tests/PlayTestDemo.PlayTests` in the CodeBrix.Platform repository. That dedicated application owns the demonstration UI. The five suites above exercise their own applications' real screens; their controlled service/data fixtures support those actual workflows. All fixtures serialize tests. Each test receives a fresh page; application services are shared and reset by the fixture. Services are replaced at the application's existing DI boundary, before view models are constructed. Pointer/keyboard actions run through PlayTest; assertions inspect UI and service outcomes.
 
@@ -73,7 +73,7 @@ Checked-control actions include `CheckAsync()`, `UncheckAsync()` and `SetChecked
 
 These are initial UI suites, not comprehensive integration tests. GitHub, Poly Haven, Docker and PDF-rendering services use controlled fixtures. Kenney loads real local ZIP/image/text data. Wikipedia uses the real Linux WPE browser against a loopback server; PlayTest has no Windows/macOS native WebView provider yet. GPU-only 3D controls, real audio playback, live Redis terminal sessions and actual PDF generation are not covered. No new project/package dependency was added to the PlayTest head.
 
-Validation in this checkout uses Linux/X11. Offscreen runs do not need X11; headed SDL preview support on Windows, macOS and Wayland needs separate host validation.
+Validation in this checkout includes Linux/X11 and native Wayland previews. Offscreen runs do not need a display server; headed SDL preview support on Windows and macOS needs separate host validation.
 
 
 ## Validation in this checkout
@@ -86,3 +86,31 @@ with `SLOWMO` unset. PlayTestDemo's 38 UI/configuration cases pass headless,
 headed with the default delay, and headed with an explicit zero.
 
 These tests also caught and now cover two application fixes: Kenney reports unavailable 3D rendering only for the 3D viewer, and Wikipedia keeps its Select button reachable when the output path is long. Redis page disposal stops its refresh timer and event stream so fixture resets do not leave background work running. The head package's dependency IDs are unchanged from the earlier preview.
+
+### Wayland validation, 2026-09-29
+
+All seven suites were exercised in an LMDE 7 (Gigi) Wayland desktop session:
+
+| Suite | Headless/light landscape | Headless/light portrait | Headed/dark landscape | Headed/dark portrait |
+| --- | ---: | ---: | ---: | ---: |
+| PlayTestDemo (Platform repository) | 38 | 38 | 38 | 38 |
+| JustBetweenUs | 80 | 80 | 80 | 80 |
+| GitHubIssueFinder | 9 | 9 | 9 | 9 |
+| KenneyAssetBrowser | 8 | 8 | 8 | 8 |
+| PolyHavenBrowser | 8 | 8 | 8 | 8 |
+| RedisSetupTool | 12 | 12 | 12 | 12 |
+| WikipediaPublisher | 12 | 12 | 12 | 12 |
+| **Passing cases** | **167** | **167** | **167** | **167** |
+
+Headed runs were sequential, with `SDL_VIDEODRIVER=wayland` and the default
+250 ms action delay. Explicit method/theory-row orientation requirements remained
+enabled. Samples used local package set `.8`; PlayTestDemo built from source.
+
+The initial WikipediaPublisher headed/landscape run had five cascading navigation
+failures. A focused probe demonstrated that its single-connection HTTP fixture
+could block all requests behind an idle connection. The fixture now handles
+connections independently, and two regression cases cover idle/partial requests
+and shutdown. All four WikipediaPublisher configurations passed after that fix;
+the other six suites passed unchanged in all configurations. The final matrix
+above contains 668 passing cases and no skips. This validates the PlayTest SDL
+preview on Wayland; it does not exercise the applications' normal Wayland heads.
