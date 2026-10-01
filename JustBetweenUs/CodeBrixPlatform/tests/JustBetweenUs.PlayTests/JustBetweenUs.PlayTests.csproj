@@ -8,7 +8,7 @@
     <IsPackable>false</IsPackable>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
-    <PlayTestPackageVersion Condition="'$(PlayTestPackageVersion)' == ''">1.0.272.1-playtest.12</PlayTestPackageVersion>
+    <PlayTestPackageVersion Condition="'$(PlayTestPackageVersion)' == ''">1.0.272.1-playtest.18</PlayTestPackageVersion>
     <!-- Optional project preference. Code and CODEBRIX_PLAYTEST_ORIENTATION take precedence. -->
     <CodeBrixPlayTestPreferredOrientation Condition="'$(CodeBrixPlayTestPreferredOrientation)' == ''">Landscape</CodeBrixPlayTestPreferredOrientation>
     <!-- Optional simulated OS theme. CODEBRIX_PLAYTEST_THEME takes precedence; omission defaults to Light. -->

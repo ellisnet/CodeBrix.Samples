@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using CodeBrix.Samples.PlayTests;
 using WikipediaPublisher.RenderArticle.Models;
 using WikipediaPublisher.Views;
 using SilverAssertions;
+using SkiaSharp;
 using Xunit;
 
 namespace WikipediaPublisher.PlayTests;
@@ -99,6 +101,39 @@ public sealed class ApplicationTests(AppFixture fixture) : SampleTest<AppFixture
         await Fixture.Application.WaitForAsync(() => Fixture.Model.ArticleUrl,
             url => url == new Uri(Fixture.Origin, "wiki/Fixture_Article").AbsoluteUri);
         await Expect(Page.GetByText("Ready to publish this article.", new() { Exact = true })).ToBeVisibleAsync();
+    }
+
+    [Theory]
+    [InlineData(ScreenOrientation.Landscape, Traits = new[] { "PlayTestOrientation", "Landscape" })]
+    [InlineData(ScreenOrientation.Portrait, Traits = new[] { "PlayTestOrientation", "Portrait" })]
+    public async Task Embedded_browser_pixels_follow_orientation_changes(ScreenOrientation initial)
+    {
+        // A DOM read/navigation can pass even if the browser is never composited.
+        // Change this local fixture's background and inspect the actual Skia PNG.
+        var operation = await Page.EvaluateAsync(() =>
+            ((Microsoft.UI.Xaml.Controls.WebView2)Fixture.View.FindName("Browser")).ExecuteScriptAsync(
+                "document.body.style.backgroundColor='rgb(37,149,211)'"));
+        await operation;
+        var opposite = initial == ScreenOrientation.Landscape ? ScreenOrientation.Portrait : ScreenOrientation.Landscape;
+        foreach (var orientation in new[] { initial, opposite, initial })
+        {
+            await Fixture.Application.SetOrientationAsync(orientation);
+            var bounds = await Page.GetByTestId("Browser").BoundingBoxAsync();
+            var elapsed = Stopwatch.StartNew();
+            var expected = new SKColor(37, 149, 211);
+            SKColor pixel;
+            do
+            {
+                using var bitmap = SKBitmap.Decode(await Page.ScreenshotAsync());
+                bitmap.Width.Should().Be(orientation == ScreenOrientation.Landscape ? 1920 : 1080);
+                bitmap.Height.Should().Be(orientation == ScreenOrientation.Landscape ? 1080 : 1920);
+                pixel = bitmap.GetPixel((int)bounds.X + 20, (int)bounds.Y + 20);
+                if (pixel == expected) break;
+                await Task.Delay(50, TestContext.Current.CancellationToken);
+            } while (elapsed.Elapsed < TimeSpan.FromSeconds(10));
+            pixel.Should().Be(expected, "the native browser's pixels must be composited after each resize");
+            await SnapshotAsync("WikipediaPublisher-browser-" + orientation);
+        }
     }
 
     [Fact]

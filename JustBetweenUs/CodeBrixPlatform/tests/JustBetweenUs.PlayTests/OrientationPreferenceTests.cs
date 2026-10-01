@@ -83,7 +83,9 @@ public sealed class OrientationPreferenceTests
     {
         const string name = "CODEBRIX_PLAYTEST_ORIENTATION";
         var original = Environment.GetEnvironmentVariable(name);
-        try { Environment.SetEnvironmentVariable(name, value); action(); }
-        finally { Environment.SetEnvironmentVariable(name, original); }
+        const string commandLine = "CodeBrix.Platform.PlayTest.CommandLineOrientation";
+        var originalCommandLine = AppContext.GetData(commandLine);
+        try { AppContext.SetData(commandLine, null); Environment.SetEnvironmentVariable(name, value); action(); }
+        finally { AppContext.SetData(commandLine, originalCommandLine); Environment.SetEnvironmentVariable(name, original); }
     }
 }

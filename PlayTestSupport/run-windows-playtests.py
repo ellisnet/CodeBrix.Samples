@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import time
@@ -25,8 +26,8 @@ def discover(root):
                   if not {"bin", "obj", ".git"}.intersection(path.relative_to(root).parts))
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+def main(host="windows"):
+    parser = argparse.ArgumentParser(description=f"Discover .PlayTests.csproj files and run the {host} preview validation matrix.")
     parser.add_argument("--platform-repo", type=Path, default=SAMPLES.parent / "CodeBrix.Platform")
     parser.add_argument("--output", type=Path, default=SAMPLES / "PlayTestSupport" / "TestResults")
     parser.add_argument("--suites", nargs="+", help="Application names, for example PlayTestDemo WikipediaPublisher")
@@ -35,8 +36,9 @@ def main():
     parser.add_argument("--no-build", action="store_true")
     parser.add_argument("--slowmo", type=float, help="Override action delay in milliseconds (default: unset)")
     args = parser.parse_args()
-    if os.name != "nt":
-        parser.error("This runner validates the Windows host; run it on Windows.")
+    expected = {"windows": "win32", "macos": "darwin"}[host]
+    if sys.platform != expected:
+        parser.error(f"This runner validates {host}; run it on that host.")
     sys.stdout.reconfigure(errors="backslashreplace")
     platform = args.platform_repo.resolve()
     if not platform.is_dir():
@@ -66,7 +68,7 @@ def main():
         for variable in ("CODEBRIX_PLAYTEST_SLOWMO", "SDL_VIDEODRIVER", "SDL_RENDER_DRIVER"):
             env.pop(variable, None)
         if mode == "headed":
-            env["SDL_VIDEODRIVER"] = "windows"
+            env["SDL_VIDEODRIVER"] = "cocoa" if host == "macos" else "windows"
         if args.slowmo is not None:
             env["CODEBRIX_PLAYTEST_SLOWMO"] = str(args.slowmo)
         for repo, project in projects:
@@ -82,14 +84,19 @@ def main():
             with log.open("w", encoding="utf-8") as stream:
                 stream.write("COMMAND: " + subprocess.list2cmdline(command) + "\n")
                 stream.flush()
+                options = ({"creationflags": subprocess.CREATE_NO_WINDOW} if host == "windows"
+                           else {"start_new_session": True})
                 process = subprocess.Popen(command, cwd=repo, env=env, stdout=stream,
-                                           stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW)
+                                           stderr=subprocess.STDOUT, **options)
                 try:
                     code = process.wait(timeout=900)
                 except subprocess.TimeoutExpired:
-                    subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                                   stdout=stream, stderr=subprocess.STDOUT,
-                                   creationflags=subprocess.CREATE_NO_WINDOW, check=False)
+                    if host == "windows":
+                        subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                                       stdout=stream, stderr=subprocess.STDOUT,
+                                       creationflags=subprocess.CREATE_NO_WINDOW, check=False)
+                    else:
+                        os.killpg(process.pid, signal.SIGKILL)
                     process.wait()
                     code = 124
             content = log.read_text(encoding="utf-8", errors="replace")
@@ -98,7 +105,7 @@ def main():
             passed = (code == 0 and counts.get("total", 0) > 0
                       and counts.get("succeeded") == counts["total"]
                       and counts.get("failed") == 0 and counts.get("skipped") == 0)
-            result = dict(suite=suite, project=str(project), configuration=label, exit_code=code,
+            result = dict(host=host, suite=suite, project=str(project), configuration=label, exit_code=code,
                           passed=passed, counts=counts, seconds=round(time.monotonic() - started, 1),
                           log=str(log), slowmo=args.slowmo)
             results.append(result)

@@ -258,6 +258,10 @@ public sealed partial class ApplicationTests : PageTest, IClassFixture<AppFixtur
         await Page.Keyboard.InsertTextAsync("typed message");
         await Expect(Input).ToHaveValueAsync("typed message");
         await Expect(Encrypt).ToBeEnabledAsync();
+        await Input.PressAsync("ControlOrMeta+Backspace");
+        await Expect(Input).ToHaveValueAsync("typed ");
+        await Page.Keyboard.InsertTextAsync("message");
+        await Expect(Input).ToHaveValueAsync("typed message");
         await Input.PressAsync("ControlOrMeta+A");
         await Input.PressAsync("Backspace");
         await Expect(Input).ToHaveValueAsync("");

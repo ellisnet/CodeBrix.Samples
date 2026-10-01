@@ -12,6 +12,65 @@ From the `JustBetweenUs` root:
 dotnet test --project CodeBrixPlatform/tests/JustBetweenUs.PlayTests/JustBetweenUs.PlayTests.csproj -c Release
 ```
 
+With local preview `.17` or later, show the preview from any OS using:
+
+```sh
+dotnet test --project CodeBrixPlatform/tests/JustBetweenUs.PlayTests/JustBetweenUs.PlayTests.csproj -c Release --headed
+```
+
+From the `JustBetweenUs.PlayTests` directory, your shorter command works too:
+
+```sh
+dotnet test JustBetweenUs.PlayTests.csproj --nonheadless
+```
+
+`--nonheadless` is an alias for `--headed`. `--headless` forces the reverse mode.
+These options override `CODEBRIX_PLAYTEST_HEADED`, and the package registers them
+automatically through Microsoft.Testing.Platform. No additional project or fixture
+settings are required. Explicit `PlayTestOptions.Headless` in code remains the
+highest-priority choice; this fixture leaves it unset. Do not combine headed and
+headless flags. Use these options on the PlayTests project; other test projects in
+the full solution do not necessarily recognize them.
+
+Local preview `.18` adds case-insensitive `--theme=dark|light` and
+`--orientation=portrait|landscape`. These override environment and `.csproj`
+preferences; explicit fixture options and requirements applied by tests/theory rows
+still win. `PlayTestOptions.Theme` can explicitly select the fixture's simulated
+system theme. The app or an individual page can still set its own `RequestedTheme`.
+
+To save an automatic screenshot history, create an empty destination first:
+
+```sh
+mkdir -p "$HOME/Temp/JustBetweenUs PlayTest run 2026-09-30"
+dotnet test JustBetweenUs.PlayTests.csproj --nonheadless --theme=dark --orientation=portrait \
+  --screenshotfolder="$HOME/Temp/JustBetweenUs PlayTest run 2026-09-30"
+```
+
+`~/` is also accepted inside the quoted option value. The folder must already exist
+and be completely empty, including hidden files/subfolders. A repeated run requires
+a different empty folder. The package handles recording automatically; UI test
+methods and fixtures need no recording code. It works in both preview modes.
+
+The folder receives `screenshot-index.json`, plus PNGs below
+`<namespace after JustBetweenUs.PlayTests>/<class>/<method>/`. Theory rows add
+`test-case-1/`, `test-case-2/`, etc., numbered in execution order. Each UI test has
+`screenshot-start.png` after setup, numbered screenshots after PlayTest UI operations
+and completed waits/assertions, and `screenshot-final.png` before cleanup even if
+the test fails. The index includes IDs and row arguments, local timestamps/offsets,
+outcomes, versions, system/app preferences, image dimensions and source lines when
+PDBs provide them. Configuration-only tests without a running UI receive metadata
+and an explanation instead of fabricated screenshots; skipped bodies have no entry.
+
+Recording follows PlayTest API calls, not arbitrary C# statements or every animation
+frame. Keep normal PlayTest waits/assertions for asynchronous results. The index is
+updated after each screenshot/test, so an interrupted run retains partial results.
+See the [complete recording contract](../../../../../CodeBrix.Platform/src/Platform.UI.Runtime.Skia.PlayTest/README.md#automatic-screenshot-recording)
+in the sibling Platform repository (or the PlayTest package README).
+
+Validated on this Intel Mac with local preview `.17`: `dotnet test
+JustBetweenUs.PlayTests.csproj --nonheadless` passed all 80 cases in Debug while
+`CODEBRIX_PLAYTEST_HEADED=0`; the Cocoa preview opened with the default 250 ms delay.
+
 To watch the application on Linux or macOS:
 
 ```sh
@@ -34,7 +93,7 @@ An explicit `PlayTestOptions.SlowMo` in code takes precedence over the environme
 the fixture leaves it unset so the head applies these preferences.
 
 The fixture preference is resolved in this order: explicit `Orientation` in
-`AppFixture.InitializeAsync()`, `CODEBRIX_PLAYTEST_ORIENTATION`, the `.csproj`
+`AppFixture.InitializeAsync()`, `--orientation`, `CODEBRIX_PLAYTEST_ORIENTATION`, the `.csproj`
 `CodeBrixPlayTestPreferredOrientation` property, then Landscape. The sample leaves
 the code override unset and declares the project preference as Landscape.
 Set `CODEBRIX_PLAYTEST_ORIENTATION=portrait` for a portrait default, or put this
@@ -55,7 +114,8 @@ To run in Dark mode, set `CODEBRIX_PLAYTEST_THEME=dark` or put this in the test
 </PropertyGroup>
 ```
 
-The environment variable takes precedence over the project preference; setting
+Explicit `PlayTestOptions.Theme` takes priority over `--theme`, which overrides
+the environment and project preferences. The environment variable takes precedence over the project preference; setting
 it to `light` overrides a Dark project preference. Names are case-insensitive.
 An unset or empty variable falls back to the project, then Light; invalid values
 are errors. The sample explicitly declares Light as its project preference.
@@ -126,10 +186,10 @@ The temporary package feed defaults to the sibling
 
 ```sh
 # Run in the CodeBrix.Platform repository; choose an unused prerelease version.
-python3 build/pack-playtest-preview.py --version 1.0.272.1-playtest.12
+python3 build/pack-playtest-preview.py --version 1.0.272.1-playtest.18
 ```
 
-Then pass `-p:PlayTestPackageVersion=1.0.272.1-playtest.12` to `dotnet test` or update
+Then pass `-p:PlayTestPackageVersion=1.0.272.1-playtest.18` to `dotnet test` or update
 the project default. Use `-p:PlayTestPackageFeed=/path/to/feed` for another checkout
 layout. Copy the produced packages (core, base Skia runtime, PlayTest, and WebView)
 to the other machine's feed. The new head requires the matching core's friend
@@ -140,9 +200,9 @@ File/folder pickers accept scripted paths or explicit cancellation without showi
 native UI. The prototype does not automate other native OS dialogs, GPU-only
 controls or multiple application windows. Clipboard tests are deliberately isolated from the desktop
 clipboard. See the shared sample guidance for Windows and Wayland validation;
-macOS execution still needs validation on its own desktop.
+macOS validation is recorded in the shared sample guidance.
 
-This project uses local package set `1.0.272.1-playtest.12`. Its 80 cases exercise
+This project uses local package set `1.0.272.1-playtest.18`. Its 80 cases exercise
 JustBetweenUs and PlayTest configuration. The 15 generic picker/control cases
 have moved to `samples/CodeBrixPlatform/PlayTestDemo/tests/PlayTestDemo.PlayTests`
 in the CodeBrix.Platform repository. That dedicated demo owns their UI; this
@@ -152,6 +212,13 @@ examples and the additional application suites.
 
 All 80 cases pass with `.8` in visible/dark/landscape mode and `SLOWMO` unset,
 using the head's new 250 ms default.
+
+On Intel macOS 15.8, 2026-09-30, all 80 cases passed with `.16` in each of
+headless/light landscape, headless/light portrait, headed/dark landscape and
+headed/dark portrait: 320 executions, zero failures or skips. Headed runs used
+the Cocoa SDL driver and the default 250 ms delay. TextBox editing now follows
+PlayTest's Control-based model on macOS, including select-all, isolated clipboard
+paste and whole-word deletion; normal desktop hosts keep their native shortcuts.
 
 Theme support validated on Linux x64 with local package set `1.0.272.1-playtest.4`:
 
@@ -202,3 +269,11 @@ python3 build/test-scripts/playtest-preview-orientation.py \
   --test-output ../CodeBrix.Samples/JustBetweenUs/CodeBrixPlatform/tests/JustBetweenUs.PlayTests/bin/Release/net10.0 \
   --artifacts /tmp/playtest-preview-orientation
 ```
+
+
+With local preview `.18`, the Intel macOS Debug run of all 80 tests also passed
+using `--nonheadless --theme=DaRk --orientation=PoRtRaIt --screenshotfolder=...`
+while the environment requested Light/Landscape. It produced 638 validated PNGs
+and a complete index in about 3m45s. No UI test changes were needed for recording;
+the environment-preference unit-test helpers now also isolate the CLI settings
+while checking their deliberately selected fallback values.

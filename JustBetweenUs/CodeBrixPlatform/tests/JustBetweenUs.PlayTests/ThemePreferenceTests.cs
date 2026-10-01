@@ -71,7 +71,9 @@ public sealed class ThemePreferenceTests
     {
         const string name = "CODEBRIX_PLAYTEST_THEME";
         var original = Environment.GetEnvironmentVariable(name);
-        try { Environment.SetEnvironmentVariable(name, value); action(); }
-        finally { Environment.SetEnvironmentVariable(name, original); }
+        const string commandLine = "CodeBrix.Platform.PlayTest.CommandLineTheme";
+        var originalCommandLine = AppContext.GetData(commandLine);
+        try { AppContext.SetData(commandLine, null); Environment.SetEnvironmentVariable(name, value); action(); }
+        finally { AppContext.SetData(commandLine, originalCommandLine); Environment.SetEnvironmentVariable(name, original); }
     }
 }
