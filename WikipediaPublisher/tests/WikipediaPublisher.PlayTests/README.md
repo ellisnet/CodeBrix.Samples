@@ -1,12 +1,6 @@
 # WikipediaPublisher.PlayTests
 
-On Intel macOS 15.8, 2026-09-30, all 16 cases passed with local preview `.16` in
-each of headless/light landscape, headless/light portrait, headed/dark landscape
-and headed/dark portrait: 64 executions, zero failures or skips. This uses the
-real system WKWebView, including native pointer/keyboard navigation and browser
-pixels composited into PlayTest screenshots through repeated orientation changes.
-
-14 serialized xUnit v3 UI tests run the shared application XAML and real view models through CodeBrix.Platform.PlayTest. Two additional cases exercise the local HTTP fixture, for 16 cases total. Assertions use SilverAssertions and PlayTest's retrying `Expect(...)`. Nullable and implicit usings are disabled explicitly in the project.
+Serialized xUnit v3 UI tests run the shared application XAML and real view models through CodeBrix.Platform.PlayTest. Additional cases exercise the local HTTP fixture. Assertions use SilverAssertions and PlayTest's retrying `Expect(...)`. Nullable and implicit usings are disabled explicitly in the project.
 
 From `WikipediaPublisher/`:
 
@@ -54,14 +48,6 @@ The server handles connections independently so an idle connection or incomplete
 
 Screenshots go under the test output's `TestResults/PlayTest/`; fixture data goes under `TestResults/PlayTestData/`. Failed locator actions include a screenshot and UI-tree description. Data and screenshots remain for inspection.
 
-See [shared setup and API examples](../../../PlayTestSupport/README.md) for local packages, project-level orientation/theme defaults, per-test overrides, and scripted file/folder pickers.
+See [shared setup and API examples](../../../PlayTestSupport/README.md) for running options, project-level orientation/theme defaults, per-test overrides, and scripted file/folder pickers.
 
-The embedded-browser suite supports macOS, or requires Linux with WPE WebKit (`libwpewebkit-2.0-1`, `libwpebackend-fdo-1.0-1`, `libwpe-1.0-1`) or Windows with the Edge WebView2 runtime. The test project selects the matching local WebView preview alongside the PlayTest package. No browser dependency was added to the PlayTest head. On macOS 12 and later, the matching add-in supplies an offscreen WKWebView helper with a nonpersistent data store. It renders into the same Skia scene used by screenshots and the SDL preview; native pointer and keyboard events operate the browser. The normal desktop heads retain their existing browser support.
-
-On 2026-09-29, all 12 cases passed in an LMDE 7 Wayland session in headless/light landscape and portrait, and headed/dark landscape and portrait. Headed runs forced `SDL_VIDEODRIVER=wayland` and left `CODEBRIX_PLAYTEST_SLOWMO` unset, using the normal 250 ms delay. The initial headed/landscape run had five cascading navigation failures; a focused probe reproduced blocking behind an idle connection in the old HTTP fixture. All four configurations passed after the fixture fix and regression cases were added.
-
-On 2026-09-30, all 14 cases passed on Windows x64 with local preview `.12` in
-headless/light landscape and portrait, and headed/dark landscape and portrait.
-That includes the two new browser Tab/Enter regression rows, which caught the
-Windows input bridge's missing DOM key identity. There were no failures or skips;
-headed runs used the Windows SDL driver and the default 250 ms action delay.
+The embedded-browser suite supports macOS, or requires Linux with WPE WebKit (`libwpewebkit-2.0-1`, `libwpebackend-fdo-1.0-1`, `libwpe-1.0-1`) or Windows with the Edge WebView2 runtime. The test project references the WebView add-in alongside the PlayTest package. No browser dependency was added to the PlayTest head. On macOS 12 and later, the matching add-in supplies an offscreen WKWebView helper with a nonpersistent data store. It renders into the same Skia scene used by screenshots and the SDL preview; native pointer and keyboard events operate the browser. The normal desktop heads retain their existing browser support.

@@ -2,7 +2,7 @@
 
 This is a test head for the CodeBrixPlatform application. It references
 `JustBetweenUs.Core`, imports the existing `.UI` shared project, and consumes
-`CodeBrix.Platform.PlayTest.ApacheLicenseForever` from a local NuGet feed.
+`CodeBrix.Platform.PlayTest.ApacheLicenseForever` from nuget.org.
 The test runner is xUnit v3 through Microsoft.Testing.Platform on .NET 10.
 Nullable annotations and implicit usings are disabled.
 
@@ -12,13 +12,13 @@ From the `JustBetweenUs` root:
 dotnet test --project CodeBrixPlatform/tests/JustBetweenUs.PlayTests/JustBetweenUs.PlayTests.csproj -c Release
 ```
 
-With local preview `.17` or later, show the preview from any OS using:
+Show the preview from any OS using:
 
 ```sh
 dotnet test --project CodeBrixPlatform/tests/JustBetweenUs.PlayTests/JustBetweenUs.PlayTests.csproj -c Release --headed
 ```
 
-From the `JustBetweenUs.PlayTests` directory, your shorter command works too:
+From the `JustBetweenUs.PlayTests` directory, the shorter command works too:
 
 ```sh
 dotnet test JustBetweenUs.PlayTests.csproj --nonheadless
@@ -32,7 +32,7 @@ highest-priority choice; this fixture leaves it unset. Do not combine headed and
 headless flags. Use these options on the PlayTests project; other test projects in
 the full solution do not necessarily recognize them.
 
-Local preview `.18` adds case-insensitive `--theme=dark|light` and
+The package also accepts case-insensitive `--theme=dark|light` and
 `--orientation=portrait|landscape`. These override environment and `.csproj`
 preferences; explicit fixture options and requirements applied by tests/theory rows
 still win. `PlayTestOptions.Theme` can explicitly select the fixture's simulated
@@ -41,9 +41,9 @@ system theme. The app or an individual page can still set its own `RequestedThem
 To save an automatic screenshot history, create an empty destination first:
 
 ```sh
-mkdir -p "$HOME/Temp/JustBetweenUs PlayTest run 2026-09-30"
+mkdir -p "$HOME/Temp/JustBetweenUs PlayTest run"
 dotnet test JustBetweenUs.PlayTests.csproj --nonheadless --theme=dark --orientation=portrait \
-  --screenshotfolder="$HOME/Temp/JustBetweenUs PlayTest run 2026-09-30"
+  --screenshotfolder="$HOME/Temp/JustBetweenUs PlayTest run"
 ```
 
 `~/` is also accepted inside the quoted option value. The folder must already exist
@@ -64,12 +64,9 @@ and an explanation instead of fabricated screenshots; skipped bodies have no ent
 Recording follows PlayTest API calls, not arbitrary C# statements or every animation
 frame. Keep normal PlayTest waits/assertions for asynchronous results. The index is
 updated after each screenshot/test, so an interrupted run retains partial results.
-See the [complete recording contract](../../../../../CodeBrix.Platform/src/Platform.UI.Runtime.Skia.PlayTest/README.md#automatic-screenshot-recording)
-in the sibling Platform repository (or the PlayTest package README).
-
-Validated on this Intel Mac with local preview `.17`: `dotnet test
-JustBetweenUs.PlayTests.csproj --nonheadless` passed all 80 cases in Debug while
-`CODEBRIX_PLAYTEST_HEADED=0`; the Cocoa preview opened with the default 250 ms delay.
+The complete recording contract is in the PlayTest package's `AGENT-README.txt`,
+which ships inside the package (in the CodeBrix.Platform repository it lives at
+`src/Platform.UI.Runtime.Skia.PlayTest/AGENT-README.txt`).
 
 To watch the application on Linux or macOS:
 
@@ -181,99 +178,24 @@ Intentional timeout tests produce diagnostic PNGs; those files do not indicate
 an unexpected suite failure. A normal app screenshot is saved as
 `TestResults/PlayTest/JustBetweenUs.png`, relative to the test process directory.
 
-The temporary package feed defaults to the sibling
-`CodeBrix.Platform/nugets/PlayTest` directory. To rebuild a fresh preview set:
-
-```sh
-# Run in the CodeBrix.Platform repository; choose an unused prerelease version.
-python3 build/pack-playtest-preview.py --version 1.0.272.1-playtest.18
-```
-
-Then pass `-p:PlayTestPackageVersion=1.0.272.1-playtest.18` to `dotnet test` or update
-the project default. Use `-p:PlayTestPackageFeed=/path/to/feed` for another checkout
-layout. Copy the produced packages (core, base Skia runtime, PlayTest, and WebView)
-to the other machine's feed. The new head requires the matching core's friend
-assembly declarations. The regular Platform release build also includes PlayTest
-in its normal package set.
-
 File/folder pickers accept scripted paths or explicit cancellation without showing
-native UI. The prototype does not automate other native OS dialogs, GPU-only
+native UI. PlayTest does not automate other native OS dialogs, GPU-only
 controls or multiple application windows. Clipboard tests are deliberately isolated from the desktop
-clipboard. See the shared sample guidance for Windows and Wayland validation;
-macOS validation is recorded in the shared sample guidance.
-
-This project uses local package set `1.0.272.1-playtest.18`. Its 80 cases exercise
-JustBetweenUs and PlayTest configuration. The 15 generic picker/control cases
-have moved to `samples/CodeBrixPlatform/PlayTestDemo/tests/PlayTestDemo.PlayTests`
-in the CodeBrix.Platform repository. That dedicated demo owns their UI; this
-suite no longer substitutes unrelated controls for the JustBetweenUs page.
-See [shared sample guidance](../../../../PlayTestSupport/README.md) for picker
-examples and the additional application suites.
-
-All 80 cases pass with `.8` in visible/dark/landscape mode and `SLOWMO` unset,
-using the head's new 250 ms default.
-
-On Intel macOS 15.8, 2026-09-30, all 80 cases passed with `.16` in each of
-headless/light landscape, headless/light portrait, headed/dark landscape and
-headed/dark portrait: 320 executions, zero failures or skips. Headed runs used
-the Cocoa SDL driver and the default 250 ms delay. TextBox editing now follows
-PlayTest's Control-based model on macOS, including select-all, isolated clipboard
-paste and whole-word deletion; normal desktop hosts keep their native shortcuts.
-
-Theme support validated on Linux x64 with local package set `1.0.272.1-playtest.4`:
-
-- All 80 tests pass in the visible X11 landscape preview with the environment
-  theme set to Dark and 500ms action pauses, including mixed-orientation cases.
-- All 80 tests pass headlessly with the default Light preference and no theme
-  environment variable, and with a Dark project preference and no theme variable.
-- An additional application launch verifies that an explicit Light environment
-  value overrides the compiled Dark project preference, including startup,
-  system colors, theme resources, PNG pixels and encryption/decryption.
-- Configuration tests cover absent/empty settings, case-insensitive values,
-  precedence and invalid values. MSBuild accepts mixed-case Dark and rejects
-  invalid project values or a configured preference with GenerateAssemblyInfo=false.
-- The system-color preference is available before constructing the app; the
-  framework applies Application.RequestedTheme at launch, after construction.
-- The produced core package passes its dependency gate with zero errors and
-  zero warnings. The project and default build remain Light and Landscape.
-
-Earlier orientation validation with local package set `1.0.272.1-playtest.3`:
-
-- All 63 tests pass with the live X11 preview using both landscape and portrait
-  defaults, including mixed-orientation cases, at 200ms action pauses.
-- All 63 tests pass headlessly with a Portrait project preference and no
-  orientation environment variable. A separate launch verified that an explicit
-  Landscape environment setting overrides that compiled Portrait preference;
-  its application screenshot is 1920×1080.
-- The suite includes both method-level requirements, four explicit row
-  requirements, rows inheriting a method requirement, and deferred theory rows.
-- Repeated orientation changes preserve correct layout, display information,
-  screenshot dimensions and input behavior. Display orientation events and
-  retaining existing page state are also checked.
-- Invalid project values are rejected by the package's MSBuild target.
-- The preview integration check verifies all eight frame/window combinations
-  across repeated switches. Window sizes remain 960×540 and 540×960 respectively;
-  opposite-orientation content is centered with black bars. Its dummy-driver
-  checks cover clean EOF, invalid dimensions, truncated headers and truncated
-  pixel data.
-- The dependency gate accepts the produced core package with zero errors and
-  zero warnings. NuGet packing retains the core package's existing NU5100
-  warnings for its deliberately separate Skia runtime assembly folder.
+clipboard. The cases exercise JustBetweenUs and PlayTest configuration. See the
+[shared sample guidance](../../../../PlayTestSupport/README.md) for picker
+examples, the Windows/macOS runners and the additional application suites.
 
 To repeat the preview pixel checks, run from the sibling `CodeBrix.Platform`
 repository after building these tests (requires X11, xdotool, ImageMagick's
-`import`, and Pillow):
+`import`, and Pillow). The checkers default to the Platform's own demo suite, so
+name this one explicitly:
 
 ```sh
 python3 build/test-scripts/playtest-preview-orientation.py \
   --test-output ../CodeBrix.Samples/JustBetweenUs/CodeBrixPlatform/tests/JustBetweenUs.PlayTests/bin/Release/net10.0 \
+  --test-name JustBetweenUs.PlayTests \
   --artifacts /tmp/playtest-preview-orientation
 ```
 
-
-With local preview `.18`, the Intel macOS Debug run of all 80 tests also passed
-using `--nonheadless --theme=DaRk --orientation=PoRtRaIt --screenshotfolder=...`
-while the environment requested Light/Landscape. It produced 638 validated PNGs
-and a complete index in about 3m45s. No UI test changes were needed for recording;
-the environment-preference unit-test helpers now also isolate the CLI settings
-while checking their deliberately selected fallback values.
+The Windows equivalent, `build/test-scripts/playtest-preview-windows.ps1`, likewise
+needs `-TestName JustBetweenUs.PlayTests`.

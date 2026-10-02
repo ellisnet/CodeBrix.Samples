@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Discover .PlayTests.csproj files and run the Windows preview validation matrix."""
+"""Discover this repository's .PlayTests.csproj files and run the Windows preview validation matrix."""
 import argparse
 from datetime import datetime
 import json
@@ -27,11 +27,9 @@ def discover(root):
 
 
 def main(host="windows"):
-    parser = argparse.ArgumentParser(description=f"Discover .PlayTests.csproj files and run the {host} preview validation matrix.")
-    parser.add_argument("--platform-repo", type=Path, default=SAMPLES.parent / "CodeBrix.Platform")
+    parser = argparse.ArgumentParser(description=f"Discover this repository's .PlayTests.csproj files and run the {host} preview validation matrix.")
     parser.add_argument("--output", type=Path, default=SAMPLES / "PlayTestSupport" / "TestResults")
-    parser.add_argument("--suites", nargs="+", help="Application names, for example PlayTestDemo WikipediaPublisher")
-    parser.add_argument("--version", help="Override the projects' default local preview package version")
+    parser.add_argument("--suites", nargs="+", help="Application names, for example JustBetweenUs WikipediaPublisher")
     parser.add_argument("--configuration", choices=["-".join(c) for c in CONFIGURATIONS])
     parser.add_argument("--no-build", action="store_true")
     parser.add_argument("--slowmo", type=float, help="Override action delay in milliseconds (default: unset)")
@@ -40,10 +38,7 @@ def main(host="windows"):
     if sys.platform != expected:
         parser.error(f"This runner validates {host}; run it on that host.")
     sys.stdout.reconfigure(errors="backslashreplace")
-    platform = args.platform_repo.resolve()
-    if not platform.is_dir():
-        parser.error(f"Platform repository does not exist: {platform}")
-    projects = [(SAMPLES, p) for p in discover(SAMPLES)] + [(platform, p) for p in discover(platform / "samples")]
+    projects = [(SAMPLES, p) for p in discover(SAMPLES)]
     names = {p.stem.removesuffix(".PlayTests") for _, p in projects}
     if args.suites:
         missing = set(args.suites) - names
@@ -74,8 +69,6 @@ def main(host="windows"):
         for repo, project in projects:
             suite = project.stem.removesuffix(".PlayTests")
             command = ["dotnet", "test", "--project", str(project), "-c", "Release"]
-            if args.version:
-                command.append(f"-p:PlayTestPackageVersion={args.version}")
             if args.no_build:
                 command += ["--no-build", "--no-restore"]
             log = output / f"{suite}-{label}.log"

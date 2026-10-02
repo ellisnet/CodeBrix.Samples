@@ -8,20 +8,16 @@
     <IsPackable>false</IsPackable>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
-    <PlayTestPackageVersion Condition="'$(PlayTestPackageVersion)' == ''">1.0.272.1-playtest.18</PlayTestPackageVersion>
     <!-- Optional project preference. Code and CODEBRIX_PLAYTEST_ORIENTATION take precedence. -->
     <CodeBrixPlayTestPreferredOrientation Condition="'$(CodeBrixPlayTestPreferredOrientation)' == ''">Landscape</CodeBrixPlayTestPreferredOrientation>
     <!-- Optional simulated OS theme. CODEBRIX_PLAYTEST_THEME takes precedence; omission defaults to Light. -->
     <CodeBrixPlayTestPreferredTheme Condition="'$(CodeBrixPlayTestPreferredTheme)' == ''">Light</CodeBrixPlayTestPreferredTheme>
-    <!-- Sibling clone's temporary feed; override for a different checkout layout. -->
-    <PlayTestPackageFeed Condition="'$(PlayTestPackageFeed)' == ''">$(MSBuildThisFileDirectory)../../../../../CodeBrix.Platform/nugets/PlayTest</PlayTestPackageFeed>
-    <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);$(PlayTestPackageFeed)</RestoreAdditionalProjectSources>
     <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI</DefineConstants>
   </PropertyGroup>
   <Import Project="../../JustBetweenUs.UI/JustBetweenUs.UI.projitems" Label="Shared" />
   <ItemGroup>
     <ProjectReference Include="../../JustBetweenUs.Core/JustBetweenUs.Core.csproj" />
-    <PackageReference Include="CodeBrix.Platform.PlayTest.ApacheLicenseForever" Version="$(PlayTestPackageVersion)" />
+    <PackageReference Include="CodeBrix.Platform.PlayTest.ApacheLicenseForever" Version="1.0.275.207" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
     <PackageReference Include="xunit.v3" Version="4.0.1" />

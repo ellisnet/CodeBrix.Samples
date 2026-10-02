@@ -4,7 +4,10 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+  <!-- Every configuration: EncryptionServiceTests uses the shared SimpleTestOutputHelper /
+       CreateAndRegisterLogger helpers unconditionally, and those compile only under this symbol.
+       A Debug-only define made the project fail to build in Release. -->
+  <PropertyGroup>
     <DefineConstants>$(DefineConstants);SIMPLE_OUTPUT_LOGGING</DefineConstants>
   </PropertyGroup>
 
