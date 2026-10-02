@@ -17,7 +17,7 @@
   <Import Project="../../JustBetweenUs.UI/JustBetweenUs.UI.projitems" Label="Shared" />
   <ItemGroup>
     <ProjectReference Include="../../JustBetweenUs.Core/JustBetweenUs.Core.csproj" />
-    <PackageReference Include="CodeBrix.Platform.PlayTest.ApacheLicenseForever" Version="1.0.275.207" />
+    <PackageReference Include="CodeBrix.Platform.PlayTest.ApacheLicenseForever" Version="1.0.275.9000-split.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
     <PackageReference Include="xunit.v3" Version="4.0.1" />

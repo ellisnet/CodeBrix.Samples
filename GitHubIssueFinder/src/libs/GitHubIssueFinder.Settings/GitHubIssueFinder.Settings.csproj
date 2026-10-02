@@ -9,6 +9,6 @@
        this library is the thin GitHubIssueFinder-named facade over it, and the
        only project in the application that references that package. -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.AppSettings.ApacheLicenseForever" Version="1.0.275.207" />
+    <PackageReference Include="CodeBrix.Platform.AppSettings.ApacheLicenseForever" Version="1.0.275.9000-split.1" />
   </ItemGroup>
 </Project>
