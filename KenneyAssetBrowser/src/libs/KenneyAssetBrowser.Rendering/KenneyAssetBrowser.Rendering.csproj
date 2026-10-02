@@ -21,8 +21,8 @@
          GLCanvasElement subclass is built on. Graphics3DGL supplies GLCanvasElement itself and,
          transitively, the CodeBrix.Platform.OpenGL `GL` type the shader renderer draws with.
          The app codes to Graphics3DGL and never references CodeBrix.Platform.OpenGL directly. -->
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.269.1395" />
-    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.269.1395" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.275.207" />
+    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.275.207" />
 
     <!-- glTF 2.0 loading, plus scene evaluation (EvaluateTriangles) that CPU-bakes animation clips for the preview -->
     <PackageReference Include="CodeBrix.Graphics3D.Gltf2.MitLicenseForever" Version="1.0.261.293" />
