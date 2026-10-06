@@ -24,7 +24,7 @@
     <!-- The reading report is a hand-placed document (vector card art, a spread diagram and
          measured text blocks), so it draws directly with CodeBrix.PdfDocuments' XGraphics
          rather than composing a flowing document through a document object model. -->
-    <PackageReference Include="CodeBrix.PdfDocuments.MitLicenseForever" Version="1.0.254.196" />
+    <PackageReference Include="CodeBrix.PdfDocuments.MitLicenseForever" Version="1.0.271.1182" />
     <!-- IServiceCollection, for the AddReading() registration extension -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
   </ItemGroup>

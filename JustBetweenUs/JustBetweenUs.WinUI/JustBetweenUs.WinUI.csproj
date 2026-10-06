@@ -36,9 +36,11 @@
     <PackageReference Include="CodeBrix.Platform.WinUI.ApacheLicenseForever" Version="1.0.254.253" />
     <PackageReference Include="CodeBrix.Platform.WinUI.Lottie.ApacheLicenseForever" Version="1.0.254.253" />
     <PackageReference Include="CodeBrix.Platform.WinUI.Skia.ApacheLicenseForever" Version="1.0.254.253" />
-    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.252.363" />
+    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.278.1152" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <PackageReference Include="SkiaSharp.Skottie" Version="4.153.1" />
+    <PackageReference Include="SkiaSharp.Views.WinUI" Version="4.153.1" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 

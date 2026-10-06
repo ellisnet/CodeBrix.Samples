@@ -15,8 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeBrix.NotionApi.MitLicenseForever" Version="1.0.254.1408" />
-    <PackageReference Include="CodeBrix.PdfDocCreate.MitLicenseForever" Version="1.0.254.196" />
+    <PackageReference Include="CodeBrix.NotionApi.MitLicenseForever" Version="1.0.275.146" />
+    <PackageReference Include="CodeBrix.PdfDocCreate.MitLicenseForever" Version="1.0.271.1182" />
     <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.248.1113" />
     <PackageReference Include="CodeBrix.VideoProcessing.MitLicenseForever" Version="1.0.256.1018" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />

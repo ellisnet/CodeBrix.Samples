@@ -47,7 +47,7 @@
     <PackageReference Include="CodeBrix.Platform.WinUI.ApacheLicenseForever" Version="1.0.254.253" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageReference Include="SkiaSharp.Views.WinUI" Version="4.153.1" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
@@ -66,7 +66,7 @@
     <Folder Include="ViewModels\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Imaging.Drawing.ApacheLicenseForever" Version="1.0.252.351" />
+    <PackageReference Include="CodeBrix.Imaging.Drawing.ApacheLicenseForever" Version="1.0.278.1180" />
   </ItemGroup>
   <ItemGroup>
     <Page Update="Views\MainPage.xaml">

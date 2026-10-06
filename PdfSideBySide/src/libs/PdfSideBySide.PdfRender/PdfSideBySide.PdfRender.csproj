@@ -5,7 +5,7 @@
 
   <ItemGroup>
     <!-- PDFium-backed page rasterizer (page counts + page-to-PNG); bundles its own natives -->
-    <PackageReference Include="CodeBrix.PdfRasterizer.MitLicenseForever" Version="1.0.254.196" />
+    <PackageReference Include="CodeBrix.PdfRasterizer.MitLicenseForever" Version="1.0.271.1182" />
     <!-- IServiceCollection, for the AddPdfRender() registration extension -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
   </ItemGroup>

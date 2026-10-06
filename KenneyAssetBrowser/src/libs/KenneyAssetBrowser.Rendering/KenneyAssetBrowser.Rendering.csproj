@@ -21,14 +21,14 @@
          GLCanvasElement subclass is built on. Graphics3DGL supplies GLCanvasElement itself and,
          transitively, the CodeBrix.Platform.OpenGL `GL` type the shader renderer draws with.
          The app codes to Graphics3DGL and never references CodeBrix.Platform.OpenGL directly. -->
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.275.9000-split.1" />
-    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.275.9000-split.1" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.279.30" />
+    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.279.30" />
 
     <!-- glTF 2.0 loading, plus scene evaluation (EvaluateTriangles) that CPU-bakes animation clips for the preview -->
     <PackageReference Include="CodeBrix.Graphics3D.Gltf2.MitLicenseForever" Version="1.0.261.293" />
     <PackageReference Include="SkiaSharp" Version="4.153.1" />
 
     <!-- Rasterizes the packs' SVG vector art for the 2D viewer (brings its own SkiaSharp dependency; the direct reference above lifts it to 4.153.1) -->
-    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.252.363" />
+    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.278.1152" />
   </ItemGroup>
 </Project>
