@@ -15,7 +15,7 @@ of its own.
 It is this repository's reference for hosting the CodeBrix.Platform.MediaPlayer
 add-in's `MediaPlayerElement` in a page and feeding it a source from a
 `SimpleViewModel`. It is also the smallest application here - one view model, one
-helper, one page, six heads, no libraries and no tests - which makes it the
+helper, one page, six heads, no libraries and only PlayTests - which makes it the
 cleanest available skeleton of the six-head CodeBrix.Platform project layout.
 
 ## What this sample shows a CodeBrix.Platform developer
@@ -131,16 +131,18 @@ it writes at startup and the warning it writes when an address cannot be loaded
 appear in that console output; in a Release build nothing is wired into the
 factory and those lines go nowhere.
 
-There are no tests. This application has no `tests/` folder, no test project and
-no `global.json`, so there is no test-runner selection to be aware of here and
-nothing in this folder demonstrates the family's test conventions. Look to an
-application that ships tests for those.
+The only tests are the PlayTests in `tests/MediaPlayerDemo.PlayTests`, which
+drive the real page through the CodeBrix.Platform PlayTest head; its README
+covers running them. They keep the MediaPlayer add-in out of the test assembly
+and register a recording engine, so they stream nothing and need no native media
+library. `global.json` selects the Microsoft.Testing.Platform runner they use.
 
 ## How the projects and folders are organized
 
 ```text
 MediaPlayerDemo/
   MediaPlayerDemo.slnx                  The one solution; every project; opens on Linux, macOS and Windows
+  global.json                           Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt               Third-party content used by this application
   src/
     MediaPlayerDemo.UI/                 Shared items project: the XAML that every head compiles
@@ -160,6 +162,8 @@ MediaPlayerDemo/
     MediaPlayerDemo.MacOS/              Head: Program.cs plus a csproj with one runtime package
     MediaPlayerDemo.Win32Skia/          Head: Program.cs plus a csproj with a runtime package and the Windows native media runtime
     MediaPlayerDemo.WinWpfSkia/         Same as Win32Skia, plus net10.0-windows and a software render surface
+  tests/
+    MediaPlayerDemo.PlayTests/          PlayTests of the real page, with a recording engine in place of libVLC
 ```
 
 The dependency direction is one way. Each head project takes a project reference
@@ -169,8 +173,9 @@ on `MediaPlayerDemo.Core` and file-links the shared UI by importing
 package references, so everything the heads share arrives transitively through it.
 The shared UI project is never compiled on its own: `App.xaml`, `App.xaml.cs`,
 `Views/MainPage.xaml` and `Views/MainPage.xaml.cs` are compiled once into each of
-the six head assemblies, which is why each head csproj also has to tell MSBuild to
-treat `.xaml` files as `Page` items. Because the XAML ends up inside the head
+the six head assemblies (and the same way into the PlayTests assembly), which is
+why each head csproj also has to tell MSBuild to treat `.xaml` files as `Page`
+items. Because the XAML ends up inside the head
 assembly while the view models live in the library, the page reaches them with an
 assembly-qualified `clr-namespace`
 (`xmlns:vm="clr-namespace:MediaPlayerDemo.ViewModels;assembly=MediaPlayerDemo.Core"`),

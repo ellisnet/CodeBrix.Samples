@@ -114,7 +114,7 @@ number it alone knows: how big each viewer is.
 There is one solution, `PdfSideBySide.slnx`, and it holds every project in the folder. Its own
 header comment says it contains "everything that builds with the plain .NET SDK on Linux, macOS and
 Windows", and that is accurate: it opens on any of the three. It files the domain library under a
-`Libraries` solution folder and the test project under a `Tests` solution folder.
+`Libraries` solution folder and the test projects under a `Tests` solution folder.
 
 The heads:
 
@@ -151,11 +151,12 @@ Substitute the head you want: `src/PdfSideBySide.LinuxWayland`,
 its picker is opt-in in `Program.cs`, which starts it in the documents folder of whoever is running
 it and keeps it inside that user's home directory.
 
-The tests cover the `PdfSideBySide.PdfRender` library only; there is no test project for the Core
-view models or for any head. This application has no `global.json`, so the
-Microsoft.Testing.Platform runner is selected entirely by the test project's own csproj, which sets
-`OutputType` to `Exe` and turns on `UseMicrosoftTestingPlatformRunner` and
-`TestingPlatformDotnetTestSupport`. Because Microsoft.Testing.Platform is in play, a plain
+`tests/libs/PdfSideBySide.PdfRender.Tests` covers the `PdfSideBySide.PdfRender` library;
+`tests/PdfSideBySide.PlayTests` drives the real page and view models through the CodeBrix.Platform
+PlayTest head (browsing, page navigation, zoom, pan, the error dialogs and startup pre-loading). This
+application's `global.json` does one thing: it selects the Microsoft.Testing.Platform runner for the
+whole folder. The library test project's own csproj sets the same thing again for itself, with
+`OutputType` of `Exe`, `UseMicrosoftTestingPlatformRunner` and `TestingPlatformDotnetTestSupport`. Because Microsoft.Testing.Platform is in play, a plain
 `dotnet test` can report that it discovered no tests on some .NET 10 SDK builds. Building the test
 project and running the produced executable directly always works:
 
@@ -174,6 +175,7 @@ test binary with `CopyToOutputDirectory="PreserveNewest"`.
 ```text
 PdfSideBySide/
   PdfSideBySide.slnx                  The one solution; opens on Linux, macOS and Windows
+  global.json                         Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt             Third-party content bundled with or used by the application
   src/
     PdfSideBySide.UI/                 Shared XAML project (.shproj + .projitems); produces no assembly
@@ -182,6 +184,7 @@ PdfSideBySide/
     PdfSideBySide.Core/               View models; carries every non-head package reference
       Helpers/HostHelper.cs           The IHostBuilderProvider handed to SimpleServiceResolver
       Services/IPdfFileBridge.cs      The file dialog the page fills in for the view model
+      Services/IStartupArguments.cs   Optional replacement for the process command line (PlayTests)
       ViewModels/MainViewModel.cs     Owns the comparison, the renderer and every command
       ViewModels/DocumentPaneViewModel.cs   One pane's bindable state and its browse command
     PdfSideBySide.LinuxX11/           Head: Program.cs plus exactly one runtime package
@@ -210,6 +213,7 @@ PdfSideBySide/
         Viewing/PanDirection.cs       Up / Down / Left / Right
         InternalsVisibleTo.cs         Opens internals to the .Tests assembly
   tests/
+    PdfSideBySide.PlayTests/          UI tests of the real page through CodeBrix.Platform.PlayTest
     libs/
       PdfSideBySide.PdfRender.Tests/  xUnit v3 on Microsoft.Testing.Platform
         Helpers/TestPdfs.cs           The fixture path and the synthetic-PDF writer
@@ -226,7 +230,7 @@ own backend, and **file-links** the shared UI by importing
 `..\PdfSideBySide.UI\PdfSideBySide.UI.projitems`. The `.shproj` produces no assembly of its own:
 `App.xaml`, `MainPage.xaml` and their code-behind are compiled into each head, which is why each
 head's `Program` can see `App` without a using directive (they share the namespace
-`PdfSideBySide`). The test project project-references the render library only, so the domain tests
+`PdfSideBySide`). The library test project project-references the render library only, so the domain tests
 never load a UI package.
 
 One naming detail is worth catching early: the Core library sets `RootNamespace` to
@@ -243,8 +247,8 @@ inside an assembly called `PdfSideBySide.Core`. `MainPage.xaml` therefore has to
 | CodeBrix.Platform.Fonts.Roboto | Supplies Roboto as the application-wide default text font, the `RobotoFont` XAML resource, and the Armenian and Georgian Noto Sans faces registered as fallbacks | `src/PdfSideBySide.UI/App.xaml`, `src/PdfSideBySide.UI/App.xaml.cs`, `src/PdfSideBySide.Core/PdfSideBySide.Core.csproj` |
 | CodeBrix.PdfRasterizer | The PDF engine: `GetPageCount()` when a document is opened, and `RasterizeToImage()` to turn one page at a chosen resolution into an image. Bundles its own PDFium natives per runtime identifier | `src/libs/PdfSideBySide.PdfRender/Documents/PdfPageDocument.cs`, `src/libs/PdfSideBySide.PdfRender/Rendering/PageRenderer.cs`, `src/libs/PdfSideBySide.PdfRender/PdfSideBySide.PdfRender.csproj` |
 | CodeBrix.Imaging | PNG-encodes the rasterized page and reports its pixel size. Arrives transitively through CodeBrix.PdfRasterizer — the csproj never names it | `src/libs/PdfSideBySide.PdfRender/Rendering/PageRenderer.cs` |
-| CodeBrix.PdfDocuments | Writes the small synthetic multi-page PDFs the tests use (`PdfDocument`, `XGraphics`, `XBrushes`, `XRect`). Also transitive through CodeBrix.PdfRasterizer | `tests/libs/PdfSideBySide.PdfRender.Tests/Helpers/TestPdfs.cs` |
-| SilverAssertions | The `Should()` assertion style used throughout the tests | all files under `tests/libs/PdfSideBySide.PdfRender.Tests/` |
+| CodeBrix.PdfDocuments | Writes the small synthetic multi-page PDFs the tests use (`PdfDocument`, `XGraphics`, `XBrushes`, `XRect`). Also transitive through CodeBrix.PdfRasterizer | `tests/libs/PdfSideBySide.PdfRender.Tests/Helpers/TestPdfs.cs`, `tests/PdfSideBySide.PlayTests/AppFixture.cs` |
+| SilverAssertions | The `Should()` assertion style used throughout the tests | all files under `tests/libs/PdfSideBySide.PdfRender.Tests/` and `tests/PdfSideBySide.PlayTests/` |
 
 Third-party libraries:
 
@@ -546,9 +550,9 @@ which is what makes it constructible in a test. Neither interface names PDFium, 
 never names `PageRenderer`.
 
 Startup document loading lives in the view model, not in `Main`:
-`OpenStartupDocumentsAsync()` reads `Environment.GetCommandLineArgs()` itself, so the two paths are
-at indices 1 and 2 and the guard is `arguments.Length < 3` — the heads never forward their
-`string[] args`. It is started as `_ = OpenStartupDocumentsAsync();`, discarded deliberately, with
+`OpenStartupDocumentsAsync()` reads `Environment.GetCommandLineArgs()` itself (unless an alternate
+host such as the PlayTests registers an `IStartupArguments`), so the two paths are at indices 1 and
+2 and the guard is `arguments.Length < 3` — the heads never forward their `string[] args`. It is started as `_ = OpenStartupDocumentsAsync();`, discarded deliberately, with
 every exception caught inside so nothing is left unobserved. What starts it is the page rather than
 the constructor: `MainPage`'s `Loaded` handler calls `MainViewModel.OnPageReady()`, which runs once
 and ignores later calls. By then the page has handed over its `XamlRoot` getter, so an error from a

@@ -172,7 +172,7 @@ There is one solution file, and it holds everything.
 
 | Solution | Contains | Open on |
 | --- | --- | --- |
-| `CodeBrixVideoTool.slnx` | The shared UI project, the Core library, all four heads, both libraries under a `Libraries` solution folder and both test projects under a `Tests` solution folder | Any OS - its own comment describes it as everything that builds with the plain .NET SDK on Linux, macOS and Windows |
+| `CodeBrixVideoTool.slnx` | The shared UI project, the Core library, all four heads, both libraries under a `Libraries` solution folder and the test projects under a `Tests` solution folder | Any OS - its own comment describes it as everything that builds with the plain .NET SDK on Linux, macOS and Windows |
 
 Four of the six CodeBrix.Platform heads are present. There is no WinWpfSkia head
 and no LinuxFrameBuffer head, and there are no native (non-Skia) heads: no
@@ -245,11 +245,14 @@ covers the codec registration, the chapter and caption row models and every rule
 in `PlaybackSelection`. `CodeBrixVideoTool.Processing.Tests` covers the format
 policy, the resolution ladder, the planner, the probe against real generated
 media, the runner end to end, and the view model's static outcome-description
-rule.
+rule. `CodeBrixVideoTool.PlayTests` drives the real page, view models and player
+element through CodeBrix.Platform.PlayTest, with the probe, the runner and the
+tool check replaced through the `App(Action<IServiceCollection>)` overload; it
+needs no FFmpeg (see its own `README.md`).
 
-There is **no `global.json` in this application**. The
-Microsoft.Testing.Platform runner is selected by two properties in each test
-csproj instead - `UseMicrosoftTestingPlatformRunner` and
+`global.json` in this folder does one thing: it selects the
+Microsoft.Testing.Platform runner. Each test csproj sets the same thing again
+for itself - `UseMicrosoftTestingPlatformRunner` and
 `TestingPlatformDotnetTestSupport`, alongside `OutputType` of `Exe`, because
 xUnit v3 test projects are self-executing binaries. The usual family caveat
 still applies: when `dotnet test` reports that zero tests ran, build the project
@@ -283,6 +286,7 @@ files in the repository.
 ```text
 CodeBrixVideoTool/
   CodeBrixVideoTool.slnx                  The one solution; everything is in it
+  global.json                             Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt                 What is used at run time and what is never redistributed
   src/
     CodeBrixVideoTool.UI/                 Shared XAML and code-behind, file-linked into every head
@@ -321,6 +325,7 @@ CodeBrixVideoTool/
         ViewModels/ConversionViewModel.cs The operation panel
         VideoToolProcessingException.cs   The one application exception
   tests/
+    CodeBrixVideoTool.PlayTests/          UI tests of the real page through CodeBrix.Platform.PlayTest
     libs/
       CodeBrixVideoTool.Playback.Tests/   Mirrors src/libs/CodeBrixVideoTool.Playback
       CodeBrixVideoTool.Processing.Tests/ Mirrors src/libs/CodeBrixVideoTool.Processing
@@ -335,7 +340,8 @@ reference**. Core references both libraries. `CodeBrixVideoTool.Playback`
 references `CodeBrixVideoTool.Processing`, because the player half asks the
 Processing library which formats exist and which of them are playable;
 `CodeBrixVideoTool.Processing` references nothing else in the application. Each
-test project references only its own library.
+library test project references only its own library; the PlayTests project
+references Core and imports the shared UI, as a head does.
 
 Every package except the head runtime packages is declared in Core or in one of
 the two libraries and reaches the heads transitively. Each head csproj carries
@@ -359,16 +365,16 @@ generated per-head resources class collide across assemblies.
 | CodeBrix.VideoPlayback.Dav1d | The AV1 decoder, turned on by the application at start-up - the application's dependency, not the add-in's | `src/libs/CodeBrixVideoTool.Playback/Services/PlaybackCodecs.cs` |
 | CodeBrix.Audio.Opus | The Opus decoder, turned on beside it | `src/libs/CodeBrixVideoTool.Playback/Services/PlaybackCodecs.cs` |
 | CodeBrix.VideoProcessing | ffmpeg and ffprobe: the analysis call, the argument builder, `NotifyOnProgress()`, `NotifyOnError()` and `CancellableThrough()` | `Probing/MediaProbe.cs`, `Containers/Mode2Extractor.cs`, `Containers/SidecarExtractor.cs`, `Operations/ConversionRunner.cs`, `Samples/SampleClipFactory.cs` |
-| SilverAssertions | The assertion style in both test projects | both projects under `tests/libs` |
+| SilverAssertions | The assertion style in every test project | the projects under `tests/` |
 
 Third-party libraries:
 
 | Library | What it does in this application | Where |
 | --- | --- | --- |
 | Microsoft.Extensions.Hosting | The default generic host builder, behind the `IHostBuilderProvider` that SimpleServiceResolver builds its container from | `src/CodeBrixVideoTool.Core/Helpers/HostHelper.cs` |
-| Microsoft.Extensions.DependencyInjection | The two `AddSingleton` registrations at start-up | `src/CodeBrixVideoTool.UI/App.xaml.cs` |
+| Microsoft.Extensions.DependencyInjection | The `AddSingleton` registrations at start-up, which a test host can replace | `src/CodeBrixVideoTool.UI/App.xaml.cs` |
 | Microsoft.Extensions.Logging.Console | The Debug-build console logger wired into the platform's logging adapter | `src/CodeBrixVideoTool.UI/App.xaml.cs` |
-| xUnit v3, with the Visual Studio runner and the .NET test SDK | The test framework and its Microsoft.Testing.Platform runner | both projects under `tests/libs` |
+| xUnit v3, with the Visual Studio runner and the .NET test SDK | The test framework and its Microsoft.Testing.Platform runner | the projects under `tests/` |
 
 ## Worth studying in this application
 
@@ -691,7 +697,8 @@ methods over plain values, and the view models are thin observable wrappers that
 call them, keep the collections and raise the notifications.
 
 What is left - a real head, a real player element, a real visual tree - is
-covered by the scripted run instead. The run is `SmokeRun` in
+covered by the scripted run instead, and by the PlayTests suite, which drives the
+page with the external tools faked. The run is `SmokeRun` in
 `src/CodeBrixVideoTool.Core/Smoke/` rather than code-behind: it owns what a run
 asks for, the sequence of checks and the `CBVT-SMOKE:` reporting format, and it
 drives the **view models' own commands and properties**: it substitutes the

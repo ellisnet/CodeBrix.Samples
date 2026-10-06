@@ -81,4 +81,75 @@ public class InputMapperTests
 		primaryIsControl.Should ().BeTrue ();
 		otherIsControl.Should ().BeFalse ();
 	}
+
+	[Theory]
+	[InlineData (VirtualKey.P, KeyConstants.KEY_P)]
+	[InlineData (VirtualKey.S, KeyConstants.KEY_S)]
+	[InlineData (VirtualKey.Z, KeyConstants.KEY_Z)]
+	public void TryGetToolShortcut_maps_an_unmodified_letter_onto_the_tools_shortcut_key (VirtualKey pressed, uint toolKey)
+	{
+		//Act
+		bool isShortcut = InputMapper.TryGetToolShortcut (
+			pressed, VirtualKeyModifiers.None, handled: false, typing: false, out Key shortcut);
+
+		//Assert - the tool manager compares case-insensitively, so the test does too
+		isShortcut.Should ().BeTrue ();
+		shortcut.ToUpper ().Should ().Be (new Key (toolKey).ToUpper ());
+	}
+
+	[Theory]
+	[InlineData (VirtualKeyModifiers.Control)]
+	[InlineData (VirtualKeyModifiers.Shift)]
+	[InlineData (VirtualKeyModifiers.Menu)]
+	[InlineData (VirtualKeyModifiers.Windows)]
+	public void TryGetToolShortcut_ignores_a_letter_pressed_with_a_modifier (VirtualKeyModifiers modifiers)
+	{
+		//Act
+		bool isShortcut = InputMapper.TryGetToolShortcut (
+			VirtualKey.P, modifiers, handled: false, typing: false, out Key shortcut);
+
+		//Assert
+		isShortcut.Should ().BeFalse ();
+		shortcut.Should ().Be (Key.Invalid);
+	}
+
+	[Fact]
+	public void TryGetToolShortcut_ignores_a_key_the_active_tool_already_consumed ()
+	{
+		//Act
+		bool isShortcut = InputMapper.TryGetToolShortcut (
+			VirtualKey.P, VirtualKeyModifiers.None, handled: true, typing: false, out _);
+
+		//Assert
+		isShortcut.Should ().BeFalse ();
+	}
+
+	[Fact]
+	public void TryGetToolShortcut_ignores_a_key_typed_into_a_text_entry ()
+	{
+		//Act
+		bool isShortcut = InputMapper.TryGetToolShortcut (
+			VirtualKey.P, VirtualKeyModifiers.None, handled: false, typing: true, out _);
+
+		//Assert
+		isShortcut.Should ().BeFalse ();
+	}
+
+	//A key with no keysym maps onto the same value the tools with no shortcut
+	//report, so it must never reach the tool manager as a shortcut.
+	[Theory]
+	[InlineData (VirtualKey.Number1)]
+	[InlineData (VirtualKey.Escape)]
+	[InlineData (VirtualKey.Space)]
+	[InlineData (VirtualKey.F5)]
+	public void TryGetToolShortcut_ignores_a_key_that_is_not_a_letter (VirtualKey pressed)
+	{
+		//Act
+		bool isShortcut = InputMapper.TryGetToolShortcut (
+			pressed, VirtualKeyModifiers.None, handled: false, typing: false, out Key shortcut);
+
+		//Assert
+		isShortcut.Should ().BeFalse ();
+		shortcut.Should ().Be (Key.Invalid);
+	}
 }

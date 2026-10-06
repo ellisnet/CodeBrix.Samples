@@ -15,5 +15,6 @@
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="tests/libs/PdfSideBySide.PdfRender.Tests/PdfSideBySide.PdfRender.Tests.csproj" />
+    <Project Path="tests/PdfSideBySide.PlayTests/PdfSideBySide.PlayTests.csproj" />
   </Folder>
 </Solution>

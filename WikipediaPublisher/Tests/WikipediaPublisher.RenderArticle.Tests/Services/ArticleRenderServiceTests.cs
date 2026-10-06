@@ -25,6 +25,21 @@ public class ArticleRenderServiceTests
         _output = output ?? throw new ArgumentNullException(nameof(output));
     }
 
+    //Progress<T> posts each callback to the thread pool, so one can run after the test has
+    //already finished — and ITestOutputHelper throws when there is no active test, which
+    //takes the whole test process down. Reporting synchronously keeps every line inside the test.
+    private sealed class SynchronousProgress<T> : IProgress<T>
+    {
+        private readonly Action<T> _handler;
+
+        public SynchronousProgress(Action<T> handler)
+        {
+            _handler = handler ?? throw new ArgumentNullException(nameof(handler));
+        }
+
+        public void Report(T value) => _handler(value);
+    }
+
     private static string GetOutDirectory()
     {
         var dir = Path.Combine(AppContext.BaseDirectory, "Out");
@@ -114,7 +129,7 @@ public class ArticleRenderServiceTests
         //Act
         var result = await service.RenderArticleAsync(
             request,
-            new Progress<RenderProgress>(p => _output.WriteLine($"[{p.PercentComplete,3}%] {p.Stage}: {p.Message}")),
+            new SynchronousProgress<RenderProgress>(p => _output.WriteLine($"[{p.PercentComplete,3}%] {p.Stage}: {p.Message}")),
             TestContext.Current.CancellationToken);
 
         //Assert
@@ -172,7 +187,7 @@ public class ArticleRenderServiceTests
         //Act
         var result = await service.RenderArticleAsync(
             request,
-            new Progress<RenderProgress>(p => _output.WriteLine($"[{p.PercentComplete,3}%] {p.Stage}: {p.Message}")),
+            new SynchronousProgress<RenderProgress>(p => _output.WriteLine($"[{p.PercentComplete,3}%] {p.Stage}: {p.Message}")),
             TestContext.Current.CancellationToken);
 
         //Assert

@@ -12,6 +12,7 @@
     <Project Path="src/libs/InannaRosette.Reading/InannaRosette.Reading.csproj" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/InannaRosette.PlayTests/InannaRosette.PlayTests.csproj" />
     <Project Path="tests/libs/InannaRosette.Reading.Tests/InannaRosette.Reading.Tests.csproj" />
   </Folder>
 </Solution>

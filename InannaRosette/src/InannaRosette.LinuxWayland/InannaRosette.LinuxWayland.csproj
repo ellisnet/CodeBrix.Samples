@@ -3,10 +3,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
 
-    <!-- The shared UI code is written with nullable annotations, so every head that
-         compiles it in needs the same language settings as InannaRosette.Core. -->
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- The shared UI code is written without nullable annotations or implicit usings, so
+         every project that compiles it in (each head and the PlayTests project) builds it
+         with the same language settings. -->
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 
   <!-- Tell MSBuild to treat .xaml files as CodeBrix.Platform XAML pages -->

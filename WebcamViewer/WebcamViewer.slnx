@@ -10,4 +10,7 @@
   <Project Path="src/WebcamViewer.MacOS/WebcamViewer.MacOS.csproj" />
   <Project Path="src/WebcamViewer.Win32Skia/WebcamViewer.Win32Skia.csproj" />
   <Project Path="src/WebcamViewer.WinWpfSkia/WebcamViewer.WinWpfSkia.csproj" />
+  <Folder Name="/Tests/">
+    <Project Path="tests/WebcamViewer.PlayTests/WebcamViewer.PlayTests.csproj" />
+  </Folder>
 </Solution>

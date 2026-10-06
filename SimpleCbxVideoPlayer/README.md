@@ -136,7 +136,7 @@ folder and read from beside the executable.
 ## Building, running and testing
 
 There is one solution, `SimpleCbxVideoPlayer.slnx`, and it holds everything: the shared UI project, the
-Core project, all six heads, the playback library under a `Libraries` solution folder and its test project
+Core project, all six heads, the playback library under a `Libraries` solution folder and the test projects
 under a `Tests` solution folder. Its header comment describes it as everything that builds with the plain
 .NET SDK on Linux, macOS and Windows, which holds here because every head is a Skia head.
 
@@ -187,7 +187,7 @@ with an exit code. It is the application's own end-to-end check and it is mainta
 feature; the code is `Diagnostics/SmokeOptions.cs` in the playback library and the smoke region at the foot
 of `src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs`.
 
-The test project uses xUnit v3 with SilverAssertions, builds as `Exe` and sets
+The library's test project uses xUnit v3 with SilverAssertions, builds as `Exe` and sets
 `UseMicrosoftTestingPlatformRunner`, so the test assembly is a self-executing binary. That matters in
 practice: a plain `dotnet test` can report that it discovered zero tests. When it does, build the test
 project and run the produced executable directly:
@@ -197,17 +197,18 @@ dotnet build tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/SimpleCbxVideoPlaye
 ./tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/bin/Debug/net10.0/SimpleCbxVideoPlayer.SkiaVideo.Tests
 ```
 
-What the test project needs:
+What the test projects need:
 
 | Test project | Covers | Needs |
 | --- | --- | --- |
 | `tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests` | Decoder registration, the transport controller, chain composition and change detection, the panel's enablement rules, the catalog and corpus scans against the real bundled files, the scripted-run command-line parser, the bake file-name rule, and the frame comparer | Native Skia, referenced by the test project because the render-path tests build a real presenter; the bundled corpus, linked into the test output so the catalog tests read the same files the application does. No window, no graphics device and no sound device |
+| `tests/SimpleCbxVideoPlayer.PlayTests` | The real page and view model driven through CodeBrix.Platform.PlayTest: the corpus line, the render path settling on the CPU canvas, the GPU-only failure message, the disabled lookup-table panel, Play, Pause, Stop, seeking, clip changes, the end of a clip, every container, drawn frames, portrait layout and theme - see its README | The bundled 720p clips. No window and no graphics device; a sound device plays the soundtracks when there is one |
 
 ## How the projects and folders are organized
 
 ```text
 SimpleCbxVideoPlayer/
-  SimpleCbxVideoPlayer.slnx             The one solution: UI, Core, six heads, the library, its test project
+  SimpleCbxVideoPlayer.slnx             The one solution: UI, Core, six heads, the library, the test projects
   THIRD-PARTY-NOTICES.txt               The bundled clips and lookup tables, and the licenses they carry
   src/
     SimpleCbxVideoPlayer.UI/            Shared items project (.shproj + .projitems): the XAML every head compiles
@@ -217,6 +218,7 @@ SimpleCbxVideoPlayer/
       Views/MainPage.xaml.cs            Code-behind: builds the GPU canvas, settles the surface, shows the save dialog
     SimpleCbxVideoPlayer.Core/          The library every head references; carries the shared packages
       Helpers/HostHelper.cs             The host-builder provider SimpleServiceResolver builds its container from
+      InternalsVisibleTo.cs             Lets the PlayTests read the view model's player
       ViewModels/MainViewModel.cs       All application logic: corpus, transport, render path, chain, bake, scripted run
       ViewModels/LutListItem.cs         One row of the lookup-table panel: tick box, titles, percentage box
       ViewModels/RenderPathChoice.cs    One entry of the render-path drop-down
@@ -238,6 +240,7 @@ SimpleCbxVideoPlayer/
         Playback/                       Transport and render-path types, the panel policy, the bake naming rule
         Diagnostics/                    The scripted-run options, the frame comparer and its result
   tests/
+    SimpleCbxVideoPlayer.PlayTests/     PlayTest UI tests of the shared page and view model
     libs/
       SimpleCbxVideoPlayer.SkiaVideo.Tests/   Mirrors src/libs/SimpleCbxVideoPlayer.SkiaVideo
 ```
@@ -264,7 +267,7 @@ itself, which is what makes it the seam.
 | CodeBrix.VideoPlayback.Skia | The presenter: it takes decoded frames, applies the composed effect chain on the graphics device or converts on the processor, and blits the result into whatever Skia canvas the application owns | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs` |
 | CodeBrix.VideoPlayback.Dav1d | The AV1 decoder, registered once at start-up. Nothing in this family is discovered by reflection, so without this registration nothing in the corpus plays | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SkiaVideoRuntime.cs` |
 | CodeBrix.Audio.Opus | The Opus decoder, registered in the same call. The Matroska and WebM clips carry Opus soundtracks; the bespoke-container clips carry Vorbis, which needs no extra package | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SkiaVideoRuntime.cs` |
-| SilverAssertions | The assertion style in the test project | `tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/` |
+| SilverAssertions | The assertion style in the test projects | `tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/`, `tests/SimpleCbxVideoPlayer.PlayTests/` |
 
 Third-party libraries:
 
@@ -273,7 +276,7 @@ Third-party libraries:
 | SkiaSharp | `SKCanvas`, `SKSurface`, `SKRect` and `GRContext` - the surface the presenter draws into and the context it needs for its graphics path; its Linux native-asset package is referenced by the test project so the render-path tests can build a presenter | `src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs`, `src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs`, `tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/SimpleCbxVideoPlayer.SkiaVideo.Tests.csproj` |
 | Microsoft.Extensions.Hosting | `Host.CreateDefaultBuilder()` behind an `IHostBuilderProvider`, which `SimpleServiceResolver` uses to build the container | `src/SimpleCbxVideoPlayer.Core/Helpers/HostHelper.cs` |
 | Microsoft.Extensions.Logging.Console | The `LoggerFactory` with a console provider wired into the platform's ambient logger in Debug builds | `src/SimpleCbxVideoPlayer.UI/App.xaml.cs` |
-| xUnit v3 and Microsoft.Testing.Platform | The test framework and the runner for the test project | `tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/SimpleCbxVideoPlayer.SkiaVideo.Tests.csproj` |
+| xUnit v3 and Microsoft.Testing.Platform | The test framework and the runner for the test projects | `tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/SimpleCbxVideoPlayer.SkiaVideo.Tests.csproj`, `tests/SimpleCbxVideoPlayer.PlayTests/SimpleCbxVideoPlayer.PlayTests.csproj` |
 
 ## Worth studying in this application
 
@@ -288,7 +291,7 @@ effects - stays behind that surface. The Core project sees the library's own typ
 Two consequences are worth noticing. The application's packaging is trivially reasonable: Core carries the
 framework, the font and the two canvas packages, the library carries the video packages, and each head
 carries exactly one runtime package. And the library is testable on its own, with no window and no
-graphics device, which is why the test project references only it. Read
+graphics device, which is why the library's test project references only it. Read
 `src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs` first, and then the constructor of
 `src/SimpleCbxVideoPlayer.Core/ViewModels/MainViewModel.cs`, where six events are subscribed and every one
 of them is marshaled with `InvokeOnMainThread`. See

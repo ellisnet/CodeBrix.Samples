@@ -119,7 +119,8 @@ rather than its audio.
 
 There is one solution, `GameEngineMusicDemo.slnx`, and it holds everything: the
 shared UI project, the Core project, all six heads, the one library under a
-`Libraries` solution folder and its test project under a `Tests` solution folder. Its
+`Libraries` solution folder, and its test project and the PlayTests project under a
+`Tests` solution folder. Its
 header comment describes it as everything that builds with the plain .NET SDK on
 Linux, macOS and Windows, which holds here because every head is a Skia head. There
 is no WinUI 3, WPF or .NET MAUI head and no second solution.
@@ -180,12 +181,18 @@ folder beside its samples, and that the tempo-change file really does change tem
 plus the opt-in switch on the maintainer walkthrough. None of it needs a window, a
 sound card or a running engine.
 
-There is no `global.json` in this application. The Microsoft.Testing.Platform runner
-is selected by two properties in the test csproj instead,
+The second test project, `tests/GameEngineMusicDemo.PlayTests`, is the one that does:
+it runs the real page on the CodeBrix.Platform PlayTest head with the engine and the
+audio device running, drives every button and slider on the panel, and checks what the
+music system reports afterwards and what the engine draws on the canvas. Its README
+says how to run it.
+
+`global.json` in this folder does one thing: it selects the Microsoft.Testing.Platform
+runner. The test csproj sets the same thing again for itself, with
 `UseMicrosoftTestingPlatformRunner` and `TestingPlatformDotnetTestSupport`, alongside
 an `OutputType` of `Exe`, because xUnit v3 test projects are self-executing binaries.
-The family caveat applies here in its strongest form: a plain `dotnet test` does not
-run this suite. Build the test project and run the executable it produces:
+The family caveat applies: a plain `dotnet test` can report that zero tests ran. The
+form that always works is to build the test project and run the executable it produces:
 
 ```text
 dotnet build tests/libs/GameEngineMusicDemo.Game.Tests/GameEngineMusicDemo.Game.Tests.csproj
@@ -207,7 +214,8 @@ application changes when the variable is not set.
 
 ```text
 GameEngineMusicDemo/
-  GameEngineMusicDemo.slnx                  The one solution: UI, Core, six heads, the library, the test project
+  GameEngineMusicDemo.slnx                  The one solution: UI, Core, six heads, the library, the test projects
+  global.json                               Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt                   Third-party content used by this application
   src/
     GameEngineMusicDemo.UI/                 Shared items project: the XAML every head compiles
@@ -234,6 +242,7 @@ GameEngineMusicDemo/
         MusicAssetFactory.cs                Writes every asset the sample plays, once, from arithmetic
         InternalsVisibleTo.cs               Names only this library's own test assembly
   tests/
+    GameEngineMusicDemo.PlayTests/          UI tests of the real page, with the engine running
     libs/
       GameEngineMusicDemo.Game.Tests/       Mirrors src/libs/GameEngineMusicDemo.Game
 ```
@@ -261,7 +270,8 @@ knows nothing about the view model, and the Core project knows nothing about the
 | CodeBrix.Platform.Fonts.OpenSans | Ships the Open Sans font set as the application-wide default and as the page's `FontFamily`, addressed through an `ms-appx:///` URI | `src/GameEngineMusicDemo.Core/GameEngineMusicDemo.Core.csproj`, `src/GameEngineMusicDemo.UI/App.xaml`, `src/GameEngineMusicDemo.UI/App.xaml.cs`, `src/GameEngineMusicDemo.UI/Views/MainPage.xaml` |
 | CodeBrix.Platform.GameEngine | The whole subject of the sample: `AudioSystem`, `AudioMixer`, `AudioResourceManager`, `CachedSound`, `MusicManager`, `MusicTimeline`, `FileMusicTrack`, `MidiMusicTrack`, `MusicStemSet`, `MusicPlaylist` and `MusicTransitionQuantize`, plus the engine loop, `GameSurfaceCanvas`, the render-surface host, the view manager and the direct drawings the readout is made of. One package supplies both the engine core and the Host layer | `src/libs/GameEngineMusicDemo.Game/GameEngineMusicDemo.Game.csproj`, `src/libs/GameEngineMusicDemo.Game/GameEngineMusicDemoGame.cs`, `src/GameEngineMusicDemo.UI/Views/MainPage.xaml` |
 | CodeBrix.Audio | Arrives with the engine package, and the asset factory uses it directly: the WAV writer and sample-provider types, and the MIDI event, tempo, time-signature, marker and file-export types | `src/libs/GameEngineMusicDemo.Game/MusicAssetFactory.cs` |
-| SilverAssertions | The assertion style in the test project | `tests/libs/GameEngineMusicDemo.Game.Tests/` |
+| CodeBrix.Platform.PlayTest | The test head the PlayTests project runs the real page on | `tests/GameEngineMusicDemo.PlayTests/` |
+| SilverAssertions | The assertion style in both test projects | `tests/libs/GameEngineMusicDemo.Game.Tests/`, `tests/GameEngineMusicDemo.PlayTests/` |
 
 Third-party libraries:
 
@@ -271,7 +281,7 @@ Third-party libraries:
 | Microsoft.Extensions.Hosting | `Host.CreateDefaultBuilder()` behind an `IHostBuilderProvider`, which `SimpleServiceResolver` uses to build the container | `src/GameEngineMusicDemo.Core/GameEngineMusicDemo.Core.csproj`, `src/GameEngineMusicDemo.Core/Helpers/HostHelper.cs` |
 | Microsoft.Extensions.Logging | The engine's logger is what every diagnostic line in this sample is written to | `src/libs/GameEngineMusicDemo.Game/GameEngineMusicDemoGame.cs`, `src/libs/GameEngineMusicDemo.Game/GameEngineMusicDemoWalkthrough.cs` |
 | Microsoft.Extensions.Logging.Console | The `LoggerFactory` with a console provider wired into the platform's ambient logger in Debug builds | `src/GameEngineMusicDemo.Core/GameEngineMusicDemo.Core.csproj`, `src/GameEngineMusicDemo.UI/App.xaml.cs` |
-| xUnit v3 and Microsoft.Testing.Platform | The test framework and the runner for the test project | `tests/libs/GameEngineMusicDemo.Game.Tests/GameEngineMusicDemo.Game.Tests.csproj` |
+| xUnit v3 and Microsoft.Testing.Platform | The test framework and the runner for both test projects | `tests/libs/GameEngineMusicDemo.Game.Tests/GameEngineMusicDemo.Game.Tests.csproj`, `tests/GameEngineMusicDemo.PlayTests/GameEngineMusicDemo.PlayTests.csproj` |
 
 ## Worth studying in this application
 
@@ -455,7 +465,7 @@ and
 
 ### Testing something that can only be heard
 
-The test project tests the library, never the UI, and it tests the part of the
+The library's test project tests the library, never the UI, and it tests the part of the
 library that is pure: where the generated assets go, that the layer names and their
 file names agree, that the export rate and the pinned device rate are deliberately
 different, and that the tempo-change file really changes tempo. It also reaches an
@@ -466,7 +476,9 @@ opt-in value - the guarantee that a person running the demo never sees it.
 Everything else about this application is audible, and audible behavior is what the
 unattended walkthrough covers instead: it drives the same methods the buttons drive
 from a worker thread, checks each claim against what the engine reports, and writes
-machine-readable lines. Read the test files, then
+machine-readable lines. The PlayTests project checks the same behavior through the
+controls, by reading what the music system reports rather than by listening. Read the
+test files, then
 `src/libs/GameEngineMusicDemo.Game/GameEngineMusicDemoWalkthrough.cs`. See
 [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library),
 [Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project),

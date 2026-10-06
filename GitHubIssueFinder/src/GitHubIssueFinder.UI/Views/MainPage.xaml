@@ -145,7 +145,7 @@
                             </Button>
                         </flex:FlexPanel>
 
-                        <TextBlock Text="{d:Binding HelperText}" FontSize="12.5"
+                        <TextBlock a:AutomationProperties.AutomationId="HelperText" Text="{d:Binding HelperText}" FontSize="12.5"
                                    TextWrapping="Wrap"
                                    Foreground="{StaticResource TextTertiaryBrush}" />
                     </StackPanel>
@@ -181,16 +181,16 @@
                                 <FontIcon Glyph="&#xF138;" FontSize="15"
                                           Foreground="{StaticResource SuccessBrush}"
                                           VerticalAlignment="Center" />
-                                <TextBlock Text="{d:Binding HeaderOpenText}" FontSize="13"
+                                <TextBlock a:AutomationProperties.AutomationId="HeaderOpenText" Text="{d:Binding HeaderOpenText}" FontSize="13"
                                            FontWeight="SemiBold"
                                            Foreground="{StaticResource TextPrimaryBrush}"
                                            VerticalAlignment="Center" />
-                                <TextBlock Text="{d:Binding HeaderSummary}" FontSize="13"
+                                <TextBlock a:AutomationProperties.AutomationId="HeaderSummary" Text="{d:Binding HeaderSummary}" FontSize="13"
                                            Foreground="{StaticResource TextSecondaryBrush}"
                                            TextTrimming="CharacterEllipsis" MaxLines="1"
                                            VerticalAlignment="Center" />
                             </StackPanel>
-                            <TextBlock Grid.Column="1" Text="{d:Binding IssuePrSplit}" FontSize="12"
+                            <TextBlock a:AutomationProperties.AutomationId="IssuePrSplit" Grid.Column="1" Text="{d:Binding IssuePrSplit}" FontSize="12"
                                        Foreground="{StaticResource TextSecondaryBrush}"
                                        VerticalAlignment="Center" Margin="12,0,0,0" />
                         </Grid>
@@ -236,11 +236,11 @@
                             <FontIcon Glyph="&#xF13E;" FontSize="32"
                                       Foreground="{StaticResource SuccessBrush}"
                                       HorizontalAlignment="Center" />
-                            <TextBlock Text="{d:Binding EmptyText}" FontSize="15"
+                            <TextBlock a:AutomationProperties.AutomationId="EmptyText" Text="{d:Binding EmptyText}" FontSize="15"
                                        FontWeight="SemiBold" MaxWidth="540" TextWrapping="Wrap"
                                        TextAlignment="Center" HorizontalAlignment="Center"
                                        Foreground="{StaticResource TextPrimaryBrush}" />
-                            <TextBlock Text="Tick Include closed issues to widen the search."
+                            <TextBlock a:AutomationProperties.AutomationId="EmptyHint" Text="Tick Include closed issues to widen the search."
                                        FontSize="12.5" HorizontalAlignment="Center"
                                        Visibility="{d:Binding EmptyHintVisibility}"
                                        Foreground="{StaticResource TextTertiaryBrush}" />
@@ -424,7 +424,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <ProgressBar Grid.Column="0" Width="200" Height="6" Minimum="0" Maximum="100"
+                <ProgressBar a:AutomationProperties.AutomationId="StatusProgress" Grid.Column="0" Width="200" Height="6" Minimum="0" Maximum="100"
                              VerticalAlignment="Center"
                              Value="{d:Binding ProgressValue}"
                              IsIndeterminate="{d:Binding IsProgressIndeterminate}"
@@ -432,11 +432,11 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
                             VerticalAlignment="Center">
-                    <FontIcon Glyph="{d:Binding StatusGlyph}" FontSize="13"
+                    <FontIcon a:AutomationProperties.AutomationId="StatusGlyph" Glyph="{d:Binding StatusGlyph}" FontSize="13"
                               Foreground="{d:Binding StatusBrush}"
                               Visibility="{d:Binding StatusGlyphVisibility}"
                               VerticalAlignment="Center" />
-                    <TextBlock Text="{d:Binding StatusText}" FontSize="12"
+                    <TextBlock a:AutomationProperties.AutomationId="StatusText" Text="{d:Binding StatusText}" FontSize="12"
                                Foreground="{d:Binding StatusBrush}"
                                TextTrimming="CharacterEllipsis" MaxLines="1"
                                VerticalAlignment="Center" />
@@ -447,14 +447,14 @@
                     <Border Background="{d:Binding SearchQuotaBackground}"
                             BorderBrush="{d:Binding SearchQuotaBorderBrush}"
                             BorderThickness="1" CornerRadius="10" Padding="8,1">
-                        <TextBlock Text="{d:Binding SearchQuotaText}" FontSize="11"
+                        <TextBlock a:AutomationProperties.AutomationId="SearchQuota" Text="{d:Binding SearchQuotaText}" FontSize="11"
                                    FontWeight="SemiBold"
                                    Foreground="{d:Binding SearchQuotaForeground}" />
                     </Border>
                     <Border Background="{StaticResource CanvasInsetBrush}"
                             BorderBrush="{StaticResource HairlineBrush}"
                             BorderThickness="1" CornerRadius="10" Padding="8,1">
-                        <TextBlock Text="{d:Binding CoreQuotaText}" FontSize="11"
+                        <TextBlock a:AutomationProperties.AutomationId="CoreQuota" Text="{d:Binding CoreQuotaText}" FontSize="11"
                                    FontWeight="SemiBold"
                                    Foreground="{StaticResource TextSecondaryBrush}" />
                     </Border>

@@ -19,5 +19,6 @@
     <Project Path="tests/libs/PalmVisualizer.Camera.Tests/PalmVisualizer.Camera.Tests.csproj" />
     <Project Path="tests/libs/PalmVisualizer.Rendering.Tests/PalmVisualizer.Rendering.Tests.csproj" />
     <Project Path="tests/libs/PalmVisualizer.Vision.Tests/PalmVisualizer.Vision.Tests.csproj" />
+    <Project Path="tests/PalmVisualizer.PlayTests/PalmVisualizer.PlayTests.csproj" />
   </Folder>
 </Solution>

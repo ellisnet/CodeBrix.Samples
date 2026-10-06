@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 using BrixInvaders.Game.Audio;
 using BrixInvaders.Game.Credits;
 using BrixInvaders.Game.Hosting;
@@ -72,11 +73,13 @@ public class MainViewModel : SimpleViewModel, IManageGameCanvas
         //The three seams the game library leaves to the app: generated music (the engine's UseGeneratedMusic), links
         //  opened by the engine's link helper, and credits that read the host's Kenney pack titles and the music card
         //  lazily - both only when the credits screen opens, long after the host has loaded them.
-        var music = new GeneratedMusicDirector(new EngineGeneratedMusicStarter(), MusicManager.Instance,
-            Engine.Instance.EngineDispatcher);
-        var links = new LauncherLinkOpener();
+        //  An alternate host (the PlayTests) may register its own music director and link opener; the game's are the default.
+        var music = GetServices<IMusicDirector>().LastOrDefault()
+            ?? new GeneratedMusicDirector(new EngineGeneratedMusicStarter(), MusicManager.Instance, Engine.Instance.EngineDispatcher);
+        var links = GetServices<IExternalLinkOpener>().LastOrDefault() ?? new LauncherLinkOpener();
         BrixInvadersGameHost host = null;
-        var credits = new KenneyCreditsContent(() => host?.PackCredits ?? Array.Empty<string>(), music.CreditLines);
+        var credits = new KenneyCreditsContent(() => host?.PackCredits ?? Array.Empty<string>(),
+            music is GeneratedMusicDirector generated ? generated.CreditLines : null);
         host = new BrixInvadersGameHost(canvas, music, links, credits);
         Host = host;
         Host.QuitRequested += () => dispatcher?.TryEnqueue(() => Application.Current.Exit());

@@ -165,7 +165,7 @@ whole Poly Haven library instead of three curated samples.
 
 There is one solution, `PolyHavenBrowser.slnx`, and it opens on Linux, macOS and Windows. It
 holds the shared UI project, the Core library, all six heads, and, under the solution folders
-`Libraries/` and `Tests/`, the two side libraries and their two test projects. This is a pure
+`Libraries/` and `Tests/`, the two side libraries, their test projects and the PlayTests UI suite. This is a pure
 CodeBrix.Platform application: there are no native WinUI 3, WPF or .NET MAUI heads, so there is
 no second Windows-only solution.
 
@@ -205,6 +205,7 @@ dotnet run --project src/PolyHavenBrowser.LinuxX11
 | --- | --- |
 | `tests/libs/PolyHavenBrowser.PolyHavenApiClient.Tests` | Offline unit tests over a stub `HttpMessageHandler` (request URLs, JSON parsing, file-tree traversal, thumbnail URLs, download progress and MD5 verification, error mapping), factory and DI registration tests, mocked-consumer tests, and a separate `Live/` suite that hits the real API |
 | `tests/libs/PolyHavenBrowser.Rendering.Tests` | Pure unit tests (orbit and panorama cameras, the EXR, Radiance HDR and LDR decoders, tone mapping, float images, glTF loading, texture-loader dispatch), real-GPU suites for each of the three renderers, and platform-gate tests for the Vulkan and Metal allow lists |
+| `tests/PolyHavenBrowser.ViewerOnly.PlayTests` | UI tests through CodeBrix.Platform.PlayTest over an offline HTTP fixture and a CPU stand-in rendering engine: sample switching, the busy state, download failures, the cache, the rendering-engine dropdown and its alert, canvas drag and zoom, the HDRI panorama pixels, page teardown, theme and orientation; see its own README.md |
 
 `global.json` in this folder selects the Microsoft.Testing.Platform runner:
 
@@ -287,6 +288,7 @@ PolyHavenBrowser_viewer_only/
         ToneMapping/                       ToneMapper and ToneMapOperator
         Textures/TextureImageLoader.cs     Extension-dispatching one-stop image loader
   tests/
+    PolyHavenBrowser.ViewerOnly.PlayTests/          UI tests on the CodeBrix.Platform PlayTest head
     libs/
       PolyHavenBrowser.PolyHavenApiClient.Tests/   Unit, Mocked, Live, TestDoubles, TestData
       PolyHavenBrowser.Rendering.Tests/            Unit, Gl, Vulkan, Metal, Mocked, TestDoubles, TestData
@@ -503,8 +505,8 @@ re-entry with `IsBusy`, sets `IsBusy` (which carries `[AffectsCommands]` naming 
 commands, so their `CanExecute` refreshes and the buttons disable), awaits the download with an
 `IProgress<string>` created on the UI thread as `new Progress<string>(message => StatusText =
 message)` so its callbacks post back there, does the decode or mesh build inside `Task.Run()`, and
-then marshals the result through `InvokeOnMainThread(...)`, which is where the painter and the
-status line are assigned. Its `finally` always clears `IsBusy` and requests a repaint. A failure
+then awaits `InvokeOnMainThreadAsync(...)`, which is where the painter and the status line are
+assigned. Its `finally` always clears `IsBusy` and requests a repaint, after the painter is in place. A failure
 becomes a status line, never an escaping exception. The token it passes down is the view model's
 own lifetime token, so an in-flight download stops when the view model is disposed and the
 resulting `OperationCanceledException` is caught separately and left silent. Nothing GPU-related

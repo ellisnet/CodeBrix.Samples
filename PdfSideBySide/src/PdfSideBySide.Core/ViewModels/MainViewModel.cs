@@ -231,7 +231,7 @@ public class MainViewModel : SimpleViewModel, IPdfFileBridge
     /// </summary>
     private async Task OpenStartupDocumentsAsync()
     {
-        var arguments = Environment.GetCommandLineArgs();
+        var arguments = GetService<IStartupArguments>()?.GetCommandLineArgs() ?? Environment.GetCommandLineArgs();
         if (arguments.Length < 3) { return; }
 
         IsBusy = true;

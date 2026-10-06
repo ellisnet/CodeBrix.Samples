@@ -108,6 +108,34 @@ public static class InputMapper
 		return keyState.HasValue && keyState.Value.HasFlag (Windows.UI.Core.CoreVirtualKeyStates.Down);
 	}
 
+	/// <summary>
+	/// Maps a key press onto the key a toolbox shortcut is matched against, or
+	/// reports that the press cannot be a toolbox shortcut at all. Upstream
+	/// gives the focused text entry and then the active tool first refusal, and
+	/// lets an unmodified key select a tool only after both have passed on it.
+	/// </summary>
+	/// <param name="key">The key that was pressed.</param>
+	/// <param name="modifiers">The modifiers held with it.</param>
+	/// <param name="handled">Whether something already consumed the press - the active tool, when the canvas has focus.</param>
+	/// <param name="typing">Whether the press went to a text entry control.</param>
+	/// <param name="shortcut">The key to hand to the tool manager.</param>
+	/// <returns>True when the press may select a tool.</returns>
+	public static bool TryGetToolShortcut (VirtualKey key, VirtualKeyModifiers modifiers, bool handled, bool typing, out Key shortcut)
+	{
+		shortcut = Key.Invalid;
+
+		if (handled || typing || modifiers != VirtualKeyModifiers.None)
+			return false;
+
+		// Every toolbox shortcut is a letter. Anything else must not reach the
+		// tool manager: an unmapped key would match the tools with no shortcut.
+		if (key < VirtualKey.A || key > VirtualKey.Z)
+			return false;
+
+		shortcut = new Key (ToKeysym (key));
+		return true;
+	}
+
 	public static uint ToKeysym (VirtualKey key)
 	{
 		// Letters/digits map onto ASCII keysyms.

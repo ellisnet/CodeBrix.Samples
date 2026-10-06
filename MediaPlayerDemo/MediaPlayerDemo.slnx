@@ -10,4 +10,7 @@
   <Project Path="src/MediaPlayerDemo.MacOS/MediaPlayerDemo.MacOS.csproj" />
   <Project Path="src/MediaPlayerDemo.Win32Skia/MediaPlayerDemo.Win32Skia.csproj" />
   <Project Path="src/MediaPlayerDemo.WinWpfSkia/MediaPlayerDemo.WinWpfSkia.csproj" />
+  <Folder Name="/Tests/">
+    <Project Path="tests/MediaPlayerDemo.PlayTests/MediaPlayerDemo.PlayTests.csproj" />
+  </Folder>
 </Solution>

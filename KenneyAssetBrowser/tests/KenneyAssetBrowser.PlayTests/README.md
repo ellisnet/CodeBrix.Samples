@@ -25,9 +25,9 @@ CODEBRIX_PLAYTEST_THEME=dark \
 
 Set `CODEBRIX_PLAYTEST_SLOWMO` to override the delay, including `0` for full speed. Headless runs default to zero.
 
-Coverage: Folder selection/cancel, actual ZIP catalog loading, category/search filters, thumbnails, 2D image zoom/fit/back, text viewing, and portrait layout.
+Coverage: Folder selection/cancel, actual ZIP catalog loading, the corrupt-zip warning and the empty-folder caption, bundle switching and the category reset, the remembered folder and bundle on a new page, category/search filters, thumbnails, lazy loading of further cells on scroll, the bundle License dialog, 2D image zoom/fit/wheel/clamping/back, spritesheet region spotlighting, SVG rasterizing, font specimens, Tiled maps, the no-preview caption, the "Could not open" dialog, 3D models (the "3D Preview Unavailable" dialog, model facts, animation selection and play/pause), the audio transport and its replay rule, text viewing, and the viewer layout in both orientations.
 
-The fixture creates a small ZIP containing two generated PNGs and text documents. The real asset reader and 2D painter are used. No downloaded Kenney bundles or user settings are required. GPU 3D preview and audio playback are not covered.
+The fixture creates small ZIPs in code: two generated PNGs and text documents; an edge-case bundle with an undecodable image, a generated Tiled map and tileset, and the Merriweather font the application already ships; and a file that is not a zip. It copies the CC0 Kenney bundles from the sample's `sample_asset_bundles/` folder (Puzzle Pack, Sci-Fi Sounds, Blocky Characters) into its data folder. The real asset reader, 2D painter and model loader are used. No downloads or user settings are required. The PlayTest head has no OpenGL, so 3D tests check the unavailable-preview dialog and model facts rather than rendered pixels. Audio tests replace the view model's audio bridge with a recording fake, so no audio device is needed and no sound plays.
 
 Screenshots go under the test output's `TestResults/PlayTest/`; fixture data goes under `TestResults/PlayTestData/`. Failed locator actions include a screenshot and UI-tree description. Data and screenshots remain for inspection.
 

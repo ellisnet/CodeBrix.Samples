@@ -124,7 +124,7 @@ There is one solution, and it opens everywhere.
 
 | Solution | Contains | Open on |
 | --- | --- | --- |
-| `NotionDocumentCreator/NotionDocumentCreator.slnx` | The shared UI project, the Core library, all six heads, a `Libraries/` folder holding `NotionDocumentCreator.CreateDocument`, and a `Tests/` folder holding its test project | Linux, macOS or Windows |
+| `NotionDocumentCreator/NotionDocumentCreator.slnx` | The shared UI project, the Core library, all six heads, a `Libraries/` folder holding `NotionDocumentCreator.CreateDocument`, and a `Tests/` folder holding its test projects | Linux, macOS or Windows |
 
 Its own comment describes it as a CodeBrix.Platform application with everything
 that builds with the plain .NET SDK on Linux, macOS and Windows. There are no
@@ -236,6 +236,7 @@ NotionDocumentCreator/
                                              and the service
         InternalsVisibleTo.cs                Grants the test assembly access to Internal
   tests/
+    NotionDocumentCreator.PlayTests/           UI tests of the real page through CodeBrix.Platform.PlayTest
     libs/
       NotionDocumentCreator.CreateDocument.Tests/  Mirrors src/libs one for one
 ```
@@ -273,7 +274,7 @@ Third-party libraries:
 | --- | --- | --- |
 | Microsoft.Extensions.Hosting | Creates the default host builder behind `IHostBuilderProvider`, so `SimpleServiceResolver` has a container to build, and supplies `IServiceCollection` for `AddCreateDocument()` | `src/NotionDocumentCreator.Core/Helpers/HostHelper.cs`, `src/libs/NotionDocumentCreator.CreateDocument/RegisterServices.cs` |
 | Microsoft.Extensions.Logging (Console, Abstractions) | Debug-only console logging wired into the platform's ambient logger factory, and an optional `ILogger` in the service that falls back to a null logger | `src/NotionDocumentCreator.UI/App.xaml.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Services/NotionDocumentService.cs` |
-| xUnit v3, SilverAssertions | The test project | `tests/libs/NotionDocumentCreator.CreateDocument.Tests/` |
+| xUnit v3, SilverAssertions | The test projects | `tests/libs/NotionDocumentCreator.CreateDocument.Tests/`, `tests/NotionDocumentCreator.PlayTests/` |
 
 ## Worth studying in this application
 
@@ -339,7 +340,8 @@ From there the tree is view-model work. `NotionPageNodeViewModel` is one row: it
 a single placeholder child when the node reports children, which is what keeps the
 expand chevron visible before anything has been fetched, and expanding the row asks
 the parent view model to fetch the real children exactly once. `MainViewModel.LoadChildrenForNodeAsync`
-does the call and marshals the replacement back with `InvokeOnMainThread`; a failure
+does the call and marshals the replacement back with `InvokeOnMainThreadAsync`, awaited
+so that Load whole tree can walk the new rows as soon as the call returns; a failure
 writes to the status line and leaves the row usable. Expansion arrives as a property
 setter, which cannot await, so the load is handed to
 `src/NotionDocumentCreator.Core/Helpers/BackgroundWork.cs`: its one method starts the
@@ -401,8 +403,8 @@ percentages are apportioned across the stages rather than restarting at each one
 The view-model half is `DoCreate()` in `MainViewModel`. It confirms an overwrite with
 `ConfirmDialog()` before it starts, sets `IsBusy` in a `try`/`finally` so the flag can
 never stick, builds the request from the flattened checked rows and the chosen trim,
-subscribes a `Progress<T>` that pushes `StatusText` and `ProgressValue` back through
-`InvokeOnMainThread`, and reports the outcome with `ShowInfo()`. `[AffectsCommands]`
+subscribes a `Progress<T>`, which already posts each report to the UI thread it was
+created on, to push `StatusText` and `ProgressValue`, and reports the outcome with `ShowInfo()`. `[AffectsCommands]`
 on `IsBusy` disables Connect, Load whole tree, Select and Create for the duration, so
 the page needs no code-behind to keep the user out of trouble. One thing to carry
 across when you copy this: every method on `INotionDocumentService` already takes a

@@ -147,8 +147,8 @@ coverage drawn from CodeBrix libraries and add-ins.
 
 There is one solution, `Pinta.Brix.slnx`. It holds the shared UI project,
 `Pinta.Brix.Core`, all six heads, a `Libraries` folder with the six libraries
-under `src/libs`, and a `Tests` folder with the six test projects under
-`tests/libs`. Its own comment describes it as everything that builds with the
+under `src/libs`, and a `Tests` folder with the six library test projects under
+`tests/libs` and the PlayTests project under `tests`. Its own comment describes it as everything that builds with the
 plain .NET SDK, so it opens and builds on Linux, macOS and Windows alike.
 
 The six heads:
@@ -191,7 +191,7 @@ dotnet build tests/libs/Pinta.Brix.Engine.Tests
 ./tests/libs/Pinta.Brix.Engine.Tests/bin/Debug/net10.0/Pinta.Brix.Engine.Tests
 ```
 
-There is one test project per library:
+There is one test project per library, plus the application's PlayTests:
 
 | Test project | Covers |
 | --- | --- |
@@ -201,6 +201,7 @@ There is one test project per library:
 | `tests/libs/Pinta.Brix.Settings.Tests` | The store the settings facade wraps: fresh creation, auto-backup naming and pruning, corruption recovery, import and export |
 | `tests/libs/Pinta.Brix.Controls.Tests` | The accelerator string parser and the command accelerator table that dispatches every keyboard shortcut |
 | `tests/libs/Pinta.Brix.Tools.Tests` | A placeholder; the tools' own ported tests land as the tools port progresses |
+| `tests/Pinta.Brix.PlayTests` | The running application through CodeBrix.Platform.PlayTest: drawing, undo and the history pad, layers, open/save/close prompts, adjustments and effect dialogs, the clipboard, selections, image dialogs, zoom, the palette, tool shortcut keys, layout, orientation and theme |
 
 The tests run headless: no GPU, no network, no display. On Linux the test
 projects that touch pixels pull in the SkiaSharp native library explicitly, and
@@ -214,7 +215,7 @@ the user's real settings.
 ## How the projects and folders are organized
 
 ```text
-Pinta.Brix.slnx                      One solution: shared UI, Core, six heads, six libraries, six test projects
+Pinta.Brix.slnx                      One solution: shared UI, Core, six heads, six libraries, their test projects, PlayTests
 global.json                          Selects the Microsoft.Testing.Platform test runner
 THIRD-PARTY-NOTICES.txt              Upstream provenance, icon-set attribution and the naming policy
 license-pdn.txt                      Upstream-of-upstream license text, copied verbatim
@@ -244,6 +245,7 @@ src/libs/Pinta.Brix.Tools/           Painting, selection, shape and text tools p
 src/libs/Pinta.Brix.Controls/        The only library referencing the platform UI: canvas, widgets, dialogs, menus, icons
 src/libs/Pinta.Brix.Controls/Assets/ The embedded icon set (PNG sizes plus scalable SVG) and its attribution notes
 tests/libs/Pinta.Brix.*.Tests/       One test project per library, mirroring src/libs
+tests/Pinta.Brix.PlayTests/          The running application driven through CodeBrix.Platform.PlayTest
 ```
 
 Dependency direction runs one way. Each head project imports

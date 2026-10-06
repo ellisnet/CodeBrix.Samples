@@ -118,8 +118,9 @@ pipeline for a different purpose.
   [Record bundled third-party content in a notices file](../BLUEPRINTS-ProjectLayoutAndPackaging.md#record-bundled-third-party-content-in-a-notices-file).
 - Set up an xUnit v3 test project that the family's runner actually discovers:
   [Set up an xUnit v3 test project for a CodeBrix library](../BLUEPRINTS-Testing.md#set-up-an-xunit-v3-test-project-for-a-codebrix-library).
-- Give each library an `InternalsVisibleTo.cs` naming only its own test assembly, and add
-  documented internal test accessors rather than widening fields:
+- Give each library an `InternalsVisibleTo.cs` naming its own test assembly (Camera and Vision
+  also name the PlayTests suite), and add documented internal test accessors rather than
+  widening fields:
   [Expose library internals to its test project](../BLUEPRINTS-Testing.md#expose-library-internals-to-its-test-project).
 - Keep every head's `Program.Main` to the same handful of lines, differing only in the call
   that names the platform:
@@ -147,7 +148,7 @@ pipeline for a different purpose.
 
 There is one solution file, `PalmVisualizer/PalmVisualizer.slnx`, and it holds everything:
 the shared UI project, the Core project, all six heads, the three libraries under a
-`Libraries` solution folder, and the three test projects under a `Tests` solution folder. Its
+`Libraries` solution folder, and the test projects under a `Tests` solution folder. Its
 header comment describes it as everything that builds with the plain .NET SDK on Linux, macOS
 and Windows, which holds here because every head is a Skia head. There is no WinUI 3, WPF or
 .NET MAUI head and no workload-gated project, so the same solution opens on any of the three
@@ -198,7 +199,7 @@ project below it at the Microsoft.Testing.Platform runner:
 }
 ```
 
-All three test projects use xUnit v3 with SilverAssertions, build as `Exe`, and set
+All the test projects use xUnit v3 with SilverAssertions, build as `Exe`, and set
 `UseMicrosoftTestingPlatformRunner`, so each test assembly is a self-executing binary. That
 matters in practice: a plain `dotnet test` can report that it discovered zero tests. When it
 does, build the test project and run the produced executable directly:
@@ -215,6 +216,7 @@ What each test project needs:
 | `PalmVisualizer/tests/libs/PalmVisualizer.Camera.Tests` | The capture service lifecycle: enumeration returns a possibly empty list with usable display names, a fresh service reports no session and no frame, `Start()` rejects a null camera, `Stop()` without `Start()` is harmless | OS device enumeration only; passes on a machine with no camera |
 | `PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests` | Attractor easing semantics and the backdrop shader: it compiles, it accepts every uniform the backdrop sets, and it paints non-black pixels on a raster surface | Native Skia, pulled in by referencing the Linux, macOS and Windows Skia native-asset packages |
 | `PalmVisualizer/tests/libs/PalmVisualizer.Vision.Tests` | The detector's pure math, the geometric open-palm classifier, embedded-model loading, tracker start/stop idempotence, and end-to-end inference against a bundled photograph | Native OpenCV, referenced with per-OS `Condition` attributes, plus the bundled test photo copied to the output directory |
+| `PalmVisualizer/tests/PalmVisualizer.PlayTests` | The real page and view model: camera discovery and its failures, auto-selection and switching, the first-frame gate on Visualize, mode switching, tracker and session lifecycle, mirrored palms, the mirrored preview pixels, theme and orientation | Nothing native beyond the PlayTest head; fakes replace the camera, the tracker and the visualizer session, so no camera is opened and the game engine never starts |
 
 The Vision tests run real inference on the CPU. No GPU and no network are needed.
 
@@ -222,7 +224,7 @@ The Vision tests run real inference on the CPU. No GPU and no network are needed
 
 ```text
 PalmVisualizer/
-  PalmVisualizer.slnx                  The one solution: UI, Core, six heads, three libraries, three test projects
+  PalmVisualizer.slnx                  The one solution: UI, Core, six heads, three libraries, the test projects
   global.json                          Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt              Covers the bundled hand-tracking models
   models/                              The committed MediaPipe hand models, embedded into the Vision library at build time
@@ -248,6 +250,7 @@ PalmVisualizer/
       PalmVisualizer.Camera.Tests/     Mirrors src/libs/PalmVisualizer.Camera
       PalmVisualizer.Rendering.Tests/  Mirrors src/libs/PalmVisualizer.Rendering
       PalmVisualizer.Vision.Tests/     Mirrors src/libs/PalmVisualizer.Vision; _data/ holds the test photograph
+    PalmVisualizer.PlayTests/          UI tests of the real page and view model through CodeBrix.Platform.PlayTest
 ```
 
 Dependency direction is strictly one way. Each head project references `PalmVisualizer.Core`
@@ -259,8 +262,9 @@ pair: the files arrive through the shared import, but the head is where they are
 `PalmVisualizer.Core` project-references all three libraries and carries the CodeBrix.Platform
 and Roboto font packages, which reach the heads transitively. Each library owns the packages
 only it needs, and nothing under `src/libs` references anything else under `src/libs`. The
-view model is the only place the three libraries meet. Each test project references exactly
-its own library and nothing else.
+view model is the only place the three libraries meet. Each library test project references
+exactly its own library and nothing else; the PlayTests project references Core and imports
+the shared UI.
 
 ## CodeBrix libraries and add-ins used
 
@@ -275,7 +279,7 @@ its own library and nothing else.
 | CodeBrix.Webcam | Camera enumeration and the live capture session that delivers BGRA frames and caches the latest one | `PalmVisualizer/src/libs/PalmVisualizer.Camera/WebcamCaptureService.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Camera/CameraDevice.cs` |
 | CodeBrix.VideoProcessing.OpenCV5 | The managed binding: `Mat`, the color-conversion, resize and warp calls, and the DNN module that runs both models | `PalmVisualizer/src/libs/PalmVisualizer.Vision/PalmTracker.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Vision/Internal/PalmDetector.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Vision/Internal/HandLandmarker.cs` |
 | CodeBrix.VideoProcessing.OpenCV5 per-runtime native packages | The native OpenCV library, referenced once per runtime identifier by each head and conditionally by the Vision test project | The six head csproj files, `PalmVisualizer/tests/libs/PalmVisualizer.Vision.Tests/PalmVisualizer.Vision.Tests.csproj` |
-| SilverAssertions | The assertion style in all three test projects | The three test csproj files and every test file |
+| SilverAssertions | The assertion style in all the test projects | The test csproj files and every test file |
 
 Third-party libraries:
 
@@ -284,7 +288,7 @@ Third-party libraries:
 | SkiaSharp | `SKSurface`, `SKCanvas`, `SKBitmap`, `SKPaint`, and the runtime-effect types that compile and feed the SkSL shader; its native-asset packages are referenced by the Rendering test project so the shader tests can run | `PalmVisualizer/src/libs/PalmVisualizer.Camera/CameraCanvas.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealBackdrop.cs`, `PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/PalmVisualizer.Rendering.Tests.csproj` |
 | Microsoft.Extensions.Hosting | `Host.CreateDefaultBuilder()`, wrapped by `HostHelper` and handed to `SimpleServiceResolver`, and the `IServiceCollection` the application's services are registered into | `PalmVisualizer/src/PalmVisualizer.Core/Helpers/HostHelper.cs`, `PalmVisualizer/src/PalmVisualizer.Core/RegisterServices.cs` |
 | Microsoft.Extensions.Logging.Console | The Debug-only console logger factory installed in `App.InitializeLogging()` | `PalmVisualizer/src/PalmVisualizer.UI/App.xaml.cs` |
-| xUnit v3 and Microsoft.Testing.Platform | The test framework and the runner for all three test projects | The three test csproj files, `PalmVisualizer/global.json` |
+| xUnit v3 and Microsoft.Testing.Platform | The test framework and the runner for all the test projects | The test csproj files, `PalmVisualizer/global.json` |
 
 ## Worth studying in this application
 
@@ -622,11 +626,12 @@ and
 
 ### Tests that need neither a window nor a camera
 
-Every test project here tests a library, never the UI, and each references exactly its own
-library. That is what makes the suite runnable on a machine with no camera and no GPU: camera
+Every library test project tests a library, never the UI, and each references exactly its own
+library; the PlayTests suite drives the UI with fakes for all three collaborators. That is what makes the suite runnable on a machine with no camera and no GPU: camera
 enumeration legitimately returns an empty list, the shader tests evaluate real SkSL on a Skia
 raster surface with no engine and no window, and the vision tests run real inference on the
-CPU. Each library carries an `InternalsVisibleTo.cs` naming only its own test assembly, and
+CPU. Each library carries an `InternalsVisibleTo.cs` naming its own test assembly (Camera and
+Vision also name the PlayTests suite, whose fakes build their internal types), and
 where a test needs something otherwise private the library adds a documented `internal` test
 accessor rather than widening the field. The shader's compile step is factored into an
 `internal static` method for the same reason. The test bodies follow the family style, with

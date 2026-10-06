@@ -17,8 +17,8 @@ time, moving BGRA pixels from a capture thread onto an `SKXamlCanvas` without
 copying more than necessary, and handing a single still frame to an image encoder.
 It is also a compact example of the two bridge interfaces a view model needs when
 only the page can do something - repainting a canvas and opening a native folder
-dialog - and it ships with no libraries and no tests, so the whole application is a
-shared UI project, one Core library and six heads.
+dialog - and it ships with no libraries and only PlayTests, so the whole application
+is a shared UI project, one Core library, six heads and a PlayTests project.
 
 ## What this sample shows a CodeBrix.Platform developer
 
@@ -109,7 +109,7 @@ install. There is no second solution.
 
 | Solution | Open it on | Contains |
 | --- | --- | --- |
-| `WebcamViewer.slnx` | Linux, macOS, Windows | The shared UI project, `WebcamViewer.Core`, and the six heads. No `Libraries` or `Tests` solution folder, because the application has neither |
+| `WebcamViewer.slnx` | Linux, macOS, Windows | The shared UI project, `WebcamViewer.Core`, the six heads, and the PlayTests project in a `Tests` solution folder. No `Libraries` solution folder, because the application has none |
 
 ### The heads
 
@@ -173,34 +173,31 @@ Console logging is compiled in only for Debug builds - the body of
 
 ### Tests
 
-There are none. This application has no `tests/` folder, no test project and no
-`global.json`, so there is no test-runner selection to be aware of here and nothing
-in this folder demonstrates the family's test conventions. Where an application in
-this repository does ship tests, its test assemblies are self-executing binaries,
-a plain `dotnet test` can report that zero tests ran, and the form that always
-works is to build the test project and run the executable it produces:
-
-```text
-dotnet build tests/libs/<Project>.Tests/<Project>.Tests.csproj -c Release
-./tests/libs/<Project>.Tests/bin/Release/net10.0/<Project>.Tests
-```
+The only tests are the PlayTests in `tests/WebcamViewer.PlayTests`, which drive the
+real page through the CodeBrix.Platform PlayTest head; its README covers running
+them. They register a scripted camera service in place of CodeBrix.Webcam before the
+first page is built, so they never enumerate or open a real camera and need no
+native media runtime. `global.json` selects the Microsoft.Testing.Platform runner
+they use.
 
 ## How the projects and folders are organized
 
 ```text
 WebcamViewer/
   WebcamViewer.slnx                   The one solution; every project; opens on Linux, macOS and Windows
+  global.json                         Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt             Third-party content used by this application
   src/
     WebcamViewer.UI/                  Shared items project: the XAML every head compiles
       WebcamViewer.UI.shproj          Shared-project shell, so an IDE can load the folder as a project
       WebcamViewer.UI.projitems       The shared file list each head imports with Label="Shared"
       App.xaml                        Merged WinUI resources and the Open Sans FontFamily resource
-      App.xaml.cs                     Bootstrap: default font, service resolver, design mode, window and frame, logging
+      App.xaml.cs                     Bootstrap: default font, service resolver and camera service, design mode, window and frame, logging
       Views/MainPage.xaml             The whole UI: camera dropdown, audio checkbox, video canvas, folder row, status line
       Views/MainPage.xaml.cs          Thin code-behind: the two bridges, the XamlRoot getter, the canvas paint handler
     WebcamViewer.Core/                Class library; carries every non-head package
       WebcamViewer.Core.csproj        RootNamespace WebcamViewer; framework, canvas, webcam, imaging, font, hosting, logging
+      Cameras/                        ICameraService and ICameraSession, the seam in front of the cameras, and WebcamCameraService, the CodeBrix.Webcam implementation
       Helpers/HostHelper.cs           The IHostBuilderProvider that SimpleServiceResolver builds its container from
       Video/VideoCanvas.cs            The SKXamlCanvas subclass the XAML names, and the frame renderer beside it
       ViewModels/MainViewModel.cs     The only view model: devices, session, latest frame, folder, commands, status
@@ -210,6 +207,8 @@ WebcamViewer/
     WebcamViewer.MacOS/               Head: Program.cs plus a csproj with one runtime package
     WebcamViewer.Win32Skia/           Head: Program.cs plus a csproj with one runtime package
     WebcamViewer.WinWpfSkia/          Same, plus net10.0-windows and a software render surface
+  tests/
+    WebcamViewer.PlayTests/           PlayTests of the real page, with a scripted camera service in place of CodeBrix.Webcam
 ```
 
 The dependency direction is one way. Each head takes a project reference on
@@ -219,7 +218,7 @@ The dependency direction is one way. Each head takes a project reference on
 package references, so everything the heads share arrives through it. The shared UI
 project is never compiled on its own: `App.xaml`, `App.xaml.cs`,
 `Views/MainPage.xaml` and `Views/MainPage.xaml.cs` are compiled once into each of
-the six head assemblies, which is why every head csproj also tells MSBuild to treat
+the six head assemblies (and the same way into the PlayTests assembly), which is why every head csproj also tells MSBuild to treat
 `.xaml` files as `Page` items. Because the XAML ends up inside the head assembly
 while the view models and the canvas live in the library, the page reaches both
 with assembly-qualified `clr-namespace` declarations
@@ -236,7 +235,7 @@ while its assembly name stays `WebcamViewer.Core`.
 | CodeBrix.Platform runtime backend (one package per head) | Supplies the windowing and render backend named by the head's single `Use...()` call | the six `src/WebcamViewer.<head>/` projects |
 | CodeBrix.Platform SkiaSharp Views | Supplies `SKXamlCanvas`, subclassed once so the XAML has a control name to declare for the video surface | `src/WebcamViewer.Core/Video/VideoCanvas.cs` |
 | CodeBrix.Platform Fonts.OpenSans | Ships Open Sans, set as the application-wide default text font and exposed as a `FontFamily` resource key addressed through an `ms-appx:///` URI | `src/WebcamViewer.Core/`, `src/WebcamViewer.UI/App.xaml`, `src/WebcamViewer.UI/App.xaml.cs`, `src/WebcamViewer.UI/Views/MainPage.xaml` |
-| CodeBrix.Webcam | Device enumeration, the live capture session and its BGRA frame event, optional audio monitoring, and the in-memory still the Photo command encodes | `src/WebcamViewer.Core/ViewModels/MainViewModel.cs` |
+| CodeBrix.Webcam | Device enumeration, the live capture session and its BGRA frame event, optional audio monitoring, and the in-memory still the Photo command encodes | `src/WebcamViewer.Core/Cameras/WebcamCameraService.cs`, `src/WebcamViewer.Core/ViewModels/MainViewModel.cs` |
 | CodeBrix.Imaging | Wraps the still's raw BGRA pixels in an image and writes the PNG file | `src/WebcamViewer.Core/ViewModels/MainViewModel.cs` |
 
 Third-party libraries:
@@ -264,7 +263,8 @@ start command.
 `SwitchCamera` is also the teardown path. It clears `HasFrame`, unsubscribes from
 and disposes the previous session, drops the cached frame under the frame lock,
 invalidates the canvas so the stale picture is painted over with black, and only
-then constructs and starts the new `WebcamSession`. A null camera means "stop and
+then opens and starts the new session through the `ICameraService` the `App`
+registers (a `WebcamSession` behind `WebcamCameraService`). A null camera means "stop and
 stay stopped". Read `src/WebcamViewer.Core/ViewModels/MainViewModel.cs` from the
 constructor down to `SwitchCamera`.
 
@@ -368,8 +368,8 @@ Validation stays in the view model and is deliberately blunt: `IsValidFolder` is
 trimmed non-empty string plus `Directory.Exists`, evaluated inside the Photo
 command's `CanExecute`. `FolderPath` carries `[AffectsCommands(nameof(PhotoCommand))]`,
 so the button re-evaluates whenever the property changes - which, because the box
-is bound two-way without `UpdateSourceTrigger=PropertyChanged`, is when the box
-loses focus rather than on every keystroke.
+is bound two-way with `UpdateSourceTrigger=PropertyChanged`, is on every keystroke
+rather than only when the box loses focus.
 
 Sharp edges met here. The folder is never remembered between runs - this
 application has no settings store, and adding one is the natural next step. The
@@ -454,8 +454,10 @@ startup sequence, and finally `src/WebcamViewer.Core/Helpers/HostHelper.cs`.
 creates the `SimpleServiceResolver` from `HostHelper.GetHost()`, calls
 `SimpleViewModel.SetIsDesignMode(false)`, and calls `InitializeComponent()` - and
 `OnLaunched` creates the window, puts a `Frame` in it and navigates to the page.
-The service-registration lambda is empty here, with a comment saying why: the
-capture session lives in the view model, so there is no service to register.
+The service-registration lambda registers one service, the `ICameraService` in front
+of the cameras, and then runs the delegate an alternate host passes to the
+`App(Action<IServiceCollection>)` overload, which is how the PlayTests replace it
+before any view model exists.
 
 The sharp edges are mostly in the build files. New XAML pages must be added to the
 `.projitems` by hand, as a `Page` with `Generator MSBuild:Compile` and as a
@@ -500,12 +502,10 @@ It is deliberately small: one page, one view model, one canvas. It has:
   one, and that is worth reading as the graceful-degradation pattern, but this view
   model reports everything through a status line instead. See
   [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
-- No registered services: the registration lambda in `App.xaml.cs` is a comment, so
-  the wiring is shown but no resolution is.
 - No converters, styles, templates, second page or navigation beyond the initial
   one, and no cancellation or progress reporting.
-- No libraries and no tests, so nothing here shows the `src/libs` plus `tests/libs`
-  layout or the family's test conventions.
+- No libraries and no unit tests, so nothing here shows the `src/libs` plus
+  `tests/libs` layout; the only tests are the PlayTests.
 
 ## Third-party content
 

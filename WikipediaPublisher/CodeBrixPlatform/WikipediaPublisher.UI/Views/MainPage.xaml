@@ -61,8 +61,9 @@
         </Grid>
 
         <!-- Bottom bar: output file path (+ Select dialog), page size, Publish.
-             A wrapping FlexPanel: one row while the window is wide enough; in portrait
-             the save-target group and the page-size/Publish group split onto two rows -->
+             A wrapping FlexPanel: the save-target group and the page-size/Publish group
+             share one row while there is room for both - a portrait screen included - and
+             split onto two rows in a window too narrow for both -->
         <flex:FlexPanel Grid.Row="3" Margin="0,8,0,0" Direction="Row" Wrap="Wrap"
                         AlignItems="Center">
 

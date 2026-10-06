@@ -56,8 +56,8 @@ model source without the CodeBrix.Platform UI stack.
 
 | Solution | Open it on | Contains |
 | --- | --- | --- |
-| `PainDiagram.slnx` | Linux, macOS, Windows | `PainDiagram.UI`, `PainDiagram.Core` and the six CodeBrix.Platform Skia heads |
-| `PainDiagram.Windows.slnx` | Windows | Everything in the cross-platform solution plus the native `PainDiagram.WinUI` and `PainDiagram.Wpf` heads |
+| `PainDiagram.slnx` | Linux, macOS, Windows | `PainDiagram.UI`, `PainDiagram.Core`, the six CodeBrix.Platform Skia heads and `PainDiagram.PlayTests` |
+| `PainDiagram.Windows.slnx` | Windows | Everything in the cross-platform solution, plus the native `PainDiagram.WinUI` and `PainDiagram.Wpf` heads |
 
 Both files carry a comment at the top saying which is which. The Windows solution declares
 only x86, x64 and ARM64 solution platforms, because `PainDiagram.WinUI` declares those
@@ -114,18 +114,24 @@ they have no Any CPU configuration. The WinUI head ships two launch profiles,
 
 ### Tests
 
-This application has no tests folder and no test project, and no `global.json`, so no test
-runner is selected here and there is nothing to run with `dotnet test`. The drawing logic
-that would be worth testing lives in the CodeBrix.Imaging.Drawing library rather than in
-the sample; the sample's own code is the view model, a pair of small helpers and the per-head
-plumbing.
+`CodeBrixPlatform/tests/PainDiagram.PlayTests` drives the real page through the
+CodeBrix.Platform PlayTest head: layer selection, drawing with real pointer input, Clear,
+and Save through a scripted save picker. `global.json` selects the Microsoft.Testing.Platform
+runner it uses. From this folder:
+
+```text
+dotnet test --project CodeBrixPlatform/tests/PainDiagram.PlayTests/PainDiagram.PlayTests.csproj -c Release
+```
+
+The drawing logic itself lives in the CodeBrix.Imaging.Drawing library and is tested there.
 
 ## How the projects and folders are organized
 
 ```text
 PainDiagram/
-  PainDiagram.slnx                        Cross-platform solution: shared UI and Core plus the six Skia heads
+  PainDiagram.slnx                        Cross-platform solution: shared UI and Core, the six Skia heads and the PlayTests
   PainDiagram.Windows.slnx                Windows solution: the above plus the WinUI 3 and WPF heads
+  global.json                             Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt                 Provenance of the bundled body-map image
   Shared/                                 Source that is file-linked into every head assembly
     ViewModels/MainViewModel.cs           The whole application: state, commands, drawing session, bridge interfaces
@@ -143,6 +149,7 @@ PainDiagram/
     PainDiagram.LinuxWayland/             Head: Program.cs plus one runtime package
     PainDiagram.LinuxFrameBuffer/         Head: Program.cs plus one runtime package
     PainDiagram.MacOS/                    Head: Program.cs plus one runtime package
+    tests/PainDiagram.PlayTests/          PlayTest UI suite for the CodeBrix.Platform page
   PainDiagram.WinUI/                      Native WinUI 3 head: own App and MainPage, Win32SaveFileDialog, MSIX assets and manifests
   PainDiagram.Wpf/                        Native WPF head: own App and MainWindow, WPF SaveFileDialog
 ```

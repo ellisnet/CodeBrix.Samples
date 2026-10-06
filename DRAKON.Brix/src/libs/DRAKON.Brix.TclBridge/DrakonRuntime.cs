@@ -30,9 +30,19 @@ internal sealed class DrakonRuntime : IDisposable
     private TkTclBridge _bridge;
     private TkWindow _directRoot;
     private bool _started;
+    private volatile bool _ready;
 
     /// <summary>Raised with diagnostic text (startup failures, bgerror).</summary>
     public event Action<string> Diagnostic;
+
+    /// <summary>
+    /// True once bootstrap.tcl and drakon_editor.tcl have both been sourced
+    /// successfully (the "DRAKON Editor is up." point).
+    /// </summary>
+    public bool IsReady
+    {
+        get { return _ready; }
+    }
 
     /// <summary>
     /// Starts DRAKON in HOSTED mode inside the given host view — the way the
@@ -40,9 +50,14 @@ internal sealed class DrakonRuntime : IDisposable
     /// loaded (its tree and dispatcher exist).
     /// </summary>
     /// <param name="host">The loaded Tk host view.</param>
-    public void Start(TkHostView host)
+    /// <param name="onQuit">
+    /// What DRAKON's <c>exit</c> does; the application passes
+    /// <c>Environment.Exit</c>.
+    /// </param>
+    public void Start(TkHostView host, Action<int> onQuit)
     {
         if (host == null) { throw new ArgumentNullException(nameof(host)); }
+        if (onQuit == null) { throw new ArgumentNullException(nameof(onQuit)); }
         if (_started) { return; }
         _started = true;
 
@@ -53,7 +68,7 @@ internal sealed class DrakonRuntime : IDisposable
         {
             try
             {
-                if (!Boot(tree, hosted: true, code => Environment.Exit(code), new TkHostFileDialogs(), assets))
+                if (!Boot(tree, hosted: true, onQuit, new TkHostFileDialogs(), assets))
                 {
                     return;
                 }
@@ -181,6 +196,7 @@ internal sealed class DrakonRuntime : IDisposable
                 return;
             }
 
+            _ready = true;
             Report("DRAKON Editor is up.");
         });
 
@@ -245,6 +261,41 @@ internal sealed class DrakonRuntime : IDisposable
                 "Tcl error: " + (result != null ? result.ToString() : "(null)"));
         }
         return result != null ? result.ToString() : String.Empty;
+    }
+
+    /// <summary>
+    /// Test-only: evaluate a Tcl script on the HOSTED interpreter's Tcl thread
+    /// and complete with its string result; faults on a Tcl error. Work queued
+    /// before it (the boot itself, earlier callbacks) runs first.
+    /// </summary>
+    /// <param name="script">The Tcl script to evaluate.</param>
+    /// <returns>The script's string result.</returns>
+    internal Task<string> PostScriptForTest(string script)
+    {
+        var completion = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        TkTclBridge bridge = _bridge;
+        if (bridge == null)
+        {
+            completion.SetException(new InvalidOperationException("The DRAKON runtime has not booted."));
+            return completion.Task;
+        }
+
+        bridge.Post(interp =>
+        {
+            try
+            {
+                Result result = null;
+                ReturnCode code = interp.EvaluateScript(script, ref result);
+                string text = result != null ? result.ToString() : String.Empty;
+                if (code != ReturnCode.Ok) { completion.SetException(new InvalidOperationException("Tcl error: " + text)); }
+                else { completion.SetResult(text); }
+            }
+            catch (Exception ex)
+            {
+                completion.TrySetException(ex);
+            }
+        });
+        return completion.Task;
     }
 
     private void Report(string message)

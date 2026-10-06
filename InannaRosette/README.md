@@ -209,7 +209,7 @@ solution folder.
 
 | Solution | Open it on | Contains |
 | --- | --- | --- |
-| `InannaRosette.slnx` | Linux, macOS, Windows | The shared UI project, `InannaRosette.Core`, the four heads, `InannaRosette.Reading` under `Libraries` and `InannaRosette.Reading.Tests` under `Tests` |
+| `InannaRosette.slnx` | Linux, macOS, Windows | The shared UI project, `InannaRosette.Core`, the four heads, `InannaRosette.Reading` under `Libraries`, and `InannaRosette.Reading.Tests` and `InannaRosette.PlayTests` under `Tests` |
 
 ### The heads
 
@@ -229,10 +229,10 @@ device is for, and nothing here needs the WPF-hosted surface. Every head targets
 systems.
 
 Each head is a `Program.cs` and a csproj, identical apart from the one `Use…()` call that
-names the backend. Two csproj properties differ from the leanest heads in this repository:
-every head sets `Nullable` and `ImplicitUsings` to `enable`, matching
-`InannaRosette.Core`, because the shared UI files are written with nullable annotations and
-are compiled *into* each head.
+names the backend. Every head sets `Nullable` and `ImplicitUsings` to `disable`: the shared
+UI files are written without nullable annotations or implicit usings and are compiled *into*
+each head and into the PlayTests project, so all of them build those files the same way.
+`InannaRosette.Core` keeps both enabled for its own code.
 
 ### Prerequisites
 
@@ -265,8 +265,9 @@ inside `#if DEBUG` - so a Release run is silent.
 
 ### Tests
 
-The tests cover `InannaRosette.Reading` only; there is no test project for the Core view
-models, for the shared UI or for any head. This application *does* have a `global.json`,
+`tests/libs/InannaRosette.Reading.Tests` covers `InannaRosette.Reading`;
+`tests/InannaRosette.PlayTests` drives the real page and view model through the
+CodeBrix.Platform PlayTest head (see its own README). This application *does* have a `global.json`,
 and it does one thing: it selects the Microsoft.Testing.Platform runner for the whole
 folder. The test csproj sets the same thing again for itself, with `OutputType` of `Exe`,
 `UseMicrosoftTestingPlatformRunner` and `TestingPlatformDotnetTestSupport`. Because
@@ -308,6 +309,7 @@ InannaRosette/
       Services/IReadingTableBridge.cs What the page must show when the table changes
       Services/IReadingFileBridge.cs  The save and open dialogs only a head can show
       Services/IReadingDialogBridge.cs  The three dialog shapes the application asks for by name
+      Services/IDeckFactory.cs        Optional deck source an alternate host may register; none by default
       ViewModels/MainViewModel.cs     The whole reading: deck, tray, nine stations, ten commands, status
       ViewModels/ReadingCard.cs       One card that has left the deck: which station, which way up
     InannaRosette.LinuxX11/           Head: Program.cs plus exactly one runtime package
@@ -338,6 +340,7 @@ InannaRosette/
         RegisterServices.cs           AddReading(): the three services in one line
         InternalsVisibleTo.cs         Opens internals to the .Tests assembly
   tests/
+    InannaRosette.PlayTests/          UI tests of the real page through the PlayTest head
     libs/
       InannaRosette.Reading.Tests/    xUnit v3 on Microsoft.Testing.Platform
         TestData.cs                   Fixed readings built from fixed card ids and a fixed timestamp
@@ -377,7 +380,7 @@ two types that live in other assemblies take the `clr-namespace:…;assembly=…
 | CodeBrix.Platform runtime for each head | One rendering backend per head - X11, Wayland, macOS and Win32 - each selected by its own `Use…()` call on the host builder, with `UseDirectSkiaCanvasMode()` beside it | the four `src/InannaRosette.<Head>/` projects and their `Program.cs` |
 | CodeBrix.Platform.Fonts.Merriweather | Supplies Merriweather as the application-wide default text font and as two `FontFamily` resources (`MerriweatherFont`, `MerriweatherBoldFont`) addressed through `ms-appx:///` URIs, which every text style and every hand-built `TextBlock` in the scene uses | `src/InannaRosette.Core/InannaRosette.Core.csproj`, `src/InannaRosette.UI/App.xaml`, `src/InannaRosette.UI/App.xaml.cs`, `src/InannaRosette.UI/Controls/CardView.xaml.cs` |
 | CodeBrix.PdfDocuments | The entire report: `PdfDocument`, `PdfPage` and `XGraphics` for the pages and the drawing, `XGraphicsPath` for the emblem art, `XFont`, `XSolidBrush`, `XPen` and the gradient brushes for type and ornament, and `EmbeddedFontResolver`, `EmbeddedResourceFontFace` and `MetaFontResolver` for the embedded faces | everything under `src/libs/InannaRosette.Reading/Services/Pdf/`, and `src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs` |
-| SilverAssertions | The `Should()` assertion style used throughout the tests | all files under `tests/libs/InannaRosette.Reading.Tests/` |
+| SilverAssertions | The `Should()` assertion style used throughout the tests | all files under `tests/libs/InannaRosette.Reading.Tests/` and `tests/InannaRosette.PlayTests/` |
 
 Third-party libraries:
 

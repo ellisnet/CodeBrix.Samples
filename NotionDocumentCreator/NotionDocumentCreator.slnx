@@ -14,6 +14,7 @@
     <Project Path="src/libs/NotionDocumentCreator.CreateDocument/NotionDocumentCreator.CreateDocument.csproj" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/NotionDocumentCreator.PlayTests/NotionDocumentCreator.PlayTests.csproj" />
     <Project Path="tests/libs/NotionDocumentCreator.CreateDocument.Tests/NotionDocumentCreator.CreateDocument.Tests.csproj" />
   </Folder>
 </Solution>

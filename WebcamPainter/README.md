@@ -107,7 +107,7 @@ or .NET MAUI heads, so there is one solution and no Windows-only companion.
 
 | Solution | Open it on | Contains |
 | --- | --- | --- |
-| `WebcamPainter.slnx` | Linux, macOS, Windows | The shared UI project, `WebcamPainter.Core`, the six heads, a `Libraries` solution folder with the three side libraries, and a `Tests` solution folder with their three test projects |
+| `WebcamPainter.slnx` | Linux, macOS, Windows | The shared UI project, `WebcamPainter.Core`, the six heads, a `Libraries` solution folder with the three side libraries, and a `Tests` solution folder with their three test projects and the PlayTests project |
 
 ### The heads
 
@@ -192,6 +192,9 @@ copies its fixture photograph to the output folder. Neither the Vision nor the W
 tests need a camera: device enumeration talks straight to the OS and returns an empty
 list on a machine without one.
 
+`tests/WebcamPainter.PlayTests/` drives the real page through CodeBrix.Platform.PlayTest
+with a scripted camera and hand tracker in place of the real ones; see its README.
+
 ## How the projects and folders are organized
 
 ```text
@@ -225,6 +228,7 @@ WebcamPainter/
       WebcamPainter.Vision/             HandTracker, the result types, and Internal/ with
                                           PalmDetector, HandLandmarker, OpenPalmClassifier
   tests/
+    WebcamPainter.PlayTests/            UI tests of the real page with a fake camera and tracker
     libs/
       WebcamPainter.Webcam.Tests/       Capture service behavior with no camera present
       WebcamPainter.Painting.Tests/     Palette, session, stroke lifecycle, export, mirroring
@@ -241,7 +245,7 @@ bundled font, and contributes the view model, the two bridge contracts it implem
 one value converter and two helpers. Each head
 project-references only `WebcamPainter.Core`, adds exactly one CodeBrix.Platform
 runtime package for its windowing system, and adds the native OpenCV packages for
-its runtime identifiers. Each test project project-references exactly one library.
+its runtime identifiers. Each library test project project-references exactly one library.
 
 The XAML UI is file-linked rather than referenced: every head imports
 `WebcamPainter.UI.projitems` with `Label="Shared"`, so `App.xaml.cs` and
@@ -498,11 +502,13 @@ The layout is the point of this part. Each capability is a library under `src/li
 with a mirrored test project under `tests/libs`, listed in named `Libraries` and
 `Tests` solution folders while the heads and Core sit at the solution root. The
 libraries expose plain models and services; all composition happens in the view
-model, and no library references another. Each keeps its implementation types
+model (which resolves the camera and the hand tracker through their interfaces from
+the services `App` registers), and no library references another. Each keeps its implementation types
 internal, under an `Internal/` folder where there are several, and ships a one-line
 `InternalsVisibleTo.cs` naming its own test assembly. That file is present in all
 three, even where the tests only touch public members, because the convention is
-applied uniformly. `WebcamPainter.Vision` additionally embeds its two model files
+applied uniformly. The Webcam and Vision files also name the PlayTests assembly, whose
+fakes construct cameras, photos and tracking results through internal constructors. `WebcamPainter.Vision` additionally embeds its two model files
 with explicit logical names, which is necessary because the source files live outside
 the project directory and the default resource name would otherwise be unpredictable;
 the loader throws a clear exception when a name does not resolve. See [Organize an application as src libs plus tests libs around a shared UI project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project),

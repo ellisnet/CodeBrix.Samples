@@ -13,7 +13,7 @@ using Xunit;
 
 namespace WikipediaPublisher.PlayTests;
 
-public sealed class ApplicationTests(AppFixture fixture) : SampleTest<AppFixture, MainPage>(fixture)
+public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<AppFixture, MainPage>(fixture)
 {
     private async Task FindArticleAsync(bool enter = false)
     {
@@ -23,6 +23,12 @@ public sealed class ApplicationTests(AppFixture fixture) : SampleTest<AppFixture
         await Fixture.Application.WaitForAsync(() => Fixture.Model.ArticleUrl,
             url => url == new Uri(Fixture.Origin, "wiki/Fixture_Article").AbsoluteUri);
         await Expect(Page.GetByText("Ready to publish this article.", new() { Exact = true })).ToBeVisibleAsync();
+    }
+    private async Task BrowseToAsync(string relativeUrl)
+    {
+        var url = new Uri(Fixture.Origin, relativeUrl).AbsoluteUri;
+        await Page.EvaluateAsync(() => Fixture.Model.NavigateToUrl(url));
+        await Fixture.Application.WaitForAsync(() => Fixture.Model.ArticleUrl, value => value == url);
     }
     private async Task SelectOutputAsync(string path)
     {
@@ -189,5 +195,184 @@ public sealed class ApplicationTests(AppFixture fixture) : SampleTest<AppFixture
         await SelectOutputAsync(Path.Combine(Fixture.DataDirectory, "portrait.pdf"));
         await Expect(Button("Publish")).ToBeEnabledAsync();
         await SnapshotAsync("WikipediaPublisher-portrait");
+    }
+
+    [Fact]
+    public async Task Confirming_replace_overwrites_the_existing_file()
+    {
+        await FindArticleAsync();
+        var path = Path.Combine(Fixture.DataDirectory, "replace " + Guid.NewGuid().ToString("N") + ".pdf");
+        await File.WriteAllTextAsync(path, "Replace this document", TestContext.Current.CancellationToken);
+        await SelectOutputAsync(path);
+        await Button("Publish").ClickAsync();
+        await Expect(Page.GetByRole(AriaRole.Dialog)).ToContainTextAsync("Replace existing file?");
+        await Page.GetByRole(AriaRole.Dialog).GetByRole(AriaRole.Button, new() { Name = "Yes", Exact = true }).ClickAsync();
+        await Expect(Page.GetByRole(AriaRole.Dialog)).ToContainTextAsync("Published");
+        Fixture.Renderer.LastRequest.OutputFilePath.Should().Be(path);
+        File.ReadAllText(path).Should().StartWith("%PDF-");
+        await Page.GetByRole(AriaRole.Dialog).GetByRole(AriaRole.Button).First.ClickAsync();
+        await Expect(Button("Publish")).ToBeEnabledAsync();
+    }
+
+    [Fact]
+    public async Task Typed_output_path_enables_publish_on_an_article()
+    {
+        await FindArticleAsync();
+        var path = Path.Combine(Fixture.DataDirectory, "typed " + Guid.NewGuid().ToString("N") + ".pdf");
+        await Page.GetByTestId("OutputFilePath").FillAsync(path);
+        await Expect(Button("Publish")).ToBeEnabledAsync();
+        await Button("Publish").ClickAsync();
+        await Expect(Page.GetByRole(AriaRole.Dialog)).ToContainTextAsync("Published");
+        Fixture.Application.FilePickers.SaveFileRequestCount.Should().Be(0);
+        Fixture.Renderer.LastRequest.OutputFilePath.Should().Be(path);
+        Fixture.Renderer.LastRequest.ArticleUrl.Should().Be(new Uri(Fixture.Origin, "wiki/Fixture_Article").AbsoluteUri);
+        File.ReadAllText(path).Should().StartWith("%PDF-");
+        await Page.GetByRole(AriaRole.Dialog).GetByRole(AriaRole.Button).First.ClickAsync();
+    }
+
+    [Theory]
+    [InlineData("wiki/Special:Random")]
+    [InlineData("wiki/Category:Fixtures")]
+    [InlineData("wiki/File:Fixture.png")]
+    public async Task Non_article_namespaces_keep_publish_disabled(string relativeUrl)
+    {
+        await Page.GetByTestId("OutputFilePath").FillAsync(Path.Combine(Fixture.DataDirectory, "namespace.pdf"));
+        await BrowseToAsync(relativeUrl);
+        await Expect(Page.GetByText("Browse to an article page to enable publishing.", new() { Exact = true })).ToBeVisibleAsync();
+        await Expect(Button("Publish")).ToBeDisabledAsync();
+    }
+
+    [Fact]
+    public async Task Navigating_away_from_an_article_disables_publish()
+    {
+        await FindArticleAsync();
+        await Page.GetByTestId("OutputFilePath").FillAsync(Path.Combine(Fixture.DataDirectory, "away.pdf"));
+        await Expect(Button("Publish")).ToBeEnabledAsync();
+        await BrowseToAsync("wiki/Category:Fixtures");
+        await Expect(Page.GetByText("Browse to an article page to enable publishing.", new() { Exact = true })).ToBeVisibleAsync();
+        await Expect(Button("Publish")).ToBeDisabledAsync();
+    }
+
+    [Fact]
+    public async Task Commands_are_disabled_and_progress_shown_while_rendering()
+    {
+        await FindArticleAsync();
+        await SelectOutputAsync(Path.Combine(Fixture.DataDirectory, Guid.NewGuid().ToString("N") + ".pdf"));
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Fixture.Renderer.Gate = gate;
+        await Button("Publish").ClickAsync();
+        await Expect(Page.GetByText("Rendering the fixture article…", new() { Exact = true })).ToBeVisibleAsync();
+        await Fixture.Application.WaitForAsync(() => Fixture.Model.ProgressValue, value => value == 50);
+        await Expect(Button("Search")).ToBeDisabledAsync();
+        await Expect(Button("Select…")).ToBeDisabledAsync();
+        await Expect(Button("Publish")).ToBeDisabledAsync();
+        await SnapshotAsync("WikipediaPublisher-rendering");
+        gate.SetResult();
+        await Expect(Page.GetByRole(AriaRole.Dialog)).ToContainTextAsync("Published");
+        await Page.GetByRole(AriaRole.Dialog).GetByRole(AriaRole.Button).First.ClickAsync();
+        await Expect(Button("Search")).ToBeEnabledAsync();
+        await Expect(Button("Select…")).ToBeEnabledAsync();
+        await Expect(Button("Publish")).ToBeEnabledAsync();
+    }
+
+    [Fact]
+    public async Task Successful_publish_reports_saved_status_and_resets_progress()
+    {
+        await FindArticleAsync();
+        var path = Path.Combine(Fixture.DataDirectory, Guid.NewGuid().ToString("N") + ".pdf");
+        await SelectOutputAsync(path);
+        await Expect(Page.GetByText("Will save to: " + path, new() { Exact = true })).ToBeVisibleAsync();
+        await Button("Publish").ClickAsync();
+        await Expect(Page.GetByRole(AriaRole.Dialog)).ToContainTextAsync("Saved to:");
+        await Page.GetByRole(AriaRole.Dialog).GetByRole(AriaRole.Button).First.ClickAsync();
+        await Expect(Page.GetByText("Saved: " + path, new() { Exact = true })).ToBeVisibleAsync();
+        await Fixture.Application.WaitForAsync(() => Fixture.Model.ProgressValue, value => value == 0);
+        (await Page.EvaluateAsync(() => Fixture.Model.IsBusy)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Save_picker_suggests_the_article_title_as_file_name()
+    {
+        await FindArticleAsync();
+        await SelectOutputAsync(Path.Combine(Fixture.DataDirectory, Guid.NewGuid().ToString("N") + ".pdf"));
+        Fixture.Application.FilePickers.LastSuggestedFileName.Should().Be("Fixture Article.pdf");
+    }
+
+    [Fact]
+    public async Task Save_picker_failure_shows_error_dialog_and_app_recovers()
+    {
+        var previous = Path.Combine(Fixture.DataDirectory, "previous.pdf");
+        await Page.GetByTestId("OutputFilePath").FillAsync(previous);
+        Fixture.Application.FilePickers.EnqueueSaveFile(Path.Combine(Fixture.DataDirectory, "missing folder", "article.pdf"));
+        await Button("Select…").ClickAsync();
+        await Expect(Page.GetByRole(AriaRole.Dialog)).ToContainTextAsync("Could not open the file dialog:");
+        await Page.GetByRole(AriaRole.Dialog).GetByRole(AriaRole.Button).First.ClickAsync();
+        await Expect(Page.GetByRole(AriaRole.Dialog)).ToBeHiddenAsync();
+        (await Page.EvaluateAsync(() => Fixture.Model.OutputFilePath)).Should().Be(previous);
+        var path = Path.Combine(Fixture.DataDirectory, Guid.NewGuid().ToString("N") + ".pdf");
+        await SelectOutputAsync(path);
+        Fixture.Application.FilePickers.SaveFileRequestCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Whitespace_search_terms_keep_search_disabled()
+    {
+        await Page.GetByTestId("SearchTerms").FillAsync("Fixture Article");
+        await Expect(Button("Search")).ToBeEnabledAsync();
+        await Page.GetByTestId("SearchTerms").FillAsync("   ");
+        await Expect(Button("Search")).ToBeDisabledAsync();
+        (await Page.EvaluateAsync(() => Fixture.Model.SubmitSearch())).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Search_terms_are_escaped_in_the_browser_request()
+    {
+        await Page.GetByTestId("SearchTerms").FillAsync("  Nöldeke & Müller #1/2?  ");
+        await Button("Search").ClickAsync();
+        await Fixture.Application.WaitForAsync(() => Fixture.Model.ArticleUrl,
+            url => url == new Uri(Fixture.Origin, "wiki/Fixture_Article").AbsoluteUri);
+        Fixture.Requests.Should().Contain("/w/index.php?search=N%C3%B6ldeke%20%26%20M%C3%BCller%20%231%2F2%3F");
+    }
+
+    [Fact]
+    public async Task Default_page_size_is_coffee_table_and_reaches_the_service()
+    {
+        (await Page.EvaluateAsync(() => Fixture.Model.SelectedPageSize.Option)).Should().Be(PageSizeOption.EightByTen);
+        await FindArticleAsync();
+        await SelectOutputAsync(Path.Combine(Fixture.DataDirectory, Guid.NewGuid().ToString("N") + ".pdf"));
+        await Button("Publish").ClickAsync();
+        await Expect(Page.GetByRole(AriaRole.Dialog)).ToContainTextAsync("Published");
+        Fixture.Renderer.LastRequest.PageSize.Should().Be(PageSizeOption.EightByTen);
+        await Page.GetByRole(AriaRole.Dialog).GetByRole(AriaRole.Button).First.ClickAsync();
+    }
+
+    [Theory]
+    [InlineData("6\" × 9\" (trade book)", PageSizeOption.SixByNine)]
+    [InlineData("8.5\" × 11\" (US Letter)", PageSizeOption.Letter)]
+    [InlineData("A4 (210 × 297 mm)", PageSizeOption.A4)]
+    public async Task Every_page_size_reaches_the_service(string displayName, PageSizeOption option)
+    {
+        await FindArticleAsync();
+        await SelectOutputAsync(Path.Combine(Fixture.DataDirectory, Guid.NewGuid().ToString("N") + ".pdf"));
+        await Page.GetByTestId("SelectedPageSize").ClickAsync();
+        await Page.GetByRole(AriaRole.Option, new() { Name = displayName, Exact = true }).ClickAsync();
+        await Fixture.Application.WaitForAsync(() => Fixture.Model.SelectedPageSize.Option, value => value == option);
+        await Button("Publish").ClickAsync();
+        await Expect(Page.GetByRole(AriaRole.Dialog)).ToContainTextAsync("Published");
+        Fixture.Renderer.LastRequest.PageSize.Should().Be(option);
+        await Page.GetByRole(AriaRole.Dialog).GetByRole(AriaRole.Button).First.ClickAsync();
+    }
+
+    [Fact]
+    public async Task Publish_error_dialog_includes_the_article_url()
+    {
+        await FindArticleAsync();
+        await SelectOutputAsync(Path.Combine(Fixture.DataDirectory, Guid.NewGuid().ToString("N") + ".pdf"));
+        Fixture.Renderer.Fail = true;
+        await Button("Publish").ClickAsync();
+        await Expect(Page.GetByRole(AriaRole.Dialog))
+            .ToContainTextAsync("Article URL: " + new Uri(Fixture.Origin, "wiki/Fixture_Article").AbsoluteUri);
+        await Page.GetByRole(AriaRole.Dialog).GetByRole(AriaRole.Button).First.ClickAsync();
+        await Expect(Page.GetByText("Publishing failed.", new() { Exact = true })).ToBeVisibleAsync();
     }
 }

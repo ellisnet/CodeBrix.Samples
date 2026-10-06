@@ -2,6 +2,7 @@ using BrixInvaders.Game.Hosting;
 using BrixInvaders.Helpers;
 using CodeBrix.Platform.GameEngine.Host.Hosting;
 using CodeBrix.Platform.Simple;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -12,7 +13,10 @@ namespace BrixInvaders;
 
 public partial class App : Application
 {
-    public App()
+    public App() : this(null) { }
+
+    // Alternate hosts may replace the game's music director and link opener before any view models are constructed.
+    public App(Action<IServiceCollection> configureServices)
     {
         //Open (or silently create) the game's settings store - with its start-up backup - before anything reads it
         GameStartup.OpenSettingsStore();
@@ -32,7 +36,7 @@ public partial class App : Application
         SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
         {
             //Register the app's services here
-
+            configureServices?.Invoke(services);
         });
         SimpleViewModel.SetIsDesignMode(false);
 

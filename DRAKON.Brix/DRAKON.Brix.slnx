@@ -14,6 +14,7 @@
     <Project Path="src/libs/DRAKON.Brix.TclBridge/DRAKON.Brix.TclBridge.csproj" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/DRAKON.Brix.PlayTests/DRAKON.Brix.PlayTests.csproj" />
     <Project Path="tests/libs/DRAKON.Brix.TclBridge.Tests/DRAKON.Brix.TclBridge.Tests.csproj" />
   </Folder>
 </Solution>

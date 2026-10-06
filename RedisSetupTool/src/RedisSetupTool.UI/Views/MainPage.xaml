@@ -153,6 +153,7 @@
                         BorderThickness="0" Background="{StaticResource CardWellBrush}"
                         Visibility="{d:Binding RevealVisibility}" />
                 <Button Grid.Column="4" Command="{d:Binding CopyCommand}"
+                        a:AutomationProperties.Name="Copy to clipboard"
                         Width="26" Height="24" MinWidth="0" MinHeight="0" Padding="0"
                         CornerRadius="5" Background="Transparent" BorderThickness="0"
                         ToolTipService.ToolTip="Copy to clipboard">
@@ -1857,12 +1858,12 @@
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                FontSize="14"
                                Foreground="{StaticResource TextTertiaryBrush}"
-                               Visibility="{d:Binding NoSelectionVisibility}" />
+                               Visibility="{d:Binding EmptyPaneVisibility}" />
 
                     <ScrollViewer Padding="24,18" VerticalScrollBarVisibility="Auto"
-                                  Visibility="{d:Binding HasSelectionVisibility}">
+                                  Visibility="{d:Binding DetailPaneVisibility}">
                         <StackPanel Spacing="16" MaxWidth="920" HorizontalAlignment="Left">
-                            <StackPanel Spacing="2">
+                            <StackPanel Spacing="2" Visibility="{d:Binding HasSelectionVisibility}">
                                 <TextBlock Text="{d:Binding Title}" FontSize="18"
                                            FontWeight="SemiBold"
                                            Foreground="{StaticResource TextPrimaryBrush}"
@@ -1872,7 +1873,7 @@
                                            Foreground="{StaticResource TextTertiaryBrush}" />
                             </StackPanel>
 
-                            <c:WrapPanel Orientation="Horizontal">
+                            <c:WrapPanel Orientation="Horizontal" Visibility="{d:Binding HasSelectionVisibility}">
                                 <TextBox a:AutomationProperties.AutomationId="NewTag" a:AutomationProperties.Name="New Tag" Width="220" Margin="0,0,8,6" CornerRadius="8"
                                          VerticalAlignment="Center"
                                          PlaceholderText="new tag, e.g. myredis:latest"
@@ -1897,7 +1898,8 @@
 
                             <Border Padding="16,13" CornerRadius="12" BorderThickness="1"
                                     Background="{StaticResource CardWellBrush}"
-                                    BorderBrush="{StaticResource HairlineBrush}">
+                                    BorderBrush="{StaticResource HairlineBrush}"
+                                    Visibility="{d:Binding HasSelectionVisibility}">
                                 <StackPanel Spacing="8">
                                     <TextBlock Text="LINT A DOCKERFILE" FontSize="10"
                                                FontWeight="SemiBold" CharacterSpacing="80"
@@ -1944,7 +1946,8 @@
 
                             <Border Padding="18,14" CornerRadius="12" BorderThickness="1"
                                     Background="{StaticResource CardBrush}"
-                                    BorderBrush="{StaticResource HairlineBrush}">
+                                    BorderBrush="{StaticResource HairlineBrush}"
+                                    Visibility="{d:Binding HasSelectionVisibility}">
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="IMAGE" FontSize="10" FontWeight="SemiBold"
                                                CharacterSpacing="80"
@@ -1956,7 +1959,8 @@
 
                             <Border Padding="18,14" CornerRadius="12" BorderThickness="1"
                                     Background="{StaticResource CardBrush}"
-                                    BorderBrush="{StaticResource HairlineBrush}">
+                                    BorderBrush="{StaticResource HairlineBrush}"
+                                    Visibility="{d:Binding HasSelectionVisibility}">
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="LAYERS" FontSize="10" FontWeight="SemiBold"
                                                CharacterSpacing="80"
@@ -2014,10 +2018,10 @@
                         <TextBox a:AutomationProperties.AutomationId="NewNetworkName" a:AutomationProperties.Name="New Network Name" Width="200" Margin="0,0,8,6" CornerRadius="8"
                                  VerticalAlignment="Center" PlaceholderText="new network name"
                                  Text="{d:Binding NewNetworkName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <Button Content="Create" Margin="0,0,8,6" VerticalAlignment="Center"
+                        <Button a:AutomationProperties.AutomationId="CreateNetwork" Content="Create" Margin="0,0,8,6" VerticalAlignment="Center"
                                 Style="{StaticResource SmallButtonStyle}"
                                 Command="{d:Binding CreateNetworkCommand}" />
-                        <Button Content="Remove selected" Margin="0,0,8,6"
+                        <Button a:AutomationProperties.AutomationId="RemoveNetwork" Content="Remove selected" Margin="0,0,8,6"
                                 VerticalAlignment="Center"
                                 Style="{StaticResource SmallButtonStyle}"
                                 Foreground="{StaticResource AccentBrush}"
@@ -2068,10 +2072,10 @@
                         <TextBox a:AutomationProperties.AutomationId="NewVolumeName" a:AutomationProperties.Name="New Volume Name" Width="200" Margin="0,0,8,6" CornerRadius="8"
                                  VerticalAlignment="Center" PlaceholderText="new volume name"
                                  Text="{d:Binding NewVolumeName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <Button Content="Create" Margin="0,0,8,6" VerticalAlignment="Center"
+                        <Button a:AutomationProperties.AutomationId="CreateVolume" Content="Create" Margin="0,0,8,6" VerticalAlignment="Center"
                                 Style="{StaticResource SmallButtonStyle}"
                                 Command="{d:Binding CreateVolumeCommand}" />
-                        <Button Content="Remove selected" Margin="0,0,8,6"
+                        <Button a:AutomationProperties.AutomationId="RemoveVolume" Content="Remove selected" Margin="0,0,8,6"
                                 VerticalAlignment="Center"
                                 Style="{StaticResource SmallButtonStyle}"
                                 Foreground="{StaticResource AccentBrush}"

@@ -16,6 +16,7 @@
     <Project Path="src/libs/WebcamPainter.Vision/WebcamPainter.Vision.csproj" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/WebcamPainter.PlayTests/WebcamPainter.PlayTests.csproj" />
     <Project Path="tests/libs/WebcamPainter.Webcam.Tests/WebcamPainter.Webcam.Tests.csproj" />
     <Project Path="tests/libs/WebcamPainter.Painting.Tests/WebcamPainter.Painting.Tests.csproj" />
     <Project Path="tests/libs/WebcamPainter.Vision.Tests/WebcamPainter.Vision.Tests.csproj" />

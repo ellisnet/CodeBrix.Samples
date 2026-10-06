@@ -13,6 +13,7 @@
     <Project Path="src/libs/CodeBrixVideoTool.Playback/CodeBrixVideoTool.Playback.csproj" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/CodeBrixVideoTool.PlayTests/CodeBrixVideoTool.PlayTests.csproj" />
     <Project Path="tests/libs/CodeBrixVideoTool.Processing.Tests/CodeBrixVideoTool.Processing.Tests.csproj" />
     <Project Path="tests/libs/CodeBrixVideoTool.Playback.Tests/CodeBrixVideoTool.Playback.Tests.csproj" />
   </Folder>

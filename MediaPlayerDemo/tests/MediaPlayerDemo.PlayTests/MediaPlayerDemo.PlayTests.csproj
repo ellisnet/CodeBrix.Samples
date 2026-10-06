@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../../PlayTestSupport/CodeBrix.Sample.PlayTests.props" />
+  <PropertyGroup>
+    <RootNamespace>MediaPlayerDemo.PlayTests</RootNamespace>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+  <Import Project="../../src/MediaPlayerDemo.UI/MediaPlayerDemo.UI.projitems" Label="Shared" />
+  <ItemGroup>
+    <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
+    <ProjectReference Include="../../src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj" />
+    <!-- Keep the libVLC MediaPlayer add-in out of the test assembly, so the XAML generator emits no engine
+         registration: the tests never stream the network address or play sound, on every OS. -->
+    <PackageReference Include="CodeBrix.Platform.MediaPlayer.LgplLicenseForever" Version="1.0.279.30" ExcludeAssets="all" />
+  </ItemGroup>
+</Project>

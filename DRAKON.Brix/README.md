@@ -108,7 +108,7 @@ else is the guest.
 - How the live application is driven from an environment variable and the answer
   read in the log, with no mouse and no second build:
   [Drive a running application from an environment variable and report to the log](../BLUEPRINTS-Testing.md#drive-a-running-application-from-an-environment-variable-and-report-to-the-log).
-- How a library keeps its public surface to one type with two members, with the
+- How a library keeps its public surface to one type, with the
   tests reaching past it through the internals attribute:
   [Keep a library's public surface to the one type its host drives](../BLUEPRINTS-ProjectLayoutAndPackaging.md#keep-a-librarys-public-surface-to-the-one-type-its-host-drives).
 
@@ -117,7 +117,7 @@ else is the guest.
 There is one solution, `DRAKON.Brix.slnx`, and its own comment says what it is:
 everything that builds with the plain .NET SDK on Linux, macOS and Windows. It
 holds the shared UI project, the Core project, all six heads, the one library
-under a `Libraries` solution folder and the one test project under a `Tests`
+under a `Libraries` solution folder and the test projects under a `Tests`
 solution folder. There is no second, Windows-only solution, because every head
 here is a Skia head.
 
@@ -166,11 +166,12 @@ in only for Debug builds - the body of `App.InitializeLogging()` is inside
 `#if DEBUG` - so a Release run is silent apart from the runtime's own diagnostic
 lines.
 
-There is one test project, `tests/libs/DRAKON.Brix.TclBridge.Tests`. It uses
-xUnit v3 with SilverAssertions, builds as `Exe` and sets
-`UseMicrosoftTestingPlatformRunner`, so the test assembly is a self-executing
-binary; this folder has no `global.json`, and the runner selection lives in the
-test project file instead. That matters in practice: a plain `dotnet test` can
+The test projects, `tests/libs/DRAKON.Brix.TclBridge.Tests` and
+`tests/DRAKON.Brix.PlayTests`, use xUnit v3 with SilverAssertions, build as
+`Exe` and set `UseMicrosoftTestingPlatformRunner`, so each test assembly is a
+self-executing binary; `global.json` in this folder selects the Microsoft.Testing.Platform
+runner, and each test project file sets the same thing again for itself. That
+matters in practice: a plain `dotnet test` can
 report that it discovered zero tests. When it does, build the test project and
 run the produced executable directly:
 
@@ -179,13 +180,14 @@ dotnet build tests/libs/DRAKON.Brix.TclBridge.Tests/DRAKON.Brix.TclBridge.Tests.
 ./tests/libs/DRAKON.Brix.TclBridge.Tests/bin/Release/net10.0/DRAKON.Brix.TclBridge.Tests
 ```
 
-What the test project needs:
+What each test project needs:
 
 | Test project | Covers | Needs |
 | --- | --- | --- |
 | `tests/libs/DRAKON.Brix.TclBridge.Tests` | Constructing and disposing the runtime without starting it, and opening every committed example diagram through the editor's real open path on a headless boot | Native Skia, referenced directly by the test project because no head is present to supply it; no display server, no GPU and no network |
+| `tests/DRAKON.Brix.PlayTests` | The real page booting the editor hosted, driven through CodeBrix.Platform.PlayTest: the intro, opening and saving through scripted pickers, the File and Edit menus, the diagram list, icon text editing and undo, the isolated clipboard, the wheel, quitting through an injected quit action, recent files, orientation and theme - see its README | Nothing. Settings go to a throwaway folder; no window or display is needed |
 
-The suite takes a couple of minutes, because each case boots the whole editor
+The library suite takes a couple of minutes, because each case boots the whole editor
 from scratch and then opens a real document through the editor's own code. It is
 configured to run strictly sequentially, in `xunit.runner.json`, because the
 interpreter keeps process-global state and concurrent interpreters race.
@@ -195,6 +197,7 @@ interpreter keeps process-global state and concurrent interpreters race.
 ```text
 DRAKON.Brix/
   DRAKON.Brix.slnx                      The one solution; every project; opens on Linux, macOS and Windows
+  global.json                           Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt               Third-party content bundled with, or used by, this application
   art/                                  The editor's icon source artwork
   docs/                                 The editor's own documentation, including the diagram file-format description
@@ -222,11 +225,12 @@ DRAKON.Brix/
     libs/
       DRAKON.Brix.TclBridge/            The "talk to Tcl" layer; the only project that knows the guest exists
         DrakonRuntime.cs                The boot sequence, both boot modes, and the diagnostic sink
-        RuntimeHost.cs                  The UI-facing owner: Start(host) and Dispose()
-        InternalsVisibleTo.cs           Names only this library's own test assembly
+        RuntimeHost.cs                  The UI-facing owner: Start(host), Dispose(), readiness and the quit action
+        InternalsVisibleTo.cs           Names this library's own test assembly and the PlayTests
         Commands/QuitCommand.cs         The Tcl command the guest's quit path routes through
         Commands/DiagnosticReportCommand.cs  The Tcl command that routes text to the diagnostic sink
   tests/
+    DRAKON.Brix.PlayTests/              PlayTest UI tests of the shared page booting the editor hosted
     libs/
       DRAKON.Brix.TclBridge.Tests/      Mirrors src/libs/DRAKON.Brix.TclBridge
         Support/SampleLocations.cs      Finds this folder from the test binary, by walking up to the solution file
@@ -262,7 +266,7 @@ code namespace are three different strings on purpose.
 | CodeBrix.Platform.SkiaSharp.Views | The Skia surface the toolkit draws the whole guest user interface onto. It arrives transitively with the toolkit, so nothing here declares it and the whole application resolves one Skia version | `src/DRAKON.Brix.UI/Views/MainPage.xaml`, `src/libs/DRAKON.Brix.TclBridge/DRAKON.Brix.TclBridge.csproj` |
 | CodeBrix.Platform.Fonts.OpenSans | Ships the Open Sans font that is set as the application-wide default and as the page's `FontFamily`, addressed through an `ms-appx:///` URI | `src/DRAKON.Brix.Core/DRAKON.Brix.Core.csproj`, `src/DRAKON.Brix.UI/App.xaml`, `src/DRAKON.Brix.UI/App.xaml.cs`, `src/DRAKON.Brix.UI/Views/MainPage.xaml` |
 | CodeBrix.Platform runtime for the head | Exactly one runtime package per head - the X11, Wayland, framebuffer, macOS, Win32 and WPF Skia runtimes - and nothing else | the six head csproj files under `src/` |
-| SilverAssertions | The assertion style in the test project | `tests/libs/DRAKON.Brix.TclBridge.Tests/` |
+| SilverAssertions | The assertion style the test projects use | `tests/libs/DRAKON.Brix.TclBridge.Tests/`, `tests/DRAKON.Brix.PlayTests/` |
 
 Third-party libraries:
 
@@ -289,9 +293,10 @@ it rather than deleting it is deliberate, since it is where application-side sta
 would go the moment the application grew a real control of its own.
 
 The code-behind is where the application's real work with the page happens, and it
-is six lines. It subscribes `DataContextChanged` to hand the view model a
+is short. It subscribes `DataContextChanged` to hand the view model a
 `XamlRoot` getter, it starts the runtime on `Loaded` and disposes it on `Unloaded`,
-and it calls `InitializeComponent()` last. The `Loaded` event, not the constructor,
+and it calls `InitializeComponent()` last; an internal `RuntimeHost` property lets
+the PlayTests reach the page's runtime. The `Loaded` event, not the constructor,
 is the right moment: the host element's window tree and its dispatcher only exist
 once the page has been loaded, and the runtime needs both. Read
 `src/DRAKON.Brix.UI/Views/MainPage.xaml` and then
@@ -303,13 +308,14 @@ and
 
 ### The two-class split: what the page owns and what the runtime owns
 
-The bridge library exposes exactly one public type, `RuntimeHost`, and it has two
-members: `Start(TkHostView)` and `Dispose()`. Everything else - the interpreter,
+The bridge library exposes exactly one public type, `RuntimeHost`: `Start(TkHostView)`
+and `Dispose()`, plus `IsReady`, the `Diagnostic` event and `QuitAction`, which
+defaults to `Environment.Exit` and is what the PlayTests replace. Everything else - the interpreter,
 the toolkit bridge, the boot sequence, the diagnostic sink - is `internal` on
-`DrakonRuntime`. That split is the reason the code-behind can be six lines and the
-reason the test project can drive the same boot sequence a completely different
+`DrakonRuntime`. That split is the reason the code-behind can be this short and the
+reason the library test project can drive the same boot sequence a completely different
 way: the page holds a `RuntimeHost` and knows nothing about interpreters, while
-the tests bypass `RuntimeHost` entirely and speak to `DrakonRuntime` through
+the library tests bypass `RuntimeHost` entirely and speak to `DrakonRuntime` through
 `InternalsVisibleTo`.
 
 Both classes are written so that double calls are harmless. `RuntimeHost.Start()`

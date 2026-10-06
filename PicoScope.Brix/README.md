@@ -126,7 +126,7 @@ several places that the code names and handles.
 
 There is one solution, `PicoScope.Brix.slnx`, and it holds everything: the
 shared UI project, the Core project, all six heads, the two libraries under a
-`Libraries` solution folder and the two test projects under a `Tests` solution
+`Libraries` solution folder and the test projects under a `Tests` solution
 folder. Its header comment describes it as everything that builds with the plain
 .NET SDK on Linux, macOS and Windows, which holds here because every head is a
 Skia head. There is no second, Windows-only solution.
@@ -186,7 +186,7 @@ a Debug run the console reports the device that was found, the full path of the
 driver that was actually loaded, the discovered capability map, and the first
 streaming batch.
 
-Both test projects use xUnit v3 with SilverAssertions, build as `Exe` and set
+The test projects use xUnit v3 with SilverAssertions, build as `Exe` and set
 `UseMicrosoftTestingPlatformRunner`, so each test assembly is a self-executing
 binary. That matters in practice: a plain `dotnet test` can report that it
 discovered zero tests. When it does, build the test project and run the produced
@@ -203,6 +203,7 @@ What each test project needs:
 | --- | --- | --- |
 | `tests/libs/PicoScope.Brix.ScopeData.Tests` | The model types and their conversions, the capability set, the device-finder preference order and reset semantics, and the simulated device's whole lifecycle including the limits it enforces - driven partly through a scripted in-test device | Nothing. No hardware, no driver, no network |
 | `tests/libs/PicoScope.Brix.ScopeData.Ps2000.Tests` | The interop library's test scaffold | Nothing. The driver bindings themselves cannot be exercised without an attached instrument, so nothing here calls into the driver |
+| `tests/PicoScope.Brix.PlayTests` | The real page and view model driven through CodeBrix.Platform.PlayTest: startup, capture and streaming commands, range, channel and generator controls, the chart's zoom and pixels, and portrait layout - see its README | Nothing. A noise-free simulator is registered with the finder; no window or display is needed |
 
 ## How the projects and folders are organized
 
@@ -237,6 +238,7 @@ PicoScope.Brix/
       PicoScope.Brix.ScopeData.Ps2000/  The real device: driver bindings, driver loader, the IScopeDataDevice implementation
         Interop/                        Every ps2000 entry point and the packed structures it takes
   tests/
+    PicoScope.Brix.PlayTests/           PlayTest UI tests of the shared page and view model against the simulator
     libs/
       PicoScope.Brix.ScopeData.Tests/       Mirrors src/libs/PicoScope.Brix.ScopeData
       PicoScope.Brix.ScopeData.Ps2000.Tests/ Mirrors src/libs/PicoScope.Brix.ScopeData.Ps2000
@@ -269,7 +271,7 @@ package references at all, which is what stops it from ever growing one.
 | CodeBrix.Platform.PlotterView add-in | Supplies the `PlotterControl` that renders the chart on every head and gives it pan, zoom and tracker interaction. It brings the CodeBrix.Plotter engine with it, which is where `PlotModel`, the axes, the line series and the colors come from, so nothing here references the plotting engine directly | `src/PicoScope.Brix.Core/PicoScope.Brix.Core.csproj`, `src/PicoScope.Brix.UI/Views/MainPage.xaml`, `src/PicoScope.Brix.Core/Charting/ScopePlot.cs` |
 | CodeBrix.Platform.Fonts.Roboto | Ships the Roboto font that is set as the application-wide default and as the page's `FontFamily`, addressed through an `ms-appx:///` URI, together with the Noto faces registered as script fallbacks | `src/PicoScope.Brix.Core/PicoScope.Brix.Core.csproj`, `src/PicoScope.Brix.UI/App.xaml`, `src/PicoScope.Brix.UI/App.xaml.cs`, `src/PicoScope.Brix.UI/Views/MainPage.xaml` |
 | CodeBrix.Platform runtime for the head | Exactly one runtime package per head - the X11, Wayland, framebuffer, macOS, Win32 and WPF Skia runtimes - and nothing else | the six head csproj files under `src/` |
-| SilverAssertions | The assertion style both test projects use | the two test csproj files under `tests/libs/` |
+| SilverAssertions | The assertion style the test projects use | the test csproj files under `tests/` |
 
 Third-party libraries:
 
@@ -277,7 +279,7 @@ Third-party libraries:
 | --- | --- | --- |
 | Microsoft.Extensions.Hosting | `Host.CreateDefaultBuilder()` behind an `IHostBuilderProvider`, which `SimpleServiceResolver` uses to build the dependency-injection container | `src/PicoScope.Brix.Core/PicoScope.Brix.Core.csproj`, `src/PicoScope.Brix.Core/Helpers/HostHelper.cs` |
 | Microsoft.Extensions.Logging.Console | The `LoggerFactory` with a console provider that is wired into the platform's ambient logger in Debug builds, and which the view model then resolves a logger from | `src/PicoScope.Brix.Core/PicoScope.Brix.Core.csproj`, `src/PicoScope.Brix.UI/App.xaml.cs`, `src/PicoScope.Brix.Core/ViewModels/MainViewModel.cs` |
-| xUnit v3 and Microsoft.Testing.Platform | The test framework and the runner both test assemblies self-host | the two test csproj files under `tests/libs/` |
+| xUnit v3 and Microsoft.Testing.Platform | The test framework and the runner the test assemblies self-host | the test csproj files under `tests/` |
 | Pico Technology `ps2000` driver | The native driver the interop library binds to. Not a package and not bundled: it is whatever is installed on the machine, located and loaded at run time | `src/libs/PicoScope.Brix.ScopeData.Ps2000/Interop/` |
 
 ## Worth studying in this application

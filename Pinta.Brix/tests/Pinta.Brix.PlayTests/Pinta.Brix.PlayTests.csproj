@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../../PlayTestSupport/CodeBrix.Sample.PlayTests.props" />
+  <PropertyGroup>
+    <RootNamespace>Pinta.Brix.PlayTests</RootNamespace>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+  <Import Project="../../src/Pinta.Brix.UI/Pinta.Brix.UI.projitems" Label="Shared" />
+  <ItemGroup>
+    <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
+    <ProjectReference Include="../../src/Pinta.Brix.Core/Pinta.Brix.Core.csproj" />
+  </ItemGroup>
+</Project>

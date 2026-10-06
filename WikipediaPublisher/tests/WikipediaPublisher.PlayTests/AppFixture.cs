@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -21,6 +22,7 @@ public sealed class AppFixture : SampleFixture<MainPage>
     public RenderFixture Renderer { get; } = new();
     public MainViewModel Model => (MainViewModel)View.DataContext;
     public Uri Origin => _server.Origin;
+    public ConcurrentQueue<string> Requests => _server.Requests;
     protected override void Prepare() => _server.Start();
     protected override Microsoft.UI.Xaml.Application CreateApplication() => new App(services =>
     {
@@ -31,6 +33,10 @@ public sealed class AppFixture : SampleFixture<MainPage>
     {
         Renderer.LastRequest = null;
         Renderer.Fail = false;
+        // Release a render a failed test left waiting, so it cannot hold the next page busy.
+        Renderer.Gate?.TrySetResult();
+        Renderer.Gate = null;
+        _server.Requests.Clear();
         return Task.CompletedTask;
     }
     protected override async Task AfterResetAsync() =>
@@ -42,6 +48,8 @@ public sealed class RenderFixture : IArticleRenderService
 {
     public RenderRequest LastRequest { get; set; }
     public bool Fail { get; set; }
+    // When set, a render reports its progress and then waits here, holding the application busy.
+    public TaskCompletionSource Gate { get; set; }
     public Task<IList<ArticleSearchResult>> SearchArticlesAsync(string searchTerms, int maxResults = 20, CancellationToken cancellationToken = default) =>
         throw new InvalidOperationException("The UI searches through its embedded browser.");
     public async Task<RenderedArticle> RenderArticleAsync(RenderRequest request, IProgress<RenderProgress> progress = null, CancellationToken cancellationToken = default)
@@ -49,6 +57,7 @@ public sealed class RenderFixture : IArticleRenderService
         LastRequest = request;
         progress?.Report(new(RenderStage.ComposingBook, "Rendering the fixture article…", 50));
         await Task.Yield();
+        if (Gate != null) await Gate.Task;
         if (Fail) throw new InvalidOperationException("Fixture renderer unavailable");
         // Deliberately a service-boundary fixture, not a test of the PDF rendering library.
         await File.WriteAllTextAsync(request.OutputFilePath, "%PDF-1.4\n% PlayTest service fixture\n%%EOF\n", cancellationToken);
@@ -65,6 +74,8 @@ internal sealed class WikiServer : IDisposable
     private readonly CancellationTokenSource _stop = new();
     private Task _loop;
     public Uri Origin { get; private set; }
+    // Request targets as the browser sent them, for checking how the application builds addresses.
+    public ConcurrentQueue<string> Requests { get; } = new();
     public void Start()
     {
         _listener.Start();
@@ -98,6 +109,7 @@ internal sealed class WikiServer : IDisposable
             var line = await reader.ReadLineAsync(_stop.Token);
             if (string.IsNullOrEmpty(line)) return;
             var target = line.Split(' ')[1];
+            Requests.Enqueue(target);
             while (true)
             {
                 var requestHeader = await reader.ReadLineAsync(_stop.Token);

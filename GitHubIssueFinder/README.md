@@ -165,7 +165,7 @@ GitHubIssueFinder/
   src/
     GitHubIssueFinder.UI/                 Shared project: App.xaml(.cs) and Views/MainPage.xaml(.cs)
     GitHubIssueFinder.Core/               The library every head references; carries the packages
-      Helpers/                            HostHelper, the generic-host provider
+      Helpers/                            HostHelper, the generic-host provider, and the IUrlOpener seam
       Theming/                            The scheme table, the role list, the brush map, the glyphs
       ViewModels/                         MainViewModel, the group, row, label and picker view models
     GitHubIssueFinder.LinuxX11/           Head: Program.cs plus one runtime package
@@ -416,7 +416,8 @@ See [Give each item its own brushes and re-tint them on a scheme change](../BLUE
 
 One private method in the whole application asks the host to open a URL, and the group and
 row view models reach it through the delegate they were given. It parses the address, calls
-the launcher, and turns both a refused launch and a thrown exception into status-line text.
+the launcher (or an `IUrlOpener` registered in the services, which only an alternate host such
+as the PlayTests does), and turns both a refused launch and a thrown exception into status-line text.
 No dialog, no exception reaching the user: every failure in this application is a sentence on
 the status line, in the danger color, with an error glyph.
 

@@ -7,14 +7,56 @@ using Xunit;
 
 namespace KenneyAssetBrowser.PlayTests;
 
-public sealed class ApplicationTests(AppFixture fixture) : SampleTest<AppFixture, MainPage>(fixture)
+public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<AppFixture, MainPage>(fixture)
 {
     private Locator ChooseFolder => Page.GetByRole(AriaRole.Button, new() { Name = "Choose assets folder…", Exact = true }).First;
+    private Locator Dialog => Page.GetByRole(AriaRole.Dialog);
     private async Task OpenCatalogAsync()
     {
         Fixture.Application.FilePickers.EnqueueFolder(Fixture.AssetsDirectory);
         await ChooseFolder.ClickAsync();
         await Fixture.Application.WaitForAsync(() => Fixture.Model.Cells?.Count ?? 0, count => count >= 4);
+    }
+    private async Task OpenFolderAsync(string folder)
+    {
+        Fixture.Application.FilePickers.EnqueueFolder(folder);
+        await ChooseFolder.ClickAsync();
+        await Fixture.Application.WaitForAsync(() => !Fixture.Model.IsCatalogLoading && Fixture.Model.BundleCountText.Length > 0,
+            loaded => loaded, 30000, "the folder's catalog");
+    }
+    private async Task OpenBundleFolderAsync(string folder)
+    {
+        await OpenFolderAsync(folder);
+        await Fixture.Application.WaitForAsync(() => Fixture.Model.ResultCountText, text => text.Length > 0, description: "the selected bundle's cells");
+    }
+    private async Task SearchAsync(string query, int expected)
+    {
+        await Page.GetByTestId("SearchText").FillAsync(query);
+        await Fixture.Application.WaitForAsync(() => Fixture.Model.Cells.Count, count => count == expected, description: "the filtered cells");
+    }
+    // The asset grid recycles its cells: a recycled cell keeps its old content parked far off
+    // screen, so pick the copy that is on the virtual screen.
+    private async Task<Locator> CellAsync(string text)
+    {
+        var cells = Page.GetByRole(AriaRole.Button).Filter(new() { HasText = text });
+        await Expect(cells.First).ToBeVisibleAsync();
+        var count = await cells.CountAsync();
+        for (var i = 0; i < count; i++)
+        {
+            var box = await cells.Nth(i).BoundingBoxAsync();
+            if (box != null && box.X >= 0 && box.Y >= 0 && box.X < Fixture.Application.Width && box.Y < Fixture.Application.Height) return cells.Nth(i);
+        }
+        throw new PlayTestException($"No on-screen cell shows \"{text}\".");
+    }
+    private async Task OpenCellAsync(string text)
+    {
+        await (await CellAsync(text)).ClickAsync();
+        await Fixture.Application.WaitForAsync(() => Fixture.Model.IsViewerActive, active => active, description: "the viewer");
+    }
+    private async Task CloseDialogAsync()
+    {
+        await Dialog.GetByRole(AriaRole.Button, new() { Name = "OK", Exact = true }).ClickAsync();
+        await Expect(Dialog).ToHaveCountAsync(0);
     }
 
     [Fact]

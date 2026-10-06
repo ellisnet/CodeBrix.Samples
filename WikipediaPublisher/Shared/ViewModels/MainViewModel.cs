@@ -301,6 +301,10 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge, IFileSaveBridge
             }
         }
 
+        //Progress reports are posted to the UI thread, so one can arrive after rendering has
+        //  finished or failed; it must not overwrite the final status that was already shown.
+        var rendering = true;
+
         try
         {
             IsBusy = true;
@@ -315,11 +319,13 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge, IFileSaveBridge
 
             var progress = new Progress<RenderProgress>(p => InvokeOnMainThread(() =>
             {
+                if (!rendering) { return; }
                 StatusText = p.Message;
                 ProgressValue = p.PercentComplete;
             }));
 
             var result = await _renderSvc.RenderArticleAsync(request, progress);
+            rendering = false;
 
             StatusText = $"Saved: {result.OutputFilePath}";
             await ShowInfo(
@@ -330,6 +336,7 @@ public class MainViewModel : SimpleViewModel, IWebViewBridge, IFileSaveBridge
         }
         catch (Exception e)
         {
+            rendering = false;
             StatusText = "Publishing failed.";
             await ShowError($"Error while publishing: {e.Message}\n\nArticle URL: {ArticleUrl}");
         }

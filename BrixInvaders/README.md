@@ -233,7 +233,8 @@ weights, the settings keys and the per-sector music table.
 
 There is one solution, `BrixInvaders.slnx`, and it holds everything: the shared UI
 project, the Core project, four heads, the four libraries under a `Libraries` solution
-folder and their test projects under a `Tests` solution folder.
+folder and the test projects (one per library, plus the PlayTests project) under a
+`Tests` solution folder.
 
 | Head project | Platform | Host-builder call |
 | --- | --- | --- |
@@ -273,7 +274,10 @@ per-sector table, and build the music options for every model, instrument librar
 sector without loading a model or opening an audio device; the game tests drive the
 screen flow, the game's controls over the engine input-action map, the settings
 facade (against a throwaway store), the music director and the credits against
-fakes. None of them needs a window, a sound card or a gamepad. The repository's
+fakes. None of them needs a window, a sound card or a gamepad. The PlayTests project
+runs the real page, view model and game on CodeBrix.Platform's PlayTest head, with a
+recording music director and link opener and a throwaway settings store; see its
+`README.md`. The repository's
 `global.json` selects the Microsoft.Testing.Platform runner, and each test project
 runs with:
 
@@ -282,6 +286,7 @@ dotnet test --project tests/libs/BrixInvaders.GameLogic.Tests/BrixInvaders.GameL
 dotnet test --project tests/libs/BrixInvaders.Assets.Tests/BrixInvaders.Assets.Tests.csproj
 dotnet test --project tests/libs/BrixInvaders.Music.Tests/BrixInvaders.Music.Tests.csproj
 dotnet test --project tests/libs/BrixInvaders.Game.Tests/BrixInvaders.Game.Tests.csproj
+dotnet test --project tests/BrixInvaders.PlayTests/BrixInvaders.PlayTests.csproj
 ```
 
 ### Diagnosing a run
@@ -334,7 +339,7 @@ folder under the user's per-user application-settings location.
 
 ```text
 BrixInvaders/
-  BrixInvaders.slnx                     The one solution: UI, Core, four heads, four libraries, four test projects
+  BrixInvaders.slnx                     The one solution: UI, Core, four heads, four libraries, the test projects
   DESIGN.md                             The game design, with every number the rules use
   THIRD-PARTY-NOTICES.txt               Third-party content used by this application
   assets/
@@ -370,6 +375,7 @@ BrixInvaders/
         Settings/                       The settings facade over the AppSettings add-in
         Credits/, Links/                Credits content and the link opener seams
   tests/
+    BrixInvaders.PlayTests/             UI tests of the running game on the PlayTest head
     libs/
       BrixInvaders.GameLogic.Tests/     Mirrors src/libs/BrixInvaders.GameLogic, golden-seed runs included
       BrixInvaders.Assets.Tests/        Mirrors src/libs/BrixInvaders.Assets, against the real zips
@@ -458,7 +464,8 @@ instruments.
 | CodeBrix.Audio.MusicGeneration.SkyTNT and CodeBrix.Audio.MusicGeneration.MuPT | The two music models the player chooses between | `src/libs/BrixInvaders.Music/BrixInvaders.Music.csproj`, `src/libs/BrixInvaders.Music/Setup/MusicSetup.cs` |
 | CodeBrix.Audio.ModestSynth and CodeBrix.Audio.Samples.FluidR3Gm | The synthesized and the recorded General MIDI instrument libraries the player chooses between | `src/libs/BrixInvaders.Music/BrixInvaders.Music.csproj`, `src/libs/BrixInvaders.Music/Setup/MusicSetup.cs` |
 | CodeBrix.Platform.AppSettings | Stores the settings and the high-score tables between runs, behind one application-named facade | `src/libs/BrixInvaders.Game/Settings/SettingsService.cs`, `src/BrixInvaders.UI/App.xaml.cs` |
-| SilverAssertions | The assertion style in every test project | `tests/libs/` |
+| CodeBrix.Platform.PlayTest | The headless head the PlayTests drive the running game through: key, mouse and screenshot | `tests/BrixInvaders.PlayTests/` |
+| SilverAssertions | The assertion style in every test project | `tests/libs/`, `tests/BrixInvaders.PlayTests/` |
 
 Third-party libraries:
 
@@ -467,7 +474,7 @@ Third-party libraries:
 | SkiaSharp | Composes the splash picture and supplies the colors, typefaces and pictures the game's draw lists carry; it arrives with the engine package, and the asset and game test projects add its Linux native library, which a head would otherwise supply | `src/libs/BrixInvaders.Game/Rendering/`, `tests/libs/BrixInvaders.Assets.Tests/`, `tests/libs/BrixInvaders.Game.Tests/` |
 | Microsoft.Extensions.Hosting | `Host.CreateDefaultBuilder()` behind an `IHostBuilderProvider`, which `SimpleServiceResolver` uses to build the container | `src/BrixInvaders.Core/Helpers/HostHelper.cs` |
 | Microsoft.Extensions.Logging.Console | The console logger wired into the platform's ambient logger in Debug builds | `src/BrixInvaders.UI/App.xaml.cs` |
-| xUnit v3 and Microsoft.Testing.Platform | The test framework and the runner for the test projects | `tests/libs/*/` |
+| xUnit v3 and Microsoft.Testing.Platform | The test framework and the runner for the test projects | `tests/libs/*/`, `tests/BrixInvaders.PlayTests/` |
 
 ## Worth studying in this application
 

@@ -222,8 +222,9 @@ can always be cleaned up without touching anything else: the System section's
 sweep lists every instance and its container and volume counts before it removes
 them.
 
-There are three test projects, one per library. This application has no
-`global.json`; the runner is selected by properties in each test csproj, and the
+There are three test projects, one per library. `global.json` in this folder
+selects the Microsoft.Testing.Platform runner, each test csproj sets the same
+thing again for itself, and the
 assemblies are self-executing binaries, so a plain `dotnet test` can report that
 zero tests ran. When it does, build the test project and run the executable it
 produces directly:
@@ -249,6 +250,7 @@ label alone, so a test run never touches an instance made by the application.
 ```text
 RedisSetupTool/
   RedisSetupTool.slnx                   The one solution: UI, Core, six heads, three libraries, three test projects
+  global.json                           Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt               Third-party content used by this application
   src/
     RedisSetupTool.UI/                  Shared items project: the XAML that every head compiles

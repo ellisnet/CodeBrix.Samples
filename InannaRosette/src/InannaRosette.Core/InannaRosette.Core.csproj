@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
 
-    <!-- The app and the shared UI code are written with nullable annotations, so this project and every head enable them -->
+    <!-- The view models and services are written with nullable annotations, so this project enables them -->
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
