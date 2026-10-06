@@ -8,6 +8,6 @@
     <PackageReference Include="CodeBrix.Webcam.LgplLicenseForever" Version="3.0.252.10" />
 
     <!-- SKXamlCanvas - the SkiaSharp video surface hosted in CodeBrix.Platform XAML -->
-    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.152.1-split.1" />
+    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.153.1" />
   </ItemGroup>
 </Project>

@@ -26,7 +26,7 @@
     <!-- The SkiaSharp meta-package only carries Windows/macOS natives; the
          Linux native library ships separately (family convention for
          Linux-run test projects). -->
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.152.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.153.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
