@@ -8,7 +8,7 @@
   <Import Project="../../CodeBrixPlatform/WikipediaPublisher.UI/WikipediaPublisher.UI.projitems" Label="Shared" />
   <ItemGroup>
     <!-- Exercise the WebView add-in together with the preview head. -->
-    <PackageReference Include="CodeBrix.Platform.WebView.ApacheLicenseForever" Version="1.0.279.30" />
+    <PackageReference Include="CodeBrix.Platform.WebView.ApacheLicenseForever" Version="1.0.280.1176" />
     <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
     <ProjectReference Include="../../CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.Core.csproj" />
   </ItemGroup>
