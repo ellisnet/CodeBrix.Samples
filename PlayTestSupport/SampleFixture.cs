@@ -16,6 +16,8 @@ public abstract class SampleFixture<TPage> : IAsyncLifetime where TPage : Framew
     public string DataDirectory { get; } = Path.Combine(AppContext.BaseDirectory, "TestResults", "PlayTestData", Guid.NewGuid().ToString("N"));
     protected abstract Application CreateApplication();
     protected virtual void Prepare() { }
+    // Adjusts the launch options (for example PlayTestOptions.OpenGL) before the application starts.
+    protected virtual void Configure(PlayTestOptions options) { }
     protected virtual Task BeforeResetAsync() => Task.CompletedTask;
     protected virtual Task AfterResetAsync() => Task.CompletedTask;
     protected virtual void Cleanup() { }
@@ -24,10 +26,9 @@ public abstract class SampleFixture<TPage> : IAsyncLifetime where TPage : Framew
     {
         Directory.CreateDirectory(DataDirectory);
         Prepare();
-        Application = await PlayTestApplication.LaunchAsync(CreateApplication, new()
-        {
-            ConfigurationAssembly = GetType().Assembly,
-        });
+        var options = new PlayTestOptions { ConfigurationAssembly = GetType().Assembly };
+        Configure(options);
+        Application = await PlayTestApplication.LaunchAsync(CreateApplication, options);
     }
 
     public async Task ResetAsync(ScreenOrientation? orientation = null)

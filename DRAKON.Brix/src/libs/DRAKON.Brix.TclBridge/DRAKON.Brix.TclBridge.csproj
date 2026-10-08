@@ -18,7 +18,7 @@
        TclTk engine, CodeBrix.Platform and SkiaSharp; TclTk.Extras supplies the
        sqlite3 + pdf4tcl shims DRAKON needs to read .drn files. -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.TkCanvas.BsdLicenseForever" Version="1.0.279.785" />
-    <PackageReference Include="CodeBrix.Platform.TclTk.Extras.BsdLicenseForever" Version="1.0.279.785" />
+    <PackageReference Include="CodeBrix.Platform.TkCanvas.BsdLicenseForever" Version="1.0.281.88" />
+    <PackageReference Include="CodeBrix.Platform.TclTk.Extras.BsdLicenseForever" Version="1.0.281.88" />
   </ItemGroup>
 </Project>

@@ -14,6 +14,7 @@ using CodeBrix.Graphics3D.Gltf2.Geometry;
 using CodeBrix.Graphics3D.Gltf2.Geometry.VertexTypes;
 using CodeBrix.Graphics3D.Gltf2.Materials;
 using CodeBrix.Graphics3D.Gltf2.Scenes;
+using CodeBrix.Platform.PlayTest;
 using CodeBrix.Samples.PlayTests;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -36,6 +37,10 @@ public sealed class AppFixture : SampleFixture<MainPage>
         .AddSingleton<IPolyHavenApiClientFactory>(new DefaultPolyHavenClientFactory(Transport))
         .AddTransient<ModelCatalogService>());
     protected override void Prepare() => Transport.LoadModel(Path.Combine(DataDirectory, "fixture-model"));
+
+    // The application initializes OpenGL elements. These tests cover the no-OpenGL fallback, so the launch opts out;
+    // to give the elements real contexts instead, call CodeBrixPlayTestOpenGL.Register() in Prepare() and drop this override.
+    protected override void Configure(PlayTestOptions options) => options.OpenGL = PlayTestOpenGL.Unavailable;
     protected override Task BeforeResetAsync()
     {
         Transport.Reset();

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using CodeBrix.Platform.WinUI.Graphics3DGL;
+using CodeBrix.Platform.PlayTest;
 using CodeBrix.Samples.PlayTests;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -20,6 +21,10 @@ public sealed class AppFixture : SampleFixture<MainPage>
     // The timestamp of the frame the CPU canvas last painted, or null before its first paint with a frame.
     public TimeSpan? PaintedTimestamp { get; private set; }
     protected override Application CreateApplication() => new App();
+
+    // The application initializes OpenGL elements. These tests cover the no-OpenGL fallback, so the launch opts out;
+    // to give the elements real contexts instead, call CodeBrixPlayTestOpenGL.Register() in Prepare() and drop this override.
+    protected override void Configure(PlayTestOptions options) => options.OpenGL = PlayTestOpenGL.Unavailable;
 
     protected override async Task AfterResetAsync()
     {

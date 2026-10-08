@@ -7,6 +7,7 @@
   </PropertyGroup>
   <Import Project="../../src/PolyHavenBrowser.UI/PolyHavenBrowser.UI.projitems" Label="Shared" />
   <ItemGroup>
+    <PackageReference Include="CodeBrix.Platform.PlayTest.OpenGL.ApacheLicenseForever" Version="1.0.280.1176" />
     <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
     <ProjectReference Include="../../src/PolyHavenBrowser.Core/PolyHavenBrowser.Core.csproj" />
   </ItemGroup>

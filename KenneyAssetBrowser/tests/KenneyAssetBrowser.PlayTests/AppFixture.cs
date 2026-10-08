@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Threading.Tasks;
+using CodeBrix.Platform.PlayTest;
 using CodeBrix.Samples.PlayTests;
 using KenneyAssetBrowser.Settings;
 using KenneyAssetBrowser.ViewModels;
@@ -26,6 +27,10 @@ public sealed class AppFixture : SampleFixture<MainPage>
     // The next reset keeps the remembered folder and bundle, like a restart of the application.
     public bool KeepSettingsOnNextReset { get; set; }
     protected override Application CreateApplication() => new App(null, Path.Combine(DataDirectory, "settings"));
+
+    // The application initializes OpenGL elements. These tests cover the no-OpenGL fallback, so the launch opts out;
+    // to give the elements real contexts instead, call CodeBrixPlayTestOpenGL.Register() in Prepare() and drop this override.
+    protected override void Configure(PlayTestOptions options) => options.OpenGL = PlayTestOpenGL.Unavailable;
     protected override void Prepare()
     {
         Directory.CreateDirectory(AssetsDirectory);
