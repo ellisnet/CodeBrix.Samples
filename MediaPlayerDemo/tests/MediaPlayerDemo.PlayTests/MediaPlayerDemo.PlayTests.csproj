@@ -11,6 +11,6 @@
     <ProjectReference Include="../../src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj" />
     <!-- Keep the libVLC MediaPlayer add-in out of the test assembly, so the XAML generator emits no engine
          registration: the tests never stream the network address or play sound, on every OS. -->
-    <PackageReference Include="CodeBrix.Platform.MediaPlayer.LgplLicenseForever" Version="1.0.280.1176" ExcludeAssets="all" />
+    <PackageReference Include="CodeBrix.Platform.MediaPlayer.LgplLicenseForever" Version="1.0.281.314" ExcludeAssets="all" />
   </ItemGroup>
 </Project>
