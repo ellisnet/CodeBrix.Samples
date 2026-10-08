@@ -1,0 +1,12 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Site deck
+  Subject: Card motif: the tell of Warka in profile with its strata and a trench, a small shovel planted in the mound
+  Sources consulted: ART_BIBLE palette and style; images/Schwarzenbach_Zikurrat_131.jpg (the mound)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" stroke-linecap="round" stroke-linejoin="round">
+<g id="tell"><path d="M 40,330 C 80,300 110,226 160,200 C 196,182 236,186 268,206 C 310,232 334,300 364,330 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3"/><path d="M 268,206 C 310,232 334,300 364,330 L 300,330 C 296,280 286,240 268,206 Z" fill="#9C6B3C"/><path d="M 40,330 C 80,300 110,226 160,200 C 196,182 236,186 268,206 C 310,232 334,300 364,330 Z" fill="none" stroke="#1E1A17" stroke-width="3"/><path d="M 104,250 C 164,242 240,256 300,250" fill="none" stroke="#1E1A17" stroke-width="1.5"/><path d="M 76,282 C 136,274 270,288 330,282" fill="none" stroke="#1E1A17" stroke-width="1.5"/><path d="M 56,310 C 116,302 286,316 346,310" fill="none" stroke="#1E1A17" stroke-width="1.5"/><path d="M 128,330 L 136,262 L 196,256 L 200,330 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3"/><path d="M 146,330 L 148,286 L 186,284 L 188,330 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="2.5"/><line x1="147" y1="296" x2="187" y2="296" stroke="#1E1A17" stroke-width="1.5"/><line x1="147" y1="308" x2="187" y2="308" stroke="#1E1A17" stroke-width="1.5"/><line x1="147" y1="320" x2="187" y2="320" stroke="#1E1A17" stroke-width="1.5"/><line x1="30" y1="330" x2="374" y2="330" stroke="#1E1A17" stroke-width="3"/></g>
+<g id="shovel"><line x1="232" y1="222" x2="296" y2="92" stroke="#1E1A17" stroke-width="12"/><line x1="232" y1="222" x2="296" y2="92" stroke="#9C6B3C" stroke-width="6"/><path d="M 284,96 L 306,82 L 316,94 L 300,108 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2.5"/><path d="M 214,214 L 248,228 L 238,262 C 230,276 210,272 204,262 C 200,248 206,230 214,214 Z" fill="#BFC3C7" stroke="#1E1A17" stroke-width="3"/><path d="M 222,232 L 232,236" fill="none" stroke="#1E1A17" stroke-width="1.5"/></g>
+</svg>

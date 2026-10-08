@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Plan of the Riemchen Building
+  Subject: Schematic ground plan of the Level IV Riemchen Building (about 20 by 18 m), north up: thick Riemchen walls, a corridor wrapping the burnt central chamber, the separately entered south-east room, and the walled-up doorway.
+  Sources consulted: temple_buildings/five/04_Narrow_Brick_Building/COMPREHENSIVE_BUILDING_OVERVIEW.txt; images/temple_buildings/five/04_Narrow_Brick_Building/eichmann1989-band3-beilage73_plan-52-riemchengebaeude; images/Eanna_complex/web-gurdjieff-ccbysa3_eanna-plan-levels-VI-V.svg; scale bar = 10 m
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="sky" stroke-linejoin="round" stroke-linecap="round">
+<rect x="0" y="0" width="400" height="400" fill="#EFE3C8" stroke="none"/>
+</g>
+<g id="walls" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="208.7,34 366,191.3 191.3,366 34,208.7" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3"/>
+</g>
+<g id="rooms" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="208.7,62 303.1,156.3 156.3,303.1 62,208.7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="208.7,96.9 268.1,156.3 156.3,268.1 96.9,208.7" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="208.7,117.9 247.2,156.3 156.3,247.2 117.9,208.7" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="196.5,133.6 231.5,168.5 168.5,231.5 133.6,196.5" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polyline points="190.4,148.5 216.6,174.7" fill="none" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="179.9,158.9 206.1,185.1" fill="none" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="169.4,169.4 195.6,195.6" fill="none" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="158.9,179.9 185.1,206.1" fill="none" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="148.5,190.4 174.7,216.6" fill="none" stroke="#1E1A17" stroke-width="2"/>
+<polygon points="315.3,168.5 338,191.3 191.3,338 168.5,315.3" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+</g>
+<g id="doors" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="241.9,130.1 255.9,144.1 245.4,154.6 231.5,140.6" fill="#E8C597" stroke="none"/>
+<polyline points="241.9,130.1 231.5,140.6" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="255.9,144.1 245.4,154.6" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="168.5,315.3 191.3,338 177.3,352 154.6,329.3" fill="#E8C597" stroke="none"/>
+<polyline points="168.5,315.3 154.6,329.3" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="191.3,338 177.3,352" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="254.2,79.4 273.4,98.7 259.4,112.6 240.2,93.4" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polyline points="250.7,82.9 269.9,102.1" fill="none" stroke="#1E1A17" stroke-width="1"/>
+<polyline points="247.2,86.4 266.4,105.6" fill="none" stroke="#1E1A17" stroke-width="1"/>
+<polyline points="243.7,89.9 262.9,109.1" fill="none" stroke="#1E1A17" stroke-width="1"/>
+</g>
+<g id="north-arrow" stroke-linejoin="round" stroke-linecap="round">
+<polyline points="46,92 46,44" fill="none" stroke="#1E1A17" stroke-width="3"/>
+<polygon points="46,24 57,50 46,44 35,50" fill="#1E1A17" stroke="#1E1A17" stroke-width="2"/>
+</g>
+<g id="scale-bar" stroke-linejoin="round" stroke-linecap="round">
+<polyline points="28,374 151.6,374" fill="none" stroke="#1E1A17" stroke-width="3"/>
+<polyline points="28,367 28,381" fill="none" stroke="#1E1A17" stroke-width="3"/>
+<polyline points="89.8,367 89.8,374" fill="none" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="151.6,367 151.6,381" fill="none" stroke="#1E1A17" stroke-width="3"/>
+</g>
+</svg>

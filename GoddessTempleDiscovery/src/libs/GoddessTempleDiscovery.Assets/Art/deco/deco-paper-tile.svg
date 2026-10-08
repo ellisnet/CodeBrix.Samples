@@ -1,0 +1,15 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Newspaper Paper Tile
+  Subject: A plain limestone tile for the newspaper pane with a faint double gold-deep hairline rule at its edges, which repeats into neat column rules; no texture by design.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<rect x="0" y="0" width="400" height="400" fill="#EDE6D6"/>
+<g id="hairlines" stroke="#A8761F" stroke-opacity="0.4" fill="none">
+<rect x="4" y="4" width="392" height="392" stroke-width="1"/>
+<rect x="9" y="9" width="382" height="382" stroke-width="0.5"/>
+</g>
+</svg>

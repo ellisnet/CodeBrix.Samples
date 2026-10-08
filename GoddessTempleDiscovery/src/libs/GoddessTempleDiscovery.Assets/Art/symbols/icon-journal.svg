@@ -1,0 +1,17 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Journal
+  Subject: Interface icon for the field journal: a closed field notebook with its elastic band and a pencil.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<rect x="70" y="44" width="210" height="312" rx="18" fill="#C8955A" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 112,44 L 112,356" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 244,44 L 244,356" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 308,70 L 352,70 L 352,300 L 330,350 L 308,300 Z" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 308,110 L 352,110" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Clay Cones
+  Subject: A handful of the hand-made clay cones, about ten centimetres long, their heads dipped red, black or white, with one shown pushed point-first into mud plaster in a cut-away section as it sat in the mosaic walls of Eanna.
+  Sources consulted: Julius_Jordan_Eanna/images Cone_mosaic_panel_IraqMuseum.jpg, Cone_mosaic_wall_Warka_VAM.jpg; BUILDING_HIGHLIGHTS.txt Stone-Cone Building (cones 8-10 cm, driven point-first into mud plaster)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="plaster-section">
+<path d="M236,52 L364,52 L364,236 L236,236 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="236" y1="229.5" x2="242.5" y2="236" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="236" y1="216.5" x2="255.5" y2="236" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="236" y1="203.5" x2="268.5" y2="236" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="236" y1="190.5" x2="281.5" y2="236" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="236" y1="177.5" x2="294.5" y2="236" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="236" y1="164.5" x2="307.5" y2="236" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="236" y1="151.5" x2="320.5" y2="236" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="236" y1="138.5" x2="333.5" y2="236" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="236" y1="125.5" x2="346.5" y2="236" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="236" y1="112.5" x2="359.5" y2="236" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="236" y1="99.5" x2="364" y2="227.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="236" y1="86.5" x2="364" y2="214.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="236" y1="73.5" x2="364" y2="201.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="236" y1="60.5" x2="364" y2="188.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="240.5" y1="52" x2="364" y2="175.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="253.5" y1="52" x2="364" y2="162.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="266.5" y1="52" x2="364" y2="149.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="279.5" y1="52" x2="364" y2="136.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="292.5" y1="52" x2="364" y2="123.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="305.5" y1="52" x2="364" y2="110.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="318.5" y1="52" x2="364" y2="97.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="331.5" y1="52" x2="364" y2="84.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="344.5" y1="52" x2="364" y2="71.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="357.5" y1="52" x2="364" y2="58.5" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M236,52 L364,52 L364,236 L236,236 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="228" y="52" width="8" height="184" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round"/>
+<path d="M236,118 L358,144 L236,170 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M232,166 Q284.8,163.8 352,144 Q284.8,124.2 232,122 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M232,166 Q284.8,163.8 352,144 L245.2,149.5 Z" fill="#C8955A"/>
+<path d="M232,166 Q284.8,163.8 352,144 Q284.8,124.2 232,122 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="232" cy="144" rx="9.2" ry="22" fill="#B8322A" stroke="#1E1A17" stroke-width="3"/>
+<path d="M243,166 Q249.6,144 243,122" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="loose-cones">
+<path d="M69.7,220.6 Q118.4,200.1 196,150 Q104.5,163 54.3,179.4 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M69.7,220.6 Q118.4,200.1 196,150 L76.3,200.5 Z" fill="#C8955A"/>
+<path d="M69.7,220.6 Q118.4,200.1 196,150 Q104.5,163 54.3,179.4 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="62" cy="200" rx="9.2" ry="22" fill="#2B2622" stroke="#1E1A17" stroke-width="3" transform="rotate(-20.5 62 200)"/>
+<path d="M80,216.8 Q78.5,193.8 64.6,175.5" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M59.6,307.7 Q111.3,296.9 200,262 Q104.8,257.8 52.4,264.3 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M59.6,307.7 Q111.3,296.9 200,262 L69.9,289.3 Z" fill="#C8955A"/>
+<path d="M59.6,307.7 Q111.3,296.9 200,262 Q104.8,257.8 52.4,264.3 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="56" cy="286" rx="9.2" ry="22" fill="#B8322A" stroke="#1E1A17" stroke-width="3" transform="rotate(-9.5 56 286)"/>
+<path d="M70.5,305.9 Q73.4,283.1 63.2,262.5" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M119.5,369.9 Q166.2,345.2 236,290 Q149.2,309.4 100.5,330.1 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M119.5,369.9 Q166.2,345.2 236,290 L124.3,349.3 Z" fill="#C8955A"/>
+<path d="M119.5,369.9 Q166.2,345.2 236,290 Q149.2,309.4 100.5,330.1 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="110" cy="350" rx="9.2" ry="22" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" transform="rotate(-25.5 110 350)"/>
+<path d="M129.4,365.1 Q125.9,342.4 110.5,325.4" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M192.1,370.9 Q242,363.8 330,336 Q238.3,326.2 187.9,329.1 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M192.1,370.9 Q242,363.8 330,336 L203.1,354 Z" fill="#C8955A"/>
+<path d="M192.1,370.9 Q242,363.8 330,336 Q238.3,326.2 187.9,329.1 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="190" cy="350" rx="8.8" ry="21" fill="#E8C597" stroke="#1E1A17" stroke-width="3" transform="rotate(-5.7 190 350)"/>
+</g>
+</svg>

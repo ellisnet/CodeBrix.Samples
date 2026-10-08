@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" width="400" height="560">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Eduard Meyer's Instruction
+  Subject: A Berlin desk with the letter instructing Uruk's excavators to reach the earliest settlement levels, its sketched section pointing to the bottom layer, with pen, inkwell and spectacles.
+  Sources consulted: Julius_Jordan_Eanna texts/18_game_season_and_people_cards.txt (A0 the brief, A1; Getty 2019 ch. 12 and fig. 12.8)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<rect x="0" y="0" width="400" height="560" fill="#9C6B3C"/>
+<path d="M-2,30 L402,36 M-2,520 L402,526 M-2,545 L402,551" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<g id="blotter">
+<rect x="30" y="70" width="340" height="420" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M30,70 L80,70 L30,120 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M370,70 L320,70 L370,120 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M30,490 L80,490 L30,440 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M370,490 L320,490 L370,440 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="letter">
+<path d="M70,110 L300,96 L318,450 L86,464 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M96,130 L200,124 M96,144 L170,140" fill="none" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M98,170 L290,158 M98,184 L290,172 M98,198 L290,186 M98,212 L250,200" fill="none" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M120,237 L250,229.2 L251,257.2 L121,265 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M120,265 L250,257.2 L251,281.2 L121,289 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M120,289 L250,281.2 L251,307.2 L121,315 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M120,315 L250,307.2 L251,329.2 L121,337 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M120,337 L250,329.2 L251,361.2 L121,369 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 170,355 C 150,340 180,330 210,334 C 240,336 250,352 226,366 C 200,378 176,368 170,355 Z" fill="none" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 276,226 L 276,340 M 266,326 L 276,342 L 286,326" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M110,400 L280,392 M110,414 L280,406" fill="none" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,438 c 8,-10 16,6 24,-4 c 6,-8 10,2 20,-4" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="inkwell">
+<rect x="300" y="360" width="60" height="60" rx="6" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="330" cy="390" r="18" fill="#1E1A17" stroke="#1E1A17" stroke-width="2"/>
+<circle cx="330" cy="390" r="10" fill="#D9A441" stroke="#1E1A17" stroke-width="2"/>
+</g>
+<g id="dip-pen">
+<path d="M 196,520 L 330,400" fill="none" stroke="#1E1A17" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 196,520 L 330,400" fill="none" stroke="#2B2622" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 322,404 L 344,386 L 334,400 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="spectacles">
+<circle cx="318" cy="186" r="22" fill="none" stroke="#1E1A17" stroke-width="6"/>
+<circle cx="318" cy="186" r="22" fill="none" stroke="#D9A441" stroke-width="3"/>
+<circle cx="318" cy="240" r="22" fill="none" stroke="#1E1A17" stroke-width="6"/>
+<circle cx="318" cy="240" r="22" fill="none" stroke="#D9A441" stroke-width="3"/>
+<path d="M 310,207 Q 304,213 310,219" fill="none" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 310,207 Q 304,213 310,219" fill="none" stroke="#D9A441" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 340,180 L 378,168 M 340,246 L 378,262" fill="none" stroke="#1E1A17" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 340,180 L 378,168 M 340,246 L 378,262" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="books">
+<path d="M14,10 L180,6 L182,54 L16,58 Z" fill="#2B2622" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 40,10 L 42,57 M 156,7 L 158,55" fill="none" stroke="#D9A441" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M200,14 L380,18 L378,50 L198,48 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 226,15 L 225,49 M 352,18 L 352,50" fill="none" stroke="#D9A441" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<rect x="1.5" y="1.5" width="397" height="557" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

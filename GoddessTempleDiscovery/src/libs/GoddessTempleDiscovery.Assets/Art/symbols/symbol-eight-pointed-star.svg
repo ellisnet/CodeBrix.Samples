@@ -1,0 +1,30 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Eight-Pointed Star of Holy Inanna
+  Subject: Her star as the planet Venus, eight straight rays bevelled in gold with a small disc at the heart, the form on Babylonian kudurru and seals.
+  Sources consulted: Holy_Inanna/IMAGES.md; Getty Uruk transcript chapters 9 and 11
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="star">
+<polygon points="200,200 200,32 176.3,142.7" fill="#D9A441"/>
+<polygon points="200,200 200,32 223.7,142.7" fill="#A8761F"/>
+<polygon points="200,200 318.8,81.2 223.7,142.7" fill="#D9A441"/>
+<polygon points="200,200 318.8,81.2 257.3,176.3" fill="#A8761F"/>
+<polygon points="200,200 368,200 257.3,176.3" fill="#D9A441"/>
+<polygon points="200,200 368,200 257.3,223.7" fill="#A8761F"/>
+<polygon points="200,200 318.8,318.8 257.3,223.7" fill="#D9A441"/>
+<polygon points="200,200 318.8,318.8 223.7,257.3" fill="#A8761F"/>
+<polygon points="200,200 200,368 223.7,257.3" fill="#A8761F"/>
+<polygon points="200,200 200,368 176.3,257.3" fill="#D9A441"/>
+<polygon points="200,200 81.2,318.8 176.3,257.3" fill="#A8761F"/>
+<polygon points="200,200 81.2,318.8 142.7,223.7" fill="#D9A441"/>
+<polygon points="200,200 32,200 142.7,223.7" fill="#A8761F"/>
+<polygon points="200,200 32,200 142.7,176.3" fill="#D9A441"/>
+<polygon points="200,200 81.2,81.2 142.7,176.3" fill="#A8761F"/>
+<polygon points="200,200 81.2,81.2 176.3,142.7" fill="#D9A441"/>
+<polygon points="200,32 223.7,142.7 318.8,81.2 257.3,176.3 368,200 257.3,223.7 318.8,318.8 223.7,257.3 200,368 176.3,257.3 81.2,318.8 142.7,223.7 32,200 142.7,176.3 81.2,81.2 176.3,142.7" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="200" r="24" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

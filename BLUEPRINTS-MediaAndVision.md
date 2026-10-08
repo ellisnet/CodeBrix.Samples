@@ -80,24 +80,58 @@ timecodes and volume slider bind straight to.
 // From CodeBrix.Samples/CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Playback/Services/IVideoPlayerSurface.cs
 public interface IVideoPlayerSurface
 {
+    /// <summary>Opens a file and leaves it paused at the start.</summary>
+    /// <param name="path">The file to open.</param>
     void Open(string path);
+
+    /// <summary>Unloads whatever is open.</summary>
     void Close();
+
+    /// <summary>Starts or resumes playback.</summary>
     void Play();
+
+    /// <summary>Holds playback where it is.</summary>
     void Pause();
+
+    /// <summary>Stops playback and returns to the start.</summary>
     void Stop();
+
+    /// <summary>Jumps to the start of one chapter.</summary>
+    /// <param name="index">The chapter's position in the file, from zero.</param>
     void SeekToChapter(int index);
+
+    /// <summary>Shows one caption track, or none.</summary>
+    /// <param name="track">The track to show, or null to show none.</param>
     void SelectCaptionTrack(CaptionTrack track);
 
+    /// <summary>How long the open file runs.</summary>
     TimeSpan Duration { get; }
+
+    /// <summary>Whether the open file is playing right now.</summary>
     bool IsPlaying { get; }
+
+    /// <summary>The chapters the open file carries.</summary>
     IReadOnlyList<Chapter> Chapters { get; }
+
+    /// <summary>The caption tracks the open file carries.</summary>
     IReadOnlyList<CaptionTrack> CaptionTracks { get; }
+
+    /// <summary>Which chapter playback is inside now, or -1 when there are no chapters.</summary>
     int CurrentChapterIndex { get; }
 
+    /// <summary>Raised once a file is open and its duration, chapters and captions are known.</summary>
     event EventHandler MediaOpened;
+
+    /// <summary>Raised when playback reaches the end.</summary>
     event EventHandler PlaybackEnded;
+
+    /// <summary>Raised when a file cannot be opened or played, with the reason.</summary>
     event EventHandler<string> MediaFailed;
+
+    /// <summary>Raised when playback starts or stops, so the transport can enable and disable itself.</summary>
     event EventHandler PlayStateChanged;
+
+    /// <summary>Raised when playback moves into a different chapter, so the drop-down can follow it.</summary>
     event EventHandler ChapterChanged;
 }
 ```
@@ -131,11 +165,19 @@ private sealed class VideoPlayerSurface : IVideoPlayerSurface
 
     public void Play() => player.Play();
 
+    public void Pause() => player.Pause();
+
+    public void Stop() => player.Stop();
+
     public void SeekToChapter(int index) => player.SeekToChapter(index);
 
     public void SelectCaptionTrack(CaptionTrack track) => player.SelectedCaptionTrack = track;
 
     internal void RaiseMediaOpened() => MediaOpened?.Invoke(this, EventArgs.Empty);
+
+    internal void RaisePlaybackEnded() => PlaybackEnded?.Invoke(this, EventArgs.Empty);
+
+    internal void RaiseMediaFailed(string message) => MediaFailed?.Invoke(this, message);
 }
 ```
 
@@ -163,6 +205,8 @@ private void WireViewModel()
         outputPath.PickOutputPathAsync = PickOutputPathAsync;
     }
 }
+
+#region | Player element events |
 
 private void Player_MediaOpened(object sender, EventArgs e) => surface?.RaiseMediaOpened();
 
@@ -257,7 +301,7 @@ private void SetPlayerSource(IMediaPlaybackSource source)
         (previous as IDisposable)?.Dispose();
     }
 }
-
+// ...
 public IMediaPlaybackSource PlayerSource
 {
     get;
@@ -323,14 +367,27 @@ public interface IAudioPlayerBridge
     /// </summary>
     Action<Stream> LoadAudioSource { get; set; }
 
+    /// <summary>Starts (or resumes) playback.</summary>
     Action PlayAudio { get; set; }
+
+    /// <summary>Pauses playback, keeping the position.</summary>
     Action PauseAudio { get; set; }
+
+    /// <summary>Stops playback and rewinds.</summary>
     Action StopAudio { get; set; }
+
+    /// <summary>Sets whether playback loops.</summary>
     Action<bool> SetAudioLooping { get; set; }
     // ...
     Func<bool> IsAudioPlaying { get; set; }
+
+    /// <summary>The player's position within the clip.</summary>
     Func<TimeSpan> AudioPosition { get; set; }
+
+    /// <summary>The loaded clip's duration.</summary>
     Func<TimeSpan> AudioDuration { get; set; }
+
+    /// <summary>Moves the player to a position within the clip.</summary>
     Action<TimeSpan> SeekAudio { get; set; }
 }
 ```
@@ -368,6 +425,7 @@ public bool HasAudioClip
     private set => SetProperty(ref field, value);
 }
 
+/// <summary>Starts (or resumes) audio playback; a clip parked at its end replays instead.</summary>
 public SimpleCommand PlayAudioCommand => field ??= new SimpleCommand(CanUseAudioTransport, DoPlayAudio);
 // ...
 private bool CanUseAudioTransport() => HasAudioClip;
@@ -472,6 +530,12 @@ public interface IMediaProbe
     /// Probes one file. A <c>.cbv</c> file is read by the playback core's own container readers; every
     /// other file is probed with ffprobe through CodeBrix.VideoProcessing.
     /// </summary>
+    /// <param name="path">The file to look at.</param>
+    /// <param name="cancellationToken">Stops the probe.</param>
+    /// <returns>What the file turned out to be.</returns>
+    /// <exception cref="VideoToolProcessingException">
+    /// The file is missing, is not a media file this application can work with, or carries no video.
+    /// </exception>
     Task<SourceMediaInfo> ProbeAsync(string path, CancellationToken cancellationToken);
 }
 ```
@@ -676,7 +740,7 @@ request.Audio.Include = plan.Source.HasAudio;
 request.Audio.Codec = plan.AudioCodec == TargetAudioCodec.Vorbis
     ? AuthoringAudioCodec.LibVorbis
     : AuthoringAudioCodec.LibOpus;
-
+// ...
 foreach (var caption in sidecars.Captions)
 {
     request.Captions.Add(new AuthoringCaptionInput(
@@ -966,7 +1030,7 @@ public async Task<MediaSidecars> ExtractAsync(
         ? ExtractFromContainerReader(source, workingFolder)
         : await ExtractWithFfmpegAsync(source, workingFolder, cancellationToken).ConfigureAwait(false);
 }
-
+// ...
 private static MediaSidecars ExtractFromContainerReader(SourceMediaInfo source, string workingFolder)
 {
     try
@@ -1007,6 +1071,9 @@ if (!TextCaptionCodecs.Contains(codec, StringComparer.OrdinalIgnoreCase))
     notes.Add($"Caption track {index} is '{codec}', which has no text form, so it was not carried across.");
     continue;
 }
+
+var language = NormalizeLanguage(stream.Language);
+var path = Path.Combine(workingFolder, WebVttFile.FileNameFor(index, language));
 
 var succeeded = await FFMpegArguments
     .FromFileInput(source.Path)
@@ -1053,7 +1120,7 @@ into an observable collection.
 ```csharp
 // From CodeBrix.Samples/CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Resolution/ResolutionLadder.cs
 public static IReadOnlyList<int> StandardShortSides { get; } = [1440, 1080, 720, 480];
-
+// ...
 public static IReadOnlyList<ResolutionOption> Build(int sourceWidth, int sourceHeight)
 {
     // ... positive-dimension guards ...
@@ -1088,9 +1155,12 @@ public static IReadOnlyList<ResolutionOption> Build(int sourceWidth, int sourceH
     }
 
     return rungs;
+    // ...
 }
 
 /// <summary>Rounds a dimension to the nearest even number of pixels, never below 2.</summary>
+/// <param name="value">The dimension to round.</param>
+/// <returns>An even value of at least 2.</returns>
 public static int MakeEven(int value)
 {
     if (value <= 2)
@@ -1135,7 +1205,7 @@ service that turn a stop into a rate factor.
 //PINNED: the quality knob moves the rate factor only, so an encode takes about as long whichever
 //stop is chosen.
 private const int Av1SpeedPreset = 8;
-
+// ...
 //THE QUALITY KNOB, IN ITS ENTIRETY. A quality stop moves the encoder's constant rate factor and
 //nothing else: the speed presets above stay pinned, and sound is settled by the destination alone.
 // ... a calibration table, elided ...
@@ -1146,7 +1216,7 @@ private static int Av1RateFactor(QualityLevel quality) => quality switch
     QualityLevel.Best => 18,
     _ => 30,
 };
-
+// ...
 private static int H264RateFactor(QualityLevel quality) => quality switch
 {
     QualityLevel.Fair => 27,
@@ -1224,6 +1294,11 @@ internal sealed class MediaCache : IDisposable
     public string CacheDirectory { get; } =
         Path.Combine(Path.GetTempPath(), "NotionDocumentCreator", Guid.NewGuid().ToString("N"));
 
+    /// <summary>
+    /// Fetches a URL to a local file, once per run. Failures (including
+    /// too-large content) return an unsuccessful result with a reason -
+    /// they never throw, so a bad download can never fail the document.
+    /// </summary>
     public async Task<CachedMedia> FetchAsync(
         string url, long maxBytes = DefaultMaxDownloadBytes, CancellationToken cancellationToken = default)
     {
@@ -1296,6 +1371,10 @@ rendered card plus one warning, never a failure.
 ```csharp
 // From CodeBrix.Samples/NotionDocumentCreator/src/libs/NotionDocumentCreator.CreateDocument/Internal/VideoPosterExtractor.cs
 using CodeBrix.VideoProcessing;
+using System;
+using System.IO;
+
+namespace NotionDocumentCreator.CreateDocument.Internal;
 
 /// <summary>
 /// Extracts a poster frame from a downloaded video via ffmpeg, and probes media
@@ -1401,7 +1480,7 @@ public static async Task<IReadOnlyList<CameraDevice>> GetCamerasAsync()
     }
     return cameras;
 }
-
+// ...
 public void Start(CameraDevice camera)
 {
     if (camera == null) { throw new ArgumentNullException(nameof(camera)); }
@@ -1411,6 +1490,7 @@ public void Start(CameraDevice camera)
     _session = new WebcamSession(camera.Device);
     _session.FrameReceived += OnFrameReceived;
     _session.Start();
+    // ...
 }
 
 private void OnFrameReceived(object sender, WebcamFrameEventArgs frame)
@@ -1420,7 +1500,7 @@ private void OnFrameReceived(object sender, WebcamFrameEventArgs frame)
     _hasFrame = true;
     FrameArrived?.Invoke(this, EventArgs.Empty);
 }
-
+// ...
 public bool TryCopyLatestFrame(ref byte[] buffer, out int width, out int height)
 {
     WebcamSession session = _session;
@@ -1745,6 +1825,8 @@ _net.SetInput(blob);
 //Identity = 21 x (x, y, z) in crop pixels; Identity_1 = presence probability. Both
 //  outputs are always needed, so read them in one pass with ForwardAll (the second
 //  read reuses the first forward's results).
+float[] rawLandmarks;
+float presence;
 Mat[] outputs = _net.ForwardAll("Identity", "Identity_1");
 try
 {
@@ -1820,6 +1902,11 @@ internal static class OpenPalmClassifier
     //  (index 5-8, middle 9-12, ring 13-16, pinky 17-20; thumb 1-4)
     private static readonly (int Tip, int Pip)[] Fingers = { (8, 6), (12, 10), (16, 14), (20, 18) };
 
+    /// <summary>
+    /// Classifies the landmarks as open palm (all four fingers extended) or not.
+    /// </summary>
+    /// <param name="landmarks">The 21 hand landmarks, in any consistent coordinate space.</param>
+    /// <returns><c>true</c> for an open palm.</returns>
     internal static bool IsOpenPalm(Point2f[] landmarks)
     {
         if (landmarks == null || landmarks.Length < 21) { return false; }
@@ -1838,6 +1925,8 @@ internal static class OpenPalmClassifier
     /// <summary>
     /// The palm's center: the mean of the wrist and the four finger MCP knuckles.
     /// </summary>
+    /// <param name="landmarks">The 21 hand landmarks.</param>
+    /// <returns>The palm center, in the landmarks' coordinate space.</returns>
     internal static Point2f GetPalmCenter(Point2f[] landmarks)
     {
         var sumX = 0f;
@@ -1848,6 +1937,13 @@ internal static class OpenPalmClassifier
             sumY += landmarks[i].Y;
         }
         return new Point2f(sumX / 5f, sumY / 5f);
+    }
+
+    private static float Distance(Point2f a, Point2f b)
+    {
+        float dx = a.X - b.X;
+        float dy = a.Y - b.Y;
+        return (float)Math.Sqrt((dx * dx) + (dy * dy));
     }
 }
 ```
@@ -2038,6 +2134,8 @@ public static class BakeLocations
     public const string LutFileExtension = ".cube";
 
     /// <summary>Builds the name a save dialog opens with for a bake made at a given moment.</summary>
+    /// <param name="timestamp">The moment the bake was made.</param>
+    /// <returns>A file name such as <c>chain-20260829-141530.cube</c>.</returns>
     public static string CreateFileName(DateTime timestamp) =>
         "chain-" + timestamp.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture) + LutFileExtension;
 }
@@ -2049,12 +2147,20 @@ public static class BakeLocations
 /// <para>
 /// A bake is INDEPENDENT of the picture. The chain handed in here is read and composed from scratch;
 /// the presenter showing the video is not read and not touched, and NEITHER IS ANY OTHER PRESENTER.
+/// Composing a chain is arithmetic on the tables - <see cref="LutComposer" /> in the core package does
+/// it with no video, no graphics context, no frame and no window anywhere in sight. So a chain can be
+/// baked that has never been played, and a chain that is playing can be baked while the panel above it
+/// holds something else entirely: the two are simply not connected.
 /// </para>
 /// <para>
 /// The output size is pinned to <see cref="SkiaVideoPresenter.DefaultEffectLutSize" /> - the size the
 /// presenter composes at - rather than left to <c>LutComposer.GetOutputSize</c>. That is what keeps a
 /// baked file and a played chain agreeing to the last bit even though nothing connects them: same
 /// size, same tetrahedral sampling, same arithmetic.
+/// </para>
+/// <para>
+/// An application already holding <see cref="IVideoFrameEffect" />s rather than file paths wants
+/// <c>EffectComposer.Compose</c> instead, which is the same arithmetic reached from the Skia side.
 /// </para>
 /// </remarks>
 public BakedLut BakeChain(IReadOnlyList<LutChainEntry> entries, string cubeFilePath)
@@ -2121,6 +2227,7 @@ private async Task DoBakeAsync()
         BakeStatusText = $"Baked {baked.TableCount} table(s) into a {baked.Size}-node table: {baked.FilePath}";
         UpdateUiState();
     });
+    // ...
 }
 
 private List<LutChainEntry> BuildPanelChain()
@@ -2225,7 +2332,7 @@ private void SwitchCamera(CameraOption camera)
             return;
         }
 
-        _session = new WebcamSession(camera.Device);
+        _session = _cameras.OpenSession(camera.Device);
         _session.FrameReceived += OnFrameReceived;
         _session.MonitorAudio = IsAudioMonitorOn;
         _session.Start();
@@ -2310,7 +2417,7 @@ private async Task DoTakePhoto()
         var session = _session;
         if (session == null) { return; }
 
-        WebcamPhoto photo = session.CapturePhoto();
+        byte[] pixels = session.CapturePhoto(out int width, out int height);
         string fileName = $"frame_capture_{DateTime.Now:yyyyMMdd_HHmmss_fff}.png";
         string outputPath = Path.Combine(FolderPath.Trim(), fileName);
 
@@ -2318,7 +2425,7 @@ private async Task DoTakePhoto()
         await Task.Run(() =>
         {
             using Image<Bgra32> image = Image.LoadPixelData<Bgra32>(
-                photo.PixelsBgra32, photo.Width, photo.Height, PngFormat.Instance);
+                pixels, width, height, PngFormat.Instance);
             image.SaveAsPng(outputPath);
         });
 
@@ -2529,6 +2636,10 @@ public interface IWebcamFrameSource
     /// which is (re)allocated as needed. Returns <c>false</c> when no frame is available.
     /// Safe to call from any thread.
     /// </summary>
+    /// <param name="buffer">The caller's frame buffer; replaced when the size does not match.</param>
+    /// <param name="width">The frame's width in pixels.</param>
+    /// <param name="height">The frame's height in pixels.</param>
+    /// <returns><c>true</c> when a frame was copied.</returns>
     bool TryCopyLatestFrame(ref byte[] buffer, out int width, out int height);
 }
 
@@ -2562,6 +2673,10 @@ public void Render(SKSurface surface, SKImageInfo info, IWebcamFrameSource frame
 /// the page pulls frames through the narrow <see cref="IWebcamFrameSource"/> seam and
 /// never sees the capture service behind it.
 /// </summary>
+/// <param name="buffer">The renderer's frame buffer; replaced when the size does not match.</param>
+/// <param name="width">The frame's width in pixels.</param>
+/// <param name="height">The frame's height in pixels.</param>
+/// <returns><c>true</c> when a frame was copied.</returns>
 bool IWebcamFrameSource.TryCopyLatestFrame(ref byte[] buffer, out int width, out int height)
 {
     var service = _captureService;

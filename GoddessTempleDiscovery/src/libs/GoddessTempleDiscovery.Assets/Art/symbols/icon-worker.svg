@@ -1,0 +1,17 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Worker
+  Subject: Interface icon for a workman: a figure carrying a basket of earth on the shoulder, as in the Uruk excavation photographs.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<circle cx="146" cy="132" r="42" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 70,370 L 82,244 C 86,204 110,190 146,190 C 182,190 206,204 210,244 L 222,370" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,90 L 360,106 L 340,190 L 214,178 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 210,124 L 352,138" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 196,214 C 230,212 250,200 262,180" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

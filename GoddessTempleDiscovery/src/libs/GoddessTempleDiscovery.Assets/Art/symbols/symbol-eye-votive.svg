@@ -1,0 +1,22 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Votive Eye
+  Subject: An almond eye inlay with a bitumen rim and brow, white shell and a lapis iris, the kind of eye once set in the empty sockets of the Lady of Warka.
+  Sources consulted: Holy_Inanna/IMAGES.md (Mask of Warka, empty eye sockets and brow grooves)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="eye">
+<path d="M 120,140 C 170,90 250,92 296,132 C 250,108 172,108 120,140 Z" fill="#2B2622" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 40,210 C 110,110 290,110 360,210 C 290,310 110,310 40,210 Z" fill="#2B2622" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 66,210 C 124,134 276,134 334,210 C 276,286 124,286 66,210 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 334,210 C 276,286 124,286 66,210 C 130,262 270,262 334,210 Z" fill="#C9BFA8"/>
+<path d="M 66,210 C 124,134 276,134 334,210 C 276,286 124,286 66,210 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="210" r="64" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="210" r="64" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,146 A 64 64 0 0 1 264,210 L 250,210 A 50 50 0 0 0 200,160 Z" fill="#5B7BC4"/>
+<circle cx="200" cy="210" r="26" fill="#1E1A17"/>
+<circle cx="180" cy="190" r="10" fill="#FFFFFF"/>
+</g>
+</svg>

@@ -1,0 +1,228 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the Goddess Temple Discovery sample application, together with the
+licenses under which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here. That includes the game engine and its CardsAndDice
+add-on, the AppSettings add-in and the PDF document library the Field Journal
+is drawn with.
+
+Note that the CodeBrix packages this application uses are not all under the
+same license; the family's package-name suffix records each one's license, so
+check the suffix in each csproj before shipping a derivative.
+
+Nothing is downloaded at run time. Everything the application shows travels
+inside its assemblies or inside the packages it references.
+
+------------------------------------------------------------------------
+Merriweather
+  (bundled: src/libs/GoddessTempleDiscovery.Assets/Fonts/Merriweather-*.ttf)
+------------------------------------------------------------------------
+Copyright 2020 The Merriweather Project Authors
+(https://github.com/EbenSorkin/Merriweather4) with Reserved Font Name
+"Merriweather".
+
+Licensed under the SIL Open Font License, Version 1.1.
+Full license text:
+  src/libs/GoddessTempleDiscovery.Assets/Fonts/OFL-Merriweather.txt
+
+Three faces (Regular, Bold, Italic) are embedded, unmodified, as resources in
+the GoddessTempleDiscovery.Assets assembly, with the license text embedded
+beside them. They set the titles and text of the card faces, the HUD and the
+Field Journal. On the card faces the letters are drawn as glyph outlines
+(SVG path data) generated from these faces at run time; in the Field Journal
+the faces are registered with the PDF font system and subsets of them are
+embedded in every PDF the application writes.
+
+The same typeface also reaches the application's XAML text through the
+CodeBrix.Platform.Fonts.Merriweather package, where it is set as the
+application-wide default text font; that copy ships inside the package rather
+than in this folder.
+
+------------------------------------------------------------------------
+Noto Sans Cuneiform
+  (bundled: src/libs/GoddessTempleDiscovery.Assets/Fonts/NotoSansCuneiform-Regular.ttf)
+------------------------------------------------------------------------
+Copyright 2017 Google Inc. All Rights Reserved.
+
+Noto Sans Cuneiform, version 2.000, from the Noto fonts project
+(https://github.com/notofonts).
+
+Licensed under the SIL Open Font License, Version 1.1.
+Full license text:
+  src/libs/GoddessTempleDiscovery.Assets/Fonts/OFL-NotoSansCuneiform.txt
+
+The face is embedded, unmodified, as a resource in the
+GoddessTempleDiscovery.Assets assembly, with the license text embedded beside
+it. It sets the cuneiform lines of the cards, as glyph outlines on the card
+faces and as an embedded subset in the Field Journal.
+
+------------------------------------------------------------------------
+CardsAndDice add-on content  (arrives with its NuGet package, not bundled here)
+------------------------------------------------------------------------
+The card back on every deck (the add-on's celestial back), the traditional
+pip dice, the deal, flip and roll animations, and the card and dice sounds
+(including the card-slide sound the game reuses as the newspaper's paper
+rustle) come from the CardsAndDice add-on of CodeBrix.Platform.GameEngine,
+inside its package. The add-on's own THIRD-PARTY-NOTICES.txt is the record for
+that content: among other things it credits the public-domain Star of Ishtar
+drawing (Raphael 75, Wikimedia Commons) that its celestial back incorporates
+inside an original frame, and the Kenney (https://kenney.nl) Casino Audio
+sounds it carries under Creative Commons Zero (CC0). Nothing of the add-on's
+content is copied into this folder.
+
+------------------------------------------------------------------------
+Original vector art
+  (bundled: src/libs/GoddessTempleDiscovery.Assets/Art/<category>/*.svg)
+------------------------------------------------------------------------
+Every picture in the game - the buildings and their plans, the objects, the
+symbols and icons, the deities and heroes, the scenes, the traced plates, the
+chrome and the Art Deco pieces - is original vector work made for this
+application. It is licensed under the Apache License, Version 2.0, the license
+of the CodeBrix.Samples repository, and may be reused under that license;
+src/libs/GoddessTempleDiscovery.Assets/Art/ART-LICENSE.md says how.
+
+The pictures are drawn from an understanding of the published excavation
+reports, plans and museum objects; no existing image is copied, embedded or
+converted into them, except as follows for the traced plates.
+
+------------------------------------------------------------------------
+Traced plates  (bundled: src/libs/GoddessTempleDiscovery.Assets/Art/plates/*.svg)
+------------------------------------------------------------------------
+The plates are vector tracings - posterized to the art's palette and redrawn
+as paths - of public-domain and CC0 photographs and engravings. No photograph
+or engraving is itself included. Each plate's header comment names its source;
+the sources are:
+
+  - plate-cone-mosaic-columns (Cone-Mosaic Half-Columns): photograph by
+    Neoclassicism Enthusiast, Wikimedia Commons, 2023, CC0 1.0.
+  - plate-cone-mosaic-niche (Cone-Mosaic Niche, the Pillar Terrace wall,
+    VA 10997): photograph by Neoclassicism Enthusiast, Wikimedia Commons, CC0.
+  - plate-karaindash-facade (The Karaindash Temple Facade, VA 10983):
+    photograph by Neoclassicism Enthusiast, Wikimedia Commons, CC0.
+  - plate-jordan-eanna-mound-from-above (The Eanna Mound from Above, 1930):
+    after Julius Jordan, UVB II (1930) plate 6, Internet Archive scan; public
+    domain (Jordan died in 1945).
+  - plate-julius-jordan-1900 (Julius Jordan, 1900): studio photograph by
+    Hahn's Nachf., Dresden, 1900, via Wikimedia Commons; public domain by age.
+  - plate-loftus-coffin-bearers-1857 (Coffin Bearers at Warka, 1857):
+    illustration from W. K. Loftus, Travels and Researches in Chaldaea and
+    Susiana (London 1857), Internet Archive scan; public domain.
+  - plate-schwarzenbach-dig-workers (Dig Workers at Warka, 1934),
+    plate-schwarzenbach-jordan-with-the-lion (Julius Jordan with the Lion of
+    Babylon, 1934), plate-schwarzenbach-ziggurat-1934 (The Ziggurat of
+    Ur-Nammu, 1934) and plate-schwarzenbach-ziggurat-from-the-dig (The
+    Ziggurat from the Dig, 1934): photographs by Annemarie Schwarzenbach,
+    c. 1933/34, Swiss Literary Archives / Swiss National Library (CH-NB),
+    public domain. Credit: "Photo: Annemarie Schwarzenbach, c. 1933/34, Swiss
+    Literary Archives / Swiss National Library (CH-NB), public domain".
+
+The tracings themselves are original work under the Apache License, Version
+2.0, like the rest of the art.
+
+------------------------------------------------------------------------
+Quotations from the Electronic Text Corpus of Sumerian Literature (ETCSL)
+------------------------------------------------------------------------
+Many Tablet cards quote a few lines of an English translation from the ETCSL,
+each with its composition number and line numbers on the card (for example
+"Inana's descent to the nether world, ETCSL 1.4.1, lines 1–5"), and cite the
+ETCSL page in the card's sources.
+
+  Copyright © J.A. Black, G. Cunningham, E. Robson, and G. Zólyomi 1998,
+  1999, 2000; J.A. Black, G. Cunningham, E. Flückiger-hawker, E. Robson,
+  J. Taylor, and G. Zólyomi 2001. The authors have asserted their moral
+  rights.
+
+  Citation, as the ETCSL asks: Black, J.A., Cunningham, G.,
+  Fluckiger-Hawker, E, Robson, E., and Zólyomi, G., The Electronic Text
+  Corpus of Sumerian Literature (http://www-etcsl.orient.ox.ac.uk/), Oxford
+  1998- . Current address: https://etcsl.orinst.ox.ac.uk/
+
+Oracc's ePSD2 literary page states: "The ETCSL data has been made available
+under a Creative Commons Attribution non-Commercial Share Alike 3.0 unported
+License and is distributed by the Oxford Text Archive
+[http://ota.ox.ac.uk/desc/2518]."
+
+The quoted lines are short passages, quoted with attribution in a free,
+non-commercial sample application. They remain under the ETCSL's terms and are
+NOT relicensed under the Apache License with the rest of this application; a
+commercial derivative should review the quotations or seek permission.
+
+------------------------------------------------------------------------
+Oracc: AMGG, the Oracc Sign List and DCCLT
+------------------------------------------------------------------------
+Facts on the Pantheon and Goddess Tablets rest in part on the pages of Ancient
+Mesopotamian Gods and Goddesses (AMGG, http://oracc.museum.upenn.edu/amgg/),
+which are licensed under Creative Commons Attribution-ShareAlike 3.0 and ask
+for this credit: "Based on data prepared by the HEA-funded AMGG project." The
+cards' texts are written for this application; each card that draws on an
+AMGG page cites it, with its author, in its sources.
+
+Sign readings rest in part on the Oracc Sign List (http://oracc.org/osl/),
+which is CC0 (public domain).
+
+One Culture Tablet quotes a sentence of N. Veldhuis, "Archaic Lexical Texts",
+DCCLT (Oracc), 2019
+(http://oracc.museum.upenn.edu/dcclt/lexicallistsperiods/archaic/), with that
+attribution on the card.
+
+------------------------------------------------------------------------
+Museum catalogues, Oracc SelBI, CDLI and the DAI Uruk Visualisation
+Project
+------------------------------------------------------------------------
+Many Discovery cards take their facts from online records, each cited in the
+card's sources with its URL and the date it was read:
+
+  - museum-digital SMB (https://smb.museum-digital.de/), the online
+    catalogue of the Staatliche Museen zu Berlin: the object records of the
+    Vorderasiatisches Museum (VA numbers). The cards describe the objects in
+    their own words from these records.
+  - Oracc CAMS/SelBI (https://oracc.museum.upenn.edu/cams/selbi/): the
+    Anu-uballiṭ inscriptions. The cards quote a few short phrases of the
+    project's English translations, attributed to Oracc on the card.
+  - CDLI, the Cuneiform Digital Library Initiative (https://cdli.earth/):
+    artifact records, with their transliterations. The cards quote a few
+    transliterated lines, attributed to CDLI on the card.
+  - The Uruk Visualisation Project of the German Archaeological Institute
+    (DAI), on the Artefacts Berlin site
+    (https://www.artefacts-berlin.de/?p=1494): facts on the holy buildings
+    of Seleucid Uruk.
+
+A few cards also cite the British Museum's collection online, CORE and ISAC
+News & Notes, read through search summaries only.
+
+The cards' sources record no terms of use for these sites; the terms each site
+states apply to the material on it. The quoted phrases and lines are a few
+words or lines each, attributed on the card that carries them, and are NOT
+relicensed under the Apache License with the rest of this application.
+
+------------------------------------------------------------------------
+Other quotations and the card texts
+------------------------------------------------------------------------
+The other quotations - the excavators' own words from their preliminary
+reports, the inscriptions of the kings who built in Eanna, and scholars'
+sentences from the published literature, among them Annette Zgoll's English
+of Enheduanna's hymn in Uruk: First City of the Ancient World (2019) - are a
+sentence or a few lines each, attributed on the card that carries them, with
+the publication in its sources. The epigraph on the title screen is Julius
+Jordan's passage on the descent of the heavenly powers, from the Dritter
+vorläufiger Bericht (Third Preliminary Report), Berlin, 1932, pp. 33–34, in
+English.
+
+Every other text in the game - the cards, the headlines, the season stories,
+the people, the periods, the glossary, the prologue and epilogue, How to Play
+and the credits - is written for this application from the sources each entry
+names, and is licensed under the Apache License, Version 2.0, with the rest of
+the application.
+
+------------------------------------------------------------------------
+Field Journals (written at run time)
+------------------------------------------------------------------------
+The application writes Field Journal PDFs where the user chooses. That content
+belongs to whoever made it; nothing of it is redistributed as part of this
+repository.

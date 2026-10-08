@@ -1,0 +1,39 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Half Sunburst
+  Subject: A half sunburst rising from a gold base rule, eighteen alternating gold slices stepped down in length from the centre outward, made to sit behind titles.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="rays">
+<polygon points="154,300 92,300 93.6,281.2 154.7,292" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="154.7,292 81.8,279.2 87.2,259 156.8,284.3" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="156.8,284.3 76,254.9 85.7,234 160.2,277" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="160.2,277 85.7,234 98.9,215.2 164.8,270.4" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="164.8,270.4 89.7,207.4 107.4,189.7 170.4,264.8" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="170.4,264.8 99.7,180.5 122,164.9 177,260.2" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="177,260.2 122,164.9 146.6,153.4 184.3,256.8" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="184.3,256.8 142.5,142.1 170.8,134.6 192,254.7" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="192,254.7 168.7,122.7 200,120 200,254" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="200,254 200,120 231.3,122.7 208,254.7" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="208,254.7 229.2,134.6 257.5,142.1 215.7,256.8" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="215.7,256.8 253.4,153.4 278,164.9 223,260.2" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="223,260.2 278,164.9 300.3,180.5 229.6,264.8" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="229.6,264.8 292.6,189.7 310.3,207.4 235.2,270.4" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="235.2,270.4 301.1,215.2 314.3,234 239.8,277" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="239.8,277 314.3,234 324,254.9 243.2,284.3" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="243.2,284.3 312.8,259 318.2,279.2 245.3,292" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="245.3,292 306.4,281.2 308,300 246,300" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="hub">
+<path d="M140,300 A60,60 0 0 1 260,300 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M160,300 A40,40 0 0 1 240,300 Z" fill="#A8761F" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M180,300 A20,20 0 0 1 220,300 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="base">
+<rect x="14" y="300" width="372" height="8" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round"/>
+<rect x="44" y="308" width="312" height="5" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round"/>
+</g>
+</svg>

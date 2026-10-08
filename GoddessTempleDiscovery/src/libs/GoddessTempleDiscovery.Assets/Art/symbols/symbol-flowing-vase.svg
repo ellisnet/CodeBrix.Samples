@@ -1,0 +1,35 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Flowing Vase of Enki
+  Subject: The globular vessel of Enki overflowing with two streams of sweet water, fish swimming up each stream, as on Akkadian seals and the Karaindash facade deities.
+  Sources consulted: temple_buildings overviews (Karaindash relief deities with flowing vessels); BUILDING_HIGHLIGHTS.txt
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="streams">
+<path d="M 196,152 C 180,80 70,72 58,170 L 52,350 L 92,350 L 96,184 C 102,124 160,122 186,162 Z" fill="#5B7BC4" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 186,140 C 166,100 92,98 80,170 L 76,340" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 66,186 L 62,342" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 72,312 L 56,338 L 88,338 Z" fill="#BFC3C7" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 72,316 C 52,294 52,262 72,236 C 92,262 92,294 72,316 Z" fill="#BFC3C7" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="72" cy="254" r="3.5" fill="#1E1A17"/>
+<path d="M 62,270 C 68,276 76,276 82,270 M 62,286 C 68,292 76,292 82,286" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<g transform="translate(400 0) scale(-1 1)"><path d="M 196,152 C 180,80 70,72 58,170 L 52,350 L 92,350 L 96,184 C 102,124 160,122 186,162 Z" fill="#5B7BC4" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 186,140 C 166,100 92,98 80,170 L 76,340" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 66,186 L 62,342" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 72,312 L 56,338 L 88,338 Z" fill="#BFC3C7" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 72,316 C 52,294 52,262 72,236 C 92,262 92,294 72,316 Z" fill="#BFC3C7" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="72" cy="254" r="3.5" fill="#1E1A17"/>
+<path d="M 62,270 C 68,276 76,276 82,270 M 62,286 C 68,292 76,292 82,286" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+</g>
+<g id="vase">
+<path d="M 176,166 L 170,150 L 230,150 L 224,166 C 222,180 214,186 214,196 C 262,206 280,240 278,272 C 276,310 248,334 228,340 L 236,360 L 164,360 L 172,340 C 152,334 124,310 122,272 C 120,240 138,206 186,196 C 186,186 178,180 176,166 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 240,212 C 268,228 280,252 278,272 C 276,310 248,334 228,340 C 250,320 262,292 258,264 C 256,244 250,226 240,212 Z" fill="#9C6B3C"/>
+<path d="M 176,166 L 170,150 L 230,150 L 224,166 C 222,180 214,186 214,196 C 262,206 280,240 278,272 C 276,310 248,334 228,340 L 236,360 L 164,360 L 172,340 C 152,334 124,310 122,272 C 120,240 138,206 186,196 C 186,186 178,180 176,166 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="172" y1="166" x2="228" y2="166" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 132,240 C 170,252 230,252 268,240" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 126,290 C 170,304 230,304 274,290" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 160,262 L 172,276 L 184,262 L 196,276 L 208,262 L 220,276 L 232,262 L 244,276" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

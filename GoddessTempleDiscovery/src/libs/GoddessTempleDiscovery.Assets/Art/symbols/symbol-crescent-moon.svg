@@ -1,0 +1,15 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Crescent of Nanna
+  Subject: The silver crescent of the moon god Nanna, Her father, lying horns up as it does on Mesopotamian seals and boundary stones.
+  Sources consulted: Getty Uruk transcript chapter 9 (Astral Manifestation)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="crescent">
+<path d="M 73.8,134 A 150 150 0 1 0 326.2,134 A 130 130 0 1 1 73.8,134 Z" fill="#BFC3C7" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 326.2,134 A 150 150 0 0 1 200,365 C 262,352 318,300 326.2,134 Z" fill="#C9BFA8"/>
+<path d="M 73.8,134 A 150 150 0 1 0 326.2,134 A 130 130 0 1 1 73.8,134 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

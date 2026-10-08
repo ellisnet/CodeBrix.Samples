@@ -24,6 +24,7 @@ public sealed partial class MainPage
     private MenuBarItem effectsMenu;
     private MenuBarItem windowMenu;
     private int windowMenuFixedItemCount;
+    private readonly Command[] windowDocumentCommands = new Command[9];
 
     private void BuildMenus()
     {
@@ -141,14 +142,35 @@ public sealed partial class MainPage
             null,
             actions.App.About));
 
-        //XAML accelerators do not fire on the Skia heads (see
-        //CommandAcceleratorTable), so every shortcut is dispatched from the
-        //page's KeyDown handler instead. The menu items still SHOW their
-        //shortcut - that part of the XAML accelerator works.
+        //Every shortcut is dispatched from the page's KeyDown handler through
+        //one table built from the engine commands (see CommandAcceleratorTable
+        //for why it is not menu-item KeyboardAccelerators). The menu items
+        //show the shortcut as text only.
         acceleratorTable = new CommandAcceleratorTable();
 
         foreach (Command command in actions.AllCommands())
         {
+            acceleratorTable.Register(command);
+        }
+
+        //The Window menu's Alt+1 .. Alt+9 entries go through the same table:
+        //one command per slot, sensitive only while that slot has a document.
+        for (int i = 0; i < windowDocumentCommands.Length; i++)
+        {
+            int index = i;
+            Command command = new($"ActiveDocument{index + 1}", $"Document {index + 1}", null, null,
+                [$"<Alt>{index + 1}"])
+            {
+                Sensitive = index < PintaCore.Workspace.OpenDocuments.Count,
+            };
+            command.Activated += (_, _) =>
+            {
+                if (index < PintaCore.Workspace.OpenDocuments.Count)
+                {
+                    PintaCore.Workspace.SetActiveDocument(index);
+                }
+            };
+            windowDocumentCommands[i] = command;
             acceleratorTable.Register(command);
         }
 
@@ -398,6 +420,14 @@ public sealed partial class MainPage
 
         IReadOnlyList<Document> documents = PintaCore.Workspace.OpenDocuments;
 
+        for (int i = 0; i < windowDocumentCommands.Length; i++)
+        {
+            if (windowDocumentCommands[i] is { } command)
+            {
+                command.Sensitive = i < documents.Count;
+            }
+        }
+
         for (int i = 0; i < documents.Count; i++)
         {
             Document document = documents[i];
@@ -408,13 +438,10 @@ public sealed partial class MainPage
                 IsEnabled = true,
             };
 
-            if (i < 9)
+            if (i < windowDocumentCommands.Length)
             {
-                item.KeyboardAccelerators.Add(new Microsoft.UI.Xaml.Input.KeyboardAccelerator
-                {
-                    Key = Windows.System.VirtualKey.Number1 + i,
-                    Modifiers = Windows.System.VirtualKeyModifiers.Menu,
-                });
+                item.KeyboardAcceleratorTextOverride =
+                    CommandMenuBuilder.FormatAccelerator(windowDocumentCommands[i].Shortcuts[0]);
             }
 
             int index = i;

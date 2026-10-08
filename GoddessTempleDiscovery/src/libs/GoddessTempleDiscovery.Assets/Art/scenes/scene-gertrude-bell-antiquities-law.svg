@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" width="400" height="560">
+<!--
+  Goddess Temple Discovery vector art
+  Title: The Antiquities Law of 1922
+  Subject: A Baghdad desk with the drafted antiquities law, a map of the two rivers, and a lady's hat and gloves laid aside, for the law Gertrude Bell drafted that reopened Uruk.
+  Sources consulted: Julius_Jordan_Eanna texts/18_game_season_and_people_cards.txt (A2; Getty 2019 ch. 12)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<rect x="0" y="0" width="400" height="560" fill="#E8C597"/>
+<g id="baghdad-window">
+<path d="M 120,270 L 120,120 C 120,70 160,50 200,40 C 240,50 280,70 280,120 L 280,270 Z" fill="#EFE3C8" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 150,270 L 150,230 Q 176,196 202,230 L 202,270 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,270 L 200,222 L 232,216 L 232,200 Q 242,186 252,200 L 252,270 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 176,196 L 176,184" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 262,270 Q 266,210 258,176" fill="none" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 262,270 Q 266,210 258,176" fill="none" stroke="#9C6B3C" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 258,176 Q 245.8,164.2 233.6,172.5 Q 245.8,176.2 258,176 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 258,176 Q 251.5,158.5 245,160.9 Q 251.5,170.5 258,176 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 258,176 Q 264.5,158.5 271,160.9 Q 264.5,170.5 258,176 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 258,176 Q 270.2,164.2 282.4,172.5 Q 270.2,176.2 258,176 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 258,176 Q 245.8,171.8 233.6,187.5 Q 245.8,183.8 258,176 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M120,110 L280,110 M120,150 L280,150 M120,190 L280,190 M160,60 L160,270 M200,60 L200,270 M240,60 L240,270" fill="none" stroke="#9C6B3C" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 120,270 L 120,120 C 120,70 160,50 200,40 C 240,50 280,70 280,120 L 280,270 Z" fill="none" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="108" y="270" width="184" height="14" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="desk">
+<path d="M20,320 L380,320 L402,440 L-2,440 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M-2,440 L402,440 L402,562 L-2,562 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M-2,450 L402,450 M200,450 L200,562 M40,360 L360,360 M30,400 L370,400" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="map">
+<path d="M30,360 L150,348 L162,428 L24,436 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 60,352 C 70,380 96,384 104,404 C 112,420 130,424 140,432" fill="none" stroke="#5B7BC4" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 100,350 C 110,370 128,380 130,396 C 132,410 138,420 140,432" fill="none" stroke="#5B7BC4" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="110" cy="386" r="3" fill="#1E1A17"/>
+<circle cx="124" cy="412" r="3" fill="#1E1A17"/>
+<circle cx="80" cy="372" r="3" fill="#1E1A17"/>
+</g>
+<g id="draft-law">
+<path d="M176,352 L262,346 L270,420 L180,426 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M170,358 L256,352 L262,428 L172,432 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M182,372 L246,368 M182,381 L246,377 M182,390 L246,386 M182,399 L232,395 M182,408 L246,404 M182,417 L246,413" fill="none" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M190,362 L236,359" fill="none" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 214,424 c 6,-8 12,6 18,-4 c 4,-6 8,2 14,-2" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 240,440 L 300,410" fill="none" stroke="#1E1A17" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 240,440 L 300,410" fill="none" stroke="#9C6B3C" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="hat-and-gloves">
+<ellipse cx="330" cy="384" rx="54" ry="20" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3"/>
+<path d="M 300,384 C 300,352 360,352 360,384 Q 330,392 300,384 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 301,378 Q 330,386 359,378 L 360,384 Q 330,392 300,384 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300,380 C 290,370 284,378 290,386 C 296,392 304,388 300,380 Z" fill="#5B7BC4" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 290,420 L 346,412 L 350,424 L 340,428 L 342,434 L 330,432 L 294,432 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300,428 L 356,422 L 360,432 L 350,436 L 352,442 L 340,440 L 304,440 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 316,424 L 318,430 M 324,434 L 326,440" fill="none" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<rect x="1.5" y="1.5" width="397" height="557" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

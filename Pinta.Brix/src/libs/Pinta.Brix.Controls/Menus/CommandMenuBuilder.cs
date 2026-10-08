@@ -140,10 +140,10 @@ public static class CommandMenuBuilder
 
 		string text = FormatAccelerator (shortcut);
 
-		// Deliberately the TEXT and not a real KeyboardAccelerator: XAML
-		// accelerators do not invoke on the Skia heads, and adding one anyway
-		// would mean a second dispatch path the day they start working.
-		// CommandAcceleratorTable does the actual dispatching.
+		// Deliberately the TEXT and not a real KeyboardAccelerator: a menu-item
+		// accelerator fires application-wide, and CommandAcceleratorTable
+		// already dispatches every shortcut, so a real one would be a second
+		// dispatch path firing the command twice.
 		// ToggleMenuFlyoutItem derives from MenuFlyoutItem, so this covers both.
 		if (item is MenuFlyoutItem menuItem)
 			menuItem.KeyboardAcceleratorTextOverride = text;

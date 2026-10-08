@@ -52,8 +52,7 @@ public static class InputMapper
 
 	//Modifier state tracked from the modifier keys' own down/up events. The
 	//CoreWindow.GetKeyState probe below returns nothing on the Skia heads
-	//(Window.Current is null there - the same platform gap that keeps XAML
-	//KeyboardAccelerators from firing), so the canvas reports every key
+	//(Window.Current is null there), so the canvas reports every key
 	//transition here and this is the state that counts.
 	private static ModifierType tracked_modifiers;
 

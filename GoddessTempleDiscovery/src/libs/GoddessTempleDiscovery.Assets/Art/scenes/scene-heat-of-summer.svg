@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" width="400" height="560">
+<!--
+  Goddess Temple Discovery vector art
+  Title: The Heat of Summer
+  Subject: The tell lies empty and shimmering in June, the thermometer near sixty degrees in the shade; the team dug only from October to March.
+  Sources consulted: Julius_Jordan_Eanna texts/18_game_season_and_people_cards.txt (C2; texts/11)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<rect x="0" y="0" width="400" height="560" fill="#EFE3C8"/>
+<g id="sun">
+<circle cx="300" cy="110" r="70" fill="#E8C597"/>
+<circle cx="300" cy="110" r="46" fill="#FFFFFF" stroke="#1E1A17" stroke-width="3"/>
+<path d="M356,110 L374,110 M348.5,138 L364.1,147 M328,158.5 L337,174.1 M300,166 L300,184 M272,158.5 L263,174.1 M251.5,138 L235.9,147 M244,110 L226,110 M251.5,82 L235.9,73 M272,61.5 L263,45.9 M300,54 L300,36 M328,61.5 L337,45.9 M348.5,82 L364.1,73" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="tell">
+<path d="M 20,330 C 77.6,324 92,272 135.2,260 C 120,254 134,252 144,250 L 150,232 L 164,230 L 168,220 L 212,218 L 218,230 L 230,232 L 238,250 C 250,252 272,256 300.8,266 C 329.6,306 344,326 380,330 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 212,218 L 218,230 L 230,232 L 238,250 C 250,252 272,256 300.8,266 C 329.6,306 344,326 380,330 L 220,330 C 214,290 204,260 200,232 Z" fill="#9C6B3C"/>
+<path d="M 20,330 C 77.6,324 92,272 135.2,260 C 120,254 134,252 144,250 L 150,232 L 164,230 L 168,220 L 212,218 L 218,230 L 230,232 L 238,250 C 250,252 272,256 300.8,266 C 329.6,306 344,326 380,330 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 150,232 L 230,232 M 140,266 Q 146,280 140,294 M 128,278 Q 113.6,290 106.4,304" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="plain">
+<path d="M-2,326 L402,326 L402,562 L-2,562 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="shimmer">
+<path d="M -20,300 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 120,300 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 260,300 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M -20,318 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 120,318 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 260,318 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M -6,346 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 134,346 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 274,346 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M -20,366 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 120,366 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 260,366 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 50,300 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 190,300 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 330,300 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 50,318 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 190,318 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 330,318 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 64,346 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 204,346 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 344,346 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 50,366 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 190,366 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0 M 330,366 q 8,-5 16,0 q 8,5 16,0 q 8,-5 16,0" fill="none" stroke="#C8955A" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="spade">
+<path d="M 300,470 L 318,380" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300,470 L 318,380" fill="none" stroke="#9C6B3C" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M310,376 L328,380 L325,388 L307,384 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 290,468 L 310,472 L 304,512 Q 290,516 284,506 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 240,506 L 282,506 L 276,524 L 246,524 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 246,512 L 278,512 M 244,518 L 277,518" fill="none" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="thermometer">
+<path d="M 90,520 L 90,160" fill="none" stroke="#1E1A17" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 90,520 L 90,160" fill="none" stroke="#9C6B3C" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="62" y="150" width="56" height="290" rx="10" fill="#FFFFFF" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 84,170 L 96,170 L 96,396 L 84,396 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M85.5,188 L94.5,188 L94.5,400 L85.5,400 Z" fill="#B8322A"/>
+<circle cx="90" cy="412" r="13" fill="#B8322A" stroke="#1E1A17" stroke-width="3"/>
+<path d="M98,184 L108,184 M98,200 L104,200 M98,216 L108,216 M98,232 L104,232 M98,248 L108,248 M98,264 L104,264 M98,280 L108,280 M98,296 L104,296 M98,312 L108,312 M98,328 L104,328 M98,344 L108,344 M98,360 L104,360 M98,376 L108,376 M98,392 L104,392" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 84,170 L 96,170 L 96,400 M 84,170 L 84,400" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<rect x="1.5" y="1.5" width="397" height="557" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" width="400" height="560">
+<!--
+  Goddess Temple Discovery vector art
+  Title: The Ottoman Permit
+  Subject: The envelope that carried the 1912 permit from Constantinople, red seal and all, lying on a survey map of Warka with its city wall and river.
+  Sources consulted: Julius_Jordan_Eanna texts/18_game_season_and_people_cards.txt (A0, permit envelope after Getty 2019 fig. 12.4)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<rect x="0" y="0" width="400" height="560" fill="#E8C597"/>
+<g id="wall">
+<path d="M0,40 L400,40 M0,80 L400,80 M0,120 L400,120" fill="none" stroke="#9C6B3C" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M-2,150 L402,150 L402,562 L-2,562 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M0,220 L400,226 M0,300 L400,306 M0,390 L400,396 M0,480 L400,486" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="map-of-warka">
+<path d="M48,186 L330,168 L348,420 L64,440 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 120,220 C 170,196 250,198 290,236 C 318,270 316,340 282,378 C 240,412 160,410 120,384 C 88,356 86,262 120,220 Z" fill="none" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 60,260 C 110,250 100,300 150,300 C 200,300 190,250 240,262 C 290,276 300,310 340,300" fill="none" stroke="#5B7BC4" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="200" cy="270" rx="22.4" ry="16" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<ellipse cx="170" cy="330" rx="14" ry="10" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<ellipse cx="250" cy="320" rx="16.8" ry="12" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<ellipse cx="220" cy="360" rx="11.2" ry="8" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<ellipse cx="140" cy="280" rx="9.8" ry="7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<path d="M 190,266 L 210,266 M 200,258 L 200,276" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300,190 L 300,214 M 294,200 L 300,190 L 306,200" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="envelope">
+<path d="M110,300 L330,330 L310,470 L90,440 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M110,300 L215,395 L330,330" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 100,372 L 180,383 M 98,390 L 165,399 M 96,408 L 175,419" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 240,430 C 250,416 262,440 272,424 C 282,410 290,440 300,430" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 222,382 C 238,370 252,382 248,398 C 252,414 232,420 220,412 C 204,408 206,386 222,382 Z" fill="#B8322A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 234,386 A 11 11 0 1 0 234,410 A 8 8 0 1 1 234,386 Z" fill="#B8322A" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 220,412 L 212,432 M 232,418 L 236,438" fill="none" stroke="#B8322A" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<rect x="1.5" y="1.5" width="397" height="557" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

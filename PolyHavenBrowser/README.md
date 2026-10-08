@@ -283,7 +283,7 @@ and [Forward pointer input from a canvas into a model](../BLUEPRINTS-ViewsAndCon
 ### The renderer runs on every head because it asks the context what it is
 
 The same shaders have to run on heads that hand you desktop OpenGL (Win32Skia, WinWpfSkia,
-LinuxX11, MacOS) and heads that hand you OpenGL ES (LinuxWayland, LinuxFrameBuffer).
+LinuxX11) and heads that hand you OpenGL ES (MacOS through ANGLE, LinuxWayland, LinuxFrameBuffer).
 `GlModelSceneRenderer.Initialize(GL)` probes the live context's version string and prepends
 either the desktop or the ES version header to shader bodies that are otherwise identical;
 the fragment body opens with a precision qualifier that desktop GL accepts and GLES

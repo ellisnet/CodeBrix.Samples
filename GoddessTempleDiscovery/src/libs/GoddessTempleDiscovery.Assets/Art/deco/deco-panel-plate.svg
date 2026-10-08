@@ -1,0 +1,43 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Panel Plate
+  Subject: A square night plate for HUD panels with a heavy and a hairline gold rule, stepped ziggurat corners and small gold fans tucked into each corner, all within the outer 60 units so the plate nine-slices cleanly.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="plate">
+<polygon points="12,36 20,36 20,28 28,28 28,20 36,20 364,20 372,20 372,28 380,28 380,36 388,36 388,364 380,364 380,372 372,372 372,380 364,380 36,380 28,380 28,372 20,372 20,364 12,364" fill="#16213A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="rules">
+<polygon points="24,42 30,42 30,36 36,36 36,30 42,30 358,30 364,30 364,36 370,36 370,42 376,42 376,358 370,358 370,364 364,364 364,370 358,370 42,370 36,370 36,364 30,364 30,358 24,358" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="32,47 37,47 37,42 42,42 42,37 47,37 353,37 358,37 358,42 363,42 363,47 368,47 368,353 363,353 363,358 358,358 358,363 353,363 47,363 42,363 42,358 37,358 37,353 32,353" fill="none" stroke="#D9A441" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="corner-fans">
+<line x1="40" y1="40" x2="63.7" y2="43.8" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="40" y1="40" x2="55.4" y2="47.8" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="40" y1="40" x2="57" y2="57" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="40" y1="40" x2="47.8" y2="55.4" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="40" y1="40" x2="43.8" y2="63.7" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<polygon points="40,36 44,40 40,44 36,40" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="360" y1="40" x2="356.2" y2="63.7" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="360" y1="40" x2="352.2" y2="55.4" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="360" y1="40" x2="343" y2="57" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="360" y1="40" x2="344.6" y2="47.8" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="360" y1="40" x2="336.3" y2="43.8" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<polygon points="360,36 364,40 360,44 356,40" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="360" y1="360" x2="336.3" y2="356.2" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="360" y1="360" x2="344.6" y2="352.2" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="360" y1="360" x2="343" y2="343" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="360" y1="360" x2="352.2" y2="344.6" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="360" y1="360" x2="356.2" y2="336.3" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<polygon points="360,356 364,360 360,364 356,360" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="40" y1="360" x2="43.8" y2="336.3" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="40" y1="360" x2="47.8" y2="344.6" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="40" y1="360" x2="57" y2="343" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="40" y1="360" x2="55.4" y2="352.2" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="40" y1="360" x2="63.7" y2="356.2" stroke="#D9A441" stroke-width="1.5" stroke-linecap="round"/>
+<polygon points="40,356 44,360 40,364 36,360" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

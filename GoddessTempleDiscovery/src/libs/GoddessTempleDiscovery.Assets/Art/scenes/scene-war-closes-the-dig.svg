@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" width="400" height="560">
+<!--
+  Goddess Temple Discovery vector art
+  Title: The War Closes the Dig, 1939
+  Subject: September 1939: the dig house shuttered and barred, the spades, picks and baskets stacked against the wall, and a dust wind blowing over the empty site for fourteen years.
+  Sources consulted: Julius_Jordan_Eanna texts/18_game_season_and_people_cards.txt (A13 end, A14; Getty 2019 ch. 12)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<rect x="0" y="0" width="400" height="560" fill="#EFE3C8"/>
+<g id="ground">
+<path d="M-2,470 L402,470 L402,562 L-2,562 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="shuttered-house">
+<rect x="30" y="200" width="340" height="272" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="22" y="188" width="356" height="16" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M30,250 L370,250 M30,300 L370,300 M30,350 L370,350 M30,400 L370,400 M30,440 L370,440" fill="none" stroke="#9C6B3C" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M300,204 L368.5,204 L368.5,470.5 L340,470.5 Z" fill="#C8955A"/>
+<rect x="30" y="200" width="340" height="272" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="70" y="250" width="64" height="76" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M86,250 L86,326 M102,250 L102,326 M118,250 L118,326" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 74,262 L 130,314" fill="none" stroke="#1E1A17" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 74,262 L 130,314" fill="none" stroke="#9C6B3C" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="270" y="250" width="64" height="76" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M286,250 L286,326 M302,250 L302,326 M318,250 L318,326" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 274,262 L 330,314" fill="none" stroke="#1E1A17" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 274,262 L 330,314" fill="none" stroke="#9C6B3C" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="168" y="330" width="64" height="142" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M184,330 L184,472 M200,330 L200,472 M216,330 L216,472" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="156" y="378" width="88" height="12" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="162" cy="384" r="2" fill="#1E1A17"/>
+<circle cx="238" cy="384" r="2" fill="#1E1A17"/>
+<path d="M212,404 L228,404 L228,420 L212,420 Z" fill="#BFC3C7" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 220,404 Q 220,394 226,396" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="stacked-tools">
+<path d="M 44,470 L 68,360" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 44,470 L 68,360" fill="none" stroke="#9C6B3C" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 60,360 L 76,360 L 77,340 Q 68,330 59,340 Z" fill="#BFC3C7" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 60,470 L 72,360" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 60,470 L 72,360" fill="none" stroke="#9C6B3C" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 64,360 L 80,360 L 81,340 Q 72,330 63,340 Z" fill="#BFC3C7" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 82,470 L 64,360" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 82,470 L 64,360" fill="none" stroke="#9C6B3C" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 56,360 L 72,360 L 73,340 Q 64,330 55,340 Z" fill="#BFC3C7" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 110,470 L 134,376" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 110,470 L 134,376" fill="none" stroke="#9C6B3C" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 108,382 Q 134,366 160,380 Q 134,374 108,382 Z" fill="#BFC3C7" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 278,470 L 274,444 L 326,444 L 322,470 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M276,457 L324,457" fill="none" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 278,444 L 274,418 L 326,418 L 322,444 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M276,431 L324,431" fill="none" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 282,418 L 278,392 L 330,392 L 326,418 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M280,405 L328,405" fill="none" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 322,470 L 318,444 L 370,444 L 366,470 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M320,457 L368,457" fill="none" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="dust-wind">
+<path d="M -20,96 C 40,82 100,110 140,96 S 250,82 300,100" fill="none" stroke="#1E1A17" stroke-width="16" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M -20,96 C 40,82 100,110 140,96 S 250,82 300,100" fill="none" stroke="#E8C597" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 120,150 C 180,140 230,160 270,150 S 370,140 420,154" fill="none" stroke="#1E1A17" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 120,150 C 180,140 230,160 270,150 S 370,140 420,154" fill="none" stroke="#E8C597" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M -20,520 C 40,512 80,528 120,520 S 210,512 260,524" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M -20,520 C 40,512 80,528 120,520 S 210,512 260,524" fill="none" stroke="#E8C597" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 180,46 C 240,38 260,54 300,46 S 370,38 420,50" fill="none" stroke="#1E1A17" stroke-width="11" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 180,46 C 240,38 260,54 300,46 S 370,38 420,50" fill="none" stroke="#E8C597" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 220,500 C 280,494 280,506 320,500 S 370,494 420,504" fill="none" stroke="#1E1A17" stroke-width="11" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 220,500 C 280,494 280,506 320,500 S 370,494 420,504" fill="none" stroke="#E8C597" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 40,128 c 10,-14 30,-8 26,6 c -4,10 -18,6 -14,-2" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300,120 c 10,-14 30,-8 26,6 c -4,10 -18,6 -14,-2" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 380,524 c 10,-14 30,-8 26,6 c -4,10 -18,6 -14,-2" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 90,60 c 10,-14 30,-8 26,6 c -4,10 -18,6 -14,-2" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<rect x="1.5" y="1.5" width="397" height="557" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

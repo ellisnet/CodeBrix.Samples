@@ -1,0 +1,14 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Sound Off
+  Subject: Interface icon for sound off: a speaker crossed out.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<path d="M 60,156 L 128,156 L 208,86 L 208,314 L 128,244 L 60,244 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 262,156 L 350,244 M 350,156 L 262,244" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

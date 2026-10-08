@@ -1,0 +1,68 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Dice Tray
+  Subject: A shallow dice tray seen from above: a stepped night rim with a gold hairline, inner walls shaded for light from the upper left, and a lapis floor inlaid with a gold sunburst round Her star.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit); art/symbols/symbol-eight-pointed-star.svg (form of Her star)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="rim">
+<polygon points="20,50 30,50 30,40 40,40 40,30 50,30 350,30 360,30 360,40 370,40 370,50 380,50 380,350 370,350 370,360 360,360 360,370 350,370 50,370 40,370 40,360 30,360 30,350 20,350" fill="#16213A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="30,54 38,54 38,46 46,46 46,38 54,38 346,38 354,38 354,46 362,46 362,54 370,54 370,346 362,346 362,354 354,354 354,362 346,362 54,362 46,362 46,354 38,354 38,346 30,346" fill="none" stroke="#D9A441" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="walls">
+<polygon points="52,52 348,52 328,72 72,72" fill="#A8761F" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="52,52 72,72 72,328 52,348" fill="#A8761F" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="348,52 348,348 328,328 328,72" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="52,348 72,328 328,328 348,348" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="floor">
+<rect x="72" y="72" width="256" height="256" fill="#2A4B8D" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round"/>
+<polygon points="243.7,205.1 328,211 328,222.8 243.5,206.3" fill="#D9A441"/>
+<polygon points="240.8,216.5 328,249.4 328,256.7 240.5,217.1" fill="#A8761F"/>
+<polygon points="235.3,226.3 328,289.3 328,307.8 234.5,227.3" fill="#D9A441"/>
+<polygon points="227,234.7 303.3,328 293.3,328 226.5,235.1" fill="#A8761F"/>
+<polygon points="217.4,240.4 260,328 246.3,328 216.3,240.9" fill="#D9A441"/>
+<polygon points="206.1,243.6 220,328 213.7,328 205.4,243.7" fill="#A8761F"/>
+<polygon points="194.9,243.7 189,328 177.2,328 193.7,243.5" fill="#D9A441"/>
+<polygon points="183.5,240.8 150.6,328 143.3,328 182.9,240.5" fill="#A8761F"/>
+<polygon points="173.7,235.3 110.7,328 92.2,328 172.7,234.5" fill="#D9A441"/>
+<polygon points="165.3,227 72,303.3 72,293.3 164.9,226.5" fill="#A8761F"/>
+<polygon points="159.6,217.4 72,260 72,246.3 159.1,216.3" fill="#D9A441"/>
+<polygon points="156.4,206.1 72,220 72,213.7 156.3,205.4" fill="#A8761F"/>
+<polygon points="156.3,194.9 72,189 72,177.2 156.5,193.7" fill="#D9A441"/>
+<polygon points="159.2,183.5 72,150.6 72,143.3 159.5,182.9" fill="#A8761F"/>
+<polygon points="164.7,173.7 72,110.7 72,92.2 165.5,172.7" fill="#D9A441"/>
+<polygon points="173,165.3 96.7,72 106.7,72 173.5,164.9" fill="#A8761F"/>
+<polygon points="182.6,159.6 140,72 153.7,72 183.7,159.1" fill="#D9A441"/>
+<polygon points="193.9,156.4 180,72 186.3,72 194.6,156.3" fill="#A8761F"/>
+<polygon points="205.1,156.3 211,72 222.8,72 206.3,156.5" fill="#D9A441"/>
+<polygon points="216.5,159.2 249.4,72 256.7,72 217.1,159.5" fill="#A8761F"/>
+<polygon points="226.3,164.7 289.3,72 307.8,72 227.3,165.5" fill="#D9A441"/>
+<polygon points="234.7,173 328,96.7 328,106.7 235.1,173.5" fill="#A8761F"/>
+<polygon points="240.4,182.6 328,140 328,153.7 240.9,183.7" fill="#D9A441"/>
+<polygon points="243.6,193.9 328,180 328,186.3 243.7,194.6" fill="#A8761F"/>
+<circle cx="200" cy="200" r="96" fill="none" stroke="#D9A441" stroke-width="1.5"/>
+<circle cx="200" cy="200" r="44" fill="#16213A" stroke="#D9A441" stroke-width="2"/>
+<g id="floor-star">
+<polygon points="200,200 200,166 195.1,188.2" fill="#D9A441"/>
+<polygon points="200,200 200,166 204.9,188.2" fill="#A8761F"/>
+<polygon points="200,200 224,176 204.9,188.2" fill="#D9A441"/>
+<polygon points="200,200 224,176 211.8,195.1" fill="#A8761F"/>
+<polygon points="200,200 234,200 211.8,195.1" fill="#D9A441"/>
+<polygon points="200,200 234,200 211.8,204.9" fill="#A8761F"/>
+<polygon points="200,200 224,224 211.8,204.9" fill="#D9A441"/>
+<polygon points="200,200 224,224 204.9,211.8" fill="#A8761F"/>
+<polygon points="200,200 200,234 204.9,211.8" fill="#D9A441"/>
+<polygon points="200,200 200,234 195.1,211.8" fill="#A8761F"/>
+<polygon points="200,200 176,224 195.1,211.8" fill="#D9A441"/>
+<polygon points="200,200 176,224 188.2,204.9" fill="#A8761F"/>
+<polygon points="200,200 166,200 188.2,204.9" fill="#D9A441"/>
+<polygon points="200,200 166,200 188.2,195.1" fill="#A8761F"/>
+<polygon points="200,200 176,176 188.2,195.1" fill="#D9A441"/>
+<polygon points="200,200 176,176 195.1,188.2" fill="#A8761F"/>
+<polygon points="200,166 204.9,188.2 224,176 211.8,195.1 234,200 211.8,204.9 224,224 204.9,211.8 200,234 195.1,211.8 176,224 188.2,204.9 166,200 188.2,195.1 176,176 195.1,188.2" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</g>
+</svg>

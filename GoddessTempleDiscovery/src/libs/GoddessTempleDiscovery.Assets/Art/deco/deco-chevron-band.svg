@@ -1,0 +1,15 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Chevron Band
+  Subject: A horizontal band of three nested gold zigzags of diminishing weight, the chevron border of 1920s façades echoing the cone-mosaic zigzags of Uruk.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="chevrons">
+<polygon points="20,186 40,164 60,186 80,164 100,186 120,164 140,186 160,164 180,186 200,164 220,186 240,164 260,186 280,164 300,186 320,164 340,186 360,164 380,186 380,195 360,173 340,195 320,173 300,195 280,173 260,195 240,173 220,195 200,173 180,195 160,173 140,195 120,173 100,195 80,173 60,195 40,173 20,195" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="20,206 40,184 60,206 80,184 100,206 120,184 140,206 160,184 180,206 200,184 220,206 240,184 260,206 280,184 300,206 320,184 340,206 360,184 380,206 380,212 360,190 340,212 320,190 300,212 280,190 260,212 240,190 220,212 200,190 180,212 160,190 140,212 120,190 100,212 80,190 60,212 40,190 20,212" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="20,222 40,200 60,222 80,200 100,222 120,200 140,222 160,200 180,222 200,200 220,222 240,200 260,222 280,200 300,222 320,200 340,222 360,200 380,222 380,226 360,204 340,226 320,204 300,226 280,204 260,226 240,204 220,226 200,204 180,226 160,204 140,226 120,204 100,226 80,204 60,226 40,204 20,226" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

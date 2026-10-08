@@ -1,0 +1,31 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Lion of Holy Inanna
+  Subject: Her striding lion in profile with flame-tufted mane and roaring jaw, the beast She stands upon in Old Babylonian reliefs.
+  Sources consulted: Getty Uruk transcript chapter 9 (fig. VA 10978, Inanna on her lion); Holy_Inanna/IMAGES.md (Uruk lion-hunt stele)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="lion">
+<path d="M 98,182 C 62,176 40,150 44,112" fill="none" stroke="#1E1A17" stroke-width="15" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 98,182 C 62,176 40,150 44,112" fill="none" stroke="#D9A441" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 44,112 C 30,104 30,84 44,76 C 52,90 60,96 58,110 C 54,116 48,116 44,112 Z" fill="#A8761F" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 232,240 L 262,250 C 262,290 266,320 270,334 L 274,344 L 234,344 L 236,334 C 236,310 232,282 226,262 Z" fill="#A8761F" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 128,240 L 166,250 C 170,280 178,312 184,334 L 188,344 L 148,344 L 150,334 C 146,310 138,286 128,264 Z" fill="#A8761F" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 96,172 C 140,156 200,160 236,152 L 278,232 C 284,256 292,290 304,322 L 324,332 L 322,344 L 278,344 L 276,334 C 268,310 258,288 244,268 C 210,278 160,278 136,266 C 128,290 112,314 98,332 L 100,344 L 58,344 L 58,334 C 70,318 76,300 78,280 C 68,258 70,206 96,172 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 136,266 C 160,278 210,278 244,268 C 226,262 200,262 170,260 C 156,260 144,262 136,266 Z" fill="#A8761F"/>
+<path d="M 100,190 C 120,200 130,220 128,246" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 212,150 L 222,118 L 238,128 L 246,98 L 264,112 L 276,86 L 290,104 L 308,94 L 312,118 L 300,190 L 308,230 L 290,226 L 290,254 L 272,240 L 262,262 L 252,240 L 234,252 L 232,228 L 212,230 L 222,198 L 204,186 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 232,148 L 246,170 L 236,190" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 256,130 L 270,160 L 258,186 L 270,214" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 282,116 L 290,150 L 280,180" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 290,118 C 310,108 336,114 348,128 L 362,150 C 366,160 362,170 354,172 L 352,186 C 344,200 328,204 314,198 C 300,192 290,180 286,160 C 284,140 284,126 290,118 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 354,172 L 330,176 L 352,186 Z" fill="#B8322A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 296,170 C 304,186 316,194 330,196" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 316,136 C 322,130 332,130 338,136 C 332,142 322,142 316,136 Z" fill="#1E1A17" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 312,128 C 322,120 336,122 342,130" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="359" cy="152" r="4" fill="#1E1A17"/>
+<path d="M 300,112 C 296,100 302,92 312,96 C 312,104 308,110 300,112 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

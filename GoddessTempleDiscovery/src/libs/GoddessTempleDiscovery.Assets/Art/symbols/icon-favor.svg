@@ -1,0 +1,18 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Favor
+  Subject: Interface icon for Her favor: an open hand raised palm-up offering a small star.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions; Holy_Inanna/IMAGES.md
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<polygon points="224,38 237,88.6 282,62 255.4,107 306,120 255.4,133 282,178 237,151.4 224,202 211,151.4 166,178 192.6,133 142,120 192.6,107 166,62 211,88.6" fill="#D9A441" stroke="#1E1A17" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 112,22 L 112,62 M 92,42 L 132,42 M 344,190 L 344,222 M 328,206 L 360,206" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 96,286 C 150,262 206,256 266,256 C 306,256 346,260 360,276 C 362,292 346,298 324,298 L 272,300 C 298,306 306,318 296,330 C 252,342 190,350 138,350 L 96,350 Z" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 168,262 C 176,232 204,220 228,228 C 242,234 234,250 218,256" fill="none" stroke="#1E1A17" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 210,300 L 272,300 M 200,326 L 296,330" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 40,272 L 96,272 L 96,364 L 40,364 Z" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Late Uruk Spouted Jar
+  Subject: A Late Uruk pottery jar with a globular body, short neck and everted rim, a long tubular spout set high on the shoulder, a small lug, and a band of combed wavy lines.
+  Sources consulted: BUILDING_HIGHLIGHTS.txt and story/13_buildings_of_inanna_chronological_catalog.txt (Late Uruk Eanna phases)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="jar">
+<path d="M128,184 L62,118 C58,112 64,104 72,106 L146,160 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M62,118 C58,112 64,104 72,106 L146,160 L136,170 Z" fill="#E8C597"/>
+<path d="M128,184 L62,118 C58,112 64,104 72,106 L146,160 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="66" cy="112" rx="10" ry="6" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" transform="rotate(-45 66 112)"/>
+<path d="M162,140 C110,150 92,200 96,240 C100,292 146,330 200,332 C254,330 300,292 304,240 C308,200 290,150 238,140 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M238,140 C290,150 308,200 304,240 C300,292 254,330 200,332 C238,316 272,282 276,236 C280,196 266,160 238,140 Z" fill="#9C6B3C"/>
+<path d="M130,180 C140,164 160,156 176,154 C166,166 152,176 136,196 Z" fill="#E8C597"/>
+<path d="M162,140 C110,150 92,200 96,240 C100,292 146,330 200,332 C254,330 300,292 304,240 C308,200 290,150 238,140 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M168,328 L172,346 L228,346 L232,328" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M108,200 Q115.7,195 123.3,200 Q131,205 138.7,200 Q146.3,195 154,200 Q161.7,205 169.3,200 Q177,195 184.7,200 Q192.3,205 200,200 Q207.7,195 215.3,200 Q223,205 230.7,200 Q238.3,195 246,200 Q253.7,205 261.3,200 Q269,195 276.7,200 Q284.3,205 292,200" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M104,214 Q112,209 120,214 Q128,219 136,214 Q144,209 152,214 Q160,219 168,214 Q176,209 184,214 Q192,219 200,214 Q208,209 216,214 Q224,219 232,214 Q240,209 248,214 Q256,219 264,214 Q272,209 280,214 Q288,219 296,214" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M106,190 Q200,200 294,190 M100,224 Q200,236 300,224" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M276,168 C290,160 300,170 292,182" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M170,140 L174,112 L226,112 L230,140 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M212,112 L226,112 L230,140 L216,140 Z" fill="#9C6B3C"/>
+<path d="M170,140 L174,112 L226,112 L230,140 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="200" cy="110" rx="38" ry="10" fill="#E8C597" stroke="#1E1A17" stroke-width="3"/>
+<ellipse cx="200" cy="110" rx="24" ry="5.5" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+</g>
+</svg>

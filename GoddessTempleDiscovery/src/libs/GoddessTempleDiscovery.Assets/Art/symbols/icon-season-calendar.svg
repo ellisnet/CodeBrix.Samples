@@ -1,0 +1,24 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Season
+  Subject: Interface icon for the excavation season: a calendar leaf with a sun.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<rect x="56" y="76" width="288" height="288" rx="26" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 56,144 L 344,144" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 136,44 L 136,104 M 264,44 L 264,104" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="252" r="44" fill="#D9A441" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="264" y1="252" x2="284" y2="252" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="245.3" y1="297.3" x2="259.4" y2="311.4" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="200" y1="316" x2="200" y2="336" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="154.7" y1="297.3" x2="140.6" y2="311.4" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="136" y1="252" x2="116" y2="252" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="154.7" y1="206.7" x2="140.6" y2="192.6" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="200" y1="188" x2="200" y2="168" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="245.3" y1="206.7" x2="259.4" y2="192.6" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

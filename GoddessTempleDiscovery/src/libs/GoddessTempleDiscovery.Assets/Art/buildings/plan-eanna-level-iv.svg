@@ -1,0 +1,191 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Plan of Eanna, Level IV
+  Subject: Schematic plan of the Eanna precinct in Level IV, north up: Temples C and D, the Great Court, the Riemchen Building over the older Stone-Cone Building, the Round-Pillar Hall with the cone-mosaic court, and the lesser buildings in outline.
+  Sources consulted: images/Eanna4a.svg; images/Eanna_complex/web-gurdjieff-ccbysa3_eanna-plan-level-IV-composite-IVa-IVb.svg; images/Eanna_complex/web-gurdjieff-ccbysa3_eanna-plan-levels-VI-V.svg; BUILDING_HIGHLIGHTS.txt; scale bar = 100 m
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="sky" stroke-linejoin="round" stroke-linecap="round">
+<rect x="0" y="0" width="400" height="400" fill="#EFE3C8" stroke="none"/>
+</g>
+<g id="lesser-buildings" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="317.1,259.4 346.6,288.9 321.4,314.1 291.9,284.6" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="269.7,227.1 278.5,235.9 260.9,253.6 252.1,244.7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="209.2,227.1 253.3,271.2 215.5,309 171.4,264.9" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="220.5,195.6 231.9,206.9 221.8,217 210.5,205.7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="219.3,111.1 239.5,131.3 226.8,143.9 206.7,123.7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="175.2,150.2 195.3,170.4 184,181.7 163.8,161.6" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="225.6,142.6 240.7,157.8 213,185.5 197.9,170.4" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="306.3,205.7 336.5,235.9 328.4,244 298.2,213.7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polyline points="221.8,217 256.3,260.6" fill="none" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="70.6,98.5 34,135.1 97.5,202.6" fill="none" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="118.4,189.3 95.8,212 139.9,256.1" fill="none" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="215.5,210.7 195.3,228.4" fill="none" stroke="#1E1A17" stroke-width="2"/>
+<polygon points="197.9,135.1 229.9,167.1 215.3,181.7 183.2,149.7" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2"/>
+<polygon points="196.6,141.4 223.6,168.4 216.5,175.4 189.5,148.4" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="204.9,174.9 213.5,183.5 197.1,199.9 188.5,191.3" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2"/>
+<polygon points="204.9,179 209.5,183.5 197.1,195.8 192.6,191.3" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="166.3,164.1 187.8,185.5 177.7,195.6 156.3,174.2" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2"/>
+<polygon points="166.3,167.6 184.2,185.5 177.7,192.1 159.8,174.2" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+</g>
+<g id="great-court" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="141.1,169.1 182.7,210.7 139.9,253.6 98.3,212" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3"/>
+<polygon points="141.1,173.2 178.7,210.7 139.9,249.5 102.3,212" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="141.1,176.2 175.7,210.7 139.9,246.5 105.3,212" fill="#E8C597" stroke="#1E1A17" stroke-width="1"/>
+</g>
+<g id="stone-cone-and-riemchen" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="100.8,85.9 102.6,87.7 51.6,138.6 88.5,175.4 139.4,124.5 141.1,126.3 88.2,179.2 47.9,138.9" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2"/>
+<polygon points="86.9,127.5 103.3,143.9 80.6,166.6 64.3,150.2" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="86.9,129 101.8,143.9 80.6,165.1 65.8,150.2 86.9,129" fill="none" stroke="#B8322A" stroke-width="1.5"/>
+<polygon points="90.7,111.1 105.8,126.3 90.7,141.4 75.6,126.3" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2.5"/>
+<polygon points="90.7,114.2 102.8,126.3 90.7,138.4 78.6,126.3" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="90.7,118.7 98.3,126.3 90.7,133.8 83.2,126.3" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="90.7,122.2 94.8,126.3 90.7,130.3 86.7,126.3" fill="#1E1A17" stroke="#1E1A17" stroke-width="1"/>
+</g>
+<g id="walls" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="236.9,174.2 238.2,175.4 237.9,175.7 238.8,176.7 239.1,176.4 240.2,177.4 239.9,177.7 240.8,178.6 241.1,178.3 242.1,179.4 241.8,179.7 242.8,180.6 243.1,180.3 244.1,181.3 243.8,181.6 244.7,182.6 245,182.3 246.1,183.3 245.8,183.6 246.7,184.5 247,184.2 248,185.3 247.7,185.6 248.7,186.5 249,186.2 250,187.2 249.7,187.5 250.6,188.5 250.9,188.2 252,189.2 251.7,189.5 252.6,190.4 252.9,190.1 253.9,191.2 253.6,191.5 254.6,192.4 254.9,192.1 255.9,193.1 255.6,193.4 256.5,194.4 256.8,194.1 257.9,195.1 257.6,195.4 258.5,196.3 258.8,196 259.8,197.1 259.5,197.4 260.5,198.3 260.8,198 261.8,199 261.5,199.3 262.4,200.3 262.7,199.9 263.8,201 263.5,201.3 264.4,202.2 264.7,201.9 265.7,203 265.4,203.3 266.3,204.2 266.7,203.9 267.7,204.9 267.4,205.2 268.3,206.2 268.6,205.8 269.7,206.9 269.4,207.2 270.3,208.1 270.6,207.8 271.6,208.9 271.3,209.2 272.2,210.1 272.6,209.8 273.6,210.8 273.3,211.1 274.2,212 274.5,211.7 275.6,212.8 275.3,213.1 276.2,214 276.5,213.7 277.8,215 276.8,216 276.5,215.7 275.6,216.6 275.9,216.9 274.8,217.9 274.5,217.6 273.6,218.6 273.9,218.9 272.9,219.9 272.6,219.6 271.6,220.5 271.9,220.8 270.9,221.9 270.6,221.6 269.7,222.5 270,222.8 268.9,223.8 268.6,223.5 267.7,224.5 268,224.8 267,225.8 266.7,225.5 265.7,226.4 266,226.7 265,227.8 264.7,227.5 263.8,228.4 264.1,228.7 263,229.7 262.7,229.4 261.8,230.4 262.1,230.7 261.1,231.6 259.8,230.4 260.1,230 259.2,229.1 258.9,229.4 257.9,228.4 258.2,228.1 257.3,227.2 257,227.5 255.9,226.4 256.2,226.1 255.3,225.2 255,225.5 253.9,224.5 254.2,224.2 253.3,223.2 253,223.5 252,222.5 252.3,222.2 251.4,221.3 251.1,221.6 250,220.5 250.3,220.2 249.4,219.3 249.1,219.6 248,218.6 248.4,218.3 247.4,217.3 247.1,217.6 246.1,216.6 246.4,216.3 245.5,215.4 245.2,215.7 244.1,214.6 244.4,214.3 243.5,213.4 243.2,213.7 242.1,212.7 242.5,212.4 241.5,211.4 241.2,211.7 240.2,210.7 240.5,210.4 239.6,209.5 239.3,209.8 238.2,208.7 238.5,208.4 237.6,207.5 237.3,207.8 236.3,206.8 236.6,206.5 235.6,205.5 235.3,205.8 234.3,204.8 234.6,204.5 233.7,203.6 233.4,203.9 232.3,202.8 232.6,202.5 231.7,201.6 231.4,201.9 230.4,200.9 230.7,200.6 229.7,199.6 229.4,199.9 228.4,198.9 228.7,198.6 227.8,197.7 227.5,198 226.4,196.9 226.7,196.6 225.8,195.7 225.5,196 224.5,195 224.8,194.7 223.8,193.7 223.5,194.1 222.5,193 222.8,192.7 221.9,191.8 221.6,192.1 220.3,190.8 221.3,189.8 221.6,190.1 222.5,189.2 222.2,188.9 223.2,187.8 223.5,188.2 224.5,187.2 224.2,186.9 225.2,185.9 225.5,186.2 226.4,185.3 226.1,185 227.2,183.9 227.5,184.2 228.4,183.3 228.1,183 229.1,182 229.4,182.3 230.4,181.3 230,181 231.1,180 231.4,180.3 232.3,179.4 232,179.1 233.1,178 233.4,178.3 234.3,177.4 234,177.1 235,176.1 235.3,176.4 236.3,175.4 235.9,175.1" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3"/>
+</g>
+<g id="rooms" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="240.6,189.4 270.5,219.2 265.4,224.4 235.5,194.5" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="245.8,185.7 251.8,191.8 248.7,195 242.6,188.9" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="245,191.3 246.2,192.5 245,193.7 243.8,192.5" fill="#E8C597" stroke="none"/>
+<polyline points="245,191.3 243.8,192.5" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="246.2,192.5 245,193.7" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="253,192.9 259,199 255.8,202.1 249.8,196.1" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="252.2,198.5 253.4,199.7 252.2,200.9 251,199.7" fill="#E8C597" stroke="none"/>
+<polyline points="252.2,198.5 251,199.7" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="253.4,199.7 252.2,200.9" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="260.1,200.1 266.2,206.2 263,209.3 257,203.3" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="259.4,205.7 260.6,206.9 259.4,208.1 258.2,206.9" fill="#E8C597" stroke="none"/>
+<polyline points="259.4,205.7 258.2,206.9" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="260.6,206.9 259.4,208.1" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="267.3,207.3 274.9,214.8 271.7,218 264.2,210.5" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="267.3,213.6 268.5,214.8 267.3,216.1 266.1,214.8" fill="#E8C597" stroke="none"/>
+<polyline points="267.3,213.6 266.1,214.8" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="268.5,214.8 267.3,216.1" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="235,196.5 241.1,202.5 237.9,205.7 231.9,199.6" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="238.7,197.7 239.9,198.9 238.7,200.1 237.5,198.9" fill="#E8C597" stroke="none"/>
+<polyline points="238.7,197.7 237.5,198.9" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="239.9,198.9 238.7,200.1" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="242.2,203.7 248.3,209.7 245.1,212.9 239,206.8" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="245.9,204.9 247.1,206.1 245.9,207.3 244.6,206.1" fill="#E8C597" stroke="none"/>
+<polyline points="245.9,204.9 244.6,206.1" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="247.1,206.1 245.9,207.3" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="249.4,210.8 255.5,216.9 252.3,220.1 246.2,214" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="253,212 254.2,213.3 253,214.5 251.8,213.3" fill="#E8C597" stroke="none"/>
+<polyline points="253,212 251.8,213.3" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="254.2,213.3 253,214.5" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="256.6,218 264.2,225.6 261,228.8 253.4,221.2" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="261,220 262.2,221.2 261,222.4 259.8,221.2" fill="#E8C597" stroke="none"/>
+<polyline points="261,220 259.8,221.2" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="262.2,221.2 261,222.4" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="236.9,176.9 239.8,179.8 234.2,185.4 231.3,182.5" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="228.6,185.2 231.5,188.1 225.9,193.7 223,190.8" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="240.9,180.8 243.9,183.8 238.3,189.4 235.3,186.4" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="232.5,189.1 235.6,192.2 230,197.8 226.9,194.7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="231.3,182.5 239.4,190.6 236.7,193.3 228.6,185.2" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="232.7" cy="186.6" r="0.7" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<circle cx="235.9" cy="189.7" r="0.7" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<circle cx="251.3" cy="205.2" r="0.7" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+</g>
+<g id="doors" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="268.7,221 270.2,222.6 268.7,224.1 267.2,222.6" fill="#E8C597" stroke="none"/>
+<polyline points="268.7,221 270.2,222.6" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="267.2,222.6 268.7,224.1" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+</g>
+<g id="walls" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="299.2,213.7 301.4,215.9 303,215.9 303,217.6 303.3,217.9 305,217.9 305,219.5 305.3,219.8 307,219.8 307,221.5 307.3,221.8 308.9,221.8 308.9,223.5 309.2,223.8 310.9,223.8 310.9,225.4 311.2,225.7 312.9,225.7 312.9,227.4 313.2,227.7 314.8,227.7 314.8,229.4 315.1,229.7 316.8,229.7 316.8,231.3 317.1,231.6 318.8,231.6 318.8,233.3 319.1,233.6 320.7,233.6 320.7,235.3 321,235.6 322.7,235.6 322.7,237.2 323,237.5 324.7,237.5 324.7,239.2 325,239.5 326.6,239.5 326.6,241.2 326.9,241.5 328.6,241.5 328.6,243.1 328.9,243.4 330.6,243.4 330.6,245.1 332.7,247.3 332,247.9 332,249.6 330.4,249.6 330.1,249.9 330.1,251.6 328.4,251.6 328.1,251.9 328.1,253.5 326.4,253.5 326.1,253.8 326.1,255.5 324.5,255.5 324.2,255.8 324.2,257.5 322.5,257.5 322.2,257.8 322.2,259.4 320.5,259.4 320.2,259.7 320.2,261.4 318.6,261.4 318.3,261.7 318.3,263.4 316.6,263.4 316.3,263.7 316.3,265.3 314.6,265.3 314.3,265.6 314.3,267.3 312.7,267.3 312.4,267.6 312.4,269.3 310.7,269.3 310.4,269.6 310.4,271.2 308.8,271.2 308.4,271.5 308.4,273.2 306.8,273.2 306.5,273.5 306.5,275.2 304.8,275.2 304.5,275.5 304.5,277.1 302.9,277.1 302.5,277.4 302.5,279.1 300.9,279.1 300.6,279.4 300.6,281.1 298.9,281.1 298.6,281.4 298.6,283 297,283 296.7,283.3 296.7,285 295,285 294.7,285.3 294.7,287 293,287 292.7,287.3 292.7,288.9 291.1,288.9 290.4,289.6 288.2,287.4 286.5,287.4 286.5,285.8 286.2,285.5 284.6,285.5 284.6,283.8 284.3,283.5 282.6,283.5 282.6,281.9 282.3,281.6 280.6,281.6 280.6,279.9 280.3,279.6 278.7,279.6 278.7,277.9 278.4,277.6 276.7,277.6 276.7,276 276.4,275.7 274.7,275.7 274.7,274 274.4,273.7 272.8,273.7 272.8,272 272.5,271.7 270.8,271.7 270.8,270.1 270.5,269.8 268.8,269.8 268.8,268.1 268.5,267.8 266.9,267.8 266.9,266.1 266.6,265.8 264.9,265.8 264.9,264.2 264.6,263.9 262.9,263.9 262.9,262.2 262.6,261.9 261,261.9 261,260.2 260.7,259.9 259,259.9 259,258.3 256.8,256.1 257.5,255.4 257.5,253.7 259.2,253.7 259.5,253.4 259.5,251.8 261.2,251.8 261.5,251.5 261.5,249.8 263.1,249.8 263.4,249.5 263.4,247.8 265.1,247.8 265.4,247.5 265.4,245.9 267.1,245.9 267.4,245.6 267.4,243.9 269,243.9 269.3,243.6 269.3,241.9 271,241.9 271.3,241.6 271.3,240 273,240 273.3,239.7 273.3,238 274.9,238 275.2,237.7 275.2,236 276.9,236 277.2,235.7 277.2,234.1 278.9,234.1 279.2,233.8 279.2,232.1 280.8,232.1 281.1,231.8 281.1,230.1 282.8,230.1 283.1,229.8 283.1,228.2 284.8,228.2 285.1,227.9 285.1,226.2 286.7,226.2 287,225.9 287,224.3 288.7,224.3 289,223.9 289,222.3 290.7,222.3 291,222 291,220.3 292.6,220.3 292.9,220 292.9,218.4 294.6,218.4 294.9,218 294.9,216.4 296.5,216.4 296.9,216.1 296.9,214.4 298.5,214.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3"/>
+</g>
+<g id="rooms" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="302.4,221.2 325.2,244 319.9,249.3 297.1,226.5" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="303.5,232.9 313.6,242.9 281.3,275.2 271.2,265.2" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="304.9,226.8 306.9,228.8 305.3,230.4 303.3,228.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="317.6,239.6 319.6,241.6 318,243.2 316,241.2" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="292.7,224.2 301.1,232.6 293.7,240 285.3,231.6" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="293.5,228.2 297.2,231.8 292.9,236.1 289.3,232.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="284.3,232.7 292.6,241.1 285.8,248 277.4,239.6" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="285,236.6 288.7,240.3 285,244 281.3,240.3" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="276.3,240.6 284.7,249 277.8,255.9 269.4,247.5" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="277.1,244.6 280.8,248.3 277.1,252 273.4,248.3" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="268.4,248.6 276.8,257 269.9,263.8 261.5,255.5" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="269.1,252.5 272.8,256.2 269.1,259.9 265.4,256.2" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="313.9,245.3 322.2,253.7 314.8,261.1 306.4,252.8" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="314.6,249.3 318.3,253 314.1,257.2 310.4,253.5" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="305.4,253.8 313.8,262.2 306.9,269.1 298.5,260.7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="306.1,257.7 309.8,261.4 306.1,265.1 302.4,261.5" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="297.4,261.8 305.8,270.1 298.9,277 290.6,268.6" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="298.2,265.7 301.9,269.4 298.2,273.1 294.5,269.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="289.5,269.7 297.9,278.1 291,285 282.6,276.6" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="290.3,273.6 294,277.3 290.3,281 286.6,277.3" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="299.1,217.9 301.4,220.2 296.1,225.5 293.8,223.2" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="326.2,245 328.6,247.4 323.3,252.7 321,250.3" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+</g>
+<g id="doors" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="298.1,235.6 299.4,237 298.1,238.3 296.7,237" fill="#E8C597" stroke="none"/>
+<polyline points="298.1,235.6 299.4,237" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="296.7,237 298.1,238.3" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="309.5,247 310.8,248.4 309.5,249.7 308.1,248.4" fill="#E8C597" stroke="none"/>
+<polyline points="309.5,247 310.8,248.4" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="308.1,248.4 309.5,249.7" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="289.9,243.8 291.2,245.2 289.9,246.5 288.5,245.2" fill="#E8C597" stroke="none"/>
+<polyline points="289.9,243.8 291.2,245.2" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="288.5,245.2 289.9,246.5" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="301.3,255.2 302.6,256.6 301.3,257.9 299.9,256.6" fill="#E8C597" stroke="none"/>
+<polyline points="301.3,255.2 302.6,256.6" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="299.9,256.6 301.3,257.9" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="281.9,251.8 283.3,253.1 281.9,254.5 280.6,253.1" fill="#E8C597" stroke="none"/>
+<polyline points="281.9,251.8 283.3,253.1" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="280.6,253.1 281.9,254.5" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="293.3,263.2 294.7,264.5 293.3,265.9 292,264.5" fill="#E8C597" stroke="none"/>
+<polyline points="293.3,263.2 294.7,264.5" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="292,264.5 293.3,265.9" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="274,259.7 275.3,261.1 274,262.4 272.6,261.1" fill="#E8C597" stroke="none"/>
+<polyline points="274,259.7 275.3,261.1" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="272.6,261.1 274,262.4" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="285.4,271.1 286.7,272.5 285.4,273.8 284,272.5" fill="#E8C597" stroke="none"/>
+<polyline points="285.4,271.1 286.7,272.5" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="284,272.5 285.4,273.8" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="314.6,229.2 317.3,231.8 315.2,234 312.5,231.3" fill="#E8C597" stroke="none"/>
+<polyline points="314.6,229.2 312.5,231.3" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="317.3,231.8 315.2,234" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="274.9,268.9 277.6,271.5 275,274.2 272.3,271.5" fill="#E8C597" stroke="none"/>
+<polyline points="274.9,268.9 272.3,271.5" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="277.6,271.5 275,274.2" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+</g>
+<g id="round-pillar-hall" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="327.7,232.1 341,245.5 323.4,263.1 310,249.8" fill="#C8955A" stroke="#1E1A17" stroke-width="2"/>
+<circle cx="333" cy="247.5" r="1.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="333" cy="247.5" r="0.7" fill="#B8322A" stroke="none"/>
+<circle cx="330" cy="250.5" r="1.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="330" cy="250.5" r="0.7" fill="#B8322A" stroke="none"/>
+<circle cx="326.2" cy="253.3" r="1.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="326.2" cy="253.3" r="0.7" fill="#B8322A" stroke="none"/>
+<circle cx="322.4" cy="256.6" r="1.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="322.4" cy="256.6" r="0.7" fill="#B8322A" stroke="none"/>
+<circle cx="325.4" cy="240" r="1.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="325.4" cy="240" r="0.7" fill="#B8322A" stroke="none"/>
+<circle cx="322.1" cy="242.7" r="1.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="322.1" cy="242.7" r="0.7" fill="#B8322A" stroke="none"/>
+<circle cx="318.6" cy="245.8" r="1.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="318.6" cy="245.8" r="0.7" fill="#B8322A" stroke="none"/>
+<circle cx="314.8" cy="249" r="1.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="314.8" cy="249" r="0.7" fill="#B8322A" stroke="none"/>
+</g>
+<g id="cone-mosaic-court" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="341.5,245 366,269.5 347.3,288.1 322.9,263.7" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2.5"/>
+<polygon points="341.5,247.5 363.5,269.5 347.3,285.6 325.4,263.7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polyline points="341.5,248 363,269.5 347.3,285.1 325.9,263.7 341.5,248" fill="none" stroke="#B8322A" stroke-width="2"/>
+</g>
+<g id="north-arrow" stroke-linejoin="round" stroke-linecap="round">
+<polyline points="46,92 46,44" fill="none" stroke="#1E1A17" stroke-width="3"/>
+<polygon points="46,24 57,50 46,44 35,50" fill="#1E1A17" stroke="#1E1A17" stroke-width="2"/>
+</g>
+<g id="scale-bar" stroke-linejoin="round" stroke-linecap="round">
+<polyline points="28,374 135,374" fill="none" stroke="#1E1A17" stroke-width="3"/>
+<polyline points="28,367 28,381" fill="none" stroke="#1E1A17" stroke-width="3"/>
+<polyline points="81.5,367 81.5,374" fill="none" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="135,367 135,381" fill="none" stroke="#1E1A17" stroke-width="3"/>
+</g>
+</svg>

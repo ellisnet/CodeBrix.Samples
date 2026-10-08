@@ -80,6 +80,7 @@ conventions the code blocks follow.
 - [Build a file dialog's filter list in the format registry](#build-a-file-dialogs-filter-list-in-the-format-registry)
 - [Describe vector art once and render it through two renderers](#describe-vector-art-once-and-render-it-through-two-renderers)
 - [Convert SVG path data into a PDF graphics path](#convert-svg-path-data-into-a-pdf-graphics-path)
+- [Draw whole SVG pictures onto a PDF page as vector shapes](#draw-whole-svg-pictures-onto-a-pdf-page-as-vector-shapes)
 - [Give a hand-placed document a page cursor with margins and breaks](#give-a-hand-placed-document-a-page-cursor-with-margins-and-breaks)
 - [Typeset tracked capitals justified copy and fitted lines by hand](#typeset-tracked-capitals-justified-copy-and-fitted-lines-by-hand)
 - [Blend a tint to opaque because gradient stops ignore alpha](#blend-a-tint-to-opaque-because-gradient-stops-ignore-alpha)
@@ -200,7 +201,7 @@ using CodeBrix.Cryptography.Crypto.Parameters;
 // ...
 
 private const int TwofishSaltLength = 16;
-
+// ...
 private IBufferedCipher GetTwofishCipher(bool forEncryption, byte[] keyBytes, byte[] saltBytes)
 {
     var paramGen = new Pkcs5S2ParametersGenerator(new Sha3Digest());
@@ -213,13 +214,16 @@ private IBufferedCipher GetTwofishCipher(bool forEncryption, byte[] keyBytes, by
 
     return cipher;
 }
-
+// ...
 public async Task<string> Twofish_EncryptToBase64(string key, string toEncrypt)
 {
     // ... argument checks that log and return an empty string ...
     var keyBytes = await GetKeyBytes(key);
+
+    //Bytes to encrypt
     var encryptBytes = await Task.Run(() => Encoding.UTF8.GetBytes(toEncrypt));
 
+    //Encryption
     var saltBytes = RandomNumberGenerator.GetBytes(TwofishSaltLength);
     var cipher = GetTwofishCipher(true, keyBytes, saltBytes);
     var encrypted = await Task.Run(() => cipher.DoFinal(encryptBytes));
@@ -227,6 +231,7 @@ public async Task<string> Twofish_EncryptToBase64(string key, string toEncrypt)
     //Attach our salt bytes to the end of our encrypted byte array - see notes in AES_EncryptToBase64
     encrypted = encrypted.Concat(saltBytes).ToArray();
 
+    //Turn encrypted bytes into a string for sending
     result = await Task.Run(() => Convert.ToBase64String(encrypted));
     // ...
 }
@@ -240,16 +245,23 @@ public async Task<string> Twofish_EncryptToBase64(string key, string toEncrypt)
 //  So, we generate a random set of bytes; use it as our IV; and
 //  then tack it onto the end of our encrypted message; so we can
 //  retrieve it when it is time to decrypt the message.
+//  This is fine - that the IV is passed along unencrypted -
+//  because (as mentioned above) the IV must be RANDOM, but doesn't
+//  need to be SECRET.
 
 var ivBytes = RandomNumberGenerator.GetBytes(aes.IV.Length);
 
+//Step 3 - set our key and initialization vector
 aes.Key = keyBytes;
 aes.IV = ivBytes;
 
+//Step 4 - do the encryption
 using var encryptor = aes.CreateEncryptor();
-var encrypted = await Task.Run(() =>
+var encrypted = await Task.Run(() => 
     encryptor.TransformFinalBlock(encryptBytes, 0, encryptBytes.Length));
 
+//Step 5 - since we need to pass along our IV bytes, we will join them onto
+//  the end of our encrypted array
 encrypted = encrypted.Concat(ivBytes).ToArray();
 ```
 
@@ -409,6 +421,10 @@ public class BundleArchive : IDisposable
     //ZipFile entry streams share the underlying FileStream, so reads are serialized
     private readonly object _gate = new();
 
+    /// <summary>
+    /// Opens a bundle zip file for random-access entry reads.
+    /// </summary>
+    /// <param name="zipPath">The full path of the bundle zip file on disk.</param>
     public BundleArchive(string zipPath)
     {
         ZipPath = zipPath ?? throw new ArgumentNullException(nameof(zipPath));
@@ -426,7 +442,7 @@ public class BundleArchive : IDisposable
 
         Entries = entries.OrderBy(e => e.EntryPath, StringComparer.OrdinalIgnoreCase).ToList();
     }
-
+    // ...
     public byte[] ReadEntryBytes(string entryPath)
     {
         if (entryPath == null || !_indexesByEntryPath.TryGetValue(entryPath, out var index))
@@ -442,7 +458,7 @@ public class BundleArchive : IDisposable
             return buffer.ToArray();
         }
     }
-
+    // ...
     /// <summary>Closes the underlying zip file.</summary>
     public void Dispose() => _zipFile.Close();
 }
@@ -802,7 +818,7 @@ public async Task<string> ConnectAsync(
         throw;
     }
 }
-
+// ...
 private NotionTreeReader CheckConnected()
 {
     if (_client is null || _treeReader is null || _pageReader is null)
@@ -855,6 +871,10 @@ internal sealed class NotionRateGate : IDisposable
     private DateTimeOffset _lastCallCompleted = DateTimeOffset.MinValue;
     private bool _isDisposed;
 
+    /// <summary>
+    /// Runs one API call through the gate: waits its turn, enforces the minimum
+    /// inter-call delay, then invokes the call.
+    /// </summary>
     public async Task<T> RunAsync<T>(Func<Task<T>> apiCall, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
@@ -1128,10 +1148,12 @@ private const string UserAgent =
     "WikipediaPublisher/1.0 (https://github.com/ellisnet; jeremy@ellisnet.com) CodeBrix.MarkupParse";
 
 private const int MediaDownloadDelayMs = 250;
+private const string DefaultWikiHost = "en.wikipedia.org";
 
 private readonly HttpClient _httpClient;
 private DateTime _lastMediaDownloadUtc = DateTime.MinValue;
 private readonly SemaphoreSlim _mediaThrottle = new(1, 1);
+private bool _isDisposed;
 
 public WikipediaClient()
 {
@@ -1139,7 +1161,7 @@ public WikipediaClient()
     _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
     _httpClient.Timeout = TimeSpan.FromSeconds(60);
 }
-
+// ...
 /// <summary>
 /// Downloads a media file (rate-limited to be polite to Wikimedia servers).
 /// Returns null when the download fails — callers treat missing images as non-fatal.
@@ -1432,7 +1454,9 @@ public async Task<IList<NotionPageNode>> LoadRootsAsync(
         throw new InvalidOperationException(
             "No page or database with that ID is visible to this integration. " +
             "Check the ID, and make sure the page is shared with the integration in Notion.", ex);
+        // ...
     }
+    return titles;
 }
 
 //Notion answers a retrieve of the wrong kind (or of an unshared/absent object)
@@ -1449,7 +1473,7 @@ private static bool IsWrongKind(NotionApiException ex) =>
 private enum SourceShape { Page, Database, DataSource }
 
 private sealed record NodeMeta(SourceShape Shape, int Depth, string Title, string ParentId);
-
+// ...
 public async Task<IList<NotionPageNode>> LoadChildrenAsync(
     string id, CancellationToken cancellationToken = default)
 {
@@ -1554,6 +1578,8 @@ leave the field empty.
 /// resolved are simply absent from the result; a failed request yields an empty dictionary
 /// (attribution is best-effort and never fails the render).
 /// </summary>
+/// <returns>A case-insensitive map from the (normalized) file title to its metadata
+/// field/value pairs.</returns>
 public async Task<IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>>
     GetImageMetadataAsync(
         IReadOnlyCollection<string> fileTitles,
@@ -1619,13 +1645,14 @@ public sealed class ModelCatalogService
     private const int ThumbnailWidth = 512;
     private const int ThumbnailHeight = 288;
 
+    private readonly IPolyHavenApiClientFactory _factory;
     private readonly SemaphoreSlim _catalogGate = new(1, 1);
 
     //At most a handful of thumbnail requests in flight at once - polite to the CDN, and
     //plenty to keep up with scrolling.
     private readonly SemaphoreSlim _thumbnailGate = new(4, 4);
     private readonly ConcurrentDictionary<string, byte[]> _thumbnailCache = new();
-
+    // ...
     public async Task<IReadOnlyList<PolyHavenAsset>> GetModelsAsync(CancellationToken cancellationToken)
     {
         if (_models != null) { return _models; }
@@ -1647,6 +1674,10 @@ public sealed class ModelCatalogService
         }
     }
 
+    /// <summary>
+    /// Applies the search text and sort order to the catalog. The search matches the model's
+    /// name, slug, categories and tags, case-insensitively; an empty search matches everything.
+    /// </summary>
     public static IReadOnlyList<PolyHavenAsset> SortAndFilter(
         IReadOnlyList<PolyHavenAsset> models, CatalogSortOrder sortOrder, string searchText)
     { /* ... Where(Matches) then an OrderBy per CatalogSortOrder ... */ }
@@ -1696,16 +1727,27 @@ completedBytes += gltf.Size;
 //keyed by exactly those relative paths, so the files land where the glTF expects them.
 if (gltf.Include != null)
 {
-    foreach (var (relativePath, sidecar) in gltf.Include)
+    try
     {
-        var sidecarPath = Path.Combine(modelFolder, relativePath.Replace('/', Path.DirectorySeparatorChar));
-        Directory.CreateDirectory(Path.GetDirectoryName(sidecarPath)!);
-        await DownloadOneAsync(client, sidecar, sidecarPath, totalBytes, completedBytes, progress, cancellationToken)
-            .ConfigureAwait(false);
-        completedBytes += sidecar.Size;
+        foreach (var (relativePath, sidecar) in gltf.Include)
+        {
+            var sidecarPath = Path.Combine(modelFolder, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            Directory.CreateDirectory(Path.GetDirectoryName(sidecarPath)!);
+            await DownloadOneAsync(client, sidecar, sidecarPath, totalBytes, completedBytes, progress, cancellationToken)
+                .ConfigureAwait(false);
+            completedBytes += sidecar.Size;
+        }
+    }
+    catch
+    {
+        //The .gltf is what marks a model as already downloaded (TryFindExistingGltf): leave
+        //  it behind without its sidecars and every later attempt would skip the download
+        //  and fail to load the incomplete model. Remove it so a retry downloads again.
+        TryDeleteFile(gltfPath);
+        throw;
     }
 }
-
+// ...
 private static async Task DownloadOneAsync(
     IPolyHavenApiClient client, PolyHavenFileRef file, string destinationPath,
     long totalBytes, long completedBytes, IProgress<double> progress, CancellationToken cancellationToken)
@@ -1759,13 +1801,33 @@ it.
 ```csharp
 // From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/Services/SampleAssetService.cs
 public SampleAssetService(IPolyHavenApiClientFactory factory)
-{
-    _factory = factory ?? throw new ArgumentNullException(nameof(factory));
-    _cacheRoot = Path.Combine(
+    : this(factory, Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "PolyHavenBrowser", "cache");
+        "PolyHavenBrowser", "cache"))
+{
 }
 
+/// <summary>
+/// Creates the service over a Poly Haven API client factory, caching downloads under the
+/// given folder instead of the per-user default (for alternate hosts, such as UI tests).
+/// </summary>
+/// <param name="factory">The Poly Haven API client factory.</param>
+/// <param name="cacheRoot">The root folder downloaded sample assets are cached under.</param>
+public SampleAssetService(IPolyHavenApiClientFactory factory, string cacheRoot)
+{
+    _factory = factory ?? throw new ArgumentNullException(nameof(factory));
+    _cacheRoot = string.IsNullOrWhiteSpace(cacheRoot)
+        ? throw new ArgumentException("A cache folder is required.", nameof(cacheRoot))
+        : cacheRoot;
+}
+
+/// <summary>The root folder where downloaded sample assets are cached.</summary>
+public string CacheRoot => _cacheRoot;
+
+/// <summary>
+/// Ensures the sample asset of the given kind is available locally, downloading it (once)
+/// if needed, and returns its local file paths.
+/// </summary>
 public async Task<SampleAsset> EnsureSampleAsync(
     SampleAssetKind kind, IProgress<string> status, CancellationToken cancellationToken)
 {
@@ -1867,6 +1929,19 @@ public ParsedArticle Parse(string html)
 
 ```csharp
 // From CodeBrix.Samples/WikipediaPublisher/WikipediaPublisher.RenderArticle/Models/ArticleContent.cs
+/// <summary>
+/// A single run of text with uniform character formatting.
+/// </summary>
+public sealed record TextRun(
+    string Text,
+    bool Bold = false,
+    bool Italic = false,
+    bool Superscript = false,
+    bool Subscript = false);
+
+/// <summary>
+/// The kinds of block-level content that can appear in a parsed article.
+/// </summary>
 public enum ArticleBlockType
 {
     Heading,
@@ -1878,16 +1953,6 @@ public enum ArticleBlockType
     Table,
     DefinitionList
 }
-
-/// <summary>
-/// A single run of text with uniform character formatting.
-/// </summary>
-public sealed record TextRun(
-    string Text,
-    bool Bold = false,
-    bool Italic = false,
-    bool Superscript = false,
-    bool Subscript = false);
 ```
 
 **Where to look.**
@@ -1922,6 +1987,9 @@ private static readonly HashSet<string> StopSections =
         "Bibliography", "Sources", "Citations", "Footnotes", "Works cited",
         "Explanatory notes", "General references"
     };
+
+private static readonly HashSet<string> SupportedImageExtensions =
+    new(StringComparer.OrdinalIgnoreCase) { ".bmp", ".jpg", ".jpeg", ".png", ".webp", ".gif" };
 
 //Divs with any of these classes are web chrome and never book content
 private static readonly string[] SkippedDivClasses =
@@ -2041,12 +2109,16 @@ returns a result record with everything the UI wants to display.
 // From CodeBrix.Samples/WikipediaPublisher/WikipediaPublisher.RenderArticle/Services/ArticleRenderService.cs
 // 1. Fetch
 progress?.Report(new RenderProgress(RenderStage.FetchingArticle, "Fetching the article…", 5));
+_logger.LogInformation("Fetching article: {Url}", request.ArticleUrl);
 var html = await _client.GetArticleHtmlAsync(request.ArticleUrl, cancellationToken);
 
 // 2. Parse
 progress?.Report(new RenderProgress(RenderStage.ParsingArticle, "Reading the article…", 12));
 var parser = new ArticleParser(request.ArticleUrl);
 var article = parser.Parse(html);
+_logger.LogInformation(
+    "Parsed \"{Title}\": {Blocks} blocks, {Warnings} warnings",
+    article.Title, article.Blocks.Count, article.Warnings.Count);
 
 if (article.Blocks.Count == 0)
 {
@@ -2101,8 +2173,20 @@ var pageCount = await Task.Run(() =>
 // From CodeBrix.Samples/NotionDocumentCreator/src/libs/NotionDocumentCreator.CreateDocument/Models/DocumentModels.cs
 public sealed class CreateRequest
 {
+    /// <summary>
+    /// The IDs of the Notion pages to include, already ordered top-to-bottom in
+    /// depth-first tree order. Each page becomes its own chapter; the first page
+    /// becomes the cover/title page.
+    /// </summary>
     public IReadOnlyList<string> PageIds { get; init; } = [];
+
+    /// <summary>
+    /// The full path (folder + file name) the finished PDF is saved to; the
+    /// containing folder is created if it does not exist.
+    /// </summary>
     public string OutputFilePath { get; init; } = "";
+
+    /// <summary>The page (trim) size for the book.</summary>
     public PageSizeOption PageSize { get; init; } = PageSizeOption.EightByTen;
 
     /// <summary>When false, images are skipped entirely (text-only rendering).</summary>
@@ -2113,15 +2197,35 @@ public sealed class CreateRequest
     /// are not fetched; those blocks render as cards from metadata alone.
     /// </summary>
     public bool IncludeMedia { get; init; } = true;
+    // ...
 }
 
+/// <summary>
+/// A progress report raised while creating a document.
+/// </summary>
+public sealed record CreateProgress(CreateStage Stage, string Message, int PercentComplete);
+
+/// <summary>
+/// The result of a successfully created document.
+/// </summary>
 public sealed class CreatedDocument
 {
+    /// <summary>The full path of the PDF that was written.</summary>
     public string OutputFilePath { get; init; } = "";
+
+    /// <summary>The book title (the title of the first selected page).</summary>
     public string Title { get; init; } = "";
+
+    /// <summary>Number of pages in the finished PDF.</summary>
     public int PageCount { get; init; }
+
+    /// <summary>Number of chapters (selected Notion pages) in the book.</summary>
     public int ChapterCount { get; init; }
+
+    /// <summary>Number of images included in the book.</summary>
     public int ImageCount { get; init; }
+
+    /// <summary>How long the creation took.</summary>
     public TimeSpan Elapsed { get; init; }
 
     /// <summary>Non-fatal notes collected during the creation.</summary>
@@ -2165,11 +2269,25 @@ using CodeBrix.PdfDocuments.Drawing;
 using CodeBrix.PdfDocuments.Fonts;
 using CodeBrix.PdfDocuments.Utils;
 
+namespace NotionDocumentCreator.CreateDocument.Internal;
+
+/// <summary>
+/// Registers the book's embedded OFL-licensed fonts (and the imaging back-end)
+/// with the CodeBrix.PdfDocuments font system, so rendered PDFs look identical
+/// on every platform regardless of the fonts installed on the OS.
+/// </summary>
 internal static class BookFonts
 {
+    /// <summary>Family name of the book serif (body text, headings) - EB Garamond.</summary>
     public const string SerifFamily = "EB Garamond";
+
+    /// <summary>Family name of the book sans (captions, labels, tables) - Source Sans 3.</summary>
     public const string SansFamily = "Source Sans 3";
+
+    /// <summary>Family name of the book monospace (code blocks, inline code) - Source Code Pro.</summary>
     public const string MonoFamily = "Source Code Pro";
+
+    /// <summary>Family name of the icon face (callout and page icon emoji) - Noto Emoji, monochrome.</summary>
     public const string EmojiFamily = "Noto Emoji";
 
     private const string ResourcePrefix = "NotionDocumentCreator.CreateDocument.Fonts.";
@@ -2290,6 +2408,11 @@ font's character map once and asks it per codepoint.
 /// </summary>
 internal static class GlyphFilter
 {
+    /// <summary>
+    /// Removes characters the embedded fonts cannot render and tidies up what
+    /// remains (collapsed whitespace, no empty bracket pairs). Returns the cleaned
+    /// text; <paramref name="removedCount"/> reports how many characters were dropped.
+    /// </summary>
     public static string Sanitize(string text, out int removedCount)
     {
         // ... walks the string, keeping supported characters ...
@@ -2435,8 +2558,20 @@ public static readonly Color Accent = new(122, 44, 38);
 public static readonly Color Muted = new(112, 108, 102);
 public static readonly Color Hairline = new(203, 197, 189);
 
+public PageSizeInfo Page { get; private init; }
+
+public double PageWidth { get; private init; }
+public double PageHeight { get; private init; }
+public double InnerMargin { get; private init; }
+public double OuterMargin { get; private init; }
+public double TopMargin { get; private init; }
+public double BottomMargin { get; private init; }
+
 /// <summary>The width of the text block (page width minus side margins).</summary>
 public double TextWidth => PageWidth - InnerMargin - OuterMargin;
+
+/// <summary>The height of the text block (page height minus top/bottom margins).</summary>
+public double TextHeight => PageHeight - TopMargin - BottomMargin;
 
 /// <summary>Body text size in points; every other size in the scale derives from this.</summary>
 public double BodySize { get; private init; }
@@ -2444,9 +2579,17 @@ public double BodySize { get; private init; }
 /// <summary>Body leading (line spacing) in points.</summary>
 public double Leading => BodySize * 1.47;
 
+/// <summary>Display size for the cover title.</summary>
+public double CoverTitleSize { get; private init; }
+
 public double H1Size => BodySize * 1.62;
 public double H2Size => BodySize * 1.27;
+public double H3Size => BodySize * 1.08;
+public double QuoteSize => BodySize * 1.02;
 public double CaptionSize => BodySize * 0.81;
+public double LabelSize => BodySize * 0.70;
+public double TableSize => BodySize * 0.83;
+public double FolioSize => BodySize * 0.88;
 public double RaisedCapSize => BodySize * 2.35;
 
 public static BookTheme For(PageSizeOption option)
@@ -2664,7 +2807,7 @@ private void ComposeToc(Section frontMatter)
         entry.AddPageRefField(bookmark);
     }
 }
-
+// ...
 private string BookmarkNameFor(ArticleBlock heading)
 {
     //Stable, unique bookmark names derived from block identity
@@ -3292,7 +3435,7 @@ touches the rasterizer.
 // From CodeBrix.Samples/PdfSideBySide/src/libs/PdfSideBySide.PdfRender/Documents/PdfPageDocument.cs
     /// <summary>The raw PDF bytes, handed to the rasterizer so the file is never re-read.</summary>
     internal byte[] PdfBytes { get; }
-
+    // ...
     public static async Task<PdfPageDocument> OpenAsync(string filePath, CancellationToken cancellationToken = default)
     {
         var fullPath = DocumentPath.Normalize(filePath);
@@ -3400,7 +3543,7 @@ it.
 // From CodeBrix.Samples/PdfSideBySide/src/libs/PdfSideBySide.PdfRender/PdfComparison.cs
     /// <summary>Whether <see cref="MoveBothNext"/> would move at least one cursor.</summary>
     public bool CanMoveBothNext => IsReady && (Left.CanMoveNext || Right.CanMoveNext);
-
+    // ...
     /// <summary>
     /// Steps both documents to their next page; a document already on its last page stays
     /// there. Returns whether any cursor moved.
@@ -3413,8 +3556,23 @@ it.
         return ResetViewIf(movedLeft || movedRight);
     }
 
+    #endregion
+
+    #region | Adjusting the right document alone |
+
+    /// <summary>Whether <see cref="AdjustRightPrevious"/> would move the right cursor.</summary>
+    public bool CanAdjustRightPrevious => IsReady && Right.CanMovePrevious;
+
+    /// <summary>Whether <see cref="AdjustRightNext"/> would move the right cursor.</summary>
+    public bool CanAdjustRightNext => IsReady && Right.CanMoveNext;
+
+    /// <summary>Steps only the right document to its previous page. Returns whether it moved.</summary>
+    public bool AdjustRightPrevious() => ResetViewIf(IsReady && Right.MovePrevious());
+
     /// <summary>Steps only the right document to its next page. Returns whether it moved.</summary>
     public bool AdjustRightNext() => ResetViewIf(IsReady && Right.MoveNext());
+
+    #endregion
 
     //A page change always comes back at fit-the-page, both panes centred
     private bool ResetViewIf(bool moved)
@@ -3530,6 +3688,14 @@ public static void RegisterAll (ImageConverterManager formats)
 		exporter: oraHandler,
 		supportsLayers: true));
 
+	NetpbmPortablePixmap netpbmPortablePixmap = new ();
+	formats.RegisterFormat (new FormatDescriptor (
+		displayPrefix: "Netpbm Portable Pixmap",
+		extensions: ["ppm", "PPM"],
+		mimes: ["image/x-portable-pixmap"], // Not official, but conventional
+		importer: netpbmPortablePixmap,
+		exporter: netpbmPortablePixmap));
+
 	// Export-only, matching upstream
 	formats.RegisterFormat (new FormatDescriptor (
 		displayPrefix: "TGA",
@@ -3597,7 +3763,7 @@ public static CodeBrixImagingFormat CreateGif ()
 /// <summary>TIFF, written with the encoder's default settings.</summary>
 public static CodeBrixImagingFormat CreateTiff ()
 	=> new ("tiff", TiffFormat.Instance, new TiffEncoder ());
-
+// ...
 /// <inheritdoc/>
 public void Export (Document document, string file)
 {
@@ -3742,6 +3908,12 @@ subscribes if and when it wants to show the dialog.
 /// </summary>
 public static event EventHandler<ModifyCompressionEventArgs>? ModifyCompression;
 
+public JpegFormat ()
+	: base ("jpeg", SKEncodedImageFormat.Jpeg)
+{
+}
+
+/// <inheritdoc/>
 protected override void DoSave (ImageSurface flattenedImage, Document document, string file, SKEncodedImageFormat format)
 {
 	//Load the JPG compression quality, but use the default value if there is no saved value.
@@ -3749,6 +3921,9 @@ protected override void DoSave (ImageSurface flattenedImage, Document document, 
 
 	//Check to see if the Document has been saved before.
 	if (!document.HasBeenSavedInSession) {
+		//Give the UI layer the chance to show the JPG export compression quality
+		//dialog, with the default value being the one loaded in (or the default
+		//value if it was not saved).
 		level = RaiseModifyCompression (level);
 
 		if (level == -1)
@@ -3813,6 +3988,12 @@ public static class VideoCorpus
     /// </remarks>
     public static readonly IReadOnlyList<string> ExcludedFolderNames = ["MP4"];
 
+    /// <summary>Reads the corpus.</summary>
+    /// <param name="authoringFolder">The <c>Assets/authoring</c> folder.</param>
+    /// <returns>
+    /// Every playable file, ordered by folder and then by file name; an empty list when the folder is
+    /// missing or holds nothing playable.
+    /// </returns>
     public static IReadOnlyList<VideoCorpusItem> Scan(string authoringFolder)
     {
         List<VideoCorpusItem> items = [];
@@ -3858,7 +4039,7 @@ public static class LutCatalog
 {
     /// <summary>The corpus groups that are read, in the order the list shows them.</summary>
     public static readonly IReadOnlyList<string> GroupFolderNames = ["generated", "found"];
-
+    // ...
     public static IReadOnlyList<LutCatalogEntry> Scan(string lutsFolder)
     {
         List<LutCatalogEntry> entries = [];
@@ -4144,7 +4325,7 @@ be.
     /// (accent layers take <paramref name="accent"/>); stroked layers take <paramref name="stroke"/>.
     /// </summary>
     internal static Canvas LayerCanvas(IReadOnlyList<EmblemLayer> layers, double box,
-                                       Brush? fill, Brush? accent, Brush? stroke)
+                                       Brush fill, Brush accent, Brush stroke)
     {
         var canvas = new Canvas { Width = box, Height = box };
         if (layers is null) { return canvas; }
@@ -4406,6 +4587,176 @@ arc flags, which the grammar allows to be written with nothing between them.
 - A zero radius degenerates to a straight line and coincident endpoints omit
   the arc entirely. Both are in the specification and both are easy to leave
   out, and either one produces a division by zero if you do.
+
+### Draw whole SVG pictures onto a PDF page as vector shapes
+
+**When you want this.** Your application's art is SVG - drawn by hand or composed at run
+time - and a document you produce should carry it as vectors: sharp at any zoom, small,
+and the same picture the screen shows. You do not want to rasterize it into the PDF, and
+the art uses more than path data: groups with transforms, rectangles, circles, polygons
+and lines, fills, strokes and opacity set on a group and inherited.
+
+**The MVVM shape.** A static class in the library that writes the document, with no UI
+and no state: given the page's `XGraphics`, the SVG text and a rectangle, it draws the
+picture fitted into the rectangle and says how many shapes it drew. The document builder
+calls it wherever a page carries a picture; the view model only asks for the finished
+document and saves its bytes.
+
+**Code.**
+
+The picture is parsed once, fitted into the box with its aspect kept, clipped to the
+part shown, and walked from the root with a default style:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Journal/Pdf/SvgToPdf.cs
+public static int Draw(XGraphics gfx, string svg, XRect box, XRect? source)
+{
+    ArgumentNullException.ThrowIfNull(gfx);
+    var picture = SvgInliner.Parse(svg);
+    var view = source ?? new XRect(picture.MinX, picture.MinY, picture.Width, picture.Height);
+    var scale = Math.Min(box.Width / view.Width, box.Height / view.Height);
+    var dx = box.X + ((box.Width - (view.Width * scale)) / 2) - (view.X * scale);
+    var dy = box.Y + ((box.Height - (view.Height * scale)) / 2) - (view.Y * scale);
+    var gradients = picture.Root.Descendants()
+        .Where(e => e.Name.LocalName is "linearGradient" or "radialGradient" && e.Attribute("id") != null)
+        .ToDictionary(e => (string)e.Attribute("id"), FirstStop, StringComparer.Ordinal);
+
+    var state = gfx.Save();
+    try
+    {
+        gfx.IntersectClip(new XRect(box.X + ((box.Width - (view.Width * scale)) / 2), box.Y + ((box.Height - (view.Height * scale)) / 2),
+            view.Width * scale, view.Height * scale));
+        gfx.TranslateTransform(dx, dy);
+        gfx.ScaleTransform(scale, scale);
+        var root = Inherit(new Style("#000000", "none", 1, 1, 1, 1, "nonzero"), picture.Root);
+        return Children(gfx, picture.Root, root, gradients);
+    }
+    finally
+    {
+        gfx.Restore(state);
+    }
+}
+```
+
+Each element inherits its parent's style, applies its own transform for itself and its
+children, and becomes one path drawn with a brush, a pen or both:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Journal/Pdf/SvgToPdf.cs
+private static int Element(XGraphics gfx, XElement element, Style inherited, IReadOnlyDictionary<string, string> gradients)
+{
+    var name = element.Name.LocalName;
+    if (!Supported.Contains(name))
+    {
+        return 0;
+    }
+
+    var style = Inherit(inherited, element);
+    var transform = (string)element.Attribute("transform");
+    var saved = transform == null ? null : gfx.Save();
+    try
+    {
+        if (transform != null)
+        {
+            gfx.MultiplyTransform(ParseTransform(transform));
+        }
+
+        if (name == "g")
+        {
+            return Children(gfx, element, style, gradients);
+        }
+
+        var path = Shape(element);
+        if (path == null)
+        {
+            return 0;
+        }
+
+        var brush = Brush(style, gradients);
+        var pen = Pen(style, gradients);
+        if (name == "line")
+        {
+            brush = null;
+        }
+
+        path.FillMode = style.FillRule == "evenodd" ? XFillMode.Alternate : XFillMode.Winding;
+        if (brush == null && pen == null)
+        {
+            return 0;
+        }
+
+        if (brush != null && pen != null)
+        {
+            gfx.DrawPath(pen, brush, path);
+        }
+        else if (brush != null)
+        {
+            gfx.DrawPath(brush, path);
+        }
+        else
+        {
+            gfx.DrawPath(pen, path);
+        }
+
+        return 1;
+    }
+    finally
+    {
+        if (saved != null)
+        {
+            gfx.Restore(saved);
+        }
+    }
+}
+```
+
+The document builder draws a catalog picture through it, showing only the part of the
+picture that has ink on it:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Journal/JournalPdfBuilder.cs
+private void Art(string artKey, XRect box)
+{
+    if (!ArtCatalog.Contains(artKey))
+    {
+        return;
+    }
+
+    var bounds = SvgRaster.ContentBounds(artKey);
+    XRect? source = bounds == null ? null : new XRect(bounds.Value.Left, bounds.Value.Top, bounds.Value.Width, bounds.Value.Height);
+    SvgToPdf.Draw(_gfx, ArtCatalog.ReadSvg(artKey), box, source);
+}
+```
+
+The `d` attribute of each `<path>` is converted by the path parser of
+[Convert SVG path data into a PDF graphics path](#convert-svg-path-data-into-a-pdf-graphics-path),
+copied into this application with only its namespace changed, and called with a scale of one so the group transforms do
+the placing.
+
+**Where to look.**
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Journal/Pdf/SvgToPdf.cs`
+(`Draw`, `ParseTransform`, `Element`, `Shape`, `Inherit`)
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Journal/Pdf/SvgPathToPdf.cs`
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Journal/JournalPdfBuilder.cs`
+(`Art`, and the pages that call it)
+`GoddessTempleDiscovery/tests/libs/GoddessTempleDiscovery.Game.Tests/Journal/SvgToPdfTests.cs`
+
+**Sharp edges.**
+- Compose an element's transform onto the graphics state, save the state first and
+  restore it afterwards, so a group's transform reaches its children and nothing after
+  them.
+- SVG applies a transform list left to right to the coordinate system, so the leftmost
+  transform is the outermost. Prepend each step to the matrix; a test that composes a
+  translate and a scale catches the reverse order.
+- `rotate(a cx cy)` is a rotation about a point: translate to the point, rotate, and
+  translate back.
+- Inherit fill, stroke, stroke width and opacity down the groups, and read a `style`
+  attribute as well as the presentation attributes; art from editors uses both.
+- Decide what you will not draw and say so. This drawer paints a gradient as its first
+  stop's color and skips clip paths and anything it does not know, which suits flat art;
+  art that leans on masks or filters needs more.
+- Fill and stroke one path in one call when an element has both, so the stroke sits on
+  the fill exactly as it does on screen.
 
 ### Give a hand-placed document a page cursor with margins and breaks
 
@@ -4835,11 +5186,18 @@ into its own table, telling the page about each card as it arrives.
 /// </summary>
 public sealed class ReadingSerializer : IReadingSerializer
 {
+    /// <summary>
+    /// The document-format version this serializer writes and the only one it reads. Version 1
+    /// is the first and only format there has ever been, so there is no older format to migrate
+    /// from: a document carrying any other version is refused.
+    /// </summary>
+    public const int CurrentVersion = 1;
+
     /// <summary>The document actually written to disk. Public so callers may inspect or build one.</summary>
     public sealed record ReadingDocument
     {
-        /// <summary>The document-format version; 1 is the only one written so far.</summary>
-        public int Version { get; init; } = 1;
+        /// <summary>The document-format version; see <see cref="CurrentVersion"/>.</summary>
+        public int Version { get; init; } = CurrentVersion;
 
         /// <summary>When the reading was laid.</summary>
         public DateTime Created { get; init; }
@@ -4876,9 +5234,46 @@ public sealed class ReadingSerializer : IReadingSerializer
 ```
 
 Reading back is tolerant on purpose, and the doc comment says so. An
-unknown identifier or an out-of-range slot is skipped, a second card on a slot
-that is already filled is ignored, and only text that is not the document at
-all is an error.
+unknown identifier or an out-of-range slot is skipped, and a second card on a
+slot that is already filled is ignored. The errors are text that is not the
+document at all and a document whose version is missing or is not the current
+one; the version is checked before anything else is read.
+
+```csharp
+// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingSerializer.cs
+    //Every document this application has ever written carries a version, so one without it was
+    //  not saved by InannaRosette. Version 1 is the only format there has been: an older number
+    //  names no real format, and a newer one was written by a later InannaRosette whose changes
+    //  this one cannot know, so both are refused rather than half-read.
+    private static void CheckVersion(JsonElement root)
+    {
+        if (!root.TryGetProperty("version", out var element))
+        {
+            throw new FormatException(
+                "The text is not a valid reading document: it has no format version.");
+        }
+
+        if (element.ValueKind != JsonValueKind.Number || !element.TryGetInt32(out var version))
+        {
+            throw new FormatException(
+                "The text is not a valid reading document: its format version is not a whole number.");
+        }
+
+        if (version > CurrentVersion)
+        {
+            throw new FormatException(
+                $"This reading was saved in format version {version} by a newer InannaRosette; "
+                + $"this one reads format version {CurrentVersion}.");
+        }
+
+        if (version < CurrentVersion)
+        {
+            throw new FormatException(
+                $"The text is not a valid reading document: format version {version} does not exist; "
+                + $"the first format version is {CurrentVersion}.");
+        }
+    }
+```
 
 ```csharp
 // From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingSerializer.cs
@@ -4957,9 +5352,13 @@ The view model's side is where a loaded reading becomes a table again.
   *order* is now part of the file format. Inserting a card in the middle
   silently re-points every reading anyone has saved. Either never reorder, or
   give the cards stable keys before the first file is written.
-- The version field is written and not yet read. That is a hook, not a
-  mechanism, and it is worth saying so out loud: a reader that ignores the
-  version cannot refuse a future document it does not understand.
+- Check the version field on read, from the first release. A reader that
+  ignores it cannot refuse a future document it does not understand, and once
+  files are out there it is too late to start. With only one format so far
+  there is nothing to migrate, so an older number is refused too; when the
+  format changes, that branch is where the migration goes. The refusal is a
+  `FormatException` with a plain message, which the view model's existing
+  "could not be opened" dialog shows as it is.
 - A missing timestamp falls back to now, so a hand-written file with no
   timestamp still opens instead of dating itself to the year zero.
 - Rehydrating means a saved reading picks up later corrections to the content

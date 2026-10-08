@@ -1,0 +1,26 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Sequence Report
+  Subject: Interface icon for a sequence report: three cards in a row, each with a layer at a different depth, and an arrow of time.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<rect x="28" y="92" width="96" height="140" rx="12" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="35" y="196" width="82" height="26" fill="#C8955A"/>
+<line x1="35" y1="196" x2="117" y2="196" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="35" y1="222" x2="117" y2="222" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="152" y="92" width="96" height="140" rx="12" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="159" y="156" width="82" height="26" fill="#C8955A"/>
+<line x1="159" y1="156" x2="241" y2="156" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="159" y1="182" x2="241" y2="182" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="276" y="92" width="96" height="140" rx="12" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="283" y="116" width="82" height="26" fill="#C8955A"/>
+<line x1="283" y1="116" x2="365" y2="116" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="283" y1="142" x2="365" y2="142" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 48,300 L 336,300" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300,264 L 348,300 L 300,336" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

@@ -20,13 +20,18 @@ environment variable. A pair after that is about assertions that can be exact:
 fixtures pinned to fixed identifiers and a fixed timestamp, so the suite can
 assert the sentence a generator wrote and the file name it suggested, and a
 parser driven through a counting sink so its grammar is tested with no output
-document at all. The last three come from a game: a whole game session walked
+document at all. Three more come from a game: a whole game session walked
 through its screens against a recording fake for every seam it takes, every
 asset key read back by reflection and proved against the real asset zips, and
 an autopilot that plays the running game through the player's own input path
-while its saves are kept apart. Reach for this file when you are adding a test
-project to an application, or when something you need to prove will not run in
-a bare test host.
+while its saves are kept apart. The final four drive an application's real
+screens through the PlayTest head: a fake service put in at the application's
+own DI boundary before any view model is built, one shared fixture that
+launches once per test class and gives each test a fresh page, a launch-once
+fixture that resets the live page when a process-wide engine starts only once,
+and a mouse button held down until a game that samples its input has seen it.
+Reach for this file when you are adding a test project to an application, or
+when something you need to prove will not run in a bare test host.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -69,6 +74,10 @@ conventions the code blocks follow.
 - [Drive a game session through recording fakes for every seam it takes](#drive-a-game-session-through-recording-fakes-for-every-seam-it-takes)
 - [Read every asset key back by reflection and prove each one against the real zips](#read-every-asset-key-back-by-reflection-and-prove-each-one-against-the-real-zips)
 - [Let an autopilot play through the player's input path and keep its saves apart](#let-an-autopilot-play-through-the-players-input-path-and-keep-its-saves-apart)
+- [Replace a service at the DI boundary before the view models are built](#replace-a-service-at-the-di-boundary-before-the-view-models-are-built)
+- [Share one launch and reset per test with the SampleFixture base class](#share-one-launch-and-reset-per-test-with-the-samplefixture-base-class)
+- [Launch once and reset the live page for a process-wide engine](#launch-once-and-reset-the-live-page-for-a-process-wide-engine)
+- [Hold a mouse button until the game sees it](#hold-a-mouse-button-until-the-game-sees-it)
 
 ## Related blueprints
 
@@ -103,9 +112,19 @@ the commands; the class keeps the answers.
 /// </remarks>
 public static class PlaybackSelection
 {
+    /// <summary>Whether the in-application player can open a file at all.</summary>
+    /// <param name="item">What probing found in the file, or null.</param>
+    /// <returns>True when the player can open it.</returns>
     public static bool CanOpen(SourceMediaInfo item) =>
         item is not null && MediaFormats.IsPlayable(item.Format);
 
+    /// <summary>
+    /// Why a file is not being played, in a sentence that says what to do about it instead of only
+    /// what went wrong.
+    /// </summary>
+    /// <param name="item">What probing found in the file.</param>
+    /// <returns>The sentence to show.</returns>
+    /// <exception cref="ArgumentNullException">The item is null.</exception>
     public static string DescribeUnplayable(SourceMediaInfo item)
     {
         ArgumentNullException.ThrowIfNull(item);
@@ -466,12 +485,18 @@ public class EncryptionServiceTests : IClassFixture<EncryptionTestingFixture>
         fixture.CreateAndRegisterLogger<EncryptionService>(_output);
     }
 
+    private string CleanLineEndings(string text) => 
+        (string.IsNullOrEmpty(text)) 
+            ? text 
+            : text.Replace("\r\n", "\n");
+
     [Fact]
     public void can_get_service() => GetService().Should().NotBeNull();
 
     [Fact]
     public async Task GetDefaultKey_retrieves_key() =>
         (await GetService().GetDefaultKey()).Should().NotBeNullOrEmpty();
+    // ...
 }
 ```
 
@@ -522,6 +547,7 @@ container is asked for a logger.
 ```csharp
 // From CodeBrix.Samples/JustBetweenUs/tests/JustBetweenUs.Encryption.Tests/Services/EncryptionServiceTests.cs
 _output = new SimpleTestOutputHelper(output);
+
 fixture.CreateAndRegisterLogger<EncryptionService>(_output);
 ```
 
@@ -611,6 +637,7 @@ public sealed class SampleMediaFixture : IAsyncLifetime
 
         Mode2Info = await probe.ProbeAsync(Mode2Path, CancellationToken.None).ConfigureAwait(false);
         Mode1Info = await probe.ProbeAsync(Mode1Path, CancellationToken.None).ConfigureAwait(false);
+        // ...
     }
 
     public ValueTask DisposeAsync()
@@ -668,6 +695,7 @@ public class ConversionRunnerTests
         File.Exists(output).Should().BeTrue();
         outcome.SizeInBytes.Should().BeGreaterThan(0);
     }
+    // ...
 }
 ```
 
@@ -720,6 +748,11 @@ internal static class TestAssets
 // From CodeBrix.Samples/KenneyAssetBrowser/tests/libs/KenneyAssetBrowser.AssetRead.Tests/TestZipBuilder.cs
 internal static class TestZipBuilder
 {
+    /// <summary>
+    /// Writes a zip file containing the given entries.
+    /// </summary>
+    /// <param name="zipPath">The full path of the zip file to create.</param>
+    /// <param name="entries">Entry path → entry bytes.</param>
     public static void Build(string zipPath, IReadOnlyDictionary<string, byte[]> entries)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(zipPath)!);
@@ -946,6 +979,10 @@ public static (Document Document, Section Section, RenderContext Context, BlockR
 public static List<Paragraph> AllParagraphs(Section section) =>
     CollectParagraphs(section.Elements).ToList();
 
+/// <summary>Every table in the section (top level only).</summary>
+public static List<Table> AllTables(Section section) =>
+    section.Elements.Cast<object>().OfType<Table>().ToList();
+
 /// <summary>The concatenated plain text of one paragraph (line breaks become \n).</summary>
 public static string TextOf(Paragraph paragraph) => TextOfElements(paragraph.Elements);
 ```
@@ -958,6 +995,7 @@ private static (Section Section, RenderContext Context) Render(
     var (_, section, context, renderer) = TestDom.CreateRenderer(configure);
     renderer.RenderPage(section, nodes);
     return (section, context);
+    // ...
 }
 
 [Fact]
@@ -1002,13 +1040,13 @@ a lower bound on its size in pages.
 [Fact]
 public async Task Compose_and_render_fixture_offline_produces_multipage_pdf()
 {
-    //Arrange
+    //Arrange - parse the embedded article fixture (no network, no images)
     var html = await EmbeddedResourceHelper.GetResourceAsString(
         FixtureResource, typeof(ArticleRenderServiceTests).Assembly);
     var article = new ArticleParser(CuneiformUrl).Parse(html);
     article.Blocks.Should().NotBeEmpty();
 
-    //Act
+    //Act - compose the book and render it to a PDF
     var composer = new BookComposer(article, BookTheme.For(PageSizeOption.EightByTen), DateTime.Now);
     var document = composer.Compose();
     var renderer = new PdfDocumentRenderer(unicode: true) { Document = document };
@@ -1064,6 +1102,10 @@ and share one fixture so a filter can exclude the whole set.
 /// </summary>
 public class NotionDocumentServiceTests : IDisposable
 {
+    private readonly NotionDocumentService _service;
+    private readonly string _authToken;
+    private readonly string _testPageId;
+
     public NotionDocumentServiceTests()
     {
         _authToken = Environment.GetEnvironmentVariable("NOTION_AUTH_TOKEN");
@@ -1076,7 +1118,7 @@ public class NotionDocumentServiceTests : IDisposable
 
         _service = new NotionDocumentService();
     }
-
+    // ...
     public void Dispose()
     {
         _service?.Dispose();
@@ -1310,6 +1352,7 @@ public class GlModelSceneRendererTests
         var context = EglTestContext.TryCreate();
         Assert.SkipWhen(context is null, "No EGL/OpenGL stack available on this machine (install Mesa llvmpipe).");
         return context!;
+        // ...
     }
 
     [Fact]
@@ -1465,6 +1508,13 @@ public void nearer_geometry_occludes_farther_geometry_regardless_of_draw_order()
         pixels[center].Should().BeGreaterThan((byte)128);
         pixels[center + 2].Should().BeLessThan((byte)128);
     }
+    finally
+    {
+        renderer.Uninitialize(gl);
+        gl.DeleteRenderbuffer(colorRb);
+        gl.DeleteRenderbuffer(depthRb);
+        gl.DeleteFramebuffer(fbo);
+    }
 }
 ```
 
@@ -1579,6 +1629,13 @@ Tests of the store itself take the opposite approach: a fresh directory per test
 // throwaway folder once per test assembly - never at the user's real
 // ~/.config/Pinta.Brix/settings, which tests must never read or write.
 
+using System;
+using System.IO;
+using System.Runtime.CompilerServices;
+using Pinta.Brix.Settings;
+
+namespace Pinta.Brix.Engine.Tests;
+
 internal static class TestSettingsStore
 {
 	[ModuleInitializer]
@@ -1602,6 +1659,10 @@ internal static class TestSettingsStore
 // pattern rather than exact names.
 public class SettingsStoreTests : IDisposable
 {
+    readonly string root;
+    readonly string directory;
+    readonly string externalDirectory;
+
     public SettingsStoreTests()
     {
         root = Path.Combine(Path.GetTempPath(), "kenney-asset-browser-tests", Path.GetRandomFileName());
@@ -1615,7 +1676,7 @@ public class SettingsStoreTests : IDisposable
     }
 
     AppSettingsStore CreateStore() => new AppSettingsStore(SettingsService.AppName, directory);
-
+    // ...
     // The auto-backup files whose names carry a parseable timestamp,
     // alphabetical (= chronological, the naming scheme's guarantee).
     string[] AutoBackupFiles() =>
@@ -1624,6 +1685,7 @@ public class SettingsStoreTests : IDisposable
             .Where(HasParseableTimestamp)
             .OrderBy(name => name)
             .ToArray();
+    // ...
 }
 ```
 
@@ -1773,14 +1835,14 @@ a `dispatch` delegate, so the body below it is written once.
 
 ```csharp
 // From CodeBrix.Samples/DRAKON.Brix/src/libs/DRAKON.Brix.TclBridge/DrakonRuntime.cs
-public void Start(TkHostView host)
+public void Start(TkHostView host, Action<int> onQuit)
 {
     // ...
     Task.Run(() =>
     {
         try
         {
-            if (!Boot(tree, hosted: true, code => Environment.Exit(code), new TkHostFileDialogs(), assets))
+            if (!Boot(tree, hosted: true, onQuit, new TkHostFileDialogs(), assets))
             {
                 return;
             }
@@ -1894,6 +1956,7 @@ private bool Boot(
             return;
         }
 
+        _ready = true;
         Report("DRAKON Editor is up.");
     });
 ```
@@ -1998,6 +2061,12 @@ public void A_real_drn_file_opens_through_the_app_boot_path(string fileName, str
 
     string tempDir = Path.Combine(Path.GetTempPath(), "drnopen_" + Guid.NewGuid().ToString("N"));
     Directory.CreateDirectory(tempDir);
+
+    //DRAKON keeps drakon_editor.settings (its recent-files list included) under HOME.
+    //HOME points at the test's own directory for the run, so opening an example never
+    //rewrites the settings of whoever runs the tests.
+    string home = Environment.GetEnvironmentVariable("HOME");
+    Environment.SetEnvironmentVariable("HOME", tempDir);
     try
     {
         string copy = Path.Combine(tempDir, fileName);
@@ -2010,15 +2079,24 @@ public void A_real_drn_file_opens_through_the_app_boot_path(string fileName, str
         //Act — boot DIRECT (headless), then open through the exact app path.
         // ...
         runtime.StartDirect(SampleLocations.AssetsDir(root));
+        var openTimer = Stopwatch.StartNew();
         string opened = runtime.EvaluateScriptForTest("ds::openfile {" + copy + "}");
+        openTimer.Stop();
 
         //Assert — the editor came up and the file opened (openfile returns 1
         //only after mod::open + gate + upgrade + reload all succeed).
         diagnostics.Contains("DRAKON Editor is up.").Should().BeTrue();
         opened.Should().Be("1");
+
+        //Report the file and how long the open/read (incl. any upgrade) took.
+        string relPath = String.IsNullOrWhiteSpace(relativePath)
+            ? fileName
+            : relativePath + "/" + fileName;
+        Console.WriteLine("DRN-OPEN: " + relPath + " - " + openTimer.ElapsedMilliseconds + " ms");
     }
     finally
     {
+        Environment.SetEnvironmentVariable("HOME", home);
         Directory.Delete(tempDir, true);
     }
 }
@@ -2307,9 +2385,12 @@ for byte.
 public interface ITerminalSink
 {
     /// <summary>Writes bytes straight to the terminal.</summary>
+    /// <param name="data">The buffer.</param>
+    /// <param name="length">How many bytes of it are real.</param>
     void Feed(byte[] data, int length);
 
     /// <summary>Writes text the session generated itself, such as an exit banner.</summary>
+    /// <param name="text">The text.</param>
     void Feed(string text);
 
     /// <summary>Resets the terminal.</summary>
@@ -3528,3 +3609,412 @@ public void the_autopilot_reaches_play_and_plays()
   tuning of its own.
 - Write one log line saying the autopilot is on. A log from an unattended run
   that does not say so is easy to mistake for a player's session.
+
+### Replace a service at the DI boundary before the view models are built
+
+**When you want this.** A UI test drives the application's real screens through
+the PlayTest head, but one service behind them must not do its real work in a
+test: a command line the test host owns, a music model that would load, a
+browser that would open. You want a fake in its place before the first view
+model asks for it, without a test-only code path in the view model.
+
+**The MVVM shape.** The `App` class keeps its parameterless constructor for the
+heads and adds an overload that takes an `Action<IServiceCollection>`. That
+action runs inside `SimpleServiceResolver.CreateInstance`, after the
+application's own registrations, so whatever it registers is in the container
+before any view model is constructed. `PlayTestApplication.LaunchAsync` takes a
+factory for the application, so the fixture passes `new App(services => ...)`.
+The view model asks the resolver as usual; when it takes the last registration,
+or the service has no default registration at all, the fake is what it gets.
+
+**Code.**
+
+The application's side of the seam:
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.UI/App.xaml.cs
+public App() : this(null) { }
+
+// Alternate hosts may replace services (the startup command line, say) before any view models are constructed.
+public App(Action<IServiceCollection> configureServices)
+{
+    // ...
+    SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
+    {
+        //Register the app's services here
+        services.AddPdfRender();
+        configureServices?.Invoke(services);
+    });
+    // ...
+}
+```
+
+The fixture launches the application through that overload:
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/tests/PdfSideBySide.PlayTests/AppFixture.cs
+// The test host's own arguments are never documents: the startup command line comes from Startup.
+protected override Application CreateApplication() => new App(
+    services => services.AddSingleton<IStartupArguments>(Startup));
+```
+
+When the fixture is not built on `SampleFixture`, the factory goes straight to
+`PlayTestApplication.LaunchAsync`; a subclass of `App` exposes the window so the
+fixture can reach the page the application navigated to:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/tests/BrixInvaders.PlayTests/AppFixture.cs
+PlayTestApp app = null;
+Application = await PlayTestApplication.LaunchAsync(() => app = new PlayTestApp(services => services
+    .AddSingleton<IMusicDirector>(Music)
+    .AddSingleton<IExternalLinkOpener>(Links)), new()
+{
+    ConfigurationAssembly = typeof(AppFixture).Assembly,
+});
+// ...
+// App keeps its window protected; the tests need the page it navigated to, not a second one.
+private sealed class PlayTestApp : App
+{
+    public PlayTestApp(Action<IServiceCollection> configureServices) : base(configureServices) { }
+    public Window Window => MainWindow;
+}
+```
+
+The view model takes the last registration and falls back to the real one:
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/src/BrixInvaders.Core/ViewModels/MainViewModel.cs
+//  An alternate host (the PlayTests) may register its own music director and link opener; the game's are the default.
+var music = GetServices<IMusicDirector>().LastOrDefault()
+    ?? new GeneratedMusicDirector(new EngineGeneratedMusicStarter(), MusicManager.Instance, Engine.Instance.EngineDispatcher);
+var links = GetServices<IExternalLinkOpener>().LastOrDefault() ?? new LauncherLinkOpener();
+```
+
+**Where to look.**
+`PdfSideBySide/src/PdfSideBySide.UI/App.xaml.cs`
+`PdfSideBySide/tests/PdfSideBySide.PlayTests/AppFixture.cs`
+`BrixInvaders/src/BrixInvaders.UI/App.xaml.cs`
+`BrixInvaders/tests/BrixInvaders.PlayTests/AppFixture.cs`
+`BrixInvaders/src/BrixInvaders.Core/ViewModels/MainViewModel.cs`
+
+**Sharp edges.**
+- The replacement belongs to the application's constructor overload, not to the
+  test head: `PlayTestApplication.LaunchAsync` only takes a factory for the
+  application and its options.
+- Invoke the action after the application's own registrations. A singleton
+  registered twice resolves to the later one, so the fake wins without the
+  application removing anything.
+- The parameterless constructor forwards `null`, so the heads are unchanged and
+  never see the overload.
+- Replace services, not view models. The fixture still gets the real view model
+  through the page's `DataContext`, so the tests exercise the same bindings and
+  commands a user does.
+
+### Share one launch and reset per test with the SampleFixture base class
+
+**When you want this.** Several applications each have a PlayTest suite, and
+every one needs the same plumbing: launch the application once per test class,
+give each test a fresh page, honour a test's orientation request, clear the
+scripted file pickers, and dispose the page's view model and the application at
+the end. You want that written once, with a few hooks for what differs.
+
+**The MVVM shape.** Not a view-model concern. A shared props file imports the
+PlayTest head and the test packages and links one source file into every suite.
+That file holds two generic base classes: `SampleFixture<TPage>`, an xUnit
+class fixture that launches the application and rebuilds `TPage` on reset, and
+`SampleTest<TFixture, TPage>`, a `PageTest` that resets the fixture before each
+test. A suite's fixture overrides `CreateApplication` and whichever hooks it
+needs; its test classes derive from `SampleTest`.
+
+**Code.**
+
+The props file links the base classes into each suite that imports it:
+
+```xml
+<!-- From CodeBrix.Samples/PlayTestSupport/CodeBrix.Sample.PlayTests.props -->
+<Compile Include="$(MSBuildThisFileDirectory)SampleFixture.cs" Link="Support/SampleFixture.cs" />
+```
+
+```xml
+<!-- From CodeBrix.Samples/PdfSideBySide/tests/PdfSideBySide.PlayTests/PdfSideBySide.PlayTests.csproj -->
+<Import Project="../../../PlayTestSupport/CodeBrix.Sample.PlayTests.props" />
+```
+
+The fixture launches once, and a reset builds a new page:
+
+```csharp
+// From CodeBrix.Samples/PlayTestSupport/SampleFixture.cs
+public abstract class SampleFixture<TPage> : IAsyncLifetime where TPage : FrameworkElement, new()
+{
+    public PlayTestApplication Application { get; private set; }
+    public TPage View { get; private set; }
+    public string DataDirectory { get; } = Path.Combine(AppContext.BaseDirectory, "TestResults", "PlayTestData", Guid.NewGuid().ToString("N"));
+    protected abstract Application CreateApplication();
+    protected virtual void Prepare() { }
+    // Adjusts the launch options (for example PlayTestOptions.OpenGL) before the application starts.
+    protected virtual void Configure(PlayTestOptions options) { }
+    protected virtual Task BeforeResetAsync() => Task.CompletedTask;
+    protected virtual Task AfterResetAsync() => Task.CompletedTask;
+    protected virtual void Cleanup() { }
+
+    public async ValueTask InitializeAsync()
+    {
+        Directory.CreateDirectory(DataDirectory);
+        Prepare();
+        var options = new PlayTestOptions { ConfigurationAssembly = GetType().Assembly };
+        Configure(options);
+        Application = await PlayTestApplication.LaunchAsync(CreateApplication, options);
+    }
+
+    public async Task ResetAsync(ScreenOrientation? orientation = null)
+    {
+        await BeforeResetAsync();
+        Application.FilePickers.Clear();
+        await Application.Page.SetContentAsync(() => View = new TPage(), orientation);
+        await AfterResetAsync();
+    }
+    // ...
+}
+
+public abstract class SampleTest<TFixture, TPage> : PageTest, IClassFixture<TFixture>, IAsyncLifetime
+    where TFixture : SampleFixture<TPage>
+    where TPage : FrameworkElement, new()
+{
+    protected TFixture Fixture { get; }
+    protected SampleTest(TFixture fixture) : base(fixture.Application) => Fixture = fixture;
+
+    public async ValueTask InitializeAsync()
+    {
+        var test = (Xunit.v3.IXunitTest)TestContext.Current.Test;
+        test.Traits.TryGetValue(PlayTestOrientationAttribute.CaseTraitName, out var orientations);
+        await Fixture.ResetAsync(PlayTestOrientationAttribute.Resolve(test.TestMethod.Method, orientations));
+    }
+    // ...
+}
+```
+
+A suite supplies the application, its data, and what to clear after each reset:
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/tests/PdfSideBySide.PlayTests/AppFixture.cs
+public sealed class AppFixture : SampleFixture<MainPage>
+{
+    public StartupArgumentsFixture Startup { get; } = new();
+    public MainViewModel Model => (MainViewModel)View.DataContext;
+    // ...
+    protected override void Prepare()
+    {
+        ThreePages = WritePdf("three.pdf", 3);
+        FourPages = WritePdf("four.pdf", 4);
+        FivePages = WritePdf("five.pdf", 5);
+        NotAPdf = Path.Combine(DataDirectory, "notes.pdf");
+        File.WriteAllText(NotAPdf, "Plain text with a .pdf name.");
+    }
+
+    // A new page reads the startup command line while it loads, so documents a test queued are cleared after it.
+    protected override Task AfterResetAsync()
+    {
+        Startup.Documents = null;
+        return Task.CompletedTask;
+    }
+    // ...
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PdfSideBySide/tests/PdfSideBySide.PlayTests/ApplicationTests.cs
+public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<AppFixture, MainPage>(fixture)
+```
+
+**Where to look.**
+`PlayTestSupport/SampleFixture.cs`
+`PlayTestSupport/CodeBrix.Sample.PlayTests.props`
+`PdfSideBySide/tests/PdfSideBySide.PlayTests/AppFixture.cs`
+`PdfSideBySide/tests/PdfSideBySide.PlayTests/ApplicationTests.cs`
+`KenneyAssetBrowser/tests/KenneyAssetBrowser.PlayTests/AppFixture.cs` (the
+`Configure` override that sets `PlayTestOptions.OpenGL`)
+
+**Sharp edges.**
+- The page type needs a public parameterless constructor: the reset builds it
+  with `new TPage()` through `Application.Page.SetContentAsync`, so each test
+  starts from the page's own constructor and `DataContext`.
+- Use `Prepare` for data the whole class shares, written under `DataDirectory`
+  before the launch, and `BeforeResetAsync` / `AfterResetAsync` for what one
+  test may leave behind in a shared fake.
+- The application's services are not rebuilt between tests; only the page is.
+  A fake that records calls has to be cleared in a reset hook.
+- `SampleFixture.cs` also sets assembly-wide `Parallelization(Mode = ParallelMode.None)`,
+  so every suite that links it runs its tests one at a time against one head.
+- The view model is disposed from `DisposeAsync` when it implements
+  `IDisposable`, on the UI thread, before the application shuts down.
+
+### Launch once and reset the live page for a process-wide engine
+
+**When you want this.** The application starts something process-wide - a game
+engine, an audio device, a static workspace - once, from its page's first
+layout or first `Loaded`. A new page for every test would never start it again,
+or would start a second one. You want one page for the whole run and a reset
+that puts that page's state back instead.
+
+**The MVVM shape.** Not a view-model concern. The fixture launches the
+application through a subclass of `App` that exposes its window, keeps the page
+the application navigated to, waits until the process-wide object has started,
+and records the launch state it will restore. Its `ResetAsync` puts that state
+back on the UI thread, waits until the application is idle, and applies the
+test's orientation to the same page. The test classes derive from `PageTest`
+directly and call that reset before each test.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/GameEngineMusicDemo/tests/GameEngineMusicDemo.PlayTests/AppFixture.cs
+public async ValueTask InitializeAsync()
+{
+    // The maintainer walkthrough drives the same methods the tests do; it must never run here.
+    Environment.SetEnvironmentVariable("GAMEENGINEMUSICDEMO_SELFTEST", null);
+    PlayTestApp app = null;
+    Application = await PlayTestApplication.LaunchAsync(() => app = new PlayTestApp(), new()
+    {
+        ConfigurationAssembly = typeof(AppFixture).Assembly,
+    });
+    View = await Application.EvaluateAsync(() => (MainPage)((Frame)app.Window.Content).Content);
+    // The engine, the audio device and MusicManager are process-wide, and the demo starts them once,
+    // from the canvas's first layout. Keep this page for the whole run and reset its state instead.
+    FirstDemo = await Application.WaitForAsync(() => Demo, demo => demo?.SongStems != null, description: "the started demo");
+    // ...
+}
+
+public async Task ResetAsync(ScreenOrientation? orientation)
+{
+    await Application.EvaluateAsync(() =>
+    {
+        if (Demo.IsPaused) Demo.TogglePause();
+        Demo.ReleaseHeldDuck();
+        MusicManager.Instance.Stop();
+        MusicManager.Instance.ClearDucks();
+        foreach (var (name, value) in SliderDefaults) Slider(name).Value = value;
+        // ...
+    });
+    await Application.WaitForAsync(() => MusicManager.Instance.NowPlaying == null && !MusicManager.Instance.HasPendingTransition
+        && MusicManager.Instance.ActiveFadeCount == 0 && AudioMixer.MusicDuckMultiplier == 1f, idle => idle,
+        description: "silent, unducked music system");
+    // Re-lays out the same page; the canvas raises FirstStarted only once, so the demo is not restarted.
+    await Application.SetOrientationAsync(orientation);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/GameEngineMusicDemo/tests/GameEngineMusicDemo.PlayTests/ApplicationTests.cs
+public sealed partial class ApplicationTests : PageTest, IClassFixture<AppFixture>, IAsyncLifetime
+{
+    private readonly AppFixture _fixture;
+    private static MusicManager Music => MusicManager.Instance;
+
+    public ApplicationTests(AppFixture fixture) : base(fixture.Application) => _fixture = fixture;
+    public async ValueTask InitializeAsync()
+    {
+        var test = (Xunit.v3.IXunitTest)TestContext.Current.Test;
+        test.Traits.TryGetValue(PlayTestOrientationAttribute.CaseTraitName, out var caseOrientations);
+        await _fixture.ResetAsync(PlayTestOrientationAttribute.Resolve(test.TestMethod.Method, caseOrientations));
+    }
+    // ...
+}
+```
+
+When several test classes share the one launch, a collection fixture holds it:
+
+```csharp
+// From CodeBrix.Samples/Pinta.Brix/tests/Pinta.Brix.PlayTests/AppFixture.cs
+[CollectionDefinition(Name)]
+public sealed class AppCollection : ICollectionFixture<AppFixture>
+{
+    public const string Name = "Pinta.Brix application";
+}
+// ...
+// PintaCore is process-wide and the page subscribes to it once, from its first Loaded. Keep the page the
+// application navigated to for the whole run and reset the documents, tool and palette on it instead.
+View = await Application.EvaluateAsync(() => (MainPage)((Frame)app.Window.Content).Content);
+await Application.WaitForAsync(() => PintaCore.Workspace.HasOpenDocuments, open => open, description: "the launch document");
+// ...
+[Collection(AppCollection.Name)]
+public abstract class PintaTest(AppFixture fixture) : PageTest(fixture.Application), IAsyncLifetime
+```
+
+**Where to look.**
+`GameEngineMusicDemo/tests/GameEngineMusicDemo.PlayTests/AppFixture.cs`
+`GameEngineMusicDemo/tests/GameEngineMusicDemo.PlayTests/ApplicationTests.cs`
+`BrixInvaders/tests/BrixInvaders.PlayTests/AppFixture.cs` (brings the game back
+to its title in `ResetAsync`)
+`Pinta.Brix/tests/Pinta.Brix.PlayTests/AppFixture.cs` (closes every document,
+answers any open dialog and opens a new image through File > New)
+
+**Sharp edges.**
+- Reach the page through the application's own window, not by building one.
+  The `App` subclass in the fixture only exposes the protected `MainWindow`.
+- Wait for the process-wide object before the first test. It starts from the
+  page's first layout, which comes after the launch returns.
+- Restore state through the same paths the application uses where it has them -
+  Pinta's reset activates File > New - so the reset cannot drift from what a user
+  sees at launch.
+- Wait for the application to go idle after the reset, not just for the calls
+  to return; fades, queued transitions and dialog handlers finish later.
+- Stop the engine before the application is disposed when it reads anything
+  the fixture closes afterwards: BrixInvaders calls `Engine.Instance.StopAndWait()`
+  before shutting its settings store.
+
+### Hold a mouse button until the game sees it
+
+**When you want this.** The application is a game that reads its input by
+sampling the button state once per engine cycle rather than by handling click
+events. A PlayTest click goes down and up between two samples, so the game
+never sees it. You want a click the game is sure to count.
+
+**The MVVM shape.** Not a view-model concern. A fixture helper moves the pointer
+to the canvas, presses the button with `Page.Mouse.DownAsync`, waits on a
+condition read from the game, and releases the button in a `finally` once the
+game has reacted.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/tests/BrixInvaders.PlayTests/AppFixture.cs
+// The engine samples the mouse button once per engine cycle, so the button stays down until the game has seen it.
+public async Task HoldClickAsync<T>(Func<T> probe, Func<T, bool> ready, string description)
+{
+    var box = await Canvas.BoundingBoxAsync();
+    await Application.Page.Mouse.MoveAsync(box.X + (box.Width / 2), box.Y + (box.Height / 2));
+    await Application.Page.Mouse.DownAsync();
+    try { await WaitAsync(probe, ready, description); }
+    finally { await Application.Page.Mouse.UpAsync(); }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/BrixInvaders/tests/BrixInvaders.PlayTests/ApplicationTests.cs
+[Fact]
+public async Task Title_idle_enters_attract_and_a_click_leaves()
+{
+    await WaitAsync(() => Session.CurrentScreen, screen => screen == GameScreen.Attract, "attract mode after the idle time",
+        (float)(ScreenStateMachine.AttractIdleSeconds + 10) * 1000);
+    await WaitAsync(() => Session.Attract?.StepCount ?? 0, steps => steps > 0, "the demo game stepping");
+    await _fixture.HoldClickAsync(() => Session.CurrentScreen, screen => screen == GameScreen.Title, "the title after a click");
+    (await Page.EvaluateAsync(() => Session.Attract)).Should().BeNull();
+}
+```
+
+**Where to look.**
+`BrixInvaders/tests/BrixInvaders.PlayTests/AppFixture.cs`
+`BrixInvaders/tests/BrixInvaders.PlayTests/ApplicationTests.cs`
+`BrixInvaders/tests/BrixInvaders.PlayTests/README.md`
+
+**Sharp edges.**
+- Wait on what the game did, not on time. The condition - the screen changing,
+  the idle clock resetting - is the proof the sample was taken, and
+  `WaitForAsync` fails with its description if it never happens.
+- Release the button in `finally`, so a failed wait does not leave it down for
+  the next test.
+- The same sampling defeats keyboard presses, which PlayTest also sends down and
+  up within one turn of the UI thread. BrixInvaders therefore only proves that
+  key events reach the focused canvas, and drives the game with the mouse.
+- A left click on the game canvas leaves it without keyboard focus; the fixture's
+  reset gives the canvas focus back with `Focus(FocusState.Programmatic)`.

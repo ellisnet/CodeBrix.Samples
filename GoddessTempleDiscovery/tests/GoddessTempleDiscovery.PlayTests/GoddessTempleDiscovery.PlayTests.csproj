@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../../PlayTestSupport/CodeBrix.Sample.PlayTests.props" />
+  <PropertyGroup>
+    <RootNamespace>GoddessTempleDiscovery.PlayTests</RootNamespace>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+  <Import Project="../../src/GoddessTempleDiscovery.UI/GoddessTempleDiscovery.UI.projitems" Label="Shared" />
+  <ItemGroup>
+    <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
+    <ProjectReference Include="../../src/GoddessTempleDiscovery.Core/GoddessTempleDiscovery.Core.csproj" />
+  </ItemGroup>
+</Project>

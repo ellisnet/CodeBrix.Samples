@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" width="400" height="560">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Tunnels in the Resh Sanctuary
+  Subject: The 1912/13 team worked through the vast fired-brick walls of the Seleucid Resh temple in narrow soundings and tunnels, lit by a lantern.
+  Sources consulted: Julius_Jordan_Eanna texts/18_game_season_and_people_cards.txt (A1 task 2, C7; Getty 2019 ch. 12)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<rect x="0" y="0" width="400" height="560" fill="#EFE3C8"/>
+<g id="earth">
+<path d="M -2,70 C 80,60 160,76 240,66 C 300,60 360,72 402,66 L 402,562 L -2,562 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M -2,100 C 100,94 200,106 402,96" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="fired-brick-wall">
+<rect x="40" y="120" width="320" height="400" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M40,136 L360,136 M40,152 L360,152 M40,168 L360,168 M40,184 L360,184 M40,200 L360,200 M40,216 L360,216 M40,232 L360,232 M40,248 L360,248 M40,264 L360,264 M40,280 L360,280 M40,296 L360,296 M40,312 L360,312 M40,328 L360,328 M40,344 L360,344 M40,360 L360,360 M40,376 L360,376 M40,392 L360,392 M40,408 L360,408 M40,424 L360,424 M40,440 L360,440 M40,456 L360,456 M40,472 L360,472 M40,488 L360,488 M40,504 L360,504" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M80,120 L80,136 M120,120 L120,136 M160,120 L160,136 M200,120 L200,136 M240,120 L240,136 M280,120 L280,136 M320,120 L320,136 M60,136 L60,152 M100,136 L100,152 M140,136 L140,152 M180,136 L180,152 M220,136 L220,152 M260,136 L260,152 M300,136 L300,152 M340,136 L340,152 M80,152 L80,168 M120,152 L120,168 M160,152 L160,168 M200,152 L200,168 M240,152 L240,168 M280,152 L280,168 M320,152 L320,168 M60,168 L60,184 M100,168 L100,184 M140,168 L140,184 M180,168 L180,184 M220,168 L220,184 M260,168 L260,184 M300,168 L300,184 M340,168 L340,184 M80,184 L80,200 M120,184 L120,200 M160,184 L160,200 M200,184 L200,200 M240,184 L240,200 M280,184 L280,200 M320,184 L320,200 M60,200 L60,216 M100,200 L100,216 M140,200 L140,216 M180,200 L180,216 M220,200 L220,216 M260,200 L260,216 M300,200 L300,216 M340,200 L340,216 M80,216 L80,232 M120,216 L120,232 M160,216 L160,232 M200,216 L200,232 M240,216 L240,232 M280,216 L280,232 M320,216 L320,232 M60,232 L60,248 M100,232 L100,248 M140,232 L140,248 M180,232 L180,248 M220,232 L220,248 M260,232 L260,248 M300,232 L300,248 M340,232 L340,248 M80,248 L80,264 M120,248 L120,264 M160,248 L160,264 M200,248 L200,264 M240,248 L240,264 M280,248 L280,264 M320,248 L320,264 M60,264 L60,280 M100,264 L100,280 M140,264 L140,280 M180,264 L180,280 M220,264 L220,280 M260,264 L260,280 M300,264 L300,280 M340,264 L340,280 M80,280 L80,296 M120,280 L120,296 M160,280 L160,296 M200,280 L200,296 M240,280 L240,296 M280,280 L280,296 M320,280 L320,296 M60,296 L60,312 M100,296 L100,312 M140,296 L140,312 M180,296 L180,312 M220,296 L220,312 M260,296 L260,312 M300,296 L300,312 M340,296 L340,312 M80,312 L80,328 M120,312 L120,328 M160,312 L160,328 M200,312 L200,328 M240,312 L240,328 M280,312 L280,328 M320,312 L320,328 M60,328 L60,344 M100,328 L100,344 M140,328 L140,344 M180,328 L180,344 M220,328 L220,344 M260,328 L260,344 M300,328 L300,344 M340,328 L340,344 M80,344 L80,360 M120,344 L120,360 M160,344 L160,360 M200,344 L200,360 M240,344 L240,360 M280,344 L280,360 M320,344 L320,360 M60,360 L60,376 M100,360 L100,376 M140,360 L140,376 M180,360 L180,376 M220,360 L220,376 M260,360 L260,376 M300,360 L300,376 M340,360 L340,376 M80,376 L80,392 M120,376 L120,392 M160,376 L160,392 M200,376 L200,392 M240,376 L240,392 M280,376 L280,392 M320,376 L320,392 M60,392 L60,408 M100,392 L100,408 M140,392 L140,408 M180,392 L180,408 M220,392 L220,408 M260,392 L260,408 M300,392 L300,408 M340,392 L340,408 M80,408 L80,424 M120,408 L120,424 M160,408 L160,424 M200,408 L200,424 M240,408 L240,424 M280,408 L280,424 M320,408 L320,424 M60,424 L60,440 M100,424 L100,440 M140,424 L140,440 M180,424 L180,440 M220,424 L220,440 M260,424 L260,440 M300,424 L300,440 M340,424 L340,440 M80,440 L80,456 M120,440 L120,456 M160,440 L160,456 M200,440 L200,456 M240,440 L240,456 M280,440 L280,456 M320,440 L320,456 M60,456 L60,472 M100,456 L100,472 M140,456 L140,472 M180,456 L180,472 M220,456 L220,472 M260,456 L260,472 M300,456 L300,472 M340,456 L340,472 M80,472 L80,488 M120,472 L120,488 M160,472 L160,488 M200,472 L200,488 M240,472 L240,488 M280,472 L280,488 M320,472 L320,488 M60,488 L60,504 M100,488 L100,504 M140,488 L140,504 M180,488 L180,504 M220,488 L220,504 M260,488 L260,504 M300,488 L300,504 M340,488 L340,504 M80,504 L80,520 M120,504 L120,520 M160,504 L160,520 M200,504 L200,520 M240,504 L240,520 M280,504 L280,520 M320,504 L320,520" fill="none" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="sounding">
+<path d="M300,68 L334,66 L334,522 L300,522 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M300,160 L334,158 M300,260 L334,262 M300,380 L334,380" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="tunnel">
+<path d="M 110,522 L 110,380 C 110,330 230,330 230,380 L 230,522 Z" fill="#2B2622" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 142,522 L 146,420 C 148,396 192,396 194,420 L 198,522 Z" fill="#1E1A17"/>
+<path d="M 110,522 L 142,522 M 230,522 L 198,522 M 110,380 L 146,420 M 230,380 L 194,420" fill="none" stroke="#9C6B3C" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 110,522 L 110,380 C 110,330 230,330 230,380 L 230,522 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="lantern-glow">
+<circle cx="170" cy="446" r="46" fill="#D9A441"/>
+<circle cx="170" cy="446" r="30" fill="#EFE3C8"/>
+</g>
+<g id="worker">
+<path d="M 134.6,441.6 L 165.4,441.6 C 169.6,464 169.6,483.6 180.8,500.4 C 186.4,508.8 183.6,518.6 172.4,518.6 L 130.4,518.6 C 124.8,518.6 126.2,506 129,494.8 C 131.8,478 133.2,458.4 134.6,441.6 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 130.4,500.4 L 169.6,500.4" fill="none" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 136,438.8 L 164,438.8 L 166.8,480.8 L 133.2,480.8 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 136,444.4 L 144.4,464 L 158.4,472.4" fill="none" stroke="#1E1A17" stroke-width="15.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 136,444.4 L 144.4,464 L 158.4,472.4" fill="none" stroke="#FFFFFF" stroke-width="9.8" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="158.4" cy="472.4" r="4.5" fill="#C8955A" stroke="#1E1A17" stroke-width="1.8"/>
+<path d="M 164,444.4 L 180.8,452.8 L 192,452.8" fill="none" stroke="#1E1A17" stroke-width="15.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 164,444.4 L 180.8,452.8 L 192,452.8" fill="none" stroke="#FFFFFF" stroke-width="9.8" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="192" cy="452.8" r="4.5" fill="#C8955A" stroke="#1E1A17" stroke-width="1.8"/>
+<path d="M 192,461.2 L 192,450" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 183.6,461.2 L 200.4,461.2 L 203.2,466.8 L 180.8,466.8 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 183.6,466.8 L 200.4,466.8 L 200.4,486.4 L 183.6,486.4 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 192,469.6 C 196.2,476.6 194.8,482.2 192,482.2 C 189.2,482.2 187.8,476.6 192,469.6 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 180.8,486.4 L 203.2,486.4 L 203.2,492 L 180.8,492 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 145.8,433.2 L 154.2,433.2 L 154.2,441.6 L 145.8,441.6 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 137.4,423.4 L 162.6,423.4 L 166.8,448.6 L 157,443 L 143,443 L 133.2,448.6 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="150" cy="426.2" r="10.5" fill="#C8955A" stroke="#1E1A17" stroke-width="3"/>
+<circle cx="150" cy="425.5" r="1.5" fill="#1E1A17"/>
+<circle cx="157.3" cy="425.5" r="1.5" fill="#1E1A17"/>
+<path d="M 138.1,427.6 C 136,409.4 164,409.4 161.9,427.6 Q 150,419.2 138.1,427.6 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 138.2,420.6 Q 150,415.7 161.8,420.6" fill="none" stroke="#1E1A17" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 145.8,414.3 L 141.6,424.8 M 154.2,414.3 L 158.4,424.8" fill="none" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="pick">
+<path d="M 262,524 L 282,452" fill="none" stroke="#1E1A17" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 262,524 L 282,452" fill="none" stroke="#C8955A" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 262,452 Q 282,440 304,456 Q 284,448 262,452 Z" fill="#EFE3C8" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<rect x="1.5" y="1.5" width="397" height="557" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

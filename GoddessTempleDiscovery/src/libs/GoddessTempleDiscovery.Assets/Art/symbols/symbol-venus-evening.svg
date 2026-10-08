@@ -1,0 +1,42 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Venus as Evening Star
+  Subject: Her star low over the western horizon in a night sky with a dusk band of lapis, the planet Venus as the evening star.
+  Sources consulted: Getty Uruk transcript chapter 9 (Astral Manifestation)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="dusk">
+<circle cx="200" cy="200" r="170" fill="#16213A"/>
+<path d="M 33,232 L 367,232 A 170 170 0 0 1 358.3,262 L 41.7,262 A 170 170 0 0 1 33,232 Z" fill="#2A4B8D"/>
+<path d="M 41.7,262 A 170 170 0 0 0 358.3,262 Z" fill="#9C6B3C"/>
+<line x1="41.7" y1="262" x2="358.3" y2="262" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 90,300 C 140,292 180,296 220,306 M 230,330 C 270,322 300,324 330,312" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="100" cy="110" r="3" fill="#D9A441"/>
+<circle cx="290" cy="96" r="3" fill="#D9A441"/>
+<circle cx="320" cy="170" r="3" fill="#D9A441"/>
+<circle cx="230" cy="70" r="3" fill="#D9A441"/>
+<circle cx="80" cy="190" r="3" fill="#D9A441"/>
+<circle cx="150" cy="60" r="3" fill="#D9A441"/>
+<polygon points="164,176 164,110 154.4,152.9" fill="#D9A441"/>
+<polygon points="164,176 164,110 173.6,152.9" fill="#A8761F"/>
+<polygon points="164,176 210.7,129.3 173.6,152.9" fill="#D9A441"/>
+<polygon points="164,176 210.7,129.3 187.1,166.4" fill="#A8761F"/>
+<polygon points="164,176 230,176 187.1,166.4" fill="#D9A441"/>
+<polygon points="164,176 230,176 187.1,185.6" fill="#A8761F"/>
+<polygon points="164,176 210.7,222.7 187.1,185.6" fill="#D9A441"/>
+<polygon points="164,176 210.7,222.7 173.6,199.1" fill="#A8761F"/>
+<polygon points="164,176 164,242 173.6,199.1" fill="#A8761F"/>
+<polygon points="164,176 164,242 154.4,199.1" fill="#D9A441"/>
+<polygon points="164,176 117.3,222.7 154.4,199.1" fill="#A8761F"/>
+<polygon points="164,176 117.3,222.7 140.9,185.6" fill="#D9A441"/>
+<polygon points="164,176 98,176 140.9,185.6" fill="#A8761F"/>
+<polygon points="164,176 98,176 140.9,166.4" fill="#D9A441"/>
+<polygon points="164,176 117.3,129.3 140.9,166.4" fill="#A8761F"/>
+<polygon points="164,176 117.3,129.3 154.4,152.9" fill="#D9A441"/>
+<polygon points="164,110 173.6,152.9 210.7,129.3 187.1,166.4 230,176 187.1,185.6 210.7,222.7 173.6,199.1 164,242 154.4,199.1 117.3,222.7 140.9,185.6 98,176 140.9,166.4 117.3,129.3 154.4,152.9" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="164" cy="176" r="9" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="200" r="170" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

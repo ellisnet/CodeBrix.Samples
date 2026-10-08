@@ -1,15 +1,20 @@
 // CommandAcceleratorTable.cs
 //
-// Pinta.Brix note: XAML KeyboardAccelerators are declared on the menu items
-// (so the shortcut is visible where the user looks for it) but they do NOT
-// fire on the Skia heads - verified on X11 2026-07-20 by driving the running
-// application: typing reaches a TextBox normally, while Ctrl+Z, Ctrl+Y and
-// Ctrl+H registered on a Page or on a MenuFlyoutItem never invoke.
+// Pinta.Brix note: a KeyboardAccelerator on a menu item fires application-wide
+// on the Skia heads, but this port does not use them. The shortcut data lives
+// on the engine's Command objects as upstream's GTK accelerator strings, in a
+// library with no XAML, and this table turns those strings into one dispatch
+// path from a single KeyDown handler on the page. That one place also holds
+// the rules XAML accelerators would not give: first registration wins on
+// upstream's genuine collisions, and a disabled command swallows nothing. The
+// same handler carries upstream's unmodified tool and palette keys, which are
+// not commands at all. The table predates app-wide menu accelerators; the menu
+// items show the shortcut text from the same strings, and adding real
+// accelerators as well would fire every shortcut twice.
 //
-// So the shortcuts are dispatched here instead, from a single KeyDown handler
-// on the page. This is close to what upstream did anyway - Pinta's MainWindow
-// carried a HandleGlobalKeyPress for exactly the keys GTK would not route -
-// and it keeps the shortcut data on the Command objects where the port put it.
+// This is close to what upstream did anyway - Pinta's MainWindow carried a
+// HandleGlobalKeyPress for exactly the keys GTK would not route - and it keeps
+// the shortcut data on the Command objects where the port put it.
 
 using System;
 using System.Collections.Generic;

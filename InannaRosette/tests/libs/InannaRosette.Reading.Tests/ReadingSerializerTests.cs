@@ -379,6 +379,97 @@ public class ReadingSerializerTests
     }
 
     [Fact]
+    public void a_document_at_the_current_version_loads()
+    {
+        //Arrange
+        var serializer = TestData.Serializer();
+        var json = $$"""
+            { "version": {{ReadingSerializer.CurrentVersion}}, "querent": "Enheduanna", "placements": [
+              { "position": 0, "cardId": 1, "reversed": false } ] }
+            """;
+
+        //Act
+        var reading = serializer.FromJson(json);
+
+        //Assert
+        reading.Querent.Should().Be("Enheduanna");
+        reading.At(0).Card.Id.Should().Be(1);
+    }
+
+    [Fact]
+    public void a_document_with_no_version_is_rejected()
+    {
+        //Arrange - every document the application has ever written carries one
+        var serializer = TestData.Serializer();
+        var json = """
+            { "querent": "Enheduanna", "placements": [
+              { "position": 0, "cardId": 1, "reversed": false } ] }
+            """;
+
+        //Act
+        var thrown = Record.Exception(() => serializer.FromJson(json));
+
+        //Assert
+        thrown.Should().BeOfType<FormatException>();
+        thrown.Message.Should().Contain("no format version");
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    public void a_document_older_than_the_first_version_is_rejected(string version)
+    {
+        //Arrange - version 1 is the first format, so nothing older can be migrated
+        var serializer = TestData.Serializer();
+        var json = $$"""{ "version": {{version}}, "placements": [] }""";
+
+        //Act
+        var thrown = Record.Exception(() => serializer.FromJson(json));
+
+        //Assert
+        thrown.Should().BeOfType<FormatException>();
+        thrown.Message.Should().Contain($"format version {version} does not exist");
+    }
+
+    [Fact]
+    public void a_document_from_a_newer_version_is_rejected()
+    {
+        //Arrange
+        var serializer = TestData.Serializer();
+        var newer = ReadingSerializer.CurrentVersion + 1;
+        var json = $$"""
+            { "version": {{newer}}, "placements": [
+              { "position": 0, "cardId": 1, "reversed": false } ] }
+            """;
+
+        //Act
+        var thrown = Record.Exception(() => serializer.FromJson(json));
+
+        //Assert
+        thrown.Should().BeOfType<FormatException>();
+        thrown.Message.Should().Contain("newer InannaRosette");
+        thrown.Message.Should().Contain($"format version {newer}");
+    }
+
+    [Theory]
+    [InlineData("\"1\"")]
+    [InlineData("1.5")]
+    [InlineData("null")]
+    public void a_version_that_is_not_a_whole_number_is_rejected(string version)
+    {
+        //Arrange
+        var serializer = TestData.Serializer();
+        var json = $$"""{ "version": {{version}}, "placements": [] }""";
+
+        //Act
+        var thrown = Record.Exception(() => serializer.FromJson(json));
+
+        //Assert
+        thrown.Should().BeOfType<FormatException>();
+        thrown.Message.Should().Contain("not a whole number");
+    }
+
+    [Fact]
     public void a_json_null_document_is_rejected()
     {
         //Arrange

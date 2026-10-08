@@ -1,0 +1,35 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Ziggurat Border
+  Subject: A horizontal border of interlocking stepped forms, gold ziggurats rising from the lower rule and gold-deep ones hanging from the upper, with a 50-unit period so the strip repeats seamlessly.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="rules">
+<rect x="-4" y="158" width="408" height="8" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round"/>
+<rect x="-4" y="234" width="408" height="8" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round"/>
+</g>
+<g id="ziggurats">
+<polygon points="-47,234 -47,218 -39,218 -39,202 -31,202 -31,186 -19,186 -19,202 -11,202 -11,218 -3,218 -3,234" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="3,234 3,218 11,218 11,202 19,202 19,186 31,186 31,202 39,202 39,218 47,218 47,234" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="53,234 53,218 61,218 61,202 69,202 69,186 81,186 81,202 89,202 89,218 97,218 97,234" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="103,234 103,218 111,218 111,202 119,202 119,186 131,186 131,202 139,202 139,218 147,218 147,234" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="153,234 153,218 161,218 161,202 169,202 169,186 181,186 181,202 189,202 189,218 197,218 197,234" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="203,234 203,218 211,218 211,202 219,202 219,186 231,186 231,202 239,202 239,218 247,218 247,234" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="253,234 253,218 261,218 261,202 269,202 269,186 281,186 281,202 289,202 289,218 297,218 297,234" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="303,234 303,218 311,218 311,202 319,202 319,186 331,186 331,202 339,202 339,218 347,218 347,234" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="353,234 353,218 361,218 361,202 369,202 369,186 381,186 381,202 389,202 389,218 397,218 397,234" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="403,234 403,218 411,218 411,202 419,202 419,186 431,186 431,202 439,202 439,218 447,218 447,234" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="-22,166 -22,182 -14,182 -14,198 -6,198 -6,214 6,214 6,198 14,198 14,182 22,182 22,166" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="28,166 28,182 36,182 36,198 44,198 44,214 56,214 56,198 64,198 64,182 72,182 72,166" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="78,166 78,182 86,182 86,198 94,198 94,214 106,214 106,198 114,198 114,182 122,182 122,166" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="128,166 128,182 136,182 136,198 144,198 144,214 156,214 156,198 164,198 164,182 172,182 172,166" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="178,166 178,182 186,182 186,198 194,198 194,214 206,214 206,198 214,198 214,182 222,182 222,166" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="228,166 228,182 236,182 236,198 244,198 244,214 256,214 256,198 264,198 264,182 272,182 272,166" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="278,166 278,182 286,182 286,198 294,198 294,214 306,214 306,198 314,198 314,182 322,182 322,166" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="328,166 328,182 336,182 336,198 344,198 344,214 356,214 356,198 364,198 364,182 372,182 372,166" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="378,166 378,182 386,182 386,198 394,198 394,214 406,214 406,198 414,198 414,182 422,182 422,166" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

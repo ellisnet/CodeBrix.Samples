@@ -1,0 +1,85 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Sunburst Crest
+  Subject: A full gold sunburst crest: thirty-two rays of three lengths around a ringed gold disc that holds Her eight-pointed star, the central device of the Deco chrome.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit); art/symbols/symbol-eight-pointed-star.svg (form of Her star)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="rays">
+<polygon points="194.7,116.2 200,24 205.3,116.2" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="212.3,116.9 227.3,62.7 220.4,118.5" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="227.2,120.5 261.2,52.2 237,124.6" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="243.2,128 277.8,83.6 250,132.5" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="255.6,137 324.5,75.5 263,144.4" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="267.5,150 316.4,122.2 272,156.8" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="275.4,163 347.8,138.8 279.5,172.8" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="281.5,179.6 337.3,172.7 283.1,187.7" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="283.8,194.7 376,200 283.8,205.3" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="283.1,212.3 337.3,227.3 281.5,220.4" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="279.5,227.2 347.8,261.2 275.4,237" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="272,243.2 316.4,277.8 267.5,250" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="263,255.6 324.5,324.5 255.6,263" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="250,267.5 277.8,316.4 243.2,272" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="237,275.4 261.2,347.8 227.2,279.5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="220.4,281.5 227.3,337.3 212.3,283.1" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="205.3,283.8 200,376 194.7,283.8" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="187.7,283.1 172.7,337.3 179.6,281.5" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="172.8,279.5 138.8,347.8 163,275.4" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="156.8,272 122.2,316.4 150,267.5" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="144.4,263 75.5,324.5 137,255.6" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="132.5,250 83.6,277.8 128,243.2" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="124.6,237 52.2,261.2 120.5,227.2" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="118.5,220.4 62.7,227.3 116.9,212.3" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="116.2,205.3 24,200 116.2,194.7" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="116.9,187.7 62.7,172.7 118.5,179.6" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="120.5,172.8 52.2,138.8 124.6,163" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="128,156.8 83.6,122.2 132.5,150" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="137,144.4 75.5,75.5 144.4,137" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="150,132.5 122.2,83.6 156.8,128" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="163,124.6 138.8,52.2 172.8,120.5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="179.6,118.5 172.7,62.7 187.7,116.9" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="disc">
+<circle cx="200" cy="200" r="88" fill="#D9A441" stroke="#1E1A17" stroke-width="3"/>
+<circle cx="200" cy="200" r="76" fill="none" stroke="#A8761F" stroke-width="1.5"/>
+<line x1="262" y1="200" x2="274" y2="200" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="257.3" y1="223.7" x2="268.4" y2="228.3" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="243.8" y1="243.8" x2="252.3" y2="252.3" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="223.7" y1="257.3" x2="228.3" y2="268.4" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="200" y1="262" x2="200" y2="274" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="176.3" y1="257.3" x2="171.7" y2="268.4" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="156.2" y1="243.8" x2="147.7" y2="252.3" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="142.7" y1="223.7" x2="131.6" y2="228.3" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="138" y1="200" x2="126" y2="200" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="142.7" y1="176.3" x2="131.6" y2="171.7" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="156.2" y1="156.2" x2="147.7" y2="147.7" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="176.3" y1="142.7" x2="171.7" y2="131.6" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="200" y1="138" x2="200" y2="126" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="223.7" y1="142.7" x2="228.3" y2="131.6" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="243.8" y1="156.2" x2="252.3" y2="147.7" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="257.3" y1="176.3" x2="268.4" y2="171.7" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<circle cx="200" cy="200" r="60" fill="#A8761F" stroke="#1E1A17" stroke-width="2"/>
+<g id="heart-star">
+<polygon points="200,200 200,148 192.5,182" fill="#D9A441"/>
+<polygon points="200,200 200,148 207.5,182" fill="#A8761F"/>
+<polygon points="200,200 236.8,163.2 207.5,182" fill="#D9A441"/>
+<polygon points="200,200 236.8,163.2 218,192.5" fill="#A8761F"/>
+<polygon points="200,200 252,200 218,192.5" fill="#D9A441"/>
+<polygon points="200,200 252,200 218,207.5" fill="#A8761F"/>
+<polygon points="200,200 236.8,236.8 218,207.5" fill="#D9A441"/>
+<polygon points="200,200 236.8,236.8 207.5,218" fill="#A8761F"/>
+<polygon points="200,200 200,252 207.5,218" fill="#D9A441"/>
+<polygon points="200,200 200,252 192.5,218" fill="#A8761F"/>
+<polygon points="200,200 163.2,236.8 192.5,218" fill="#D9A441"/>
+<polygon points="200,200 163.2,236.8 182,207.5" fill="#A8761F"/>
+<polygon points="200,200 148,200 182,207.5" fill="#D9A441"/>
+<polygon points="200,200 148,200 182,192.5" fill="#A8761F"/>
+<polygon points="200,200 163.2,163.2 182,192.5" fill="#D9A441"/>
+<polygon points="200,200 163.2,163.2 192.5,182" fill="#A8761F"/>
+<polygon points="200,148 207.5,182 236.8,163.2 218,192.5 252,200 218,207.5 236.8,236.8 207.5,218 200,252 192.5,218 163.2,236.8 182,207.5 148,200 182,192.5 163.2,163.2 192.5,182" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="200" r="7.3" fill="#D9A441" stroke="#1E1A17" stroke-width="2"/>
+</g>
+</g>
+</svg>

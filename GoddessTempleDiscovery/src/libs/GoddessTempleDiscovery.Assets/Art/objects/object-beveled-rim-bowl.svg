@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Beveled-Rim Bowl
+  Subject: The crude mould-made bowl with a slanting cut rim, turned out in vast numbers in Late Uruk times and usually read as the measure for daily grain or bread rations.
+  Sources consulted: BUILDING_HIGHLIGHTS.txt and story/13_buildings_of_inanna_chronological_catalog.txt (Late Uruk Eanna households and rations)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="bowl">
+<path d="M70,150 C70,174 104,196 150,282 C160,300 240,300 250,282 C296,196 330,174 330,150 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M330,150 C330,174 296,196 250,282 C244,292 228,298 210,298 C236,270 270,200 300,168 Z" fill="#9C6B3C"/>
+<path d="M70,150 C70,174 104,196 150,282 C160,300 240,300 250,282 C296,196 330,174 330,150 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M150,282 C160,292 240,292 250,282" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M68,146 C68,118 132,104 200,104 C268,104 332,118 332,146 C332,174 268,190 200,190 C132,190 68,174 68,146 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M84,150 C84,128 138,118 200,118 C262,118 316,128 316,150 C316,170 262,180 200,180 C138,180 84,170 84,150 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M316,150 C316,170 262,180 200,180 C240,170 270,156 276,128 C300,132 316,140 316,150 Z" fill="#C8955A"/>
+<path d="M84,150 C84,128 138,118 200,118 C262,118 316,128 316,150 C316,170 262,180 200,180 C138,180 84,170 84,150 Z" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="110" y1="206" x2="124" y2="214" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="168" y1="232" x2="182" y2="236" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="226" y1="220" x2="238" y2="214" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="190" y1="262" x2="204" y2="264" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="142" y1="252" x2="150" y2="258" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="276" y1="196" x2="286" y2="190" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="128" y1="160" x2="140" y2="158" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="240" y1="164" x2="254" y2="162" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M96,186 C120,214 140,236 156,262" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

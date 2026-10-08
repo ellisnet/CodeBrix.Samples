@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Glazed Brick with Her Star
+  Subject: A broken glazed brick from the late sanctuary, its deep blue glaze carrying the eight-pointed star of Inanna with an eight-petalled rosette at its heart, the clay body showing at the breaks.
+  Sources consulted: images/Holy_Inanna/IMAGES.md section 11 (ceramic rosette wall-mosaic insert from Uruk) and the star and Octaquetra notes; BUILDING_HIGHLIGHTS.txt late phases of Eanna
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="brick-body">
+<polygon points="332,104 346,118 350,184 354,250 326,316 246,326 232,312 312,302 340,236 322,170" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="232,312 246,326 218,310 204,296" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="204,296 218,310 136,324 122,310" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="122,310 136,324 90,298 76,284" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="glaze">
+<polygon points="66,112 148,92 180,106 258,86 332,104 322,170 340,236 312,302 232,312 204,296 122,310 76,284 88,212" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="66,112 92,106 96,122 74,130" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="300,98 332,104 330,124 312,118" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="76,284 100,290 96,272 82,266" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="110" y1="140" x2="132" y2="166" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="290" y1="262" x2="304" y2="284" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="262" y1="130" x2="276" y2="120" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="120" y1="252" x2="140" y2="264" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+</g>
+<g id="star">
+<polygon points="204,106 222.4,155.7 270.5,133.5 248.3,181.6 298,200 248.3,218.4 270.5,266.5 222.4,244.3 204,294 185.6,244.3 137.5,266.5 159.7,218.4 110,200 159.7,181.6 137.5,133.5 185.6,155.7" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="204,200 204,106 222.4,155.7" fill="#A8761F"/>
+<polygon points="204,200 270.5,133.5 248.3,181.6" fill="#A8761F"/>
+<polygon points="204,200 298,200 248.3,218.4" fill="#A8761F"/>
+<polygon points="204,200 270.5,266.5 222.4,244.3" fill="#A8761F"/>
+<polygon points="204,200 204,294 185.6,244.3" fill="#A8761F"/>
+<polygon points="204,200 137.5,266.5 159.7,218.4" fill="#A8761F"/>
+<polygon points="204,200 110,200 159.7,181.6" fill="#A8761F"/>
+<polygon points="204,200 137.5,133.5 185.6,155.7" fill="#A8761F"/>
+<polygon points="204,106 222.4,155.7 270.5,133.5 248.3,181.6 298,200 248.3,218.4 270.5,266.5 222.4,244.3 204,294 185.6,244.3 137.5,266.5 159.7,218.4 110,200 159.7,181.6 137.5,133.5 185.6,155.7" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="204" y1="170" x2="204" y2="114" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="225.2" y1="178.8" x2="264.8" y2="139.2" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="234" y1="200" x2="290" y2="200" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="225.2" y1="221.2" x2="264.8" y2="260.8" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="204" y1="230" x2="204" y2="286" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="182.8" y1="221.2" x2="143.2" y2="260.8" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="174" y1="200" x2="118" y2="200" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="182.8" y1="178.8" x2="143.2" y2="139.2" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<circle cx="204" cy="200" r="30" fill="#5B7BC4" stroke="#1E1A17" stroke-width="3"/>
+<ellipse cx="204" cy="183" rx="9" ry="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(-90 204 183)"/>
+<ellipse cx="216" cy="188" rx="9" ry="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(-45 216 188)"/>
+<ellipse cx="221" cy="200" rx="9" ry="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<ellipse cx="216" cy="212" rx="9" ry="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(45 216 212)"/>
+<ellipse cx="204" cy="217" rx="9" ry="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(90 204 217)"/>
+<ellipse cx="192" cy="212" rx="9" ry="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(135 192 212)"/>
+<ellipse cx="187" cy="200" rx="9" ry="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(180 187 200)"/>
+<ellipse cx="192" cy="188" rx="9" ry="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(225 192 188)"/>
+<circle cx="204" cy="200" r="8" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+</g>
+</svg>

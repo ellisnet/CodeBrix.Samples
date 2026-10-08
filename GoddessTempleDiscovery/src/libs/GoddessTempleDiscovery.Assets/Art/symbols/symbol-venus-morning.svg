@@ -1,0 +1,36 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Venus as Morning Star
+  Subject: Her star low over the eastern horizon in a pale dawn sky, the planet Venus as the morning star, Holy Inanna rising.
+  Sources consulted: Getty Uruk transcript chapter 9 (Astral Manifestation)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="dawn">
+<circle cx="200" cy="200" r="170" fill="#EFE3C8"/>
+<path d="M 33,232 L 367,232 A 170 170 0 0 1 358.3,262 L 41.7,262 A 170 170 0 0 1 33,232 Z" fill="#E8C597"/>
+<path d="M 41.7,262 A 170 170 0 0 0 358.3,262 Z" fill="#C8955A"/>
+<line x1="41.7" y1="262" x2="358.3" y2="262" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 90,300 C 140,292 180,296 220,306 M 230,330 C 270,322 300,324 330,312" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="236,176 236,110 226.4,152.9" fill="#D9A441"/>
+<polygon points="236,176 236,110 245.6,152.9" fill="#A8761F"/>
+<polygon points="236,176 282.7,129.3 245.6,152.9" fill="#D9A441"/>
+<polygon points="236,176 282.7,129.3 259.1,166.4" fill="#A8761F"/>
+<polygon points="236,176 302,176 259.1,166.4" fill="#D9A441"/>
+<polygon points="236,176 302,176 259.1,185.6" fill="#A8761F"/>
+<polygon points="236,176 282.7,222.7 259.1,185.6" fill="#D9A441"/>
+<polygon points="236,176 282.7,222.7 245.6,199.1" fill="#A8761F"/>
+<polygon points="236,176 236,242 245.6,199.1" fill="#A8761F"/>
+<polygon points="236,176 236,242 226.4,199.1" fill="#D9A441"/>
+<polygon points="236,176 189.3,222.7 226.4,199.1" fill="#A8761F"/>
+<polygon points="236,176 189.3,222.7 212.9,185.6" fill="#D9A441"/>
+<polygon points="236,176 170,176 212.9,185.6" fill="#A8761F"/>
+<polygon points="236,176 170,176 212.9,166.4" fill="#D9A441"/>
+<polygon points="236,176 189.3,129.3 212.9,166.4" fill="#A8761F"/>
+<polygon points="236,176 189.3,129.3 226.4,152.9" fill="#D9A441"/>
+<polygon points="236,110 245.6,152.9 282.7,129.3 259.1,166.4 302,176 259.1,185.6 282.7,222.7 245.6,199.1 236,242 226.4,199.1 189.3,222.7 212.9,185.6 170,176 212.9,166.4 189.3,129.3 226.4,152.9" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="236" cy="176" r="9" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="200" r="170" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

@@ -1,0 +1,32 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Card Frame
+  Subject: The frame of every card: a night ground with a double gold hairline border and stepped corners, a limestone title plate across the top 70 units and a text plate across the bottom 120, the art window left transparent; corners stay inside the outer 60 units for nine-slice stretching.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 400" width="250" height="400">
+<g id="frame">
+<path d="M1.5,13.5 L7.5,13.5 L7.5,7.5 L13.5,7.5 L236.5,7.5 L242.5,7.5 L242.5,13.5 L248.5,13.5 L248.5,386.5 L242.5,386.5 L242.5,392.5 L236.5,392.5 L13.5,392.5 L7.5,392.5 L7.5,386.5 L1.5,386.5ZM18,76 L232,76 L232,274 L18,274Z" fill="#16213A" fill-rule="evenodd" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="8,18 13,18 13,13 18,13 232,13 237,13 237,18 242,18 242,382 237,382 237,387 232,387 18,387 13,387 13,382 8,382" fill="none" stroke="#D9A441" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="12.5,20.5 16.5,20.5 16.5,16.5 20.5,16.5 229.5,16.5 233.5,16.5 233.5,20.5 237.5,20.5 237.5,379.5 233.5,379.5 233.5,383.5 229.5,383.5 20.5,383.5 16.5,383.5 16.5,379.5 12.5,379.5" fill="none" stroke="#D9A441" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="window-rim">
+<rect x="18" y="76" width="214" height="198" fill="none" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round"/>
+<polyline points="14.5,90 14.5,72.5 32,72.5" fill="none" stroke="#D9A441" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="235.5,90 235.5,72.5 218,72.5" fill="none" stroke="#D9A441" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="235.5,260 235.5,277.5 218,277.5" fill="none" stroke="#D9A441" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="14.5,260 14.5,277.5 32,277.5" fill="none" stroke="#D9A441" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="125,66.5 132,70 125,73.5 118,70" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="125,276 132,279.5 125,283 118,279.5" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="title-plate">
+<polygon points="18,21 21,21 229,21 232,21 232,61 229,61 21,61 18,61" fill="#EDE6D6" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="22,24.5 24.5,24.5 225.5,24.5 228,24.5 228,57.5 225.5,57.5 24.5,57.5 22,57.5" fill="none" stroke="#A8761F" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="text-plate">
+<polygon points="18,287 21,287 229,287 232,287 232,379 229,379 21,379 18,379" fill="#EDE6D6" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="22,290.5 24.5,290.5 225.5,290.5 228,290.5 228,375.5 225.5,375.5 24.5,375.5 22,375.5" fill="none" stroke="#A8761F" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

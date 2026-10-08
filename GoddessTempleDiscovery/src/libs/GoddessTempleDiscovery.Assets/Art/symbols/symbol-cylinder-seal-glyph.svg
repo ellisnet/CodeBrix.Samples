@@ -1,0 +1,34 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Cylinder Seal and Impression
+  Subject: A lapis cylinder seal with gold caps rolled across a strip of clay, leaving reed bundles, a star and a ring, the Uruk invention that signed goods and doors.
+  Sources consulted: Holy_Inanna/IMAGES.md (Late Uruk cylinder seals MET 1983 and BM 116722); Getty Uruk transcript chapter 11
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="clay-strip">
+<path d="M 40,268 C 40,256 50,250 62,250 L 338,250 C 350,250 360,256 360,268 L 360,330 C 360,342 350,350 338,350 L 62,350 C 50,350 40,342 40,330 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 360,268 L 360,330 C 360,342 350,350 338,350 L 62,350 C 50,350 40,342 40,330 C 50,338 56,340 66,340 L 334,340 C 344,340 350,334 350,324 L 350,262 C 356,262 360,264 360,268 Z" fill="#9C6B3C"/>
+<path d="M 40,268 C 40,256 50,250 62,250 L 338,250 C 350,250 360,256 360,268 L 360,330 C 360,342 350,350 338,350 L 62,350 C 50,350 40,342 40,330 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 78,332 L 78,284 M 69,276 A 9 9 0 1 1 87,276 A 9 9 0 1 1 69,276 M 87,276 C 98,276 100,290 100,312" fill="none" stroke="#9C6B3C" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 246,332 L 246,284 M 237,276 A 9 9 0 1 1 255,276 A 9 9 0 1 1 237,276 M 255,276 C 266,276 268,290 268,312" fill="none" stroke="#9C6B3C" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="152,270 155.8,290.8 173.2,278.8 161.2,296.2 182,300 161.2,303.8 173.2,321.2 155.8,309.2 152,330 148.2,309.2 130.8,321.2 142.8,303.8 122,300 142.8,296.2 130.8,278.8 148.2,290.8" fill="#9C6B3C"/>
+<circle cx="310" cy="300" r="22" fill="none" stroke="#9C6B3C" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="310" cy="300" r="7" fill="#9C6B3C"/>
+</g>
+<g id="seal">
+<path d="M 110,96 L 290,96 L 290,212 L 110,212 Z" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 110,96 L 290,96 L 290,124 L 110,124 Z" fill="#5B7BC4"/>
+<path d="M 110,96 L 290,96 L 290,212 L 110,212 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 132,196 L 132,140 M 124,132 A 8 8 0 1 1 140,132 A 8 8 0 1 1 124,132 M 140,132 C 150,132 152,144 152,164" fill="none" stroke="#5B7BC4" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="196,136 199.1,152.6 213,143 203.4,156.9 220,160 203.4,163.1 213,177 199.1,167.4 196,184 192.9,167.4 179,177 188.6,163.1 172,160 188.6,156.9 179,143 192.9,152.6" fill="#5B7BC4"/>
+<circle cx="252" cy="160" r="18" fill="none" stroke="#5B7BC4" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="110" cy="154" rx="18" ry="58" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="290" cy="154" rx="18" ry="58" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="290" cy="154" rx="7" ry="22" fill="#1E1A17"/>
+<path d="M 110,96 L 290,96 M 110,212 L 290,212" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="64" y1="210" x2="98" y2="236" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="320" y1="236" x2="340" y2="220" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

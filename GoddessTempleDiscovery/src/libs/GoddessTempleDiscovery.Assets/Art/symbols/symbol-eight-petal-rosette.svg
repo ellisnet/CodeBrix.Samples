@@ -1,0 +1,27 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Eight-Petal Rosette of Holy Inanna
+  Subject: Her rosette of eight rounded petals in shell white around a gold heart, as inlaid in Late Uruk stone and carved on the Uruk trough.
+  Sources consulted: Holy_Inanna/IMAGES.md; Getty Uruk transcript chapters 9 and 11; Uruk trough BM 120000 photographs
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="ring">
+<circle cx="200" cy="200" r="172" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="rosette">
+<circle cx="200" cy="200" r="168" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<g transform="rotate(0 200 200)"><path d="M 200,160 C 226,146 250,82 236,54 C 224,32 176,32 164,54 C 150,82 174,146 200,160 Z" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 202,148 C 222,130 234,84 226,60 C 236,82 226,130 202,148 Z" fill="#C9BFA8"/><line x1="200" y1="142" x2="200" y2="66" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(45 200 200)"><path d="M 200,160 C 226,146 250,82 236,54 C 224,32 176,32 164,54 C 150,82 174,146 200,160 Z" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 202,148 C 222,130 234,84 226,60 C 236,82 226,130 202,148 Z" fill="#C9BFA8"/><line x1="200" y1="142" x2="200" y2="66" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(90 200 200)"><path d="M 200,160 C 226,146 250,82 236,54 C 224,32 176,32 164,54 C 150,82 174,146 200,160 Z" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 202,148 C 222,130 234,84 226,60 C 236,82 226,130 202,148 Z" fill="#C9BFA8"/><line x1="200" y1="142" x2="200" y2="66" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(135 200 200)"><path d="M 200,160 C 226,146 250,82 236,54 C 224,32 176,32 164,54 C 150,82 174,146 200,160 Z" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 202,148 C 222,130 234,84 226,60 C 236,82 226,130 202,148 Z" fill="#C9BFA8"/><line x1="200" y1="142" x2="200" y2="66" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(180 200 200)"><path d="M 200,160 C 226,146 250,82 236,54 C 224,32 176,32 164,54 C 150,82 174,146 200,160 Z" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 202,148 C 222,130 234,84 226,60 C 236,82 226,130 202,148 Z" fill="#C9BFA8"/><line x1="200" y1="142" x2="200" y2="66" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(225 200 200)"><path d="M 200,160 C 226,146 250,82 236,54 C 224,32 176,32 164,54 C 150,82 174,146 200,160 Z" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 202,148 C 222,130 234,84 226,60 C 236,82 226,130 202,148 Z" fill="#C9BFA8"/><line x1="200" y1="142" x2="200" y2="66" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(270 200 200)"><path d="M 200,160 C 226,146 250,82 236,54 C 224,32 176,32 164,54 C 150,82 174,146 200,160 Z" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 202,148 C 222,130 234,84 226,60 C 236,82 226,130 202,148 Z" fill="#C9BFA8"/><line x1="200" y1="142" x2="200" y2="66" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(315 200 200)"><path d="M 200,160 C 226,146 250,82 236,54 C 224,32 176,32 164,54 C 150,82 174,146 200,160 Z" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 202,148 C 222,130 234,84 226,60 C 236,82 226,130 202,148 Z" fill="#C9BFA8"/><line x1="200" y1="142" x2="200" y2="66" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<circle cx="200" cy="200" r="44" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="200" r="28" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="200" r="14" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

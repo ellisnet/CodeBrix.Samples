@@ -1,0 +1,58 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Raised Hands of Prayer
+  Subject: Two open hands lifted palms outward with gold bracelets, the raised-hands greeting and prayer with which one approached Holy Inanna.
+  Sources consulted: Getty Uruk transcript chapter 9 (Rituals for Home and Family, rituals of raised hands)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="left-hand">
+<path d="M 84,372 L 88,230 L 148,230 L 152,372 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 70,150 C 70,132 78,124 92,124 L 148,124 C 162,124 166,136 166,150 L 162,210 C 158,236 144,246 118,246 C 92,246 74,236 72,210 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="71.5" y="70" width="21" height="120" rx="10.5" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="94" y="42" width="22" height="120" rx="11" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="118" y="34" width="22" height="120" rx="11" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="140.5" y="52" width="21" height="120" rx="10.5" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<g transform="rotate(-30 162 196)"><rect x="150" y="120" width="25" height="92" rx="12" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/></g>
+<path d="M 84,372 L 88,230 L 148,230 L 152,372 Z" fill="#E8C597"/>
+<path d="M 70,150 C 70,132 78,124 92,124 L 148,124 C 162,124 166,136 166,150 L 162,210 C 158,236 144,246 118,246 C 92,246 74,236 72,210 Z" fill="#E8C597"/>
+<rect x="71.5" y="70" width="21" height="120" rx="10.5" fill="#E8C597"/>
+<rect x="94" y="42" width="22" height="120" rx="11" fill="#E8C597"/>
+<rect x="118" y="34" width="22" height="120" rx="11" fill="#E8C597"/>
+<rect x="140.5" y="52" width="21" height="120" rx="10.5" fill="#E8C597"/>
+<g transform="rotate(-30 162 196)"><rect x="150" y="120" width="25" height="92" rx="12" fill="#E8C597"/></g>
+<path d="M 98,150 C 110,170 128,176 148,170" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 88,196 C 108,204 128,206 144,200" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="94" y1="128" x2="94" y2="146" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="116" y1="128" x2="116" y2="146" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="140" y1="128" x2="140" y2="146" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="82" y="268" width="72" height="22" rx="6" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="84" y1="279" x2="152" y2="279" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 84,330 L 152,330 L 154,372 L 82,372 Z" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="right-hand">
+<path d="M 316,372 L 312,230 L 252,230 L 248,372 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 330,150 C 330,132 322,124 308,124 L 252,124 C 238,124 234,136 234,150 L 238,210 C 242,236 256,246 282,246 C 308,246 326,236 328,210 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="307.5" y="70" width="21" height="120" rx="10.5" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="284" y="42" width="22" height="120" rx="11" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="260" y="34" width="22" height="120" rx="11" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="238.5" y="52" width="21" height="120" rx="10.5" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<g transform="rotate(30 238 196)"><rect x="226" y="120" width="25" height="92" rx="12" fill="#E8C597" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/></g>
+<path d="M 316,372 L 312,230 L 252,230 L 248,372 Z" fill="#E8C597"/>
+<path d="M 330,150 C 330,132 322,124 308,124 L 252,124 C 238,124 234,136 234,150 L 238,210 C 242,236 256,246 282,246 C 308,246 326,236 328,210 Z" fill="#E8C597"/>
+<rect x="307.5" y="70" width="21" height="120" rx="10.5" fill="#E8C597"/>
+<rect x="284" y="42" width="22" height="120" rx="11" fill="#E8C597"/>
+<rect x="260" y="34" width="22" height="120" rx="11" fill="#E8C597"/>
+<rect x="238.5" y="52" width="21" height="120" rx="10.5" fill="#E8C597"/>
+<g transform="rotate(30 238 196)"><rect x="226" y="120" width="25" height="92" rx="12" fill="#E8C597"/></g>
+<path d="M 302,150 C 290,170 272,176 252,170" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 312,196 C 292,204 272,206 256,200" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="306" y1="128" x2="306" y2="146" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="284" y1="128" x2="284" y2="146" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="260" y1="128" x2="260" y2="146" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="246" y="268" width="72" height="22" rx="6" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="248" y1="279" x2="316" y2="279" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 316,330 L 248,330 L 246,372 L 318,372 Z" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

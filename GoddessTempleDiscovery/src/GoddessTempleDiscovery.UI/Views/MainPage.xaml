@@ -1,0 +1,684 @@
+<Page
+    x:Class="GoddessTempleDiscovery.Views.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="clr-namespace:Microsoft.UI.Xaml.Data;assembly=CodeBrix.Platform.UI"
+    xmlns:vm="clr-namespace:GoddessTempleDiscovery.ViewModels;assembly=GoddessTempleDiscovery.Core"
+    xmlns:game="clr-namespace:CodeBrix.Platform.GameEngine.Host.Rendering;assembly=CodeBrix.Platform.GameEngine.Host"
+    FontFamily="{StaticResource MerriweatherFont}"
+    Background="{StaticResource NightBrush}">
+
+    <Page.DataContext>
+        <vm:MainViewModel />
+    </Page.DataContext>
+
+    <Page.Resources>
+        <!-- A heading, a line, a text and a small picture: How to Play, History, Credits, the Field Journal -->
+        <DataTemplate x:Key="TextItemTemplate">
+            <Grid ColumnSpacing="16" Margin="0,0,0,18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Width="60" Height="60" VerticalAlignment="Top" BorderBrush="{StaticResource GoldHairlineBrush}" BorderThickness="1"
+                        Background="#33EDE6D6" Visibility="{d:Binding ImageVisibility}">
+                    <Image Source="{d:Binding Image}" Stretch="Uniform" Margin="4" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock Text="{d:Binding Heading}" FontFamily="{StaticResource MerriweatherBoldFont}" FontWeight="Bold"
+                               FontSize="15" Foreground="{StaticResource GoldBrush}" TextWrapping="Wrap" />
+                    <TextBlock Text="{d:Binding Subheading}" Style="{StaticResource CaptionTextStyle}" Visibility="{d:Binding SubheadingVisibility}" />
+                    <TextBlock Text="{d:Binding Text}" Style="{StaticResource BodyTextStyle}" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <!-- A Field Journal entry: the TextItem layout with the byline of the edition this game printed -->
+        <DataTemplate x:Key="JournalItemTemplate">
+            <Grid ColumnSpacing="16" Margin="0,0,0,18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Width="60" Height="60" VerticalAlignment="Top" BorderBrush="{StaticResource GoldHairlineBrush}" BorderThickness="1"
+                        Background="#33EDE6D6" Visibility="{d:Binding ImageVisibility}">
+                    <Image Source="{d:Binding Image}" Stretch="Uniform" Margin="4" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock Text="{d:Binding Heading}" FontFamily="{StaticResource MerriweatherBoldFont}" FontWeight="Bold"
+                               FontSize="15" Foreground="{StaticResource GoldBrush}" TextWrapping="Wrap" />
+                    <TextBlock Text="{d:Binding Subheading}" Style="{StaticResource CaptionTextStyle}" Visibility="{d:Binding SubheadingVisibility}" />
+                    <TextBlock Text="{d:Binding Byline}" Style="{StaticResource CaptionTextStyle}" Foreground="{StaticResource GoldDeepBrush}"
+                               Visibility="{d:Binding BylineVisibility}" />
+                    <TextBlock Text="{d:Binding Text}" Style="{StaticResource BodyTextStyle}" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <!-- One thumbnail of the gallery: a button that opens the picture large -->
+        <DataTemplate x:Key="GalleryItemTemplate">
+            <Button Width="138" Height="168" Margin="5" Padding="4" MinWidth="0" Style="{StaticResource DecoButtonStyle}"
+                    Command="{d:Binding OpenCommand}" AutomationProperties.AutomationId="GalleryItem">
+                <StackPanel Spacing="4">
+                    <Border Width="118" Height="118" Background="#33EDE6D6">
+                        <Image Source="{d:Binding Image}" Stretch="Uniform" Margin="3" />
+                    </Border>
+                    <TextBlock Text="{d:Binding Title}" FontFamily="{StaticResource MerriweatherFont}" FontSize="9.5" CharacterSpacing="0"
+                               TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" TextAlignment="Center" Width="122" />
+                </StackPanel>
+            </Button>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ParagraphTemplate">
+            <TextBlock Text="{d:Binding}" Style="{StaticResource BodyTextStyle}" FontSize="15" LineHeight="25" Margin="0,0,0,16" />
+        </DataTemplate>
+
+        <DataTemplate x:Key="FactTemplate">
+            <StackPanel Margin="0,0,0,6">
+                <TextBlock Text="{d:Binding Label}" FontFamily="{StaticResource MerriweatherBoldFont}" FontWeight="Bold" FontSize="9.5"
+                           CharacterSpacing="120" Foreground="{StaticResource InkBrush}" />
+                <TextBlock Text="{d:Binding Value}" Style="{StaticResource NewsTextStyle}" FontSize="11.5" LineHeight="16" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="StandingTemplate">
+            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,2">
+                <TextBlock Text="{d:Binding Label}" FontFamily="{StaticResource MerriweatherBoldFont}" FontWeight="Bold" FontSize="12"
+                           Foreground="{StaticResource GoldBrush}" />
+                <TextBlock Text="{d:Binding Value}" Style="{StaticResource CaptionTextStyle}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ScoreRowTemplate">
+            <Grid Margin="0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="90" />
+                    <ColumnDefinition Width="90" />
+                    <ColumnDefinition Width="70" />
+                    <ColumnDefinition Width="60" />
+                    <ColumnDefinition Width="60" />
+                    <ColumnDefinition Width="70" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{d:Binding Rank}" Style="{StaticResource NewsTextStyle}" FontFamily="{StaticResource MerriweatherBoldFont}" FontWeight="Bold" />
+                <TextBlock Grid.Column="1" Text="{d:Binding Team}" Style="{StaticResource NewsTextStyle}" FontFamily="{StaticResource MerriweatherBoldFont}" FontWeight="Bold" />
+                <TextBlock Grid.Column="2" Text="{d:Binding Published}" Style="{StaticResource NewsTextStyle}" />
+                <TextBlock Grid.Column="3" Text="{d:Binding Unpublished}" Style="{StaticResource NewsTextStyle}" />
+                <TextBlock Grid.Column="4" Text="{d:Binding Tablets}" Style="{StaticResource NewsTextStyle}" />
+                <TextBlock Grid.Column="5" Text="{d:Binding Sets}" Style="{StaticResource NewsTextStyle}" />
+                <TextBlock Grid.Column="6" Text="{d:Binding Star}" Style="{StaticResource NewsTextStyle}" />
+                <TextBlock Grid.Column="7" Text="{d:Binding Total}" Style="{StaticResource NewsTextStyle}" FontFamily="{StaticResource MerriweatherBoldFont}" FontWeight="Bold" />
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="SeatTemplate">
+            <Grid ColumnSpacing="12" Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="70" />
+                    <ColumnDefinition Width="260" />
+                    <ColumnDefinition Width="200" />
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="160" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{d:Binding SeatLabel}" Style="{StaticResource DecoLabelStyle}" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="SeatTeam"
+                          ItemsSource="{d:Binding TeamOptions}" SelectedItem="{d:Binding SelectedTeam, Mode=TwoWay}" />
+                <TextBox Grid.Column="2" PlaceholderText="Team name" AutomationProperties.AutomationId="SeatName"
+                         Style="{StaticResource DecoTextBoxStyle}"
+                         Text="{d:Binding TeamName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <ToggleSwitch Grid.Column="3" OnContent="COMPUTER" OffContent="HUMAN" AutomationProperties.AutomationId="SeatComputer"
+                              Foreground="{StaticResource LimestoneBrush}" IsOn="{d:Binding IsComputer, Mode=TwoWay}" />
+                <ComboBox Grid.Column="4" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="SeatTemperament"
+                          Visibility="{d:Binding TemperamentVisibility}"
+                          ItemsSource="{d:Binding TemperamentOptions}" SelectedItem="{d:Binding Temperament, Mode=TwoWay}" />
+                <Button Grid.Column="5" Content="REMOVE" MinWidth="0" Style="{StaticResource DecoButtonStyle}"
+                        AutomationProperties.AutomationId="SeatRemove" Command="{d:Binding RemoveCommand}" />
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
+
+    <!-- The table is the game surface; the Art Deco panes and the newspaper inspector are layered over it by the view
+         model's bound Visibility properties. -->
+    <Grid x:Name="RootGrid" Background="{StaticResource NightBrush}">
+        <game:GameSurfaceCanvas x:Name="GameCanvas" />
+
+        <!-- ===================================== PLAY: the table shows through ===================================== -->
+        <Grid Visibility="{d:Binding PlayVisibility}" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Button Content="MENU" MinWidth="0" Padding="12,4,12,5" FontSize="10" Margin="4"
+                    AutomationProperties.AutomationId="PlayMenu"
+                    Style="{StaticResource DecoButtonStyle}" Command="{d:Binding TitleCommand}" />
+        </Grid>
+
+        <!-- ===================================== TITLE ===================================== -->
+        <Grid Visibility="{d:Binding TitleVisibility}" Background="{StaticResource NightBrush}" AutomationProperties.AutomationId="TitlePane">
+            <ContentControl Style="{StaticResource DecoPanelStyle}" MaxWidth="1100" MaxHeight="760" Margin="30">
+                <Grid ColumnSpacing="36">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="300" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="10" VerticalAlignment="Center">
+                        <Grid Height="150">
+                            <Image Source="{d:Binding SunburstImage}" Stretch="Uniform" Opacity="0.55" VerticalAlignment="Bottom" />
+                            <StackPanel VerticalAlignment="Bottom" Spacing="6">
+                                <Rectangle Height="1.5" Fill="{StaticResource GoldBrush}" />
+                                <TextBlock Text="Goddess Temple Discovery!" AutomationProperties.AutomationId="TitleWordmark"
+                                           FontFamily="{StaticResource MerriweatherBoldFont}" FontWeight="Bold" FontSize="48"
+                                           CharacterSpacing="-30" Foreground="{StaticResource LimestoneBrush}" HorizontalAlignment="Center" />
+                                <Rectangle Height="1.5" Fill="{StaticResource GoldBrush}" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="{d:Binding TitleDateline}" Style="{StaticResource DecoLabelStyle}" HorizontalAlignment="Center" FontSize="10.5" />
+                        <Image Source="{d:Binding ChevronImage}" Height="16" Stretch="Fill" Margin="60,8" />
+                        <TextBlock Text="{d:Binding EpigraphText}" AutomationProperties.AutomationId="TitleEpigraph"
+                                   Style="{StaticResource BodyTextStyle}" FontStyle="Italic" FontSize="14.5" LineHeight="24" TextAlignment="Center" />
+                        <TextBlock Text="{d:Binding EpigraphAttribution}" Style="{StaticResource CaptionTextStyle}" TextAlignment="Center"
+                                   AutomationProperties.AutomationId="TitleEpigraphAttribution" />
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center" Margin="0,18,0,0">
+                            <Button Content="NEW GAME" Style="{StaticResource DecoPrimaryButtonStyle}" AutomationProperties.AutomationId="NewGame" Command="{d:Binding NewGameCommand}" />
+                            <Button Content="CONTINUE" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="Continue" Command="{d:Binding ContinueCommand}" />
+                            <Button Content="SETTINGS" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="Settings" Command="{d:Binding SettingsCommand}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                            <Button Content="HOW TO PLAY" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="HowToPlay" Command="{d:Binding HowToPlayCommand}" />
+                            <Button Content="HISTORY" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="History" Command="{d:Binding HistoryCommand}" />
+                            <Button Content="CREDITS" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="Credits" Command="{d:Binding CreditsCommand}" />
+                            <Button Content="GALLERY" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="Gallery" Command="{d:Binding GalleryCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="14">
+                        <Image Source="{d:Binding WordmarkImage}" Stretch="Uniform" MaxHeight="200" AutomationProperties.AutomationId="TitleWordmarkArt" />
+                        <Border BorderBrush="{StaticResource GoldBrush}" BorderThickness="1.5" Padding="6">
+                            <Image Source="{d:Binding TitleArtImage}" Stretch="Uniform" />
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </ContentControl>
+        </Grid>
+
+        <!-- ===================================== SETUP ===================================== -->
+        <Grid Visibility="{d:Binding SetupVisibility}" Background="{StaticResource NightBrush}" AutomationProperties.AutomationId="SetupPane">
+            <ContentControl Style="{StaticResource DecoPanelStyle}" MaxWidth="1120" MaxHeight="760" Margin="30">
+                <Grid RowSpacing="14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="THE EXPEDITIONS" Style="{StaticResource DecoHeadingStyle}" />
+                        <Image Source="{d:Binding DividerImage}" Height="12" Stretch="Fill" Margin="180,0" />
+                        <TextBlock Text="Two to four seats. Each is a person or a computer; take a team card or type a name of your own."
+                                   Style="{StaticResource CaptionTextStyle}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                    <ScrollViewer Grid.Row="1" Style="{StaticResource PanelScrollViewerStyle}">
+                        <StackPanel Spacing="6">
+                            <ItemsControl ItemsSource="{d:Binding Seats}" ItemTemplate="{StaticResource SeatTemplate}" AutomationProperties.AutomationId="Seats" />
+                            <Button Content="ADD A SEAT" HorizontalAlignment="Left" Style="{StaticResource DecoButtonStyle}"
+                                    AutomationProperties.AutomationId="AddSeat" Command="{d:Binding AddSeatCommand}" />
+                        </StackPanel>
+                    </ScrollViewer>
+                    <Grid Grid.Row="2" ColumnSpacing="18">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="TURNS A SEASON" Style="{StaticResource DecoLabelStyle}" />
+                            <ComboBox Width="140" AutomationProperties.AutomationId="TurnsPerSeason"
+                                      ItemsSource="{d:Binding TurnsOptions}" SelectedItem="{d:Binding SelectedTurns, Mode=TwoWay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="DIFFICULTY" Style="{StaticResource DecoLabelStyle}" />
+                            <ComboBox Width="160" AutomationProperties.AutomationId="Difficulty"
+                                      ItemsSource="{d:Binding DifficultyOptions}" SelectedItem="{d:Binding SelectedDifficulty, Mode=TwoWay}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="4">
+                            <TextBlock Text="SEED" Style="{StaticResource DecoLabelStyle}" />
+                            <TextBox Width="160" PlaceholderText="fresh game" Style="{StaticResource DecoTextBoxStyle}" AutomationProperties.AutomationId="Seed"
+                                     Text="{d:Binding SeedText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="3" Text="{d:Binding TurnsHint}" Style="{StaticResource CaptionTextStyle}" VerticalAlignment="Bottom" />
+                    </Grid>
+                    <Grid Grid.Row="3">
+                        <TextBlock Text="{d:Binding SetupProblem}" Foreground="{StaticResource MosaicRedBrush}" VerticalAlignment="Center"
+                                   AutomationProperties.AutomationId="SetupProblem" />
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                            <Button Content="BACK" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="SetupBack" Command="{d:Binding TitleCommand}" />
+                            <Button Content="START" Style="{StaticResource DecoPrimaryButtonStyle}" AutomationProperties.AutomationId="Start" Command="{d:Binding StartCommand}" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </ContentControl>
+        </Grid>
+
+        <!-- ===================================== PROLOGUE ===================================== -->
+        <Grid Visibility="{d:Binding PrologueVisibility}" Background="{StaticResource NightBrush}" AutomationProperties.AutomationId="ProloguePane">
+            <ContentControl Style="{StaticResource DecoPanelStyle}" MaxWidth="900" MaxHeight="760" Margin="30">
+                <Grid RowSpacing="14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{d:Binding PrologueTitle}" Style="{StaticResource DecoHeadingStyle}" AutomationProperties.AutomationId="PrologueTitle" />
+                        <Image Source="{d:Binding ChevronImage}" Height="14" Stretch="Fill" Margin="160,0" />
+                    </StackPanel>
+                    <ScrollViewer Grid.Row="1" Style="{StaticResource PanelScrollViewerStyle}">
+                        <ItemsControl ItemsSource="{d:Binding PrologueParagraphs}" ItemTemplate="{StaticResource ParagraphTemplate}" Margin="0,0,14,0"
+                                      AutomationProperties.AutomationId="PrologueParagraphs" />
+                    </ScrollViewer>
+                    <Button Grid.Row="2" HorizontalAlignment="Center" Content="BEGIN THE FIRST SEASON" Style="{StaticResource DecoPrimaryButtonStyle}"
+                            AutomationProperties.AutomationId="Begin" Command="{d:Binding BeginCommand}" />
+                </Grid>
+            </ContentControl>
+        </Grid>
+
+        <!-- ===================================== EPILOGUE ===================================== -->
+        <Grid Visibility="{d:Binding EpilogueVisibility}" Background="{StaticResource ScrimBrush}" AutomationProperties.AutomationId="EpiloguePane">
+            <ContentControl Style="{StaticResource DecoPanelStyle}" MaxWidth="900" MaxHeight="760" Margin="30">
+                <Grid RowSpacing="14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{d:Binding EpilogueTitle}" Style="{StaticResource DecoHeadingStyle}" />
+                        <Image Source="{d:Binding ChevronImage}" Height="14" Stretch="Fill" Margin="160,0" />
+                    </StackPanel>
+                    <ScrollViewer Grid.Row="1" Style="{StaticResource PanelScrollViewerStyle}">
+                        <ItemsControl ItemsSource="{d:Binding EpilogueParagraphs}" ItemTemplate="{StaticResource ParagraphTemplate}" Margin="0,0,14,0" />
+                    </ScrollViewer>
+                    <Button Grid.Row="2" HorizontalAlignment="Center" Content="THE FINAL EDITION" Style="{StaticResource DecoPrimaryButtonStyle}"
+                            AutomationProperties.AutomationId="ShowScores" Command="{d:Binding ShowScoresCommand}" />
+                </Grid>
+            </ContentControl>
+        </Grid>
+
+        <!-- ===================================== SCORES: the Final Edition ===================================== -->
+        <Grid Visibility="{d:Binding ScoresVisibility}" Background="{StaticResource ScrimBrush}" AutomationProperties.AutomationId="ScoresPane">
+            <Border Background="{StaticResource PaperBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="2"
+                    MaxWidth="1000" MaxHeight="740" Margin="30" Padding="36,24">
+                <Grid RowSpacing="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Spacing="6">
+                        <Image Source="{d:Binding MastheadImage}" Height="56" Stretch="Uniform" />
+                        <Rectangle Height="2" Fill="{StaticResource InkBrush}" />
+                        <Image Source="{d:Binding FinalEditionImage}" Height="44" Stretch="Uniform" />
+                        <TextBlock Text="{d:Binding ScoresHeadline}" Style="{StaticResource NewsHeadlineStyle}" FontSize="26"
+                                   AutomationProperties.AutomationId="ScoresHeadline" />
+                        <TextBlock Text="{d:Binding WinnerText}" Style="{StaticResource NewsSmallStyle}" FontSize="14" HorizontalAlignment="Center" />
+                    </StackPanel>
+                    <Grid Grid.Row="1" Background="{StaticResource InkBrush}" Padding="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="90" />
+                            <ColumnDefinition Width="90" />
+                            <ColumnDefinition Width="70" />
+                            <ColumnDefinition Width="60" />
+                            <ColumnDefinition Width="60" />
+                            <ColumnDefinition Width="70" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="RANK" Style="{StaticResource NewsBoxHeadingStyle}" HorizontalAlignment="Left" CharacterSpacing="80" />
+                        <TextBlock Grid.Column="1" Text="EXPEDITION" Style="{StaticResource NewsBoxHeadingStyle}" HorizontalAlignment="Left" CharacterSpacing="80" />
+                        <TextBlock Grid.Column="2" Text="PUBLISHED" Style="{StaticResource NewsBoxHeadingStyle}" HorizontalAlignment="Left" CharacterSpacing="80" />
+                        <TextBlock Grid.Column="3" Text="IN CRATES" Style="{StaticResource NewsBoxHeadingStyle}" HorizontalAlignment="Left" CharacterSpacing="80" />
+                        <TextBlock Grid.Column="4" Text="TABLETS" Style="{StaticResource NewsBoxHeadingStyle}" HorizontalAlignment="Left" CharacterSpacing="80" />
+                        <TextBlock Grid.Column="5" Text="SETS" Style="{StaticResource NewsBoxHeadingStyle}" HorizontalAlignment="Left" CharacterSpacing="80" />
+                        <TextBlock Grid.Column="6" Text="STAR" Style="{StaticResource NewsBoxHeadingStyle}" HorizontalAlignment="Left" CharacterSpacing="80" />
+                        <TextBlock Grid.Column="7" Text="TOTAL" Style="{StaticResource NewsBoxHeadingStyle}" HorizontalAlignment="Left" CharacterSpacing="80" />
+                    </Grid>
+                    <ScrollViewer Grid.Row="2" Style="{StaticResource PanelScrollViewerStyle}">
+                        <ItemsControl ItemsSource="{d:Binding ScoreRows}" ItemTemplate="{StaticResource ScoreRowTemplate}" AutomationProperties.AutomationId="ScoreRows" />
+                    </ScrollViewer>
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                        <Button Content="PLAY AGAIN" Style="{StaticResource NewsButtonStyle}" AutomationProperties.AutomationId="PlayAgain" Command="{d:Binding PlayAgainCommand}" />
+                        <Button Content="FIELD JOURNAL" Style="{StaticResource NewsButtonStyle}" AutomationProperties.AutomationId="ScoresJournal" Command="{d:Binding JournalCommand}" />
+                        <Button Content="EXPORT PDF" Style="{StaticResource NewsButtonStyle}" AutomationProperties.AutomationId="ScoresExport" Command="{d:Binding ExportJournalCommand}" />
+                        <Button Content="TITLE" Style="{StaticResource NewsButtonStyle}" Command="{d:Binding TitleCommand}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ===================================== HOW TO PLAY ===================================== -->
+        <Grid Visibility="{d:Binding HowToPlayVisibility}" Background="{StaticResource NightBrush}" AutomationProperties.AutomationId="HowToPlayPane">
+            <ContentControl Style="{StaticResource DecoPanelStyle}" MaxWidth="1000" MaxHeight="760" Margin="30">
+                <Grid RowSpacing="14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="HOW TO PLAY" Style="{StaticResource DecoHeadingStyle}" />
+                        <Image Source="{d:Binding DividerImage}" Height="12" Stretch="Fill" Margin="160,0" />
+                    </StackPanel>
+                    <ScrollViewer Grid.Row="1" Style="{StaticResource PanelScrollViewerStyle}">
+                        <ItemsControl ItemsSource="{d:Binding HowToPlayItems}" ItemTemplate="{StaticResource TextItemTemplate}" Margin="0,0,14,0"
+                                      AutomationProperties.AutomationId="HowToPlayItems" />
+                    </ScrollViewer>
+                    <Button Grid.Row="2" HorizontalAlignment="Center" Content="BACK" Style="{StaticResource DecoButtonStyle}"
+                            AutomationProperties.AutomationId="HowToPlayBack" Command="{d:Binding BackCommand}" />
+                </Grid>
+            </ContentControl>
+        </Grid>
+
+        <!-- ===================================== HISTORY ===================================== -->
+        <Grid Visibility="{d:Binding HistoryVisibility}" Background="{StaticResource NightBrush}" AutomationProperties.AutomationId="HistoryPane">
+            <ContentControl Style="{StaticResource DecoPanelStyle}" MaxWidth="1000" MaxHeight="760" Margin="30">
+                <Grid RowSpacing="14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="THE HISTORY" Style="{StaticResource DecoHeadingStyle}" />
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                            <Button Content="THE PEOPLE" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="PeopleTab" Command="{d:Binding PeopleTabCommand}" />
+                            <Button Content="THE TIMELINE" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="TimelineTab" Command="{d:Binding TimelineTabCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                    <ScrollViewer Grid.Row="1" Style="{StaticResource PanelScrollViewerStyle}" Visibility="{d:Binding PeopleVisibility}">
+                        <ItemsControl ItemsSource="{d:Binding PeopleItems}" ItemTemplate="{StaticResource TextItemTemplate}" Margin="0,0,14,0"
+                                      AutomationProperties.AutomationId="People" />
+                    </ScrollViewer>
+                    <ScrollViewer Grid.Row="1" Style="{StaticResource PanelScrollViewerStyle}" Visibility="{d:Binding TimelineVisibility}">
+                        <ItemsControl ItemsSource="{d:Binding TimelineItems}" ItemTemplate="{StaticResource TextItemTemplate}" Margin="0,0,14,0"
+                                      AutomationProperties.AutomationId="Timeline" />
+                    </ScrollViewer>
+                    <Button Grid.Row="2" HorizontalAlignment="Center" Content="BACK" Style="{StaticResource DecoButtonStyle}"
+                            AutomationProperties.AutomationId="HistoryBack" Command="{d:Binding BackCommand}" />
+                </Grid>
+            </ContentControl>
+        </Grid>
+
+        <!-- ===================================== CREDITS ===================================== -->
+        <Grid Visibility="{d:Binding CreditsVisibility}" Background="{StaticResource NightBrush}" AutomationProperties.AutomationId="CreditsPane">
+            <ContentControl Style="{StaticResource DecoPanelStyle}" MaxWidth="1000" MaxHeight="760" Margin="30">
+                <Grid RowSpacing="14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="CREDITS" Style="{StaticResource DecoHeadingStyle}" />
+                        <Image Source="{d:Binding DividerImage}" Height="12" Stretch="Fill" Margin="160,0" />
+                    </StackPanel>
+                    <ScrollViewer Grid.Row="1" Style="{StaticResource PanelScrollViewerStyle}">
+                        <StackPanel Spacing="16" Margin="0,0,14,0">
+                            <Border BorderBrush="{StaticResource GoldBrush}" BorderThickness="1.2" Padding="20,16">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="{d:Binding HeritageTitle}" AutomationProperties.AutomationId="HeritageTitle" FontFamily="{StaticResource MerriweatherBoldFont}" FontWeight="Bold"
+                                               FontSize="17" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{d:Binding HeritageFirstParagraph}" Style="{StaticResource BodyTextStyle}" AutomationProperties.AutomationId="HeritageFirst" />
+                                    <TextBlock Text="{d:Binding HeritageSecondParagraph}" Style="{StaticResource BodyTextStyle}" AutomationProperties.AutomationId="HeritageSecond" />
+                                </StackPanel>
+                            </Border>
+                            <ItemsControl ItemsSource="{d:Binding CreditItems}" ItemTemplate="{StaticResource TextItemTemplate}" AutomationProperties.AutomationId="CreditItems" />
+                        </StackPanel>
+                    </ScrollViewer>
+                    <Button Grid.Row="2" HorizontalAlignment="Center" Content="BACK" Style="{StaticResource DecoButtonStyle}"
+                            AutomationProperties.AutomationId="CreditsBack" Command="{d:Binding BackCommand}" />
+                </Grid>
+            </ContentControl>
+        </Grid>
+
+        <!-- ===================================== THE FIELD JOURNAL (over the table) ===================================== -->
+        <Grid Visibility="{d:Binding JournalVisibility}" Background="{StaticResource ScrimBrush}" AutomationProperties.AutomationId="JournalPane">
+            <ContentControl Style="{StaticResource DecoPanelStyle}" Width="620" HorizontalAlignment="Right" Margin="20">
+                <Grid RowSpacing="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="THE FIELD JOURNAL" Style="{StaticResource DecoHeadingStyle}" FontSize="19" />
+                    <Grid Grid.Row="1">
+                        <TextBlock Text="{d:Binding JournalCountText}" Style="{StaticResource CaptionTextStyle}" VerticalAlignment="Center"
+                                   AutomationProperties.AutomationId="JournalCount" />
+                        <ComboBox Width="200" HorizontalAlignment="Right" AutomationProperties.AutomationId="JournalFilter"
+                                  ItemsSource="{d:Binding JournalFilterOptions}" SelectedItem="{d:Binding JournalFilter, Mode=TwoWay}" />
+                    </Grid>
+                    <ScrollViewer Grid.Row="2" Style="{StaticResource PanelScrollViewerStyle}">
+                        <ItemsControl ItemsSource="{d:Binding JournalItems}" ItemTemplate="{StaticResource JournalItemTemplate}" Margin="0,0,14,0"
+                                      AutomationProperties.AutomationId="JournalEntries" />
+                    </ScrollViewer>
+                    <TextBlock Grid.Row="3" Text="{d:Binding JournalStatus}" Style="{StaticResource CaptionTextStyle}" AutomationProperties.AutomationId="JournalStatus" />
+                    <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                        <Button Content="EXPORT PDF" Style="{StaticResource DecoPrimaryButtonStyle}" AutomationProperties.AutomationId="ExportJournal" Command="{d:Binding ExportJournalCommand}" />
+                        <Button Content="OPEN FOLDER" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="OpenJournalFolder" Command="{d:Binding OpenJournalFolderCommand}" />
+                        <Button Content="CLOSE" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="CloseJournal" Command="{d:Binding CloseJournalCommand}" />
+                    </StackPanel>
+                </Grid>
+            </ContentControl>
+        </Grid>
+
+        <!-- ===================================== SETTINGS ===================================== -->
+        <Grid Visibility="{d:Binding SettingsVisibility}" Background="{StaticResource ScrimBrush}" AutomationProperties.AutomationId="SettingsPane">
+            <ContentControl Style="{StaticResource DecoPanelStyle}" Width="480" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="SETTINGS" Style="{StaticResource DecoHeadingStyle}" />
+                    <Image Source="{d:Binding DividerImage}" Height="10" Stretch="Fill" Margin="60,0" />
+                    <ToggleSwitch Header="Card and dice sounds" OnContent="ON" OffContent="OFF" Foreground="{StaticResource LimestoneBrush}"
+                                  AutomationProperties.AutomationId="SoundEnabled" IsOn="{d:Binding SoundEnabled, Mode=TwoWay}" />
+                    <ToggleSwitch Header="Reduced motion" OnContent="ON" OffContent="OFF" Foreground="{StaticResource LimestoneBrush}"
+                                  AutomationProperties.AutomationId="ReducedMotion" IsOn="{d:Binding ReducedMotion, Mode=TwoWay}" />
+                    <ToggleSwitch Header="Show the computer teams' discoveries" OnContent="ON" OffContent="OFF" Foreground="{StaticResource LimestoneBrush}"
+                                  AutomationProperties.AutomationId="RevealComputerDiscoveries" IsOn="{d:Binding RevealComputerDiscoveries, Mode=TwoWay}" />
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="ANIMATION SPEED" Style="{StaticResource DecoLabelStyle}" />
+                        <ComboBox Width="160" AutomationProperties.AutomationId="AnimationSpeed"
+                                  ItemsSource="{d:Binding SpeedOptions}" SelectedItem="{d:Binding SelectedSpeed, Mode=TwoWay}" />
+                    </StackPanel>
+                    <Button Content="CLOSE" HorizontalAlignment="Center" Style="{StaticResource DecoButtonStyle}"
+                            AutomationProperties.AutomationId="CloseSettings" Command="{d:Binding CloseSettingsCommand}" />
+                </StackPanel>
+            </ContentControl>
+        </Grid>
+
+        <!-- ===================================== THE GALLERY of the game's art ===================================== -->
+        <Grid Visibility="{d:Binding GalleryVisibility}" Background="{StaticResource NightBrush}" AutomationProperties.AutomationId="GalleryPane">
+            <ContentControl Style="{StaticResource DecoPanelStyle}" MaxWidth="1240" Margin="20">
+                <Grid RowSpacing="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="THE GALLERY" Style="{StaticResource DecoHeadingStyle}" />
+                        <Image Source="{d:Binding DividerImage}" Height="10" Stretch="Fill" Margin="220,0" />
+                    </StackPanel>
+                    <Grid Grid.Row="1">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="CATEGORY" Style="{StaticResource DecoLabelStyle}" VerticalAlignment="Center" />
+                            <ComboBox Width="200" AutomationProperties.AutomationId="GalleryCategory"
+                                      ItemsSource="{d:Binding GalleryCategories}" SelectedItem="{d:Binding GalleryCategory, Mode=TwoWay}" />
+                        </StackPanel>
+                        <TextBlock Text="{d:Binding GalleryPageText}" Style="{StaticResource CaptionTextStyle}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   AutomationProperties.AutomationId="GalleryPageText" />
+                    </Grid>
+                    <ScrollViewer Grid.Row="2" Style="{StaticResource PanelScrollViewerStyle}">
+                        <ItemsControl ItemsSource="{d:Binding GalleryItems}" ItemTemplate="{StaticResource GalleryItemTemplate}"
+                                      AutomationProperties.AutomationId="GalleryItems" HorizontalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VariableSizedWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="8" ItemWidth="148" ItemHeight="178" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                        <Button Content="PREVIOUS" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="GalleryPrevious" Command="{d:Binding PreviousGalleryPageCommand}" />
+                        <Button Content="NEXT" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="GalleryNext" Command="{d:Binding NextGalleryPageCommand}" />
+                        <Button Content="CLOSE" Style="{StaticResource DecoButtonStyle}" AutomationProperties.AutomationId="CloseGallery" Command="{d:Binding CloseGalleryCommand}" />
+                    </StackPanel>
+                </Grid>
+            </ContentControl>
+
+            <!-- One picture large, with its header's title, subject and sources and the art's license -->
+            <Grid Visibility="{d:Binding GalleryLargeVisibility}" Background="{StaticResource ScrimBrush}" AutomationProperties.AutomationId="GalleryLarge">
+                <ContentControl Style="{StaticResource DecoPanelStyle}" MaxWidth="1100" Margin="40">
+                    <Grid ColumnSpacing="28">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="340" />
+                        </Grid.ColumnDefinitions>
+                        <Border Background="#22EDE6D6" BorderBrush="{StaticResource GoldHairlineBrush}" BorderThickness="1" Padding="10">
+                            <Image Source="{d:Binding GalleryLargeImage}" Stretch="Uniform" AutomationProperties.AutomationId="GalleryLargeImage" />
+                        </Border>
+                        <Grid Grid.Column="1" RowSpacing="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <ScrollViewer Style="{StaticResource PanelScrollViewerStyle}">
+                                <StackPanel Spacing="10" Margin="0,0,10,0">
+                                    <TextBlock Text="{d:Binding GalleryLargeTitle}" FontFamily="{StaticResource MerriweatherBoldFont}" FontWeight="Bold" FontSize="18"
+                                               Foreground="{StaticResource GoldBrush}" TextWrapping="Wrap" AutomationProperties.AutomationId="GalleryLargeTitle" />
+                                    <TextBlock Text="{d:Binding GalleryLargeKey}" Style="{StaticResource CaptionTextStyle}" />
+                                    <TextBlock Text="{d:Binding GalleryLargeSubject}" Style="{StaticResource BodyTextStyle}" AutomationProperties.AutomationId="GalleryLargeSubject" />
+                                    <TextBlock Text="SOURCES" Style="{StaticResource DecoLabelStyle}" />
+                                    <TextBlock Text="{d:Binding GalleryLargeSources}" Style="{StaticResource CaptionTextStyle}" AutomationProperties.AutomationId="GalleryLargeSources" />
+                                    <TextBlock Text="LICENSE" Style="{StaticResource DecoLabelStyle}" />
+                                    <TextBlock Text="{d:Binding GalleryLicense}" Style="{StaticResource CaptionTextStyle}" AutomationProperties.AutomationId="GalleryLicense" />
+                                </StackPanel>
+                            </ScrollViewer>
+                            <Button Grid.Row="1" Content="BACK TO THE GALLERY" HorizontalAlignment="Center" Style="{StaticResource DecoButtonStyle}"
+                                    AutomationProperties.AutomationId="CloseGalleryLarge" Command="{d:Binding CloseGalleryLargeCommand}" />
+                        </Grid>
+                    </Grid>
+                </ContentControl>
+            </Grid>
+        </Grid>
+
+        <!-- ===================================== THE INSPECTOR: a page of the Warka Herald ===================================== -->
+        <Grid Visibility="{d:Binding InspectorVisibility}" Background="{StaticResource ScrimBrush}" AutomationProperties.AutomationId="InspectorPane">
+            <Border x:Name="Newspaper" Background="{StaticResource PaperBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="2.5"
+                    MaxWidth="1080" MaxHeight="760" Margin="24" Padding="26,16,26,14"
+                    PointerEntered="OnNewspaperPointerEntered" PointerExited="OnNewspaperPointerExited">
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="NewspaperSlide" />
+                </Border.RenderTransform>
+                <Grid RowSpacing="6">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Masthead, edition line, headline -->
+                    <Grid>
+                        <StackPanel Spacing="4">
+                            <Image Source="{d:Binding MastheadImage}" Height="54" Stretch="Uniform" Visibility="{d:Binding MastheadVisibility}"
+                                   AutomationProperties.AutomationId="InspectorMasthead" />
+                            <Image Source="{d:Binding LearnedSocietyImage}" Height="54" Stretch="Uniform" Visibility="{d:Binding LearnedSocietyVisibility}" />
+                            <Rectangle Height="2" Fill="{StaticResource InkBrush}" />
+                            <Grid>
+                                <TextBlock Text="{d:Binding EditionLine}" Style="{StaticResource NewsBoxHeadingStyle}" Foreground="{StaticResource MosaicRedBrush}" HorizontalAlignment="Left"
+                                           AutomationProperties.AutomationId="InspectorEdition" />
+                                <TextBlock Text="{d:Binding InspectorDateline}" Style="{StaticResource NewsBoxHeadingStyle}" Foreground="{StaticResource InkBrush}" HorizontalAlignment="Right"
+                                           AutomationProperties.AutomationId="InspectorDateline" />
+                            </Grid>
+                            <Rectangle Height="0.8" Fill="{StaticResource InkBrush}" />
+                            <TextBlock Text="{d:Binding InspectorHeadline}" Style="{StaticResource NewsHeadlineStyle}" Margin="80,4,80,0"
+                                       AutomationProperties.AutomationId="InspectorHeadline" />
+                            <TextBlock Text="{d:Binding InspectorSubHead}" Style="{StaticResource NewsSmallStyle}" FontSize="14" TextAlignment="Center" HorizontalAlignment="Center" Margin="60,0" />
+                        </StackPanel>
+                        <Image Source="{d:Binding ExtraBadgeImage}" Width="92" Height="92" HorizontalAlignment="Right" VerticalAlignment="Top"
+                               Visibility="{d:Binding ExtraVisibility}" AutomationProperties.AutomationId="InspectorExtra" />
+                    </Grid>
+
+                    <Grid Grid.Row="1">
+                        <TextBlock Text="{d:Binding InspectorByline}" Style="{StaticResource NewsSmallStyle}" HorizontalAlignment="Left" />
+                        <TextBlock Text="{d:Binding InspectorKindLabel}" Style="{StaticResource NewsSmallStyle}" HorizontalAlignment="Right" />
+                    </Grid>
+
+                    <!-- Photograph | two columns | sidebars -->
+                    <Grid Grid.Row="2" ColumnSpacing="18">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="290" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="250" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="6">
+                            <Border BorderBrush="{StaticResource InkBrush}" BorderThickness="3" Background="{StaticResource PaperShadeBrush}" Padding="6" Height="300">
+                                <Border BorderBrush="{StaticResource InkBrush}" BorderThickness="0.6">
+                                    <Image Source="{d:Binding InspectorPhoto}" Stretch="Uniform" Margin="4" AutomationProperties.AutomationId="InspectorPhoto" />
+                                </Border>
+                            </Border>
+                            <TextBlock Text="{d:Binding InspectorCaption}" Style="{StaticResource NewsSmallStyle}" TextAlignment="Center" />
+                            <TextBlock Text="{d:Binding InspectorTitle}" Style="{StaticResource NewsTextStyle}" FontFamily="{StaticResource MerriweatherBoldFont}"
+                                       FontWeight="Bold" TextAlignment="Center" AutomationProperties.AutomationId="InspectorTitle" />
+                            <TextBlock Text="{d:Binding InspectorPeriod}" Style="{StaticResource NewsSmallStyle}" TextAlignment="Center" />
+                            <TextBlock Text="{d:Binding InspectorCuneiform}" Style="{StaticResource NewsSmallStyle}" TextAlignment="Center"
+                                       Foreground="{StaticResource GoldDeepBrush}" Visibility="{d:Binding CuneiformVisibility}" />
+                        </StackPanel>
+                        <ScrollViewer Grid.Column="1" Style="{StaticResource PanelScrollViewerStyle}">
+                            <Grid ColumnSpacing="16" Margin="0,0,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{d:Binding InspectorColumnOne}" Style="{StaticResource NewsTextStyle}" AutomationProperties.AutomationId="InspectorColumnOne" />
+                                <StackPanel Grid.Column="1" Spacing="10">
+                                    <TextBlock Text="{d:Binding InspectorColumnTwo}" Style="{StaticResource NewsTextStyle}" AutomationProperties.AutomationId="InspectorColumnTwo" />
+                                    <TextBlock Text="{d:Binding InspectorQuote}" Style="{StaticResource NewsSmallStyle}" FontSize="12" Visibility="{d:Binding QuoteVisibility}" />
+                                </StackPanel>
+                            </Grid>
+                        </ScrollViewer>
+                        <ScrollViewer Grid.Column="2" Style="{StaticResource PanelScrollViewerStyle}">
+                            <StackPanel Spacing="10" Margin="0,0,8,0">
+                                <Image Source="{d:Binding NoticeImage}" Height="46" Stretch="Uniform" Visibility="{d:Binding NoticeVisibility}" />
+                                <Border BorderBrush="{StaticResource InkBrush}" BorderThickness="1.4" Visibility="{d:Binding RecordVisibility}">
+                                    <StackPanel>
+                                        <Border Background="{StaticResource NightBrush}" Padding="4,3">
+                                            <TextBlock Text="WHERE IT IS NOW" Style="{StaticResource NewsBoxHeadingStyle}" />
+                                        </Border>
+                                        <TextBlock Text="{d:Binding InspectorWhereNow}" Style="{StaticResource NewsTextStyle}" FontSize="11.5" LineHeight="16" Margin="8,6"
+                                                   AutomationProperties.AutomationId="InspectorWhereNow" />
+                                    </StackPanel>
+                                </Border>
+                                <Border BorderBrush="{StaticResource InkBrush}" BorderThickness="1.4">
+                                    <StackPanel>
+                                        <Border Background="{StaticResource NightBrush}" Padding="4,3">
+                                            <TextBlock Text="THE RECORD" Style="{StaticResource NewsBoxHeadingStyle}" />
+                                        </Border>
+                                        <ItemsControl ItemsSource="{d:Binding InspectorFacts}" ItemTemplate="{StaticResource FactTemplate}" Margin="8,6"
+                                                      AutomationProperties.AutomationId="InspectorFacts" />
+                                        <TextBlock Text="SOURCES" FontFamily="{StaticResource MerriweatherBoldFont}" FontWeight="Bold" FontSize="9.5"
+                                                   CharacterSpacing="120" Foreground="{StaticResource InkBrush}" Margin="8,0" />
+                                        <TextBlock Text="{d:Binding InspectorSources}" Style="{StaticResource NewsSmallStyle}" FontSize="9.5" Margin="8,2,8,8" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <Button Grid.Row="3" HorizontalAlignment="Center" Content="CLOSE" Style="{StaticResource NewsButtonStyle}"
+                            AutomationProperties.AutomationId="CloseInspector" Command="{d:Binding CloseInspectorCommand}" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Page>

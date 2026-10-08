@@ -1,0 +1,14 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Human Player
+  Subject: Interface icon for a human player seat: a head-and-shoulders silhouette.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<circle cx="200" cy="128" r="66" fill="#E8C597" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 66,360 C 66,258 128,220 200,220 C 272,220 334,258 334,360 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

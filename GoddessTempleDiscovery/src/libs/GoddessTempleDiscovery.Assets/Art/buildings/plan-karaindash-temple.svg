@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Plan of the Temple of Karaindash
+  Subject: Schematic ground plan of the Kassite temple of Karaindash (17.2 by 22.4 m), north up: stepped corner piers, the ante-cella at the entrance, the long cella with the cult place at its far end, corridors round the cella, and the deep niches of the relief facade.
+  Sources consulted: temple_buildings/five/05_Karaindash_Temple/COMPREHENSIVE_BUILDING_OVERVIEW.txt; images/temple_buildings/five/05_Karaindash_Temple/endbericht17-part2-abb198_karaindash-vs-gareus-proportions; scale bar = 10 m
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="sky" stroke-linejoin="round" stroke-linecap="round">
+<rect x="0" y="0" width="400" height="400" fill="#EFE3C8" stroke="none"/>
+</g>
+<g id="walls" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="219.8,34 247.2,61.4 239.6,69 331,160.4 338.6,152.8 366,180.2 338.6,207.6 331,200 200,331 207.6,338.6 180.2,366 152.8,338.6 160.4,331 69,239.6 61.4,247.2 34,219.8 61.4,192.4 69,200 200,69 192.4,61.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3"/>
+</g>
+<g id="niches" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="177.9,91.1 183.2,96.4 166.5,113.2 161.2,107.9" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="303.6,216.8 308.9,222.1 292.1,238.8 286.8,233.5" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="151.3,117.8 156.6,123.1 139.8,139.8 134.5,134.5" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="276.9,243.4 282.2,248.7 265.5,265.5 260.2,260.2" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="124.6,144.4 129.9,149.7 113.2,166.5 107.9,161.2" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="250.3,270.1 255.6,275.4 238.8,292.1 233.5,286.8" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="98,171.1 103.3,176.4 86.5,193.1 81.2,187.8" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="223.6,296.7 228.9,302 212.2,318.8 206.9,313.5" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="86.5,246.4 101.8,261.7 96.4,267 81.2,251.8" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="138.3,298.2 153.6,313.5 148.2,318.8 133,303.6" fill="#E8C597" stroke="#1E1A17" stroke-width="1.2"/>
+</g>
+<g id="rooms" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="232,91.9 308.1,168 280.7,195.4 204.6,119.3" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="204.6,140.6 259.4,195.4 168,286.8 113.2,232" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="155.8,222.8 177.2,244.2 157.4,264 136,242.6" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="181.7,117.8 193.9,129.9 91.9,232 79.7,219.8" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="270.1,206.1 282.2,218.3 180.2,320.3 168,308.1" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="79.7,219.8 180.2,320.3 178.7,321.8 78.2,221.3" fill="#E8C597" stroke="none"/>
+<polyline points="79.7,219.8 78.2,221.3" fill="none" stroke="#1E1A17" stroke-width="1"/>
+</g>
+<g id="doors" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="276.1,105.6 294.4,123.9 279.2,139.1 260.9,120.8" fill="#E8C597" stroke="none"/>
+<polyline points="276.1,105.6 260.9,120.8" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="294.4,123.9 279.2,139.1" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="235,149.7 250.3,165 239.6,175.6 224.4,160.4" fill="#E8C597" stroke="none"/>
+<polyline points="235,149.7 224.4,160.4" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="250.3,165 239.6,175.6" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+</g>
+<g id="north-arrow" stroke-linejoin="round" stroke-linecap="round">
+<polyline points="46,92 46,44" fill="none" stroke="#1E1A17" stroke-width="3"/>
+<polygon points="46,24 57,50 46,44 35,50" fill="#1E1A17" stroke="#1E1A17" stroke-width="2"/>
+</g>
+<g id="scale-bar" stroke-linejoin="round" stroke-linecap="round">
+<polyline points="28,374 135.7,374" fill="none" stroke="#1E1A17" stroke-width="3"/>
+<polyline points="28,367 28,381" fill="none" stroke="#1E1A17" stroke-width="3"/>
+<polyline points="81.8,367 81.8,374" fill="none" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="135.7,367 135.7,381" fill="none" stroke="#1E1A17" stroke-width="3"/>
+</g>
+</svg>

@@ -25,8 +25,9 @@ in; every command predicate and every caption derived from a few counts
 recomputed in one place; a status line kept from being overwritten by the
 general guidance; service fields holding working objects before the container
 is ever asked; a document composed in full before the save dialog is shown;
-and a view model with no bindings at all that builds a game host's seams and
-closes the application when the game asks to quit. Reach for this file when
+a view model with no bindings at all that builds a game host's seams and
+closes the application when the game asks to quit; and a newspaper-style page
+opened over a game canvas through a bridge the view model implements. Reach for this file when
 you are deciding what belongs on a view model
 rather than in a page, or when bound state has to survive background work, a
 slow service, or a user clicking faster than the application can answer.
@@ -106,6 +107,7 @@ conventions the code blocks follow.
 - [Initialize service fields to working defaults before the container replaces them](#initialize-service-fields-to-working-defaults-before-the-container-replaces-them)
 - [Compose the document before asking where to save it](#compose-the-document-before-asking-where-to-save-it)
 - [Build a game host's seams in the view model and close the application from its quit event](#build-a-game-hosts-seams-in-the-view-model-and-close-the-application-from-its-quit-event)
+- [Open a newspaper-style inspector over a game canvas through a bridge the view model implements](#open-a-newspaper-style-inspector-over-a-game-canvas-through-a-bridge-the-view-model-implements)
 
 ## Related blueprints
 
@@ -136,13 +138,6 @@ reads carries `[AffectsCommands(...)]` naming the commands it gates, so
 
 ```csharp
 // From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.Core/ViewModels/MainViewModel.cs
-[AffectsCommands(nameof(TakePhotoCommand))]
-public bool HasFrame
-{
-    get;
-    private set => SetProperty(ref field, value);
-}
-
 public CameraDevice SelectedCamera
 {
     get;
@@ -155,7 +150,14 @@ public CameraDevice SelectedCamera
         }
     }
 }
-
+// ...
+[AffectsCommands(nameof(TakePhotoCommand))]
+public bool HasFrame
+{
+    get;
+    private set => SetProperty(ref field, value);
+}
+// ...
 public string StatusText
 {
     get;
@@ -177,9 +179,15 @@ private async Task DoTakePhoto()
     // ...
 }
 
+#endregion
+
+#region SelectColorCommand
+
 private SimpleCommand _selectColorCommand;
 public SimpleCommand SelectColorCommand =>
     (_selectColorCommand ??= new SimpleCommand(CanSelectColor, (Action<object>)DoSelectColor));
+
+private bool CanSelectColor() => (!IsBusy) && IsPaintMode;
 
 private void DoSelectColor(object parameter)
 {
@@ -298,11 +306,20 @@ properties of its own.
         private set => SetProperty(ref field, value);
     }
 
+    #endregion
+
+    #region | Commands and their implementations |
+
+    /// <summary>Main Up: both documents to their previous page.</summary>
+    public SimpleCommand PreviousPageCommand => field ??=
+        new SimpleCommand(() => !IsBusy && _comparison.CanMoveBothPrevious,
+            (Func<Task>)(() => StepAsync(_comparison.MoveBothPrevious, renderLeft: true)));
+
     /// <summary>Main Down: both documents to their next page.</summary>
     public SimpleCommand NextPageCommand => field ??=
         new SimpleCommand(() => !IsBusy && _comparison.CanMoveBothNext,
             (Func<Task>)(() => StepAsync(_comparison.MoveBothNext, renderLeft: true)));
-
+    // ...
     //Tell the page the view (zoom/pan/page) moved and refresh every button that depends on it
     private void ViewChanged()
     {
@@ -469,10 +486,14 @@ public AssetCellViewModel(string title, AssetCellKind kind, string kindLabel, st
 /// </summary>
 public SimpleCommand OpenCommand => field ??=
     new SimpleCommand((Func<object, Task>)(_ => _openAsync(this)));
-
+// ...
 /// <summary>The placeholder glyph's visibility (shown until a thumbnail arrives, or always for kinds without one).</summary>
 public Visibility PlaceholderVisibility => _thumbnail == null ? Visibility.Visible : Visibility.Collapsed;
 
+/// <summary>
+/// Fetches the cell's thumbnail from the bundle archive and hands it to the Image
+/// control. Failures leave the placeholder glyph showing.
+/// </summary>
 public async Task LoadThumbnailAsync()
 {
     if (_thumbnail != null || _thumbnailFailed || _thumbnailBytesAsync == null) { return; }
@@ -596,6 +617,9 @@ where design-time values come from.
 [Microsoft.UI.Xaml.Data.Bindable]
 public class MainViewModel : SimpleViewModel
 {
+    private const string DefaultMediaAddress =
+        "https://mdn.github.io/learning-area/html/multimedia-and-embedding/video-and-audio-content/rabbit320.mp4";
+
     //The application's configured logger factory, which the heads set up in App.InitializeLogging().
     //  NullLogger covers the design-mode path, where the constructor returns before this is assigned.
     private ILogger _log = NullLogger.Instance;
@@ -678,14 +702,16 @@ public bool IsCatalogLoading
     private set => SetProperty(ref field, value);
 } = true;
 
+/// <summary>The visibility of the initial catalog-loading indicator.</summary>
 public Visibility CatalogLoadingVisibility => IsCatalogLoading ? Visibility.Visible : Visibility.Collapsed;
 
+/// <summary>The status line shown while the catalog loads (or when it fails).</summary>
 public string CatalogStatusText
 {
     get;
     private set => SetProperty(ref field, value);
 } = "Loading the Poly Haven model catalog…";
-
+// ...
 private async Task LoadCatalogAsync()
 {
     try
@@ -817,7 +843,7 @@ reads the process arguments itself.
     /// </summary>
     private async Task OpenStartupDocumentsAsync()
     {
-        var arguments = Environment.GetCommandLineArgs();
+        var arguments = GetService<IStartupArguments>()?.GetCommandLineArgs() ?? Environment.GetCommandLineArgs();
         if (arguments.Length < 3) { return; }
 
         IsBusy = true;
@@ -937,10 +963,13 @@ and only when it actually changed.
 // From CodeBrix.Samples/WebcamPainter/src/WebcamPainter.Core/ViewModels/MainViewModel.cs
 private void OnFrameArrived(object sender, EventArgs e)
 {
-    //Capture-thread context: get out fast
+    //Capture-thread context: get out fast. Dispose nulls the field, so work from a local.
+    var source = _captureService;
+    if (source == null) { return; }
+
     if (!HasFrame)
     {
-        InvokeOnMainThread(() => HasFrame = _captureService.HasFrame);
+        InvokeOnMainThread(() => HasFrame = source.HasFrame);
     }
 
     if (IsCaptureMode)
@@ -952,7 +981,7 @@ private void OnFrameArrived(object sender, EventArgs e)
         //Paint Mode: the live feed drives the hand tracker and the little self-view
         var tracker = _tracker;
         if (tracker is { IsRunning: true }
-            && _captureService.TryCopyLatestFrame(ref _visionFrame, out var width, out var height))
+            && source.TryCopyLatestFrame(ref _visionFrame, out var width, out var height))
         {
             tracker.SubmitFrame(_visionFrame, width, height);
         }
@@ -1002,13 +1031,18 @@ private void OnTrackingUpdated(object sender, PalmTrackingEventArgs e)
     if (openCount != _reportedOpenPalmCount)
     {
         _reportedOpenPalmCount = openCount;
-        InvokeOnMainThread(() => StatusText = openCount switch
+        InvokeOnMainThread(() =>
         {
+            //Back may have run since this frame was analyzed: its status line stands
+            if (IsCameraMode) { return; }
+            StatusText = openCount switch
+            {
             0 => "Show the camera your open palm - the colors will gather toward it.",
             1 => "The colors are chasing your open palm - close your hand to set them free.",
             _ => $"The colors are chasing {openCount} open palms - close your hands to set them free.",
-        });
-    }
+        };
+    });
+}
 }
 ```
 
@@ -1052,6 +1086,7 @@ public SimpleCommand RunCommand => field ??= new SimpleCommand(
     () => !IsRunning && Source is not null && SelectedDestination is not null,
     (Func<object, Task>)(_ => RunAsync()));
 
+/// <summary>Stops the conversion that is under way.</summary>
 public SimpleCommand CancelCommand => field ??= new SimpleCommand(
     () => IsRunning && !IsCancelling, _ => DoCancel());
 
@@ -1127,11 +1162,11 @@ private async Task DoCreate()
         IsBusy = true;
         ProgressValue = 0;
         // ...
-        var progress = new Progress<CreateProgress>(p => InvokeOnMainThread(() =>
+        var progress = new Progress<CreateProgress>(p =>
         {
             StatusText = p.Message;
             ProgressValue = p.PercentComplete;
-        }));
+        });
 
         var result = await _documentSvc.CreateDocumentAsync(request, progress);
 
@@ -1301,6 +1336,9 @@ private async Task DoSearch()
                 _searchCts = null;
                 IsSearching = false;
                 IsCancelling = false;
+                RefreshHeader();
+                RefreshResultVisibility();
+                StartQuotaRecovery();
             }
 
             cancellation.Dispose();
@@ -1318,6 +1356,7 @@ collection:
 //bound collections. A repository new to this search then arrives on screen with its rows
 //already in it: a group inserted empty and filled a moment later can be measured while it
 //is still empty and draws as a bare header until something else forces a fresh layout.
+// ...
 foreach (var repository in order)
 {
     var rows = rowsByRepository[repository];
@@ -1413,6 +1452,12 @@ public sealed record SearchProgress(
     RateLimitSnapshot Search,
     RateLimitSnapshot Core)
 {
+    /// <summary>
+    /// Renders this report as the one-line status sentence, for example
+    /// "Fetched 300 of 1,240 · page 4". The completed sentence carries the item count only;
+    /// the repository count and the elapsed time belong to the caller, which knows both.
+    /// </summary>
+    /// <returns>The status sentence for the current phase.</returns>
     public override string ToString()
     {
         switch (Phase)
@@ -1429,6 +1474,7 @@ public sealed record SearchProgress(
             // ... one case per remaining phase ...
         }
     }
+    // ...
 }
 ```
 
@@ -1557,6 +1603,7 @@ public sealed class ConversionProgress
     // ...
     public bool IsIndeterminate => StagePercent is null;
 
+    /// <summary>How far through the whole conversion, from 0 to 100.</summary>
     /// <remarks>
     /// A stage with no percentage of its own counts as half-done, so the bar still moves forward
     /// when one finishes rather than sitting still until the last stage starts.
@@ -1571,6 +1618,8 @@ public sealed class ConversionProgress
         }
     }
 
+    /// <summary>A line for the status bar.</summary>
+    /// <returns>The stage, its number, and its percentage when there is one.</returns>
     public override string ToString() => StagePercent is null
         ? $"{Stage} ({StageNumber} of {StageCount})"
         : $"{Stage} ({StageNumber} of {StageCount}) - {StagePercent:F0}%";
@@ -1647,6 +1696,7 @@ private async Task CreateDocumentAsync()
     {
         // ... stages 1-4, then: ...
         await Task.Run(() => new MarketingSheetCreator().CreateToFile(request, outputPath));
+
         DocumentStatusText = $"Saved: {outputPath}";
         saved = true;
     }
@@ -1948,7 +1998,7 @@ public string SearchText
         _ = DebounceRebuildAsync();
     }
 } = string.Empty;
-
+// ...
 //Waits a beat after the last keystroke before rebuilding, so typing stays smooth. It
 //returns a Task rather than being `async void`, so a failure is captured in the task
 //instead of escaping onto the UI thread from a property setter.
@@ -2037,6 +2087,7 @@ public class AssetCellCollection : ObservableCollection<AssetCellViewModel>
 
     private readonly IReadOnlyList<AssetCellViewModel> _source;
 
+    /// <summary>Creates the collection over an already filtered and ordered cell list.</summary>
     public AssetCellCollection(IReadOnlyList<AssetCellViewModel> source)
     {
         _source = source ?? throw new ArgumentNullException(nameof(source));
@@ -2044,9 +2095,18 @@ public class AssetCellCollection : ObservableCollection<AssetCellViewModel>
         RequestMore(InitialBatch);
     }
 
+    /// <summary>The total number of assets behind the collection (materialized or not).</summary>
     public int TotalCount => _source.Count;
+
+    /// <summary>Whether assets remain that are not showing in the grid yet.</summary>
     public bool HasMoreItems => Count < _source.Count;
 
+    /// <summary>
+    /// Materializes up to <c>count</c> further cells (each one starts fetching its
+    /// thumbnail as it appears). Safe to call repeatedly; extra calls simply no-op once
+    /// every asset is showing.
+    /// </summary>
+    /// <param name="count">The maximum number of cells to add.</param>
     public void RequestMore(int count)
     {
         var toLoad = Math.Min(count, _source.Count - Count);
@@ -2208,14 +2268,25 @@ sets it keeps every notification in one place:
 ```csharp
 // From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/MainViewModel.cs
 private enum ViewerMode { None, Image, Model, Text, Audio }
-
+// ...
 public Visibility ImageViewerVisibility => _viewerMode == ViewerMode.Image ? Visibility.Visible : Visibility.Collapsed;
-public Visibility ModelViewerVisibility => _viewerMode == ViewerMode.Model ? Visibility.Visible : Visibility.Collapsed;
-public Visibility TextViewerVisibility => _viewerMode == ViewerMode.Text ? Visibility.Visible : Visibility.Collapsed;
-public Visibility NoPreviewVisibility => _viewerMode == ViewerMode.None ? Visibility.Visible : Visibility.Collapsed;
-public Visibility AudioViewerVisibility => _viewerMode == ViewerMode.Audio ? Visibility.Visible : Visibility.Collapsed;
-public Visibility ZoomBarVisibility => ImageViewerVisibility;
 
+/// <summary>The 3D model viewer's visibility.</summary>
+public Visibility ModelViewerVisibility => _viewerMode == ViewerMode.Model ? Visibility.Visible : Visibility.Collapsed;
+
+/// <summary>The text viewer's visibility.</summary>
+public Visibility TextViewerVisibility => _viewerMode == ViewerMode.Text ? Visibility.Visible : Visibility.Collapsed;
+
+/// <summary>The no-preview caption's visibility.</summary>
+public Visibility NoPreviewVisibility => _viewerMode == ViewerMode.None ? Visibility.Visible : Visibility.Collapsed;
+
+/// <summary>The audio player panel's visibility.</summary>
+public Visibility AudioViewerVisibility => _viewerMode == ViewerMode.Audio ? Visibility.Visible : Visibility.Collapsed;
+
+/// <summary>The zoom toolbar's visibility (2D viewer only).</summary>
+[AffectsCommands(nameof(ZoomInCommand), nameof(ZoomOutCommand), nameof(ZoomResetCommand))]
+public Visibility ZoomBarVisibility => ImageViewerVisibility;
+// ...
 private void SetViewerMode(ViewerMode mode, string hint, bool activateViewer = true)
 {
     _viewerMode = mode;
@@ -2301,7 +2372,7 @@ private NotionPageNodeViewModel()
 {
     IsPlaceholder = true;
 }
-
+// ...
 public bool IsExpanded
 {
     get;
@@ -2313,7 +2384,7 @@ public bool IsExpanded
         if (value) { BackgroundWork.StartAndObserve(EnsureChildrenLoadedAsync, ReportChildLoadFailure); }
     }
 }
-
+// ...
 /// <summary>Loads the real children on first expand (no-op afterwards).</summary>
 internal async System.Threading.Tasks.Task EnsureChildrenLoadedAsync()
 {
@@ -2338,8 +2409,13 @@ internal async Task LoadChildrenForNodeAsync(NotionPageNodeViewModel node)
     try
     {
         var children = await _documentSvc.LoadChildrenAsync(node.Id);
-        InvokeOnMainThread(() =>
-            node.SetChildren(children.Select(c => new NotionPageNodeViewModel(c, this))));
+        //Awaited, not just queued: "Load whole tree" walks the new children as soon as this
+        //  returns, so they have to be in place by then.
+        await InvokeOnMainThreadAsync(() =>
+        {
+            node.SetChildren(children.Select(c => new NotionPageNodeViewModel(c, this)));
+            return Task.FromResult(true);
+        });
     }
     catch (Exception e)
     {
@@ -2396,7 +2472,7 @@ private async Task DoClear()
         StatusText = "Cleared - paint something new.";
     }
 }
-
+// ...
 private async Task DoGoBack()
 {
     if (!CanGoBack()) { return; }
@@ -2505,6 +2581,7 @@ private enum SaveConfirmation
     Save,
     Discard,
     Cancel,
+    // ...
 }
 
 /// <summary>
@@ -2573,6 +2650,7 @@ public bool HasDownloadFolder => !string.IsNullOrWhiteSpace(_downloadFolder);
 /// <summary>The folder-picker button's caption: an invitation, or the chosen path.</summary>
 public string DownloadFolderLabel => HasDownloadFolder ? _downloadFolder : "Choose download folder…";
 
+/// <summary>Opens the folder picker to choose where models download to.</summary>
 public SimpleCommand PickFolderCommand => field ??=
     new SimpleCommand((Func<object, Task>)(_ => PickFolderAsync()));
 
@@ -2592,8 +2670,9 @@ private async Task PickFolderAsync()
     _downloadFolder = FileDialogHelper.ToFileSystemPath(folder.Path);
     NotifyPropertyChanged(nameof(HasDownloadFolder));
     NotifyPropertyChanged(nameof(DownloadFolderLabel));
+    // ...
 }
-
+// ...
 private async Task DownloadAsync(ModelCellViewModel cell)
 {
     if (cell == null || IsDownloading) { return; }
@@ -2658,7 +2737,7 @@ private void LoadMedia()
         StatusText = $"Cannot load '{MediaAddress}': {ex.Message}";
     }
 }
-
+// ...
 public string StatusText
 {
     get;
@@ -2711,6 +2790,7 @@ its own context sentence.
 // From CodeBrix.Samples/PdfSideBySide/src/libs/PdfSideBySide.PdfRender/Documents/DuplicateDocumentException.cs
 public sealed class DuplicateDocumentException : InvalidOperationException
 {
+    /// <summary>Creates the exception for filePath, which is already open as alreadyOpenSide.</summary>
     public DuplicateDocumentException(string filePath, DocumentSide alreadyOpenSide)
         : base($"“{Path.GetFileName(filePath)}” is already selected as " +
                $"{DescribeSide(alreadyOpenSide)}; choose a different PDF for " +
@@ -2746,8 +2826,13 @@ One exception type can serve a whole service layer:
 /// </summary>
 public class VideoToolProcessingException : Exception
 {
+    /// <summary>Creates the exception with a message.</summary>
+    /// <param name="message">What went wrong, in a sentence a person can act on.</param>
     public VideoToolProcessingException(string message) : base(message) { }
 
+    /// <summary>Creates the exception with a message and the failure underneath it.</summary>
+    /// <param name="message">What went wrong, in a sentence a person can act on.</param>
+    /// <param name="innerException">The failure this one is explaining.</param>
     public VideoToolProcessingException(string message, Exception innerException)
         : base(message, innerException) { }
 }
@@ -2815,17 +2900,27 @@ public MainViewModel()
     if (IsDesignMode(true)) { return; } //Leave as the first line of constructor
 
     probe = GetService<IMediaProbe>() ?? new MediaProbe();
+    toolCheck = GetService<IExternalToolCheck>() ?? new ExternalToolCheck();
 
     Playback = new PlaybackViewModel();
     Conversion = new ConversionViewModel();
     Conversion.ConversionFinished += OnConversionFinished;
+
+    //The conversion half's own status line - a cancelled save dialog, a refused plan, the plan
+    //while it runs - has no text block of its own, so it goes on the one status bar.
+    Conversion.PropertyChanged += OnConversionPropertyChanged;
 }
+
+#region | Bindable properties |
 
 /// <summary>The player half: what is open, the transport, the chapters and the captions.</summary>
 public PlaybackViewModel Playback { get; }
 
 /// <summary>The conversion half: the destination, the size, the action and the progress.</summary>
 public ConversionViewModel Conversion { get; }
+
+/// <summary>Every file this session has opened or produced, newest last.</summary>
+public ObservableCollection<SourceMediaInfo> Library { get; } = new();
 
 /// <summary>The file the player is showing and the conversion panel is set up for.</summary>
 [AffectsCommands(nameof(RemoveCommand))]
@@ -2875,6 +2970,8 @@ Two identical regions are the same idea with a scoped `DataContext`:
         LeftPane.PropertyChanged += OnPanePropertyChanged;
         RightPane.PropertyChanged += OnPanePropertyChanged;
     }
+
+    #region | Bindable properties |
 
     /// <summary>The left pane - Document 1.</summary>
     public DocumentPaneViewModel LeftPane { get; }
@@ -2956,7 +3053,7 @@ public QualityLevel SelectedQuality
         NotifyPropertyChanged(nameof(SelectedQuality));
     }
 } = QualityLevel.Good;
-
+// ...
 public double ProgressPercent
 {
     get;
@@ -3142,9 +3239,14 @@ public ChapterEntry SelectedChapter
         if (!suppressSelectionChanges && value is not null)
         {
             surface?.SeekToChapter(value.Index);
+            // ...
         }
+        // ...
     }
+    // ...
 }
+
+private void OnPlayStateChanged(object sender, EventArgs e) => RefreshPlayState();
 
 private void OnChapterChanged(object sender, EventArgs e)
 {
@@ -3227,6 +3329,7 @@ public RenderEngineKind SelectedRenderEngine
         //engine is unsupported or fails to initialize.
         SetEnumProperty(ref _selectedRenderEngine, value);
         _ = RunSwitchEngineAsync(value);
+    // ...
     }
 }
 
@@ -3447,10 +3550,16 @@ public static ConversionPlan Create(
 // From CodeBrix.Samples/CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Planning/ConversionPlan.cs
 public TargetAudioCodec AudioCodec => MediaFormats.AudioCodecFor(Destination);
 
+/// <summary>
+/// How many audio channels the destination is written with: the source's own count, capped at what
+/// this application writes to that destination. See <see cref="MediaFormats.AudioChannelsFor" />.
+/// </summary>
 public int AudioChannels => MediaFormats.AudioChannelsFor(Destination, Source.AudioChannels);
 
+/// <summary>True when the destination carries fewer audio channels than the source does.</summary>
 public bool DownmixesAudio => Source.HasAudio && AudioChannels < Source.AudioChannels;
 
+/// <summary>The video codec the destination is written with, chosen from the destination alone.</summary>
 public TargetVideoCodec VideoCodec => MediaFormats.VideoCodecFor(Destination);
 
 /// <summary>
@@ -3459,6 +3568,7 @@ public TargetVideoCodec VideoCodec => MediaFormats.VideoCodecFor(Destination);
 /// </summary>
 public bool RequiresMode2Extraction => Source.Format == MediaFormatKind.CodeBrixMode2;
 
+/// <summary>True when the size is being reduced rather than kept.</summary>
 public bool IsResized => Resolution is { IsOriginal: false };
 ```
 
@@ -3502,6 +3612,9 @@ private async Task DoShowOsInfo()
     sb.AppendLine($"Product name: {_osInfo.ProductName}");
     sb.AppendLine($"Product name (for display): {_osInfo.ProductNameDisplay}");
 
+    //Note that when running via CodeBrix.Platform on Android, the following lines will not be displayed - since
+    //  the SimpleDialog text is truncated on this platform - it must have a maximum number of lines.
+    //  Further note: CodeBrix.Platform is not supported on Android
     sb.AppendLine($"Running as user: {_osInfo.RunningAsUser}{((_osInfo.IsAdminUser is true) ? " (local admin)" : "")}");
     sb.AppendLine($"DotNet version: {_osInfo.DotNetVersion}");
     sb.AppendLine($"Platform architecture: {_osInfo.PlatformArchitecture}");
@@ -3695,12 +3808,29 @@ loading flag and the visibility that follows it, and disposes whatever it opened
 // From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.Core/Services/AssetCatalogService.cs
 public class AssetCatalogService
 {
+    /// <summary>
+    /// Reads every bundle zip in the assets folder on a worker thread.
+    /// </summary>
+    /// <param name="folderPath">The folder holding the user's downloaded bundle zip files.</param>
+    /// <returns>The loaded catalog (empty when the folder is missing or holds no zips).</returns>
     public Task<AssetFolderCatalog> LoadCatalogAsync(string folderPath) =>
         Task.Run(() => AssetFolderCatalog.LoadFrom(folderPath));
 
+    /// <summary>
+    /// Opens one bundle's archive for on-demand entry reads on a worker thread.
+    /// The caller owns (and must dispose) the returned archive.
+    /// </summary>
+    /// <param name="bundle">The bundle to open.</param>
     public Task<BundleArchive> OpenArchiveAsync(AssetBundle bundle) =>
         Task.Run(() => new BundleArchive(bundle.ZipPath));
 
+    /// <summary>
+    /// Reads one entry's bytes from a bundle without keeping the archive open - used for
+    /// one-off reads like the sidebar cover thumbnails.
+    /// </summary>
+    /// <param name="bundle">The bundle to read from.</param>
+    /// <param name="entryPath">The forward-slash path of the file inside the archive.</param>
+    /// <returns>The entry's bytes, or <c>null</c> when the bundle has no such entry.</returns>
     public Task<byte[]> ReadEntryBytesAsync(AssetBundle bundle, string entryPath) =>
         Task.Run(() =>
         {
@@ -3751,20 +3881,32 @@ private async Task SelectAsync(SampleAssetKind kind)
     RaiseSelectionChanged();
     IsBusy = true;
 
+    //Progress callbacks are posted to the UI thread, so one can land after a failure has
+    //already been reported below; once the load has finished, late ones are ignored.
+    var finished = false;
+
     try
     {
-        var progress = new Progress<string>(message => StatusText = message);
+        var progress = new Progress<string>(message =>
+        {
+            if (!finished) { StatusText = message; }
+        });
         var asset = await _assets.EnsureSampleAsync(kind, progress, _lifetime.Token);
 
         //Decode off the UI thread; the painters upload to GL lazily during Paint.
         var decoded = await Task.Run(() => DecodeSample(kind, asset), _lifetime.Token);
 
         //Hand the decoded content to a painter back on the UI thread: the painters, their
-        //cameras and the bound status line are only ever touched there.
-        InvokeOnMainThread(() =>
+        //cameras and the bound status line are only ever touched there. Awaited, so the
+        //busy flag clears and Initialization completes only once the sample is on display,
+        //and a view model disposed meanwhile never reaches its released painters.
+        await InvokeOnMainThreadAsync(() =>
         {
+            finished = true;
+            if (_isDisposed) { return Task.FromResult(false); }
             CurrentPainter = ApplyDecodedSample(kind, decoded);
             StatusText = $"{Label(kind)}: {asset.Name}    ·    {Hint(kind)}";
+            return Task.FromResult(true);
         });
     }
     catch (OperationCanceledException)
@@ -3773,6 +3915,7 @@ private async Task SelectAsync(SampleAssetKind kind)
     }
     catch (Exception ex)
     {
+        finished = true;
         StatusText = $"Could not load the {kind.ToString().ToLowerInvariant()} sample: {ex.Message}";
     }
     finally
@@ -3972,6 +4115,13 @@ the pixel coordinates of the event, and the pointer capture.
     //frame: keep the cursor anchor in sync but skip rendering it, catching up to the latest.
     private const double StaleFrameMicroseconds = 1_000_000; // 1 second
 
+    private readonly SampleAssetService _assets;
+    private readonly IModelRenderEngineSelector _engineSelector;
+
+    //Cancels an in-flight download when the view model is disposed, so shutdown does not
+    //wait for the network. Nothing else cancels: the sample buttons are disabled while busy.
+    private readonly CancellationTokenSource _lifetime = new();
+
     //Tracks how far behind real time the pointer stream is, to detect a backlog.
     private readonly Stopwatch _gestureClock = new();
     private double _gestureStartTimestamp;
@@ -4017,8 +4167,9 @@ the pixel coordinates of the event, and the pointer capture.
         {
             painter.PointerDrag(x, y);
             RequestRender();
-        }
-
+        // ...
+    }
+        // ...
         return true;
     }
 
@@ -4279,7 +4430,7 @@ try
 
     if (_tracker == null)
     {
-        _tracker = new HandTracker();
+        _tracker = GetService<IHandTracker>();
         _tracker.TrackingUpdated += OnTrackingUpdated;
     }
     _tracker.Start();
@@ -4381,10 +4532,14 @@ bool userConfirmed = !effect.IsConfigurable || await effect.LaunchConfiguration 
 chrome.MainWindowBusy = true;
 
 if (!userConfirmed) {
+    Debug.WriteLine ("User decided not to proceed with the render");
     renderHandle.Cancel ();
     await renderHandle.Task;
     return;
 }
+
+// The user confirmed, so show progress dialog
+Debug.WriteLine (DateTime.Now.ToString ("HH:mm:ss:ffff") + "LivePreviewManager.Apply()");
 
 dialog.Show ();
 
@@ -4837,7 +4992,7 @@ public sealed class AppState
 
     /// <summary>Raised after every refresh, successful or not.</summary>
     public event Action Changed;
-
+    // ...
     /// <summary>Whether the last refresh reached the daemon.</summary>
     public bool IsDaemonReachable { get; private set; }
 
@@ -4905,6 +5060,16 @@ public sealed class RefreshCoordinator
 
     /// <summary>Raised on the UI thread on every unpaused tick.</summary>
     public event Action Tick;
+
+    /// <summary>How long the coordinator waits between ticks.</summary>
+    public TimeSpan Interval
+    {
+        get => _timer.Interval;
+        set => _timer.Interval = value;
+    }
+
+    /// <summary>Whether the timer is running (ticks may still be suppressed by <see cref="Pause"/>).</summary>
+    public bool IsRunning => _timer.IsEnabled;
 
     /// <summary>Starts ticking.</summary>
     public void Start() => _timer.Start();
@@ -5046,18 +5211,24 @@ public interface IShellContext
     AppState State { get; }
 
     /// <summary>Shows the given section.</summary>
+    /// <param name="section">The section to show.</param>
     void Navigate(SectionKey section);
 
     /// <summary>Puts text on the clipboard, doing nothing on a head with no clipboard.</summary>
+    /// <param name="text">The text to copy.</param>
     void CopyToClipboard(string text);
 
     /// <summary>Re-reads everything from the daemon and pushes it into every section.</summary>
+    /// <returns>A task that completes when the refresh has been applied.</returns>
     Task RefreshAsync();
 
     /// <summary>Opens a console tab on a container and shows the Consoles section.</summary>
+    /// <param name="containerId">The container to open a shell in.</param>
+    /// <param name="containerName">The name to put on the tab.</param>
     void OpenConsole(string containerId, string containerName);
 
     /// <summary>Shows the Containers section with the given container selected.</summary>
+    /// <param name="containerId">The container to select.</param>
     void ShowContainer(string containerId);
 
     /// <summary>Suppresses the periodic refresh while a long operation runs.</summary>
@@ -5070,6 +5241,9 @@ public interface IShellContext
     /// Asks the user to confirm something. Dialogs go through the shell because only the view
     /// model the page set as its DataContext has been given a <c>XamlRoot</c> to attach one to.
     /// </summary>
+    /// <param name="message">What the user is agreeing to.</param>
+    /// <param name="title">The dialog's title.</param>
+    /// <returns>True when the user said yes.</returns>
     Task<bool> ConfirmAsync(string message, string title);
 
     // ... ShowErrorAsync, ShowInfoAsync and the automation log line ...
@@ -5113,6 +5287,7 @@ public void CopyToClipboard(string text)
     CopyTextToClipboard?.Invoke(text);
 }
 
+// ...
 /// <inheritdoc />
 public Task<bool> ConfirmAsync(string message, string title) => ConfirmDialog(message, title);
 ```
@@ -5151,6 +5326,11 @@ protected async Task<bool> RunAsync(Func<Task> work, bool refreshAfter = true)
     catch (OperationCanceledException)
     {
         //A cancelled operation is the user changing their mind, not a failure.
+        return false;
+    }
+    catch (DockerManagementException exception)
+    {
+        SetError(exception.Message);
         return false;
     }
     catch (Exception exception)
@@ -5216,19 +5396,19 @@ private int _frameHeight;
 
 // ...
 
-private void OnFrameReceived(object sender, WebcamFrameEventArgs frame)
+private void OnFrameReceived(object sender, CameraFrameEventArgs frame)
 {
     // Capture-thread context: copy the pixels and get out fast.
     lock (_frameLock)
     {
-        var needed = (int)(frame.Width * frame.Height * 4);
+        var needed = frame.Width * frame.Height * 4;
         if (_latestFrame == null || _latestFrame.Length != needed)
         {
             _latestFrame = new byte[needed];
         }
         frame.CopyTo(_latestFrame);
-        _frameWidth = (int)frame.Width;
-        _frameHeight = (int)frame.Height;
+        _frameWidth = frame.Width;
+        _frameHeight = frame.Height;
     }
 
     if (!HasFrame)
@@ -5369,7 +5549,7 @@ public bool IsAudioMonitorOn
 
 ```csharp
 // From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
-_session = new WebcamSession(camera.Device);
+_session = _cameras.OpenSession(camera.Device);
 _session.FrameReceived += OnFrameReceived;
 _session.MonitorAudio = IsAudioMonitorOn;
 _session.Start();
@@ -5648,6 +5828,13 @@ for it:
 /// </summary>
 public static class BackgroundWork
 {
+    /// <summary>
+    /// Starts <paramref name="work"/> and observes how it ends. A failure is handed to
+    /// <paramref name="onError"/> when one is supplied, and swallowed otherwise; either way it
+    /// never escapes to the caller. A null <paramref name="work"/> does nothing.
+    /// </summary>
+    /// <param name="work">The asynchronous work to start.</param>
+    /// <param name="onError">Called with the failure when the work throws. Optional.</param>
     public static void StartAndObserve(Func<Task> work, Action<Exception> onError = null)
     {
         if (work is null) { return; }
@@ -5865,6 +6052,12 @@ cancel is the last one.
 // From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
     public override void Dispose()
     {
+        //Dispose can arrive more than once - the page disposes its view model when it
+        //unloads, and whatever replaced the page may dispose it again. The cancellation
+        //source throws when it is canceled after being disposed, so only the first call acts.
+        if (_isDisposed) { return; }
+        _isDisposed = true;
+
         //Stop an in-flight download so shutdown does not wait for the network.
         _lifetime.Cancel();
         // ... dispose the commands, clear the invalidate delegate, release the painters ...
@@ -6692,6 +6885,10 @@ public MainViewModel()
     _serializer = GetService<IReadingSerializer>() ?? _serializer;
     _pdfBuilder = GetService<IPdfReportBuilder>() ?? _pdfBuilder;
 
+    //Nothing is registered for this in the application itself, so the shuffled deck above
+    //  stands; an alternate host can register a factory to deal the cards in a known order
+    _deck = GetService<IDeckFactory>()?.Create() ?? _deck;
+
     RefreshCounts();
     RefreshGuidance();
 }
@@ -6705,7 +6902,10 @@ and the guard falls through.
 
 ```csharp
 // From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/App.xaml.cs
-public App()
+public App() : this(null) { }
+
+// Alternate hosts may replace services before any view models are constructed.
+public App(Action<IServiceCollection> configureServices)
 {
     //Merriweather is the app's voice: an old-style serif for a temple oracle
     global::CodeBrix.Platform.UI.FeatureConfiguration.Font.DefaultTextFontFamily =
@@ -6713,6 +6913,10 @@ public App()
 
     SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
     {
+        //An alternate host's registrations go first: AddReading() only adds what is not
+        //  already registered, so a replacement made here is the one that is used
+        configureServices?.Invoke(services);
+
         //Register the app's services here
         services.AddReading();
     });
@@ -6940,11 +7144,13 @@ public void CanvasFirstStart(GameSurfaceCanvas canvas)
     //The three seams the game library leaves to the app: generated music (the engine's UseGeneratedMusic), links
     //  opened by the engine's link helper, and credits that read the host's Kenney pack titles and the music card
     //  lazily - both only when the credits screen opens, long after the host has loaded them.
-    var music = new GeneratedMusicDirector(new EngineGeneratedMusicStarter(), MusicManager.Instance,
-        Engine.Instance.EngineDispatcher);
-    var links = new LauncherLinkOpener();
+    //  An alternate host (the PlayTests) may register its own music director and link opener; the game's are the default.
+    var music = GetServices<IMusicDirector>().LastOrDefault()
+        ?? new GeneratedMusicDirector(new EngineGeneratedMusicStarter(), MusicManager.Instance, Engine.Instance.EngineDispatcher);
+    var links = GetServices<IExternalLinkOpener>().LastOrDefault() ?? new LauncherLinkOpener();
     BrixInvadersGameHost host = null;
-    var credits = new KenneyCreditsContent(() => host?.PackCredits ?? Array.Empty<string>(), music.CreditLines);
+    var credits = new KenneyCreditsContent(() => host?.PackCredits ?? Array.Empty<string>(),
+        music is GeneratedMusicDirector generated ? generated.CreditLines : null);
     host = new BrixInvadersGameHost(canvas, music, links, credits);
     Host = host;
     Host.QuitRequested += () => dispatcher?.TryEnqueue(() => Application.Current.Exit());
@@ -6999,3 +7205,148 @@ public event Action QuitRequested;
   state today is still the page's data context, and the guard keeps the designer
   from starting anything - see
   [Guard a view model constructor for the XAML designer](BLUEPRINTS-MVVM.md#guard-a-view-model-constructor-for-the-xaml-designer).
+
+### Open a newspaper-style inspector over a game canvas through a bridge the view model implements
+
+**When you want this.** The game is drawn on an engine canvas, but some moments deserve
+real XAML: a large page with a headline, columns of wrapped text, a picture and a close
+button, laid over the canvas. The decision to open it is made on the engine thread - a
+card flipped, a season began - and the page itself belongs to the UI thread.
+
+**The MVVM shape.** The game library declares a two-method interface, show a card and
+hide it, and the host takes it in its constructor. The view model implements it: it
+turns the card's view into bound properties, opens the pane, and starts its auto-close
+timer. The host builds the card's view - texts, facts, headline, and the pictures
+rendered to PNG - on a worker thread, then calls the bridge on the UI thread through a
+dispatcher delegate the view model also handed it. The page only lays the pane out and
+slides it in; when the pane closes, the view model tells the host, so a waiting computer
+turn goes on.
+
+**Code.**
+
+The bridge, declared beside the host in the game library:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Bridges/IInspectorBridge.cs
+public interface IInspectorBridge
+{
+    /// <summary>Opens the inspector on a card (a newspaper page for discoveries, seasons, tablets and favors).</summary>
+    /// <param name="card">The card.</param>
+    void ShowCard(CardView card);
+
+    /// <summary>Closes the inspector.</summary>
+    void Hide();
+}
+```
+
+The host takes the bridges and the dispatcher once, and defaults to running at once when
+there is no page:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs
+public GoddessTempleGameHost(GameSurfaceCanvas renderSurface, IInspectorBridge inspector = null, ISessionBridge bridge = null,
+    Action<Action> uiDispatch = null)
+    : base(renderSurface)
+{
+    _inspector = inspector;
+    _bridge = bridge;
+    _ui = uiDispatch ?? (action => action());
+}
+```
+
+When a presented event deserves a page, the host decides how long it stays: a person's
+own find stays until they close it, anything else closes itself. It also passes the game's
+seed, which picks the edition of the headline this game prints:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs
+case SiteExcavated excavated:
+    var human = state.Teams.FirstOrDefault(t => t.Name == excavated.TeamName)?.Kind == SeatKind.Human;
+    if (human || _revealComputer)
+    {
+        var year = state.Season?.Year ?? string.Empty;
+        var close = AutoCloseFor(human);
+        var seed = state.Seed;
+        ShowCard(() => CardViews.For(excavated.Card, _faces, year, excavated.TeamName, "In the hand of " + excavated.TeamName, close, seed), close);
+    }
+
+    PushTeams();
+    break;
+```
+
+The view is built off both the engine thread and the UI thread, and only the finished view
+crosses to the UI thread:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs
+private void ShowCard(Func<CardView> build, double autoClose)
+{
+    if (_inspector == null)
+    {
+        return;
+    }
+
+    _inspectorOpen = true;
+    _inspectorSeconds = 0;
+    Rustle();
+    _inspectorLimit = autoClose <= 0 ? 0 : autoClose + 30;
+    Task.Run(build).ContinueWith(task =>
+    {
+        if (task.IsFaulted)
+        {
+            GameLog.Write($"inspector: the card view could not be built: {task.Exception?.GetBaseException().Message}");
+            NotifyInspectorClosed();
+            return;
+        }
+
+        var view = task.Result;
+        _ui(() => _inspector.ShowCard(view));
+    }, TaskScheduler.Default);
+}
+```
+
+Closing comes back the other way, posted to the engine thread:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs
+public void NotifyInspectorClosed() => Post(() => _inspectorOpen = false);
+```
+
+On the view model's side, `ShowCard` copies the view's headline, sub-head, dateline,
+byline, columns, facts and sources into bound properties, decodes the two PNGs into
+bitmaps, sets `IsInspectorOpen`, and, when the view asks for it, waits the auto-close
+seconds - longer while the page reports the pointer over the newspaper - before closing.
+Its `CloseInspector` clears the flag and calls `Host?.NotifyInspectorClosed()`. The page
+binds the newspaper's visibility, slides it in when `IsInspectorOpen` changes, and
+reports the pointer entering and leaving through the canvas interface it already holds.
+
+**Where to look.**
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Bridges/IInspectorBridge.cs`,
+`CardView.cs` and `CardViews.cs`
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs`
+(`OnEventPresented`, `ShowCard`, `AutoCloseFor`, `Pace`, `NotifyInspectorClosed`)
+`GoddessTempleDiscovery/src/GoddessTempleDiscovery.Core/ViewModels/MainViewModel.Inspector.cs`
+(`ShowCard`, `AutoCloseAsync`, `CloseInspector`) and `MainViewModel.cs` (`CanvasFirstStart`)
+`GoddessTempleDiscovery/src/GoddessTempleDiscovery.UI/Views/MainPage.xaml` (the
+newspaper `Border`) and `MainPage.xaml.cs` (the slide and the pointer)
+
+**Sharp edges.**
+- Render the pictures before you cross to the UI thread. Rasterizing a face and its art
+  takes long enough to stall a frame on either the engine thread or the UI thread; do it
+  on a worker and hand over bytes.
+- Token every open. A newer page can arrive while an older one's pictures are still
+  decoding or its timer is still running; the view model drops whatever belongs to a
+  token that is no longer current.
+- Hold the auto-close while the pointer rests on the page, so a reader is never cut off
+  mid-sentence; let a person's own find stay until they close it.
+- Keep a safety limit on the host side too. If no page reports the close (a test host, a
+  page that never loaded), the host stops waiting after the page's own time plus a margin,
+  and the game goes on.
+- If building the view fails, log it and report the inspector closed, or the computer
+  turn that is waiting for it waits forever.
+
+**Related.**
+[Build a game host's seams in the view model and close the application from its quit event](#build-a-game-hosts-seams-in-the-view-model-and-close-the-application-from-its-quit-event)
+covers the other seams a view model hands a game host;
+[Assign every bridge through the interface that declares it](BLUEPRINTS-PlatformServices.md#assign-every-bridge-through-the-interface-that-declares-it)
+covers the page side.

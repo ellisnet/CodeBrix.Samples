@@ -1,0 +1,23 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Nameplate Ribbon
+  Subject: A wide 400 by 160 night nameplate centred in the square box, with stepped ends, a double gold rule and paired gold chevrons pointing outward at each end; the rest of the box is transparent.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="ribbon">
+<polygon points="8,150 18,150 18,140 28,140 28,130 38,130 362,130 372,130 372,140 382,140 382,150 392,150 392,250 382,250 382,260 372,260 372,270 362,270 38,270 28,270 28,260 18,260 18,250 8,250" fill="#16213A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="rules">
+<polygon points="20,156 28,156 28,148 36,148 36,140 44,140 356,140 364,140 364,148 372,148 372,156 380,156 380,244 372,244 372,252 364,252 364,260 356,260 44,260 36,260 36,252 28,252 28,244 20,244" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="28,158 34,158 34,152 40,152 40,146 46,146 354,146 360,146 360,152 366,152 366,158 372,158 372,242 366,242 366,248 360,248 360,254 354,254 46,254 40,254 40,248 34,248 34,242 28,242" fill="none" stroke="#D9A441" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="end-chevrons">
+<polyline points="54,186 46,200 54,214" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="64,186 56,200 64,214" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="346,186 354,200 346,214" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="336,186 344,200 336,214" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

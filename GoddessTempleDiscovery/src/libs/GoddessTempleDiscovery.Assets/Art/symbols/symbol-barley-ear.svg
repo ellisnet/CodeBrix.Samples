@@ -1,0 +1,43 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Ear of Barley
+  Subject: A bearded ear of barley with paired kernels and long awns on a golden stalk with one leaf, the grain carried to Her house on the Warka Vase.
+  Sources consulted: Holy_Inanna/IMAGES.md (Warka Vase lower register, barley and flax); Getty Uruk transcript chapter 9
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="stalk">
+<path d="M 200,268 C 202,300 206,330 214,372" fill="none" stroke="#1E1A17" stroke-width="11" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,268 C 202,300 206,330 214,372" fill="none" stroke="#A8761F" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 206,316 C 240,292 280,292 318,300 C 284,312 246,318 208,334 Z" fill="#7A8A3A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 208,334 C 246,318 284,312 318,300 C 280,306 244,312 210,326 Z" fill="#4E5A22"/>
+</g>
+<g id="awns">
+<line x1="200" y1="78" x2="200" y2="28" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="175" y1="92" x2="135" y2="4" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="225" y1="112" x2="265" y2="24" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="175" y1="132" x2="135" y2="44" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="225" y1="152" x2="265" y2="64" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="175" y1="172" x2="135" y2="84" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="225" y1="192" x2="265" y2="104" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="175" y1="212" x2="135" y2="124" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="225" y1="232" x2="265" y2="144" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="175" y1="252" x2="135" y2="164" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="rachis">
+<line x1="200" y1="92" x2="200" y2="280" fill="none" stroke="#1E1A17" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="kernels">
+<ellipse cx="200" cy="96" rx="11" ry="20" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<g transform="rotate(-28 185 112)"><ellipse cx="185" cy="112" rx="13" ry="24" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 187,92 C 195,104 195,120 187,132" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(28 215 132)"><ellipse cx="215" cy="132" rx="13" ry="24" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 217,112 C 225,124 225,140 217,152" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(-28 185 152)"><ellipse cx="185" cy="152" rx="13" ry="24" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 187,132 C 195,144 195,160 187,172" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(28 215 172)"><ellipse cx="215" cy="172" rx="13" ry="24" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 217,152 C 225,164 225,180 217,192" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(-28 185 192)"><ellipse cx="185" cy="192" rx="13" ry="24" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 187,172 C 195,184 195,200 187,212" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(28 215 212)"><ellipse cx="215" cy="212" rx="13" ry="24" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 217,192 C 225,204 225,220 217,232" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(-28 185 232)"><ellipse cx="185" cy="232" rx="13" ry="24" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 187,212 C 195,224 195,240 187,252" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(28 215 252)"><ellipse cx="215" cy="252" rx="13" ry="24" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 217,232 C 225,244 225,260 217,272" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(-28 185 272)"><ellipse cx="185" cy="272" rx="13" ry="24" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 187,252 C 195,264 195,280 187,292" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+</g>
+</svg>

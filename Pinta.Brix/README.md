@@ -378,10 +378,13 @@ activation event. `CommandMenuBuilder` turns one into a menu item and keeps its
 enabled state in sync; `MainPage.Menus.cs` assembles the menus and the toolbars
 from those. Adding a command is one edit in the actions library.
 
-Keyboard shortcuts are dispatched by `CommandAcceleratorTable`, not by XAML
-accelerators, and the file says why: accelerators declared on a page or a menu
-item do not fire on the Skia heads, though the shortcut text on the item does
-display. The page registers one `KeyDown` handler with `handledEventsToo: true`,
+Keyboard shortcuts are dispatched by `CommandAcceleratorTable`, a table built
+from the shortcut strings on the command objects, rather than by XAML
+accelerators. A menu-item `KeyboardAccelerator` does fire application-wide, but
+the shortcuts belong to commands in a library with no XAML, and the table also
+holds the collision and enabled-state rules; the menu items show the shortcut
+text only, so there is one dispatch path. The Window menu's Alt+1 to Alt+9
+entries go through the same table, one command per document slot. The page registers one `KeyDown` handler with `handledEventsToo: true`,
 because the canvas marks most key events handled, and the table is a plain class
 in a library, which is why it can be - and is - unit-tested.
 
@@ -571,9 +574,13 @@ constructor builds the palette manager, which reads settings, so the `App`
 constructor opens the store as its first real step; a static constructor that
 runs first would silently get defaults instead of the user's values. Window size
 is read before any window exists, into the platform's preferred launch size, and
-written back on `SizeChanged` - multiplied by the rasterization scale, because
-the event reports logical units and the launch size is consumed as native pixels,
-and getting that wrong rescales the window at every restart on a scaled display.
+written back on `SizeChanged`, both in effective pixels. The heads report the
+client area; X11, Wayland and macOS also take the launch size as the client
+area, while Win32Skia and WPF take it as the framed size. So the framed
+`AppWindow.Size` is stored as well, read in the constructor before the first
+layout can overwrite it, and put back through `AppWindow.Resize` once the page
+has loaded, but only when the window came up a different size. Size and Resize
+are a matched pair, so every head reopens with the client area the user left.
 And because there is no quit path, values that used to be written at exit are
 flushed at natural settle points instead - a tool change, a document close - which
 is only cheap because the store does nothing when a value has not changed.
@@ -679,7 +686,8 @@ and [Compare rendered images pixel by pixel](../BLUEPRINTS-Testing.md#compare-re
 default text font family, create the resolver - registering the application's
 services through `AddPintaBrix()` - turn off design mode, open the settings store
 before anything can read a setting, read the remembered window size into the
-platform's preferred launch size, then `InitializeComponent()`. After the window
+platform's preferred launch size and the stored framed size into two fields,
+then `InitializeComponent()`. After the window
 exists, the engine bootstrap installs the resource service and the timer service and calls the three
 registration entry points for file formats, effects and tools - the timer service
 needs the window's dispatcher queue, which is why it is not earlier. Each head's

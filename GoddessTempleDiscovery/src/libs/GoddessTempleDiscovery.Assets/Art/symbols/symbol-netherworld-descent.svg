@@ -1,0 +1,25 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Descent to the Netherworld
+  Subject: A stair cut down through the earth into darkness with Her small star at the foot, the road to Kur that Holy Inanna took and returned from.
+  Sources consulted: Getty Uruk transcript chapter 9 (Astral Manifestation, the descent to the netherworld) and chapter 11
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="descent">
+<path d="M 40,110 L 360,110 L 360,362 L 40,362 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 280,110 L 360,110 L 360,362 L 300,362 Z" fill="#9C6B3C"/>
+<polygon points="40,110 80,110 80,142 120,142 120,174 160,174 160,206 200,206 200,238 240,238 240,270 280,270 280,302 306,302 306,182 260,178 130,110" fill="#16213A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="40" y="110" width="40" height="7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="80" y="142" width="40" height="7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="120" y="174" width="40" height="7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="160" y="206" width="40" height="7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="200" y="238" width="40" height="7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="240" y="270" width="40" height="7" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="40" y1="110" x2="360" y2="110" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 40,110 L 360,110 L 360,362 L 40,362 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="262,214 265.1,228.6 277.6,220.4 269.4,232.9 284,236 269.4,239.1 277.6,251.6 265.1,243.4 262,258 258.9,243.4 246.4,251.6 254.6,239.1 240,236 254.6,232.9 246.4,220.4 258.9,228.6" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 52,150 L 70,150 M 60,196 L 92,196 M 90,250 L 120,250 M 140,300 L 172,300 M 70,320 L 104,320 M 214,336 L 250,336 M 320,150 L 344,150 M 330,200 L 350,200" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

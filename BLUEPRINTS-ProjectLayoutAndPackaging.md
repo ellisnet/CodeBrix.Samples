@@ -493,7 +493,7 @@ that names the resource.
 //The body-map image is embedded with this logical name by every head that compiles
 //  this file (PainDiagram.Core, PainDiagram.WinUI, and PainDiagram.Wpf)
 private const string BodyMapResourceName = "PainDiagram.Assets.body_map_master.png";
-
+// ...
 private void LoadBodyMapBackground()
 {
     //The view model is compiled into a different assembly on each head, and each of those
@@ -1118,6 +1118,12 @@ private static void EnsureDecentSamplerInstrument()
     // ...
 }
 
+// ----- the stems export -----
+
+// A folder shaped exactly like a stems download: "<Title> (<Stem>).wav" files side by side, all
+// the same length, rate and channel count, with the song's MIDI beside them. It is written at
+// 48 kHz on purpose - a real download is, and this sample pins the device to 44.1 kHz, so the
+// stems rate-convert as they decode rather than being rejected for disagreeing.
 private static void EnsureStemsExport()
 {
     Directory.CreateDirectory(StemsExportFolder);
@@ -1442,11 +1448,16 @@ public static class SampleAssets
     /// <summary>The video corpus, relative to the folder the application runs from.</summary>
     public const string AuthoringRelativePath = "Assets/authoring";
 
+    /// <summary>The colour-lookup-table corpus, relative to the folder the application runs from.</summary>
+    public const string LutsRelativePath = "Assets/LUTs";
+
     /// <summary>Finds the corpus beside the running application.</summary>
     /// <returns>The folder the corpus sits in, or null when the application carries no corpus.</returns>
     public static string FindAssetsRoot() => FindAssetsRoot(AppContext.BaseDirectory);
 
     /// <summary>Finds the corpus beside a folder of your choosing.</summary>
+    /// <param name="applicationFolder">The folder the corpus is expected to sit in.</param>
+    /// <returns>The folder itself when it holds the corpus, and null when it does not.</returns>
     public static string FindAssetsRoot(string applicationFolder)
     {
         if (string.IsNullOrWhiteSpace(applicationFolder)) { return null; }
@@ -1580,7 +1591,7 @@ The application-side half is one catch, placed where the runtime is first needed
 
 ```csharp
 // From CodeBrix.Samples/WebcamViewer/src/WebcamViewer.Core/ViewModels/MainViewModel.cs
-        _session = new WebcamSession(camera.Device);
+        _session = _cameras.OpenSession(camera.Device);
         // ...
     }
     catch (Exception e)
@@ -1726,8 +1737,9 @@ interpreter, a device driver, a guest program - and you want the application to
 hold exactly one object with an obvious lifecycle, while the tests still reach
 everything inside.
 
-**The MVVM shape.** One public class with the two members its host needs, and
-everything else in the library internal. The page or the view model drives the
+**The MVVM shape.** One public class with the few members its host needs - a
+start and a dispose, plus a replaceable quit action, a readiness flag and a
+diagnostic event - and everything else in the library internal. The page or the view model drives the
 facade; the test project reaches past it through the internals attribute, so
 testability costs nothing in public surface.
 
@@ -1743,7 +1755,7 @@ testability costs nothing in public surface.
 public sealed class RuntimeHost : IDisposable
 {
     private DrakonRuntime _runtime;
-
+    // ...
     /// <summary>
     /// Creates and starts the DRAKON runtime inside the given host view. Call
     /// once, from the UI thread, after the host has loaded (its tree and
@@ -1756,9 +1768,14 @@ public sealed class RuntimeHost : IDisposable
         if (_runtime != null) { return; }
 
         _runtime = new DrakonRuntime();
-        _runtime.Start(host);
+        _runtime.Diagnostic += OnDiagnostic;
+        _runtime.Start(host, code =>
+        {
+            Action<int> quit = QuitAction;
+            if (quit != null) { quit(code); }
+        });
     }
-
+    // ...
     /// <summary>
     /// Stops the Tcl thread and disposes the runtime. Safe to call more than
     /// once, and safe to call when <see cref="Start"/> was never called.
@@ -1777,7 +1794,7 @@ public sealed class RuntimeHost : IDisposable
 internal sealed class DrakonRuntime : IDisposable
 {
     // ...
-    public void Start(TkHostView host)
+    public void Start(TkHostView host, Action<int> onQuit)
     // ...
     internal void StartDirect(string assetsDirectory)
     // ...

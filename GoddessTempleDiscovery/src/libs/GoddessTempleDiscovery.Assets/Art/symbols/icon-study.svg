@@ -1,0 +1,18 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Study
+  Subject: Interface icon for studying finds: an open two-leaf writing tablet under a magnifying glass.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<path d="M 40,110 L 194,134 L 194,330 L 40,306 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 206,134 L 360,110 L 360,306 L 206,330 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 74,166 L 160,178 M 74,206 L 160,218 M 74,246 L 140,256" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 238,178 L 290,170 M 238,218 L 260,215" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="282" cy="236" r="66" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 330,284 L 376,330" fill="none" stroke="#1E1A17" stroke-width="30" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

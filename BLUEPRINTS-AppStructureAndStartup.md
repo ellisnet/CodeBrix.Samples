@@ -165,7 +165,10 @@ then initializes the XAML. View models resolve what they need with the inherited
 
 ```csharp
 // From CodeBrix.Samples/NotionDocumentCreator/src/NotionDocumentCreator.UI/App.xaml.cs
-public App()
+public App() : this(null) { }
+
+// Alternate hosts may replace external services before any view models are constructed.
+public App(Action<IServiceCollection> configureServices)
 {
     //Set Roboto as the default font for all text in the application
     global::CodeBrix.Platform.UI.FeatureConfiguration.Font.DefaultTextFontFamily =
@@ -182,6 +185,7 @@ public App()
     {
         //Register the app's services here
         services.AddCreateDocument();
+        configureServices?.Invoke(services);
     });
     SimpleViewModel.SetIsDesignMode(false);
 
@@ -214,12 +218,14 @@ constructor:
     {
         //Register the app's services here
         services.AddKenneyAssetBrowser();
+        configureServices?.Invoke(services);
     });
     SimpleViewModel.SetIsDesignMode(false);
 
     //Open (or silently create) the single portable settings.sqlite store —
     //  including its startup auto-backup and pruning — before any UI renders.
-    SettingsService.Initialize();
+    if (settingsDirectory == null) SettingsService.Initialize();
+    else SettingsService.Initialize(settingsDirectory);
 
     InitializeComponent();
 ```
@@ -367,36 +373,43 @@ initialized:
     //only public seam an application has for its own launch size: every desktop head
     //reads it while it is creating the native window and falls back to the platform's
     //own 1024 by 640 when it is empty, so it has to be set before any window exists.
-    //On the Linux X11 head the numbers are NATIVE pixels of the window's CLIENT area,
-    //which on a display at scale 1 is the same as logical units; how each of the other
-    //heads reads them is written up in the report that accompanied this change. The
-    //value is set on every launch, unconditionally, because the platform remembers it
-    //in its own settings file; setting it every time keeps that file in step with this
-    //source file instead of letting an old value linger.
+    //Every head takes the numbers in effective pixels and converts them to device
+    //pixels itself, so nothing here corrects for the display scale. The heads differ
+    //only in what the numbers measure: Win32Skia and WPF open a framed window of this
+    //size, title bar and borders included, and the other heads open a client area of
+    //this size. The value is set on every launch, unconditionally, because the
+    //platform remembers it in its own settings file; setting it every time keeps that
+    //file in step with this source file instead of letting an old value linger.
     Windows.UI.ViewManagement.ApplicationView.PreferredLaunchViewSize =
         new Windows.Foundation.Size(LaunchWidth, LaunchHeight);
 
     InitializeComponent();
 ```
 
+The table below has the per-head detail.
+
 Both applications write the two types fully qualified, so the file's `using` block
 does not change.
 
-**What each head does with the numbers.** They do not all read them the same way,
-and at a display scale other than 1 that matters:
+**What each head does with the numbers.** Every head takes them in effective
+pixels - the logical units the XAML tree is laid out in - and converts them itself
+where its native windowing call speaks device pixels: the X11 and Win32Skia heads
+multiply by the display scale, and the others pass the numbers through. Where the
+heads differ is in what the numbers measure:
 
 | Head | Launch size | Minimum size |
 | --- | --- | --- |
-| LinuxX11 | native pixels, client area | native pixels, client area |
-| LinuxWayland | logical units, window geometry | logical units, window geometry |
-| Win32Skia | native pixels, framed window | native pixels, framed window |
-| MacOS | points, client area | points, framed window |
-| WinWpfSkia | device-independent units, framed window | native pixels divided by the rasterization scale, framed window |
+| LinuxX11 | effective pixels, client area | effective pixels, client area |
+| LinuxWayland | effective pixels, window geometry | effective pixels, window geometry |
+| Win32Skia | effective pixels, framed window | effective pixels, framed window |
+| MacOS | effective pixels (points), client area | effective pixels (points), framed window |
+| WinWpfSkia | effective pixels (device-independent units), framed window | effective pixels (device-independent units), framed window |
 
-At a display scale of 1 every one of those reads the same, which is why one pair of
-constants is the right thing to write. On the X11 head at a display scale of 2 the
-same constants produce a window half the intended logical size and a clamp at half
-the intended logical minimum.
+Because the head does the conversion, one pair of constants is the right thing to
+write on every display: at a display scale of 2 the X11 head creates a window with
+twice the device pixels in each direction, which is the same logical size. The
+Win32Skia head creates its window at the unconverted numbers and resizes it to
+device pixels once the window's own scale is known, before the window is shown.
 
 **Where the value is kept between runs.** The setter does nothing but write two
 doubles into `ApplicationData.Current.LocalSettings`, under the keys
@@ -411,7 +424,10 @@ the AppSettings add-in, whose store is a separate `settings.sqlite` under the
 configuration folder.
 
 **Variant: open at the size the user left.** Pinta.Brix reads two settings and
-feeds them to the same property, and writes the size back on every resize; see
+feeds them to the same property, and writes the client size back on every resize,
+in effective pixels both ways. It also stores the framed `AppWindow.Size` and puts
+it back through `AppWindow.Resize` once the page loads, which corrects the two heads
+that open the launch size as the framed window; see
 [Restore a remembered window size before any window exists](BLUEPRINTS-SettingsAndPersistence.md#restore-a-remembered-window-size-before-any-window-exists).
 Fresco.Brix combines the two: the constants are the size a launch with an empty
 store opens at, and a remembered size is applied a moment later through
@@ -440,13 +456,12 @@ than letting an old value linger)
 - The value persists, so a constant you change in source does not take effect
   unless the assignment actually runs. Setting it unconditionally on every launch
   is the habit that keeps the two in step.
-- The units differ head by head, as the table above shows, and the heads also
-  disagree on whether the numbers describe the client area or the framed window.
-- Do not try to correct for the display scale from application code. The scale is
-  not knowable until the `XamlRoot` exists, which is after the native window has
-  been created, so any correction is a visible resize of an existing window, and a
-  correction that is right for the X11 head is wrong for the Wayland and macOS
-  heads.
+- The units are effective pixels on every head, but the heads disagree on whether
+  the numbers describe the client area or the framed window, as the table above
+  shows.
+- Do not correct for the display scale from application code. The head already
+  converts, so a second correction makes the window the wrong size on a scaled
+  display.
 - Pick the numbers by measuring the layout rather than estimating it. The floor is
   whatever stops fitting first, and a row that scrolls does not set one: Fresco.Brix
   keeps its toolbar in a hidden-scrollbar `ScrollViewer`, so buttons past the
@@ -1025,6 +1040,8 @@ using CodeBrix.Platform.UI.Hosting;
 using CodeBrix.Platform.UI.Runtime.Skia.Wpf;
 using System;
 
+// ReSharper disable CheckNamespace
+
 namespace JustBetweenUs;
 
 internal class Program
@@ -1136,6 +1153,10 @@ public static class PlaybackCodecs
     /// <summary>True once both codecs have been turned on.</summary>
     public static bool IsRegistered { get; private set; }
 
+    /// <summary>
+    /// Turns on AV1 video and Opus audio. Safe to call more than once; only the first call does
+    /// anything.
+    /// </summary>
     public static void RegisterOnce()
     {
         lock (Gate)

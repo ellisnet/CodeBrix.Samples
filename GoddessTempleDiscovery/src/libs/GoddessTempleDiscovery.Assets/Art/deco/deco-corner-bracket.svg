@@ -1,0 +1,29 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Corner Bracket
+  Subject: One top-left corner ornament, mirrored by the game for the other corners: a stepped gold bracket with two receding hairline rules ending in lozenges and a quarter sunburst nested in the angle.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="bracket">
+<polygon points="30,30 230,30 230,44 150,44 150,52 52,52 52,150 44,150 44,230 30,230" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="330,60 60,60 60,330" fill="none" stroke="#D9A441" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="290,68 68,68 68,290" fill="none" stroke="#A8761F" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="342,52 350,60 342,68 334,60" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="60,334 68,342 60,350 52,342" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="244,31 250,37 244,43 238,37" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="37,238 43,244 37,250 31,244" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="corner-fan">
+<polygon points="102,78.8 157.9,82.8 156.9,91.1 101.6,82.6" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="101.2,84.1 170.1,104.9 166.8,114.4 100,87.7" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="99.3,89.1 177.6,133.5 171.2,143.6 97.3,92.3" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="96.2,93.6 179.1,169 169,179.1 93.6,96.2" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="92.3,97.3 143.6,171.2 133.5,177.6 89.1,99.3" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="87.7,100 114.4,166.8 104.9,170.1 84.1,101.2" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="82.6,101.6 91.1,156.9 82.8,157.9 78.8,102" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M78,78 L104,78 A26,26 0 0 1 78,104 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

@@ -1,0 +1,25 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Divider Rule
+  Subject: A thin tapering gold rule with a nested central lozenge and short flanking hairlines, for dividing panels and paragraphs.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="rule">
+<polygon points="234,197 372,199.2 376,200 372,200.8 234,203" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="240" y1="209" x2="330" y2="209" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="240" y1="191" x2="330" y2="191" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<circle cx="340" cy="191" r="2.5" fill="#D9A441" stroke="#1E1A17" stroke-width="1"/>
+<circle cx="340" cy="209" r="2.5" fill="#D9A441" stroke="#1E1A17" stroke-width="1"/>
+<polygon points="166,197 28,199.2 24,200 28,200.8 166,203" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="160" y1="209" x2="70" y2="209" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="160" y1="191" x2="70" y2="191" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<circle cx="60" cy="191" r="2.5" fill="#D9A441" stroke="#1E1A17" stroke-width="1"/>
+<circle cx="60" cy="209" r="2.5" fill="#D9A441" stroke="#1E1A17" stroke-width="1"/>
+<polygon points="200,178 222,200 200,222 178,200" fill="#D9A441" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="200,188 212,200 200,212 188,200" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="200,196 204,200 200,204 196,200" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

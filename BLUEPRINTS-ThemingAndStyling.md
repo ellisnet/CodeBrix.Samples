@@ -159,7 +159,7 @@ public static ColorScheme Resolve(ColorScheme choice, bool osPrefersDark) =>
     choice == ColorScheme.SystemDefault
         ? (osPrefersDark ? ColorScheme.Dark : ColorScheme.Light)
         : choice;
-
+// ...
 public static ColorSchemePalette Get(ColorScheme resolved) => resolved switch
 {
     ColorScheme.Light => Light,
@@ -168,8 +168,15 @@ public static ColorSchemePalette Get(ColorScheme resolved) => resolved switch
     ColorScheme.DarkDimmed => DarkDimmed,
     _ => throw new ArgumentOutOfRangeException(nameof(resolved), resolved,
         "Resolve the choice before asking for its colours."),
+    // ...
 };
 
+/// <summary>
+/// Reads a persisted scheme name back into a choice, falling back to
+/// <see cref="ColorScheme.SystemDefault"/> for anything unrecognised.
+/// </summary>
+/// <param name="name">The name that was stored.</param>
+/// <returns>The choice the name stands for.</returns>
 public static ColorScheme Parse(string name) =>
     Enum.TryParse(name, ignoreCase: false, out ColorScheme parsed) && Enum.IsDefined(parsed)
         ? parsed
@@ -412,6 +419,7 @@ The map is the readable form of all of them, one comment per family:
 { "TextControlBackgroundDisabled", ColorRole.CanvasSubtle },
 // ...
 { "TextControlBorderBrushFocused", ColorRole.Accent },
+{ "TextControlBorderBrushDisabled", ColorRole.HairlineMuted },
 { "TextControlPlaceholderForeground", ColorRole.TextTertiary },
 { "TextControlPlaceholderForegroundPointerOver", ColorRole.TextTertiary },
 { "TextControlPlaceholderForegroundFocused", ColorRole.TextTertiary },
@@ -547,6 +555,7 @@ public static (uint Background, uint Border, uint Text) PillColors(uint labelArg
     var border = SeparateFromGround(Blend(labelArgb, canvasArgb, BorderBlend), canvasArgb);
     var text = ClampTextLightness(labelArgb, darkBase);
     return (background, border, text);
+    // ...
 }
 
 //Pushes a border away from the ground it is drawn on until the two are far enough apart on
@@ -874,7 +883,8 @@ first page:
 // From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.UI/App.xaml.cs
 //The first page's view model is built during InitializeComponent() and reads its
 //remembered values in its own constructor, so the store has to be open before that.
-SettingsService.Initialize();
+if (settingsDirectory == null) SettingsService.Initialize();
+else SettingsService.Initialize(settingsDirectory);
 
 //Application.RequestedTheme may be set only here, before initialization completes, and
 //setting it at all is what makes the platform stop following the operating system. So it
@@ -887,7 +897,7 @@ if (scheme != ColorScheme.SystemDefault)
         ? ApplicationTheme.Dark
         : ApplicationTheme.Light;
 }
-
+// ...
 InitializeComponent();
 ```
 
@@ -1080,7 +1090,7 @@ private void SetStatus(string text, SearchStatusKind kind)
     NotifyPropertyChanged(nameof(StatusGlyphVisibility));
     RepaintOwnBrushes();
 }
-
+// ...
 private ColorRole StatusRole() => StatusKind switch
 {
     SearchStatusKind.Waiting => ColorRole.Attention,

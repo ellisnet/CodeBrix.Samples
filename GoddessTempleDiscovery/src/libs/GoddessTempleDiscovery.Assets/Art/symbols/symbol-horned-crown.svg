@@ -1,0 +1,34 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Horned Crown of Divinity
+  Subject: The horned cap that marks a god, its four pairs of gold horns wrapped round a tall limestone cap with a knob on top, as worn by the Karaindash and seal deities.
+  Sources consulted: temple_buildings overviews (Karaindash relief); Getty Uruk transcript chapter 11 (terra-cotta reliefs)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="cap">
+<path d="M 122,330 L 150,140 C 156,104 244,104 250,140 L 278,330 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,106 C 230,108 246,120 250,140 L 278,330 L 226,330 C 232,250 226,160 200,106 Z" fill="#C9BFA8"/>
+<path d="M 122,330 L 150,140 C 156,104 244,104 250,140 L 278,330 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="horns">
+<path d="M 104.8,262 C 112.8,288 142.8,314 200,314 C 257.2,314 287.2,288 295.2,262 C 275.2,280 245.2,298 200,298 C 154.8,298 124.8,280 104.8,262 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,314 C 257.2,314 287.2,288 295.2,262 C 279.2,288 253.2,306 200,307 Z" fill="#A8761F"/>
+<path d="M 104.8,262 C 112.8,288 142.8,314 200,314 C 257.2,314 287.2,288 295.2,262 C 275.2,280 245.2,298 200,298 C 154.8,298 124.8,280 104.8,262 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 111.8,212 C 119.8,238 149.8,264 200,264 C 250.2,264 280.2,238 288.2,212 C 268.2,230 238.2,248 200,248 C 161.8,248 131.8,230 111.8,212 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,264 C 250.2,264 280.2,238 288.2,212 C 272.2,238 246.2,256 200,257 Z" fill="#A8761F"/>
+<path d="M 111.8,212 C 119.8,238 149.8,264 200,264 C 250.2,264 280.2,238 288.2,212 C 268.2,230 238.2,248 200,248 C 161.8,248 131.8,230 111.8,212 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 118.8,162 C 126.8,188 156.8,214 200,214 C 243.2,214 273.2,188 281.2,162 C 261.2,180 231.2,198 200,198 C 168.8,198 138.8,180 118.8,162 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,214 C 243.2,214 273.2,188 281.2,162 C 265.2,188 239.2,206 200,207 Z" fill="#A8761F"/>
+<path d="M 118.8,162 C 126.8,188 156.8,214 200,214 C 243.2,214 273.2,188 281.2,162 C 261.2,180 231.2,198 200,198 C 168.8,198 138.8,180 118.8,162 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 125.8,112 C 133.8,138 163.8,164 200,164 C 236.2,164 266.2,138 274.2,112 C 254.2,130 224.2,148 200,148 C 175.8,148 145.8,130 125.8,112 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,164 C 236.2,164 266.2,138 274.2,112 C 258.2,138 232.2,156 200,157 Z" fill="#A8761F"/>
+<path d="M 125.8,112 C 133.8,138 163.8,164 200,164 C 236.2,164 266.2,138 274.2,112 C 254.2,130 224.2,148 200,148 C 175.8,148 145.8,130 125.8,112 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="band">
+<circle cx="200" cy="98" r="16" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="112" y="326" width="176" height="26" rx="6" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="124" y1="339" x2="276" y2="339" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

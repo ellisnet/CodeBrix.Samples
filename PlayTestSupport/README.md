@@ -1,8 +1,8 @@
 # Sample PlayTests
 
-PlayTest suites drive the real screens of several sample applications through the `CodeBrix.Platform.PlayTest.ApacheLicenseForever` preview head, restored from nuget.org like every other package in this repository. Pointer and keyboard actions run through PlayTest; assertions inspect UI and service outcomes.
+PlayTest suites drive the real screens of several sample applications through the `CodeBrix.Platform.PlayTest.ApacheLicenseForever` head, restored from nuget.org like every other package in this repository. Pointer and keyboard actions run through PlayTest; assertions inspect UI and service outcomes.
 
-The suites import `CodeBrix.Sample.PlayTests.props` for the common head/test packages. Most link `SampleFixture.cs` for launch/reset behavior; the suites around a process-wide engine or static application state (BrixInvaders, GameEngineMusicDemo, Pinta.Brix) launch once and reset the live page with their own fixture. Each project directly references SilverAssertions and explicitly disables nullable and implicit usings. It imports its application's shared UI and references the existing Core project. JustBetweenUs keeps its own fixture and project file with the same package set.
+The suites import `CodeBrix.Sample.PlayTests.props` for the common head/test packages; it also links `SampleFixture.cs`, which most suites use for launch/reset behavior. The suites around a process-wide engine or static application state (BrixInvaders, GameEngineMusicDemo, Pinta.Brix) launch once and reset the live page with their own fixture. Each project directly references SilverAssertions and explicitly disables nullable and implicit usings. It imports its application's shared UI and references the existing Core project. JustBetweenUs keeps its own fixture and project file with the same package set.
 
 | Application | Main coverage |
 | --- | --- |

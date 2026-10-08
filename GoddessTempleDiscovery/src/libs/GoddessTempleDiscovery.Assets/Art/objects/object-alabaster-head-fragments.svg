@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Alabaster Votive Fragments
+  Subject: Three small broken pieces of alabaster votive heads from the Eanna hoards: a brow with its shell-and-bitumen eye still in place, a nose and lips, and a lock of grooved hair above an ear.
+  Sources consulted: BUILDING_HIGHLIGHTS.txt Narrow-Brick Building sealed fill (stone vessels, inlays, fragments) and the Layer III hoards; images/Holy_Inanna/IMAGES.md section 1 (mask inlay notes)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="brow-and-eye">
+<path d="M60,132 L96,92 L150,84 L196,96 L224,122 L232,160 L214,206 L178,214 L160,250 L120,262 L90,240 L72,206 L56,170 Z" fill="#C9BFA8" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M60,132 L96,92 L150,84 L196,96 L218,118 L222,152 L204,196 L170,204 L150,240 L114,248 L88,226 L72,196 L62,166 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M82,150 Q130,118 196,138" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M82,154 Q130,124 194,144 L194,150 Q130,132 84,162 Z" fill="#C9BFA8" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M96,180 Q138,152 186,174 Q140,202 96,180 Z" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="140" cy="177" r="12" fill="#2B2622" stroke="#1E1A17" stroke-width="1.5"/>
+<path d="M196,96 L218,118 L222,152 L232,160 L224,122 Z" fill="#C9BFA8"/>
+</g>
+<g id="nose-and-lips">
+<path d="M250,78 L300,66 L338,92 L350,146 L338,196 L300,214 L262,198 L246,160 L258,124 Z" fill="#C9BFA8" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M250,78 L300,66 L332,92 L340,146 L328,188 L296,204 L262,190 L250,158 L260,124 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M288,72 C298,102 312,124 312,140 C310,148 300,150 292,146" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M296,140 Q300,136 304,140" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M276,170 Q296,160 322,168 Q300,174 276,170 Z" fill="#C9BFA8" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M280,172 Q300,190 318,170" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="hair-and-ear">
+<path d="M228,254 L276,236 L330,240 L356,270 L348,318 L310,338 L262,334 L234,306 Z" fill="#C9BFA8" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M228,254 L276,236 L326,240 L348,268 L340,312 L306,328 L262,326 L236,302 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M240,252 Q256,246 272,252 Q288,258 304,252 Q320,246 336,254" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M242,263 Q258,257 274,263 Q290,269 306,263 Q322,257 334,265" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M244,274 Q260,268 276,274 Q292,280 308,274 Q324,268 332,276" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M246,285 Q262,279 278,285 Q294,291 310,285 Q326,279 330,287" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M248,296 Q264,290 280,296 Q296,302 312,296 Q328,290 328,298" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M276,306 C268,290 288,284 294,298 C298,312 286,320 278,316" fill="#C9BFA8" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

@@ -190,8 +190,8 @@ Prerequisites:
   under `LocalApplicationData/PolyHavenBrowser/cache` is used and the application runs offline.
 - A GPU or a software rasterizer for the texture and model modes. OpenGL is the default and works
   on every head, because Graphics3DGL resolves the head's own native GL machinery (WGL on the
-  Windows heads, GLX on X11, EGL on Wayland and the framebuffer head, CGL on macOS). Vulkan
-  additionally needs a Vulkan loader and driver, and is offered only on the LinuxX11,
+  Windows heads, GLX on X11, EGL on Wayland and the framebuffer head, OpenGL ES through ANGLE
+  on macOS). Vulkan additionally needs a Vulkan loader and driver, and is offered only on the LinuxX11,
   LinuxWayland, Win32Skia and WinWpfSkia heads. Metal is offered only on macOS. The HDRI mode
   needs no GPU at all.
 

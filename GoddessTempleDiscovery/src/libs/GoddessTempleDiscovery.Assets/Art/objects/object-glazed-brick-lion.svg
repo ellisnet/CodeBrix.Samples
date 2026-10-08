@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Glazed Brick Lion
+  Subject: A striding, roaring lion moulded in relief across courses of glazed brick, gold on a lapis ground between white bands, the guardian beast of Inanna in the late glazed-brick sanctuaries.
+  Sources consulted: BUILDING_HIGHLIGHTS.txt late phases of Eanna (the Resh sanctuary and glazed brick); images/Holy_Inanna/IMAGES.md section 11 (glazed rosette inserts from Uruk)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="panel">
+<rect x="24" y="84" width="352" height="232" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round"/>
+<rect x="24" y="84" width="352" height="22" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round"/>
+<rect x="24" y="294" width="352" height="22" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="42" cy="95" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="42" cy="305" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="74" cy="95" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="74" cy="305" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="106" cy="95" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="106" cy="305" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="138" cy="95" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="138" cy="305" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="170" cy="95" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="170" cy="305" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="202" cy="95" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="202" cy="305" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="234" cy="95" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="234" cy="305" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="266" cy="95" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="266" cy="305" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="298" cy="95" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="298" cy="305" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="330" cy="95" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="330" cy="305" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="362" cy="95" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="362" cy="305" r="5" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+</g>
+<g id="joints">
+<line x1="25.5" y1="140" x2="374.5" y2="140" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="25.5" y1="174" x2="374.5" y2="174" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="25.5" y1="208" x2="374.5" y2="208" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="25.5" y1="242" x2="374.5" y2="242" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="25.5" y1="276" x2="374.5" y2="276" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="112" y1="107.5" x2="112" y2="138.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="200" y1="107.5" x2="200" y2="138.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="288" y1="107.5" x2="288" y2="138.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="68" y1="141.5" x2="68" y2="172.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="156" y1="141.5" x2="156" y2="172.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="244" y1="141.5" x2="244" y2="172.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="332" y1="141.5" x2="332" y2="172.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="112" y1="175.5" x2="112" y2="206.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="200" y1="175.5" x2="200" y2="206.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="288" y1="175.5" x2="288" y2="206.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="68" y1="209.5" x2="68" y2="240.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="156" y1="209.5" x2="156" y2="240.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="244" y1="209.5" x2="244" y2="240.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="332" y1="209.5" x2="332" y2="240.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="112" y1="243.5" x2="112" y2="274.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="200" y1="243.5" x2="200" y2="274.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="288" y1="243.5" x2="288" y2="274.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="68" y1="277.5" x2="68" y2="292.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="156" y1="277.5" x2="156" y2="292.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="244" y1="277.5" x2="244" y2="292.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="332" y1="277.5" x2="332" y2="292.5" stroke="#5B7BC4" stroke-width="1.5" stroke-linecap="round"/>
+</g>
+<g id="lion">
+<polyline points="313.6,189.9 341,174.2 345,148.7" fill="none" stroke="#1E1A17" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="345" cy="142.8" rx="6" ry="9" fill="#D9A441" stroke="#1E1A17" stroke-width="3"/>
+<polyline points="313.6,189.9 341,174.2 345,148.7" fill="none" stroke="#D9A441" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="345" cy="142.8" rx="6" ry="9" fill="#D9A441"/>
+<path d="M 80.4,172.2 C 94.1,156.6 119.6,154.6 133.3,166.4 C 156.8,172.2 186.2,184 225.4,184 C 264.6,184 294,180.1 313.6,187.9 C 327.3,193.8 329.3,209.5 323.4,223.2 L 331.2,274.2 L 343,280 L 343,285.9 L 315.6,285.9 L 309.7,242.8 C 301.8,235 290.1,231 282.2,233 L 280.3,274.2 L 290.1,280 L 290.1,285.9 L 264.6,285.9 L 264.6,238.9 C 235.2,229.1 186.2,229.1 156.8,229.1 L 160.7,274.2 L 170.5,280 L 170.5,285.9 L 143.1,285.9 L 137.2,233 L 111.7,272.2 L 121.5,280 L 121.5,285.9 L 92.1,285.9 L 94.1,227.1 C 84.3,217.3 78.4,209.5 76.4,199.7 L 54.9,205.6 L 70.6,191.8 L 51,186 L 56.8,174.2 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 156.8,229.1 C 186.2,229.1 235.2,229.1 264.6,238.9 L 264.6,285.9 L 290.1,285.9 L 280.3,274.2 L 282.2,233 C 290.1,231 301.8,235 309.7,242.8 L 315.6,285.9 L 343,285.9 L 331.2,274.2 L 323.4,223.2 C 313.6,213.4 254.8,217.3 156.8,217.3 Z" fill="#A8761F"/>
+<path d="M 88.2,163.4 C 100,154.6 119.6,154.6 133.3,166.4 C 147,184 145,209.5 131.3,231 L 96,227.1 C 90.2,219.3 88.2,209.5 92.1,199.7 C 98,187.9 88.2,176.2 88.2,163.4 Z" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="105.8" y1="187.9" x2="117.6" y2="203.6" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="94.1" y1="197.7" x2="105.8" y2="213.4" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="113.7" y1="172.2" x2="125.4" y2="186" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="117.6" y1="205.6" x2="125.4" y2="221.2" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M 80.4,172.2 C 94.1,156.6 119.6,154.6 133.3,166.4 C 156.8,172.2 186.2,184 225.4,184 C 264.6,184 294,180.1 313.6,187.9 C 327.3,193.8 329.3,209.5 323.4,223.2 L 331.2,274.2 L 343,280 L 343,285.9 L 315.6,285.9 L 309.7,242.8 C 301.8,235 290.1,231 282.2,233 L 280.3,274.2 L 290.1,280 L 290.1,285.9 L 264.6,285.9 L 264.6,238.9 C 235.2,229.1 186.2,229.1 156.8,229.1 L 160.7,274.2 L 170.5,280 L 170.5,285.9 L 143.1,285.9 L 137.2,233 L 111.7,272.2 L 121.5,280 L 121.5,285.9 L 92.1,285.9 L 94.1,227.1 C 84.3,217.3 78.4,209.5 76.4,199.7 L 54.9,205.6 L 70.6,191.8 L 51,186 L 56.8,174.2 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="78.4" cy="180.1" r="3" fill="#1E1A17"/>
+<path d="M 70.6,191.8 L 80.4,193.8" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 284.2,195.8 C 297.9,203.6 301.8,217.3 297.9,231 M 150.9,193.8 C 160.7,203.6 160.7,217.3 152.9,225.2" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="94.1" y1="285.9" x2="92.1" y2="289.8" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="100" y1="285.9" x2="98" y2="289.8" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="145" y1="285.9" x2="143.1" y2="289.8" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="150.9" y1="285.9" x2="149" y2="289.8" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="266.6" y1="285.9" x2="264.6" y2="289.8" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="272.4" y1="285.9" x2="270.5" y2="289.8" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="317.5" y1="285.9" x2="315.6" y2="289.8" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="323.4" y1="285.9" x2="321.4" y2="289.8" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+</g>
+<rect x="24" y="84" width="352" height="232" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round"/>
+</svg>

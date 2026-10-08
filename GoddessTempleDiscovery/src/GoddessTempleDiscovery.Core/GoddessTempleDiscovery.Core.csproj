@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <!-- Match the namespace used by the app code -->
+    <RootNamespace>GoddessTempleDiscovery</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.281.314" />
+    <PackageReference Include="CodeBrix.Platform.Fonts.Merriweather.OflLicenseForever" Version="1.0.248.1209" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\libs\GoddessTempleDiscovery.Rules\GoddessTempleDiscovery.Rules.csproj" />
+    <ProjectReference Include="..\libs\GoddessTempleDiscovery.Assets\GoddessTempleDiscovery.Assets.csproj" />
+    <ProjectReference Include="..\libs\GoddessTempleDiscovery.Game\GoddessTempleDiscovery.Game.csproj" />
+  </ItemGroup>
+</Project>

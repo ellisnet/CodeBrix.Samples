@@ -1,0 +1,36 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Goat-Fish of Enki (suhurmashu)
+  Subject: Enki's suhurmashu, the front of a horned goat joined to a scaled fish tail, the creature of the sweet-water deep on kudurru and seals.
+  Sources consulted: Getty Uruk transcript chapter 11 (seal iconography); BUILDING_HIGHLIGHTS.txt (Enki and the deep)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="fish-tail">
+<path d="M 262,218 C 222,240 160,252 120,236 C 104,226 98,206 100,190 L 86,148 L 70,190 L 38,170 L 66,226 C 70,262 110,292 170,292 C 210,292 240,290 272,286 Z" fill="#5B7BC4" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 86,148 L 70,190 L 38,170 L 62,214 C 74,200 88,194 100,190 Z" fill="#2A4B8D"/>
+<path d="M 262,218 C 222,240 160,252 120,236 C 104,226 98,206 100,190 L 86,148 L 70,190 L 38,170 L 66,226 C 70,262 110,292 170,292 C 210,292 240,290 272,286 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 117,256 C 122,268 138,268 143,256" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 117,276 C 122,288 138,288 143,276" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 147,256 C 152,268 168,268 173,256" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 147,276 C 152,288 168,288 173,276" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 177,256 C 182,268 198,268 203,256" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 177,276 C 182,288 198,288 203,276" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 207,256 C 212,268 228,268 233,256" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 207,276 C 212,288 228,288 233,276" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="62" y1="214" x2="48" y2="182" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="68" y1="208" x2="66" y2="186" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="74" y1="204" x2="82" y2="166" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="goat">
+<path d="M 306,262 L 314,300 L 332,312 L 328,322 L 302,316 L 290,276 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 290,150 C 300,128 320,118 340,124 L 368,160 C 366,172 356,176 346,172 C 340,190 330,200 322,206 C 330,230 326,250 314,262 L 334,298 L 354,308 L 350,320 L 318,316 L 296,276 C 280,282 262,286 240,288 L 226,276 L 238,264 L 222,252 L 236,240 L 222,228 L 240,224 C 262,212 280,190 290,150 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 346,172 L 352,204 L 336,186 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 312,130 C 296,96 268,78 236,82 C 266,92 286,112 300,140 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300,118 C 290,106 296,100 304,104" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 296,152 C 286,144 276,146 272,154 C 282,158 290,158 296,152 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="334" cy="144" r="4.5" fill="#1E1A17"/>
+<path d="M 300,216 C 290,236 280,248 262,256" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

@@ -1,0 +1,31 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Fan Ornament
+  Subject: A pleated Deco fan of eleven alternating gold leaves with a scalloped edge, two concentric hairline arcs and a stepped guard at its pivot.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="pleats">
+<path d="M200,290 L40,290 A25.6,25.6 0 0 1 46.5,244.9 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M200,290 L46.5,244.9 A25.6,25.6 0 0 1 65.4,203.5 Z" fill="#A8761F" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M200,290 L65.4,203.5 A25.6,25.6 0 0 1 95.2,169.1 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M200,290 L95.2,169.1 A25.6,25.6 0 0 1 133.5,144.5 Z" fill="#A8761F" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M200,290 L133.5,144.5 A25.6,25.6 0 0 1 177.2,131.6 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M200,290 L177.2,131.6 A25.6,25.6 0 0 1 222.8,131.6 Z" fill="#A8761F" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M200,290 L222.8,131.6 A25.6,25.6 0 0 1 266.5,144.5 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M200,290 L266.5,144.5 A25.6,25.6 0 0 1 304.8,169.1 Z" fill="#A8761F" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M200,290 L304.8,169.1 A25.6,25.6 0 0 1 334.6,203.5 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M200,290 L334.6,203.5 A25.6,25.6 0 0 1 353.5,244.9 Z" fill="#A8761F" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M200,290 L353.5,244.9 A25.6,25.6 0 0 1 360,290 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M90,290 A110,110 0 0 1 310,290" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M130,290 A70,70 0 0 1 270,290" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="guard">
+<path d="M156,290 A44,44 0 0 1 244,290 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M174,290 A26,26 0 0 1 226,290 Z" fill="#A8761F" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="148,290 252,290 252,300 236,300 236,310 164,310 164,300 148,300" fill="#A8761F" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="200,316 208,324 200,332 192,324" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

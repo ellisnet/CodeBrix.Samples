@@ -1,0 +1,12 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Goddess tablet
+  Subject: Card motif: Holy Inanna's eight-pointed star in gold set into a lapis panel within a clay tablet frame
+  Sources consulted: ART_BIBLE palette and style
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" stroke-linecap="round" stroke-linejoin="round">
+<g id="tablet"><path d="M 114,62 L 302,62 Q 338,62 338,98 L 338,312 Q 338,348 302,348 L 114,348 Q 78,348 78,312 L 78,98 Q 78,62 114,62 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3"/><path d="M 102,50 L 290,50 Q 326,50 326,86 L 326,300 Q 326,336 290,336 L 102,336 Q 66,336 66,300 L 66,86 Q 66,50 102,50 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3"/><path d="M 114,82 L 278,82 Q 294,82 294,98 L 294,288 Q 294,304 278,304 L 114,304 Q 98,304 98,288 L 98,98 Q 98,82 114,82 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3"/><path d="M 116,90 L 282,90 Q 294,90 294,102 L 294,292 Q 294,304 282,304 L 116,304 Q 104,304 104,292 L 104,102 Q 104,90 116,90 Z" fill="#2A4B8D"/><path d="M 114,82 L 278,82 Q 294,82 294,98 L 294,288 Q 294,304 278,304 L 114,304 Q 98,304 98,288 L 98,98 Q 98,82 114,82 Z" fill="none" stroke="#1E1A17" stroke-width="3"/><path d="M 120,62 Q 130,58 140,62" fill="none" stroke="#9C6B3C" stroke-width="1.5"/><path d="M 160,62 Q 170,58 180,62" fill="none" stroke="#9C6B3C" stroke-width="1.5"/><path d="M 240,62 Q 250,58 260,62" fill="none" stroke="#9C6B3C" stroke-width="1.5"/><path d="M 280,62 Q 290,58 300,62" fill="none" stroke="#9C6B3C" stroke-width="1.5"/></g>
+<g id="star"><polygon points="199,115 212,165.6 257,139 230.4,184 281,197 230.4,210 257,255 212,228.4 199,279 186,228.4 141,255 167.6,210 117,197 167.6,184 141,139 186,165.6" fill="#D9A441" stroke="#1E1A17" stroke-width="3"/><circle cx="199" cy="197" r="13" fill="#A8761F" stroke="#1E1A17" stroke-width="2.5"/></g><circle cx="126" cy="112" r="4" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/><circle cx="272" cy="112" r="4" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/><circle cx="126" cy="282" r="4" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/><circle cx="272" cy="282" r="4" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+</svg>

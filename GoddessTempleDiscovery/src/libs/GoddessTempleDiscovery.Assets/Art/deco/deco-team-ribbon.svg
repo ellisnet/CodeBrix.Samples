@@ -1,0 +1,42 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Team Ribbon
+  Subject: A 400 by 90 night team ribbon with a gold-ringed empty round socket at the left end for the team emblem, a gold hairline that follows the ziggurat-stepped right end, and three chevrons pointing onward.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="ribbon">
+<polygon points="50,160 364,160 364,170 376,170 376,182 390,182 390,218 376,218 376,230 364,230 364,240 50,240" fill="#16213A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="rules">
+<polyline points="96,168 358,168 358,178 370,178 370,190 382,190 382,210 370,210 370,222 358,222 358,232 96,232" fill="none" stroke="#D9A441" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="chevrons">
+<polyline points="324,190 330,200 324,210" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="315,190 321,200 315,210" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="306,190 312,200 306,210" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="socket">
+<circle cx="50" cy="200" r="44" fill="#D9A441" stroke="#1E1A17" stroke-width="3"/>
+<line x1="86" y1="200" x2="92" y2="200" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="83.3" y1="213.8" x2="88.8" y2="216.1" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="75.5" y1="225.5" x2="79.7" y2="229.7" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="63.8" y1="233.3" x2="66.1" y2="238.8" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="50" y1="236" x2="50" y2="242" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="36.2" y1="233.3" x2="33.9" y2="238.8" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="24.5" y1="225.5" x2="20.3" y2="229.7" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="16.7" y1="213.8" x2="11.2" y2="216.1" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="14" y1="200" x2="8" y2="200" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="16.7" y1="186.2" x2="11.2" y2="183.9" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="24.5" y1="174.5" x2="20.3" y2="170.3" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="36.2" y1="166.7" x2="33.9" y2="161.2" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="50" y1="164" x2="50" y2="158" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="63.8" y1="166.7" x2="66.1" y2="161.2" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="75.5" y1="174.5" x2="79.7" y2="170.3" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="83.3" y1="186.2" x2="88.8" y2="183.9" stroke="#A8761F" stroke-width="1.5" stroke-linecap="round"/>
+<circle cx="50" cy="200" r="34" fill="#16213A" stroke="#1E1A17" stroke-width="2.5"/>
+<circle cx="50" cy="200" r="30" fill="none" stroke="#A8761F" stroke-width="1"/>
+</g>
+</svg>

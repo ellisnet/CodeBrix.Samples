@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Plan of the Red Temple
+  Subject: Schematic ground plan of the Red Temple (Level III), north up: its socle-terrace, the preserved walls nearly 1.9 m thick with their vertical recesses and red wash, and the lost remainder dashed.
+  Sources consulted: temple_buildings/eight/13_Red_Temple/COMPREHENSIVE_BUILDING_OVERVIEW.txt; images/Eanna4a.svg; images/Eanna_complex/web-gurdjieff-ccbysa3_eanna-plan-levels-VI-V.svg; scale bar = 20 m
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="sky" stroke-linejoin="round" stroke-linecap="round">
+<rect x="0" y="0" width="400" height="400" fill="#EFE3C8" stroke="none"/>
+</g>
+<g id="terrace" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="253.1,34 366,146.9 146.9,366 34,253.1" fill="#C8955A" stroke="#1E1A17" stroke-width="2"/>
+</g>
+<g id="reconstruction" stroke-linejoin="round" stroke-linecap="round">
+<polyline points="259.8,67.2 332.8,140.2 140.2,332.8 67.2,259.8" fill="none" stroke="#1E1A17" stroke-width="2" stroke-dasharray="5 4"/>
+</g>
+<g id="walls" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="259.8,67.2 256.4,70.5 258.1,72.2 255.8,74.5 254.1,72.8 249.8,77.2 251.5,78.8 249.1,81.1 247.5,79.5 243.2,83.8 244.8,85.5 242.5,87.8 240.8,86.1 236.5,90.4 238.2,92.1 235.9,94.4 234.2,92.8 229.9,97.1 231.5,98.7 229.2,101.1 227.6,99.4 223.2,103.7 224.9,105.4 222.6,107.7 220.9,106 216.6,110.4 218.3,112 215.9,114.3 214.3,112.7 210,117 211.6,118.7 209.3,121 207.6,119.3 203.3,123.6 205,125.3 202.7,127.6 201,126 196.7,130.3 198.3,131.9 196,134.3 194.4,132.6 190,136.9 191.7,138.6 189.4,140.9 187.7,139.2 183.4,143.6 185.1,145.2 182.7,147.5 181.1,145.9 176.8,150.2 178.4,151.9 176.1,154.2 174.4,152.5 170.1,156.8 171.8,158.5 169.5,160.8 167.8,159.2 163.5,163.5 165.1,165.1 162.8,167.5 161.2,165.8 156.8,170.1 158.5,171.8 156.2,174.1 154.5,172.4 150.2,176.8 151.9,178.4 149.5,180.7 147.9,179.1 143.6,183.4 145.2,185.1 142.9,187.4 141.2,185.7 136.9,190 138.6,191.7 136.3,194 134.6,192.4 130.3,196.7 131.9,198.3 129.6,200.7 128,199 123.6,203.3 125.3,205 123,207.3 121.3,205.6 117,210 118.7,211.6 116.3,213.9 114.7,212.3 110.4,216.6 112,218.3 109.7,220.6 108,218.9 103.7,223.2 105.4,224.9 103.1,227.2 101.4,225.6 97.1,229.9 98.7,231.5 96.4,233.9 94.8,232.2 90.4,236.5 92.1,238.2 89.8,240.5 88.1,238.8 83.8,243.2 85.5,244.8 83.1,247.1 81.5,245.5 77.2,249.8 78.8,251.5 76.5,253.8 74.8,252.1 70.5,256.4 72.2,258.1 69.9,260.4 68.2,258.8 67.2,259.8 73.5,266.1 266.1,73.5" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3"/>
+<polyline points="265.4,76.8 76.8,265.4" fill="none" stroke="#B8322A" stroke-width="1.5"/>
+<polygon points="232.9,106.7 262.7,136.6 256.4,142.9 226.6,113" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="226.6,115.7 255.1,144.2" fill="none" stroke="#B8322A" stroke-width="1.5"/>
+<polygon points="179.7,159.8 219.6,199.7 213.3,206 173.4,166.1" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="173.4,168.8 212,207.3" fill="none" stroke="#B8322A" stroke-width="1.5"/>
+<polygon points="133.3,206.3 156.5,229.5 150.2,235.9 127,212.6" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="127,215.3 148.9,237.2" fill="none" stroke="#B8322A" stroke-width="1.5"/>
+<polygon points="265.7,61.2 318.9,114.3 312.9,120.3 259.8,67.2" fill="#9C6B3C" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="259.8,69.9 311.6,121.6" fill="none" stroke="#B8322A" stroke-width="1.5"/>
+</g>
+<g id="north-arrow" stroke-linejoin="round" stroke-linecap="round">
+<polyline points="46,92 46,44" fill="none" stroke="#1E1A17" stroke-width="3"/>
+<polygon points="46,24 57,50 46,44 35,50" fill="#1E1A17" stroke="#1E1A17" stroke-width="2"/>
+</g>
+<g id="scale-bar" stroke-linejoin="round" stroke-linecap="round">
+<polyline points="28,374 121.9,374" fill="none" stroke="#1E1A17" stroke-width="3"/>
+<polyline points="28,367 28,381" fill="none" stroke="#1E1A17" stroke-width="3"/>
+<polyline points="75,367 75,374" fill="none" stroke="#1E1A17" stroke-width="2"/>
+<polyline points="121.9,367 121.9,381" fill="none" stroke="#1E1A17" stroke-width="3"/>
+</g>
+</svg>

@@ -1,0 +1,42 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Rod and Ring
+  Subject: The measuring rod and coiled measuring rope held out by the gods to kings, the emblem of just rule and of temple building, as on the Ur-Namma stele.
+  Sources consulted: temple_buildings overviews (Ur-Namma building works in Eanna); Getty Uruk transcript chapter 10 (Ur-Namma foundation documents)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="rod-and-ring">
+<path d="M 186,36 L 214,36 L 214,372 L 186,372 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 186,36 L 196,36 L 196,372 L 186,372 Z" fill="#C8955A"/>
+<path d="M 186,36 L 214,36 L 214,372 L 186,372 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 92,176 A 108 108 0 1 1 308,176 A 108 108 0 1 1 92,176 Z M 130,176 A 70 70 0 1 0 270,176 A 70 70 0 1 0 130,176 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" fill-rule="evenodd"/>
+<path d="M 270,176 A 70 70 0 0 1 130,176 L 92,176 A 108 108 0 0 0 308,176 Z" fill="#A8761F"/>
+<path d="M 92,176 A 108 108 0 1 1 308,176 A 108 108 0 1 1 92,176 Z M 130,176 A 70 70 0 1 0 270,176 A 70 70 0 1 0 130,176 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" fill-rule="evenodd"/>
+<line x1="271.5" y1="184.8" x2="302.9" y2="201.4" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="266.8" y1="203" x2="292.8" y2="227.2" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="257.5" y1="219.3" x2="276.4" y2="249.5" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="244.3" y1="232.7" x2="254.8" y2="266.7" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="228.1" y1="242.3" x2="229.4" y2="277.8" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="210" y1="247.3" x2="202.1" y2="282" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="191.2" y1="247.5" x2="174.6" y2="278.9" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="173" y1="242.8" x2="148.8" y2="268.8" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="156.7" y1="233.5" x2="126.5" y2="252.4" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="143.3" y1="220.3" x2="109.3" y2="230.8" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="133.7" y1="204.1" x2="98.2" y2="205.4" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="128.7" y1="186" x2="94" y2="178.1" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="128.5" y1="167.2" x2="97.1" y2="150.6" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="133.2" y1="149" x2="107.2" y2="124.8" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="142.5" y1="132.7" x2="123.6" y2="102.5" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="155.7" y1="119.3" x2="145.2" y2="85.3" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="171.9" y1="109.7" x2="170.6" y2="74.2" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="190" y1="104.7" x2="197.9" y2="70" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="208.8" y1="104.5" x2="225.4" y2="73.1" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="227" y1="109.2" x2="251.2" y2="83.2" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="243.3" y1="118.5" x2="273.5" y2="99.6" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="256.7" y1="131.7" x2="290.7" y2="121.2" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="266.3" y1="147.9" x2="301.8" y2="146.6" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="271.3" y1="166" x2="306" y2="173.9" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

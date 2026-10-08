@@ -1,0 +1,22 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Dice
+  Subject: Interface icon for the dice roll: a pair of tumbling dice.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<g transform="rotate(14 262 150)"><rect x="187" y="75" width="150" height="150" rx="24" fill="#EDE6D6" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="224.5" cy="112.5" r="12.8" fill="#1E1A17"/>
+<circle cx="262" cy="150" r="12.8" fill="#1E1A17"/>
+<circle cx="299.5" cy="187.5" r="12.8" fill="#1E1A17"/></g>
+<g transform="rotate(-10 150 262)"><rect x="65" y="177" width="170" height="170" rx="27.2" fill="#EDE6D6" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="107.5" cy="219.5" r="14.5" fill="#1E1A17"/>
+<circle cx="192.5" cy="219.5" r="14.5" fill="#1E1A17"/>
+<circle cx="107.5" cy="304.5" r="14.5" fill="#1E1A17"/>
+<circle cx="192.5" cy="304.5" r="14.5" fill="#1E1A17"/>
+<circle cx="150" cy="262" r="14.5" fill="#1E1A17"/></g>
+</g>
+</svg>

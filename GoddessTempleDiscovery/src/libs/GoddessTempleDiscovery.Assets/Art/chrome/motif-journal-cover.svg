@@ -1,0 +1,12 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Field journal
+  Subject: Card motif: a leather-bound field notebook with corner guards and elastic band, Her eight-pointed star tooled in gold
+  Sources consulted: ART_BIBLE palette and style
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" stroke-linecap="round" stroke-linejoin="round">
+<g id="page-block"><path d="M 108,70 L 312,70 Q 324,70 324,82 L 324,344 Q 324,356 312,356 L 108,356 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3"/><path d="M 314,76 L 314,350" fill="none" stroke="#1E1A17" stroke-width="1.5"/><path d="M 318,78 L 318,348" fill="none" stroke="#1E1A17" stroke-width="1.5"/></g>
+<g id="notebook"><path d="M 84,58 L 296,58 Q 310,58 310,72 L 310,330 Q 310,344 296,344 L 84,344 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3"/><path d="M 84,58 L 118,58 L 118,344 L 84,344 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3"/><line x1="86" y1="90" x2="116" y2="90" stroke="#1E1A17" stroke-width="1.5"/><line x1="86" y1="312" x2="116" y2="312" stroke="#1E1A17" stroke-width="1.5"/><path d="M 268,58 L 296,58 Q 310,58 310,72 L 310,100 Z" fill="#1E1A17" stroke="#1E1A17" stroke-width="2.5"/><path d="M 268,344 L 296,344 Q 310,344 310,330 L 310,302 Z" fill="#1E1A17" stroke="#1E1A17" stroke-width="2.5"/><rect x="136" y="92" width="140" height="218" rx="6" fill="none" stroke="#1E1A17" stroke-width="1.5"/><polygon points="206,134 214,164.6 241.4,148.6 225.4,176 256,184 225.4,192 241.4,219.4 214,203.4 206,234 198,203.4 170.6,219.4 186.6,192 156,184 186.6,176 170.6,148.6 198,164.6" fill="#D9A441" stroke="#1E1A17" stroke-width="3"/><circle cx="206" cy="184" r="8" fill="#A8761F" stroke="#1E1A17" stroke-width="2"/><rect x="158" y="262" width="96" height="18" rx="3" fill="#D9A441" stroke="#1E1A17" stroke-width="2.5"/><path d="M 284,56 L 296,56 L 296,346 L 284,346 Z" fill="#1E1A17" stroke="#1E1A17" stroke-width="2.5"/></g>
+</svg>

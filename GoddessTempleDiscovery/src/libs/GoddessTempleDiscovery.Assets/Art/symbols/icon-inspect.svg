@@ -1,0 +1,16 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Inspect
+  Subject: Interface icon for inspecting a card: a magnifying glass held over a game card.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<rect x="54" y="44" width="196" height="276" rx="20" fill="#E8C597" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 92,100 L 212,100 M 92,140 L 180,140" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="244" cy="232" r="76" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 298,286 L 358,346" fill="none" stroke="#1E1A17" stroke-width="30" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

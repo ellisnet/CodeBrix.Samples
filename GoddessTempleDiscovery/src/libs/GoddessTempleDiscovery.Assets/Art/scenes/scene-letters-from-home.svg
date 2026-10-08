@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" width="400" height="560">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Letters from Home
+  Subject: Night in the dig house: a pile of letters that took weeks to arrive, a petroleum lamp for writing up the day's finds, and the gramophone whose record labels the termites ate.
+  Sources consulted: Julius_Jordan_Eanna texts/18_game_season_and_people_cards.txt (C1, C3, C6; Noeldeke letters via texts/11)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<rect x="0" y="0" width="400" height="560" fill="#9C6B3C"/>
+<g id="lamp-light">
+<ellipse cx="130" cy="250" rx="160" ry="150" fill="#E8C597"/>
+</g>
+<g id="window">
+<rect x="250" y="60" width="120" height="150" fill="#16213A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 310,60 L 310,210 M 250,135 L 370,135" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 276,86 L 277,89 280,90 277,91 276,94 275,91 272,90 275,89 Z" fill="#FFFFFF"/>
+<path d="M 340,80 L 341,83 344,84 341,85 340,88 339,85 336,84 339,83 Z" fill="#FFFFFF"/>
+<path d="M 290,166 L 291,169 294,170 291,171 290,174 289,171 286,170 289,169 Z" fill="#FFFFFF"/>
+<path d="M 352,164 L 353,167 356,168 353,169 352,172 351,169 348,168 351,167 Z" fill="#FFFFFF"/>
+<path d="M 330,106 L 331,109 334,110 331,111 330,114 329,111 326,110 329,109 Z" fill="#FFFFFF"/>
+<rect x="242" y="210" width="136" height="10" fill="#E8C597" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="desk">
+<path d="M-2,340 L402,340 L402,380 L-2,380 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M-2,380 L402,380 L402,562 L-2,562 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 60,380 L 60,562 M 340,380 L 340,562 M 60,450 L 340,450" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="186" y="410" width="28" height="8" fill="#E8C597" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="letters">
+<path d="M105.6,356.1 L193.4,349.9 L194.4,363.9 L106.6,370.1 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M111,336.4 L198.5,345.6 L197,359.6 L109.5,350.4 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M103.5,335.2 L190.6,322.9 L192.5,336.8 L105.4,349.1 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M112.4,314.7 L200.3,319.3 L199.6,333.3 L111.7,328.7 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M105.8,306.5 L193.7,303.5 L194.2,317.5 L106.3,320.5 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 150,302 L 150,368 M 110,330 Q 150,336 190,330" fill="none" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M190,360 L262,352 L266,378 L194,382 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M200,364 L250,359 M200,370 L246,366" fill="none" stroke="#1E1A17" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="petroleum-lamp">
+<path d="M 64,368 L 104,368 L 98,352 C 116,340 112,312 84,308 C 56,312 52,340 70,352 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M70,308 L98,308 L96,298 L72,298 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 76,298 L 92,298 C 104,284 102,250 92,232 L 92,214 L 76,214 L 76,232 C 66,250 64,284 76,298 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 84,248 C 92,262 91,276 84,280 C 77,276 76,262 84,248 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 64,340 L 104,340" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="gramophone">
+<path d="M272,350 L372,350 L372,372 L272,372 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M272,350 L372,350 L386,334 L286,334 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="328" cy="340" rx="44" ry="8" fill="#1E1A17" stroke="#1E1A17" stroke-width="2"/>
+<path d="M 318,340 L 322,336 L 326,338 L 330,335 L 334,338 L 338,336 L 340,341 L 334,344 L 330,342 L 324,345 L 318,343 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 368,338 L 366,300 L 346,298" fill="none" stroke="#1E1A17" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 368,338 L 366,300 L 346,298" fill="none" stroke="#D9A441" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 346,298 C 330,280 300,240 290,200 C 300,182 340,172 370,180 C 366,220 360,270 352,296 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300,200 Q 330,186 366,190 M 320,240 Q 340,232 360,236" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<rect x="1.5" y="1.5" width="397" height="557" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Keep a distinct RootNamespace (not the app's "GoddessTempleDiscovery") so a transitive
+         CodeBrix.Platform reference does not generate a duplicate GlobalStaticResources. -->
+    <RootNamespace>GoddessTempleDiscovery.Game</RootNamespace>
+  </PropertyGroup>
+
+  <!-- This library owns the CodeBrix.Platform.GameEngine references (engine core + Host layer in one package and
+       the CardsAndDice add-on, which carries its artwork assembly inside the one package); the app's .Core project
+       depends on this library rather than referencing the engine directly. -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Platform.GameEngine.MitLicenseForever" Version="1.0.281.62" />
+    <PackageReference Include="CodeBrix.Platform.GameEngine.CardsAndDice.MitLicenseForever" Version="1.0.281.72" />
+    <!-- Every persisted value (settings, the last setup) goes through Settings/SettingsService over this add-in. -->
+    <PackageReference Include="CodeBrix.Platform.AppSettings.ApacheLicenseForever" Version="1.0.281.314" />
+    <!-- The Field Journal is a hand-placed document drawn straight onto XGraphics, card art as vector. -->
+    <PackageReference Include="CodeBrix.PdfDocuments.MitLicenseForever" Version="1.0.271.1182" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GoddessTempleDiscovery.Rules\GoddessTempleDiscovery.Rules.csproj" />
+    <ProjectReference Include="..\GoddessTempleDiscovery.Assets\GoddessTempleDiscovery.Assets.csproj" />
+  </ItemGroup>
+</Project>

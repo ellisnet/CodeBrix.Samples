@@ -1,0 +1,17 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Stratigraphy Report
+  Subject: Interface icon for a stratigraphy report: three stacked cards, the front one showing a coloured earth layer.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<path d="M 150,100 L 150,52 L 342,52 L 342,288 L 302,288" fill="none" stroke="#1E1A17" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 128,120 L 128,78 L 320,78 L 320,314 L 300,314" fill="none" stroke="#1E1A17" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 108,198 C 160,184 220,214 300,196 L 300,262 C 220,280 160,250 108,266 Z" fill="#C8955A"/>
+<rect x="108" y="104" width="192" height="244" rx="14" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 108,198 C 160,184 220,214 300,196 M 108,266 C 160,250 220,280 300,262" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

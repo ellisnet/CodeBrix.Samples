@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" width="400" height="560">
+<!--
+  Goddess Temple Discovery vector art
+  Title: The Niched Building
+  Subject: The small Niched Building (Nischengebaeude) of the late Uruk Eanna: a modest block of large-format mudbrick whose façades are cut by deep, double-stepped niches between pier buttresses.
+  Sources consulted: temple_buildings/eight/12_Niched_Building/COMPREHENSIVE_BUILDING_OVERVIEW.txt; images/temple_buildings/eight/12_Niched_Building/eichmann1989-abb27_heinrich-uvb6-taf5a-plan; images/temple_buildings/eight/11_Rammed_Earth_Building/jordan-uvb2-abb45_buttress-wall-layer-V
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="sky" stroke-linejoin="round" stroke-linecap="round">
+<rect x="0" y="0" width="400" height="560" fill="#EFE3C8" stroke="none"/>
+</g>
+<g id="ground" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="50,278.7 50.6,281.8 51.2,284.8 51.8,287.9 52.4,291.1 52.9,294.3 53.4,297.5 55,301.4 56.5,305.3 58,309.2 62.2,313 66.4,316.7 70.6,320.5 75,324.5 79.4,328.5 83.8,332.4 93.1,336.8 102.4,341.2 111.8,345.6 120.4,350.6 129.1,355.6 137.8,360.6 145.1,363.1 152.3,365.6 159.5,368.1 164.1,370.4 168.7,372.8 173.3,375.1 179.5,376.8 185.6,378.5 191.8,380.1 198.8,380.4 205.9,380.6 213,380.9 219.4,381 225.9,381.2 226.7,440.6 220.1,438 213.5,440.3 206.2,437.8 199,440.9 191.8,439.4 185.5,438.7 179.2,435.9 172.8,432.6 168.1,432.2 163.3,424.6 158.5,423.4 151.1,421.9 143.7,419.7 136.3,412.7 127.5,410 118.6,404.4 109.8,397.3 100.3,393.4 90.8,386.7 81.3,378.9 76.7,375.5 72.1,369.4 67.6,365 63.2,358.2 58.9,354.1 54.5,346 52.8,340.1 51.1,335.1 49.4,327 48.7,321.2 48,315.7 47.3,308.9 46.5,301.5 45.8,293.2 45,278.7" fill="#C8955A" stroke="#1E1A17" stroke-width="3"/>
+<polygon points="225.9,381.2 232.3,381.3 237.7,380.7 243.1,380.1 248.6,379.5 254.5,378.5 260.4,377.5 266.3,376.5 271.9,373.8 277.6,371.1 283.3,368.3 289.3,363.8 295.2,359.3 301.2,354.8 309,351.3 316.7,347.7 324.5,344.2 328,340.9 331.4,337.7 334.9,334.4 337.3,330.2 339.6,326 341.9,321.7 344.6,319.1 347.3,316.6 350,314 355,314 352.1,328 349.3,336.1 346.4,343.1 343.9,350.8 341.4,357.2 338.9,365.1 335.3,371.7 331.6,377.2 328,382.9 320.1,387.9 312.1,394.1 304.2,398.4 298.1,404.6 291.9,409.7 285.8,415.8 280,420.4 274.1,423.4 268.3,428.8 262.2,429.9 256.1,434.5 250.1,432.4 244.5,433.3 238.9,434.3 233.3,439.9 226.7,440.6" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3"/>
+<polyline points="56.5,310.3 57.8,317.3 56.9,324.3" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="111.8,350.6 110,361.5 113.9,372.4" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="173.3,380.1 171.7,397.3 175.1,414.5" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="237.7,385.7 236.3,397.9 236.5,410" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="289.3,368.8 290.8,381.3 286.5,393.7" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="334.9,339.4 333.1,347.2 336.2,354.9" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="301.2,354.8 283.3,368.3 266.3,376.5 248.6,379.5 232.3,381.3 213,380.9 191.8,380.1 173.3,375.1 159.5,368.1 137.8,360.6 111.8,345.6 83.8,332.4 70.6,320.5 58,309.2 53.4,297.5 51.8,287.9 50,278.7 53.2,265.9 64,257.8 70.9,245.5 93.8,235.1 117.7,223.9 133.4,216.5 148.1,211.1 166.6,208.6 184.8,209.7 202.2,210.6 223.9,215.2 241.7,220.3 259.6,230.7 286.9,244.4 311.4,258.9 328.1,270.6 335.6,281.5 343.7,292.7 344,304.2 350,314 341.9,321.7 334.9,334.4 324.5,344.2" fill="#C8955A" stroke="#1E1A17" stroke-width="3"/>
+</g>
+<g id="building" stroke-linejoin="round" stroke-linecap="round">
+<polygon points="335.4,299.6 224.8,363.4 224.8,369.5 335.4,305.6" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3"/>
+<polygon points="70.3,274.2 224.8,363.4 224.8,369.5 70.3,280.3" fill="#E8C597" stroke="#1E1A17" stroke-width="3"/>
+<polygon points="180.9,210.4 335.4,299.6 224.8,363.4 70.3,274.2" fill="#C8955A" stroke="#1E1A17" stroke-width="3"/>
+<polygon points="321.4,239.8 224.8,295.5 224.8,355.3 321.4,299.6" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3"/>
+<polygon points="84.4,214.4 224.8,295.5 224.8,355.3 84.4,274.2" fill="#E8C597" stroke="#1E1A17" stroke-width="3"/>
+<polygon points="180.9,158.7 321.4,239.8 224.8,295.5 84.4,214.4" fill="#C8955A" stroke="#1E1A17" stroke-width="3"/>
+<polygon points="91.8,275.5 105,283.1 105,233.4 91.8,225.8" fill="#C8955A" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="94.7,277.2 102.1,281.4 102.1,235.8 94.7,231.5" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="97.1,278.5 99.7,280 99.7,237.5 97.1,236" fill="#1E1A17" stroke="none"/>
+<polygon points="114.3,288.5 127.5,296.1 127.5,246.4 114.3,238.8" fill="#C8955A" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="117.2,290.1 124.6,294.4 124.6,248.8 117.2,244.5" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="119.6,291.5 122.2,293 122.2,250.4 119.6,248.9" fill="#1E1A17" stroke="none"/>
+<polygon points="159.2,314.4 172.4,322 172.4,272.3 159.2,264.7" fill="#C8955A" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="162.1,316.1 169.5,320.3 169.5,274.7 162.1,270.5" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="164.5,317.4 167.1,319 167.1,276.4 164.5,274.9" fill="#1E1A17" stroke="none"/>
+<polygon points="181.7,327.4 194.9,335 194.9,285.3 181.7,277.7" fill="#C8955A" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="184.6,329 192,333.3 192,287.7 184.6,283.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="187,330.4 189.6,331.9 189.6,289.4 187,287.8" fill="#1E1A17" stroke="none"/>
+<polygon points="204.2,340.3 217.4,347.9 217.4,298.3 204.2,290.7" fill="#C8955A" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="207.1,342 214.5,346.3 214.5,300.7 207.1,296.4" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="209.5,343.4 212.1,344.9 212.1,302.3 209.5,300.8" fill="#1E1A17" stroke="none"/>
+<polygon points="137.7,305 149.1,311.6 149.1,282.2 137.7,275.6" fill="#1E1A17" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="134.6,272.8 152.1,282.9 152.1,277.9 134.6,267.7" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.2"/>
+<polygon points="231,348.7 243.3,341.6 243.3,292 231,299" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="233.8,347.1 240.4,343.2 240.4,297.6 233.8,301.5" fill="#1E1A17" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="255.1,334.8 267.4,327.7 267.4,278 255.1,285.1" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="257.9,333.2 264.6,329.3 264.6,283.7 257.9,287.5" fill="#1E1A17" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="279.2,320.8 291.5,313.7 291.5,264.1 279.2,271.2" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="282,319.2 288.7,315.4 288.7,269.8 282,273.6" fill="#1E1A17" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="303.4,306.9 315.7,299.8 315.7,250.1 303.4,257.2" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5"/>
+<polygon points="306.2,305.3 312.9,301.4 312.9,255.8 306.2,259.7" fill="#1E1A17" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="84.4,216.4 224.8,297.5" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+<polyline points="224.8,297.5 321.4,241.8" fill="none" stroke="#1E1A17" stroke-width="1.5"/>
+</g>
+</svg>

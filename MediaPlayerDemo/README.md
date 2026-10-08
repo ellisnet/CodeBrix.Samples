@@ -109,9 +109,8 @@ Prerequisites:
   package: the LibVLC native runtime for Windows, which the MediaPlayer add-in
   needs there. Both csproj files carry the comment explaining it; see each head's
   csproj for the exact package.
-- The Linux and macOS heads declare no native media package at all. This
-  application does not state what the add-in needs natively on those platforms,
-  so check the add-in's own documentation before shipping on them.
+- On the Linux heads, the system LibVLC runtime, which the MediaPlayer add-in loads at
+  run time: `sudo apt install libvlc5 vlc-plugin-base`. The macOS head needs nothing.
 
 To run one head from the command line, from this folder:
 

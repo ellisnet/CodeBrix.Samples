@@ -1,0 +1,19 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Dig
+  Subject: Interface icon for the dig action: an excavation basket heaped with earth and a pointing trowel.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<path d="M 60,236 C 84,180 140,160 186,178 C 226,150 290,166 320,236 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 46,236 L 334,236 L 304,352 L 76,352 Z" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 66,284 L 314,284 M 74,320 L 306,320" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 46,236 C 20,236 20,272 52,270 M 334,236 C 360,236 360,272 328,270" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 206,160 L 222,74 L 290,40 L 276,112 Z" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 222,74 L 248,98 L 276,112" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 284,72 L 356,24" fill="none" stroke="#1E1A17" stroke-width="28" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

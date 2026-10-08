@@ -165,7 +165,7 @@ parameter, parsed defensively so a typo disables the button rather than throwing
 // From CodeBrix.Samples/PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs
     public SimpleCommand PanCommand => field ??=
         new SimpleCommand(parameter => CanPan(parameter), parameter => DoPan(parameter));
-
+    // ...
     private static bool TryParsePan(object parameter, out DocumentSide side, out PanDirection direction)
     {
         side = default;
@@ -381,6 +381,7 @@ the application re-keys:
 /// </summary>
 public static class SchemeBrushMap
 {
+    /// <summary>Every keyed brush the schemes drive, and the role each one carries.</summary>
     public static IReadOnlyDictionary<string, ColorRole> Entries { get; } =
         new Dictionary<string, ColorRole>(StringComparer.Ordinal)
         {
@@ -406,6 +407,7 @@ painting:
 // From CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/MainViewModel.cs
 public interface IColorSchemeApplier
 {
+    // ...
     void Apply(ColorSchemePalette palette, bool baseIsDark, bool followSystem);
 }
 ```
@@ -450,6 +452,8 @@ Re-pointing is one assignment, and it is what makes every consumer repaint:
 /// <summary>
 /// Re-points an existing brush at another colour, which repaints everything drawn with it.
 /// </summary>
+/// <param name="brush">The brush to re-point; null is ignored.</param>
+/// <param name="argb">The new colour.</param>
 public static void Repoint(SolidColorBrush brush, uint argb)
 {
     if (brush == null) { return; }
@@ -540,7 +544,7 @@ public static ColorScheme Resolve(ColorScheme choice, bool osPrefersDark) =>
     choice == ColorScheme.SystemDefault
         ? (osPrefersDark ? ColorScheme.Dark : ColorScheme.Light)
         : choice;
-
+// ...
 public static string DisplayName(ColorScheme choice, bool osPrefersDark) => choice switch
 {
     ColorScheme.SystemDefault => osPrefersDark ? "System default (Dark)" : "System default (Light)",
@@ -558,6 +562,10 @@ public static string DisplayName(ColorScheme choice, bool osPrefersDark) => choi
 /// paint a window with, which is the form every head reports that preference in. The weights
 /// are the usual perceived-brightness ones, and a ground below the mid point is a dark one.
 /// </summary>
+/// <param name="red">The red component of the desktop's window background.</param>
+/// <param name="green">The green component of the desktop's window background.</param>
+/// <param name="blue">The blue component of the desktop's window background.</param>
+/// <returns>True when the operating system prefers a dark appearance.</returns>
 public static bool PrefersDark(byte red, byte green, byte blue)
 {
     var brightness = (red * 0.299d) + (green * 0.587d) + (blue * 0.114d);
@@ -605,6 +613,7 @@ public MainPage()
         (DataContext as IManageColorScheme)?.OnSystemThemeChanged(SystemPrefersDark()));
 
     this.InitializeComponent(); //Leave this line last
+    // ...
 }
 
 //The operating system reports its preference as the colour it would paint a window with.
@@ -702,6 +711,15 @@ a stretched transparent `Button` whose `Command` is the item's own.
 [Microsoft.UI.Xaml.Data.Bindable]
 public class RepositoryGroupViewModel : SimpleViewModel
 {
+    private readonly Func<string, Task> _openUrlAsync;
+    private SimpleCommand _openCommand;
+
+    /// <summary>
+    /// Builds the group for one repository.
+    /// </summary>
+    /// <param name="fullName">The repository's owner and name, for example "mono/SkiaSharp".</param>
+    /// <param name="htmlUrl">The repository's page.</param>
+    /// <param name="openUrlAsync">Opens a URL in the host's browser.</param>
     public RepositoryGroupViewModel(string fullName, string htmlUrl, Func<string, Task> openUrlAsync)
     {
         FullName = fullName ?? string.Empty;
@@ -711,19 +729,30 @@ public class RepositoryGroupViewModel : SimpleViewModel
         CountText = "0";
     }
 
+    /// <summary>The repository's owner and name.</summary>
     public string FullName { get; }
 
+    /// <summary>The repository's page.</summary>
+    public string Url { get; }
+
+    /// <summary>The rows under this repository, in the order GitHub returned them.</summary>
     public ObservableCollection<IssueRowViewModel> Rows { get; }
 
+    /// <summary>How many rows are under this repository, as the header's count pill shows it.</summary>
     public string CountText
     {
         get;
         private set => SetProperty(ref field, value);
     }
 
+    /// <summary>Opens this repository's page in the host's browser.</summary>
     public SimpleCommand OpenCommand => _openCommand ??=
         new SimpleCommand((Func<object, Task>)(_ => OpenAsync()));
 
+    /// <summary>
+    /// Adds a row to the end of this group and refreshes the header's count.
+    /// </summary>
+    /// <param name="row">The row to add.</param>
     public void Add(IssueRowViewModel row)
     {
         if (row == null) { return; }
@@ -731,6 +760,7 @@ public class RepositoryGroupViewModel : SimpleViewModel
         Rows.Add(row);
         CountText = Rows.Count.ToString("N0", CultureInfo.InvariantCulture);
     }
+    // ...
 }
 ```
 
@@ -914,6 +944,7 @@ The markup binds the tooltip to the row's outermost element.
 /// </summary>
 public static class RelativeTime
 {
+    // ...
     public static string Describe(DateTimeOffset when, DateTimeOffset now)
     {
         var elapsed = now - when;
@@ -925,6 +956,7 @@ public static class RelativeTime
 
         // ... hours, then "yesterday", then days, weeks, months and years ...
     }
+    // ...
 }
 ```
 
@@ -998,6 +1030,12 @@ application's view types, declared once in `Page.Resources` and used by key.
 // From CodeBrix.Samples/CodeBrixVideoTool/src/CodeBrixVideoTool.Core/Converters/TimecodeConverter.cs
 public sealed class TimecodeConverter : IValueConverter
 {
+    /// <summary>Formats a <see cref="TimeSpan" /> as a timecode.</summary>
+    /// <param name="value">The position or duration.</param>
+    /// <param name="targetType">Ignored.</param>
+    /// <param name="parameter">Ignored.</param>
+    /// <param name="language">Ignored.</param>
+    /// <returns>The timecode, or "0:00" when the value is not a time.</returns>
     public object Convert(object value, Type targetType, object parameter, string language)
     {
         if (value is not TimeSpan time || time < TimeSpan.Zero)
@@ -1011,6 +1049,12 @@ public sealed class TimecodeConverter : IValueConverter
     }
 
     /// <summary>Not supported: a timecode is never typed back into the player.</summary>
+    /// <param name="value">Ignored.</param>
+    /// <param name="targetType">Ignored.</param>
+    /// <param name="parameter">Ignored.</param>
+    /// <param name="language">Ignored.</param>
+    /// <returns>Never returns.</returns>
+    /// <exception cref="NotSupportedException">Always.</exception>
     public object ConvertBack(object value, Type targetType, object parameter, string language) =>
         throw new NotSupportedException("A timecode is shown, never entered.");
 }
@@ -1086,6 +1130,7 @@ which is the default style; the buttons bind `Style` through it.
 // From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/Converters/BoolToAccentStyleConverter.cs
 public sealed class BoolToAccentStyleConverter : IValueConverter
 {
+    /// <inheritdoc />
     public object Convert(object value, Type targetType, object parameter, string language)
     {
         if (value is bool selected && selected
@@ -1099,6 +1144,7 @@ public sealed class BoolToAccentStyleConverter : IValueConverter
         return null;
     }
 
+    /// <inheritdoc />
     public object ConvertBack(object value, Type targetType, object parameter, string language) =>
         throw new NotSupportedException();
 }
@@ -1324,8 +1370,9 @@ model.
 // From CodeBrix.Samples/CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/ViewModels/ConversionViewModel.cs
 public ObservableCollection<string> LastRunNotes { get; } = new();
 
+/// <summary>Whether the last run left anything worth showing.</summary>
 public Visibility LastRunNotesVisibility => GetVisibility(LastRunNotes.Count > 0);
-
+// ...
 public static IReadOnlyList<string> DescribeOutcome(ConversionOutcome outcome, MediaFormatKind destination)
 {
     if (outcome is null)
@@ -1425,11 +1472,23 @@ the view model knows nothing about images.
 // From CodeBrix.Samples/JustBetweenUs/CodeBrixPlatform/JustBetweenUs.Core/Controls/EmbeddedImage.cs
 public sealed class EmbeddedImage : Image
 {
+    /// <summary>
+    /// Raised when the image named by <see cref="UriSource"/> could not be loaded - a misspelled
+    /// resource name, an assembly that is not loaded, or an image the decoder rejected. Without a
+    /// handler the control is left empty, so anything that cares about a missing image should
+    /// subscribe; the failure is written to the application log either way.
+    /// </summary>
+    public event EventHandler<EmbeddedImageFailedEventArgs> LoadFailed;
+
     public static readonly DependencyProperty UriSourceProperty =
         DependencyProperty.Register(
             nameof(UriSource), typeof(string), typeof(EmbeddedImage),
             new PropertyMetadata(null, OnUriSourceChanged));
 
+    /// <summary>
+    /// The URI of the image source. Supports embedded://AssemblyName/ResourceName
+    /// for embedded resources, or standard URIs (ms-appx:///, https://).
+    /// </summary>
     public string UriSource
     {
         get => (string)GetValue(UriSourceProperty);
@@ -1463,6 +1522,13 @@ public sealed class EmbeddedImage : Image
 
             // Copy embedded resource into an IRandomAccessStream.
             // Note: ras and writeStream are intentionally not disposed here.
+            // - Disposing writeStream closes the underlying ras (Platform behavior).
+            // - Disposing ras is unsafe because SetSourceAsync may retain a reference
+            //   to the stream rather than copying its contents, and that contract is
+            //   not guaranteed across CodeBrix Platform targets.
+            // - InMemoryRandomAccessStream is backed entirely by managed memory (no
+            //   file handles or unmanaged resources), so the GC will reclaim it once
+            //   the image source releases its reference.
             var ras = new InMemoryRandomAccessStream();
             var writeStream = ras.AsStreamForWrite();
             await resourceStream.CopyToAsync(writeStream);
@@ -1569,6 +1635,8 @@ public sealed class EmbeddedImageButton : Button
         }
     }
 
+    private bool _isUpdatingContent;
+
     private void UpdateContent()
     {
         _isUpdatingContent = true;
@@ -1613,6 +1681,7 @@ public sealed class EmbeddedImageButton : Button
             _isUpdatingContent = false;
         }
     }
+    // ...
 }
 ```
 
@@ -1859,6 +1928,10 @@ off entirely.
 /// <summary>Fluent glyph for the row: a document for pages, a stack for databases.</summary>
 public string KindGlyph => Node?.Kind == NotionSourceKind.Database ? "\uE8B7" : "\uE8A5";
 
+#endregion
+
+#region | Commands and their implementations |
+
 /// <summary>Tapping the row (not its checkbox) previews the page.</summary>
 public SimpleCommand SelectCommand => field ??= new SimpleCommand(() => _owner?.ShowPreview(this));
 ```
@@ -2056,6 +2129,13 @@ private void OnPointerMoved(object sender, PointerRoutedEventArgs e)
     e.Handled = true;
 }
 
+private void OnPointerReleased(object sender, PointerRoutedEventArgs e)
+{
+    _dragging = false;
+    ReleasePointerCapture(e.Pointer);
+    e.Handled = true;
+}
+
 private void OnPointerCaptureLost(object sender, PointerRoutedEventArgs e) => _dragging = false;
 
 private void OnPointerWheelChanged(object sender, PointerRoutedEventArgs e)
@@ -2166,6 +2246,7 @@ private ToolMouseEventArgs BuildMouseArgs (PointerRoutedEventArgs e)
         WindowPoint = viewPoint,
         RootPoint = viewPoint,
     };
+    // ...
 }
 
 private void OnCanvasPointerReleased (object sender, PointerRoutedEventArgs e)
@@ -2220,7 +2301,7 @@ wires the same handlers to it.
 ```csharp
 // From CodeBrix.Samples/PainDiagram/Shared/Drawing/DrawingCanvas.cs
 namespace CodeBrix.Imaging.Drawing;
-
+// ...
 #if (HAS_CODEBRIXPLATFORM || HAS_WINUI)
 public class DrawingCanvas : SkiaSharp.Views.Windows.SKXamlCanvas { }
 #else
@@ -2279,12 +2360,25 @@ through a bridge.
 // From CodeBrix.Samples/WebcamPainter/src/libs/WebcamPainter.Webcam/CameraCanvas.cs
 public class CameraCanvas : SkiaSharp.Views.Windows.SKXamlCanvas { }
 
+/// <summary>
+/// Renders a camera source's most recent webcam frame onto a Skia surface - aspect-fit,
+/// centered on a black background, and optionally mirrored (selfie-style). Create one
+/// renderer per canvas; the frame buffers it caches are reused across paints and are only
+/// touched on the UI thread.
+/// </summary>
 public sealed class WebcamFrameRenderer
 {
     private byte[] _frameBuffer;
     private SKBitmap _bitmap;
 
-    public void Render(SKSurface surface, SKImageInfo info, WebcamCaptureService service, bool mirror)
+    /// <summary>
+    /// Renders the most recent frame; leaves the surface black when no frame is available.
+    /// </summary>
+    /// <param name="surface">The Skia surface to render onto.</param>
+    /// <param name="info">The image info describing the surface.</param>
+    /// <param name="service">The camera source to pull the frame from; nothing renders when null.</param>
+    /// <param name="mirror"><c>true</c> to flip the video left-to-right, like a mirror.</param>
+    public void Render(SKSurface surface, SKImageInfo info, ICameraSource service, bool mirror)
     {
         SKCanvas canvas = surface.Canvas;
         canvas.Clear(SKColors.Black);
@@ -2638,7 +2732,9 @@ private static MenuBarItem BuildMenu(string title, params Command[] commands)
 
 ### Dispatch keyboard shortcuts from one page KeyDown handler
 
-**When you want this.** You want working keyboard shortcuts on the Skia heads.
+**When you want this.** Your commands carry their own shortcut strings in a
+headless model, and you want one dispatch path driven by those strings, with the
+shortcut text shown on the menus.
 
 **The MVVM shape.** A table maps parsed accelerators to commands; the page adds
 one handled-events-too key handler and asks the table to invoke. The commands live
@@ -2649,18 +2745,22 @@ it.
 
 ```csharp
 // From CodeBrix.Samples/Pinta.Brix/src/libs/Pinta.Brix.Controls/Input/CommandAcceleratorTable.cs
-// Pinta.Brix note: XAML KeyboardAccelerators are declared on the menu items
-// (so the shortcut is visible where the user looks for it) but they do NOT
-// ...
-// application: typing reaches a TextBox normally, while Ctrl+Z, Ctrl+Y and
-// Ctrl+H registered on a Page or on a MenuFlyoutItem never invoke.
+// Pinta.Brix note: a KeyboardAccelerator on a menu item fires application-wide
+// on the Skia heads, but this port does not use them. The shortcut data lives
+// on the engine's Command objects as upstream's GTK accelerator strings, in a
+// library with no XAML, and this table turns those strings into one dispatch
+// path from a single KeyDown handler on the page. That one place also holds
+// the rules XAML accelerators would not give: first registration wins on
+// upstream's genuine collisions, and a disabled command swallows nothing. The
+// same handler carries upstream's unmodified tool and palette keys, which are
+// not commands at all. The table predates app-wide menu accelerators; the menu
+// items show the shortcut text from the same strings, and adding real
+// accelerators as well would fire every shortcut twice.
 //
-// So the shortcuts are dispatched here instead, from a single KeyDown handler
-// ...
+// This is close to what upstream did anyway - Pinta's MainWindow carried a
+// HandleGlobalKeyPress for exactly the keys GTK would not route - and it keeps
+// the shortcut data on the Command objects where the port put it.
 ```
-
-The elided line records how that was established: by driving the running
-application on an X11 head and watching which keys arrived.
 
 ```csharp
 // From CodeBrix.Samples/Pinta.Brix/src/libs/Pinta.Brix.Controls/Input/CommandAcceleratorTable.cs
@@ -2681,10 +2781,35 @@ public bool TryInvoke (VirtualKey key)
 
 ```csharp
 // From CodeBrix.Samples/Pinta.Brix/src/Pinta.Brix.UI/Views/MainPage.Menus.cs
+//Every shortcut is dispatched from the page's KeyDown handler through
+//one table built from the engine commands (see CommandAcceleratorTable
+//for why it is not menu-item KeyboardAccelerators). The menu items
+//show the shortcut as text only.
 acceleratorTable = new CommandAcceleratorTable();
 
 foreach (Command command in actions.AllCommands())
 {
+    acceleratorTable.Register(command);
+}
+
+//The Window menu's Alt+1 .. Alt+9 entries go through the same table:
+//one command per slot, sensitive only while that slot has a document.
+for (int i = 0; i < windowDocumentCommands.Length; i++)
+{
+    int index = i;
+    Command command = new($"ActiveDocument{index + 1}", $"Document {index + 1}", null, null,
+        [$"<Alt>{index + 1}"])
+    {
+        Sensitive = index < PintaCore.Workspace.OpenDocuments.Count,
+    };
+    command.Activated += (_, _) =>
+    {
+        if (index < PintaCore.Workspace.OpenDocuments.Count)
+        {
+            PintaCore.Workspace.SetActiveDocument(index);
+        }
+    };
+    windowDocumentCommands[i] = command;
     acceleratorTable.Register(command);
 }
 
@@ -2701,10 +2826,10 @@ AddHandler(UIElement.KeyUpEvent, new KeyEventHandler(OnGlobalKeyUp), handledEven
 `Pinta.Brix/tests/libs/Pinta.Brix.Controls.Tests/CommandAcceleratorTableTests.cs`
 
 **Sharp edges.**
-- XAML keyboard-accelerator objects do not invoke on the Skia heads. The menu
-  items still show the shortcut text through the text-override property, which
-  does work, and the builder deliberately does not attach a real accelerator so
-  there is never a second dispatch path.
+- A keyboard accelerator on a menu item fires application-wide on the Skia heads,
+  so the menu items show the shortcut through the text-override property only, and
+  the builder deliberately does not attach a real accelerator: with the table also
+  dispatching, every shortcut would fire twice.
 - `handledEventsToo: true` is required, because a canvas marks most key events
   handled.
 - Modifier state is tracked from the modifier keys' own transitions, not probed,
@@ -2942,13 +3067,22 @@ public sealed class ToolBarRenderer : IDisposable
 		this.panel = panel;
 		model.ItemsChanged += OnItemsChanged;
 		Rebuild ();
+		// ...
 	}
 
 	private UIElement? CreateElement (ToolBarItem item)
 	{
 		UIElement? element = item switch {
-			ToolBarLabel label => new TextBlock { Text = label.Text, /* ... */ },
-			ToolBarSeparator => new Border { Width = 1, /* ... */ },
+			ToolBarLabel label => new TextBlock {
+				Text = label.Text,
+				VerticalAlignment = VerticalAlignment.Center,
+				Margin = new Thickness (4, 0, 4, 0),
+			},
+			ToolBarSeparator => new Border {
+				Width = 1,
+				Margin = new Thickness (6, 4, 6, 4),
+				Background = new SolidColorBrush (Windows.UI.Color.FromArgb (0x40, 0x80, 0x80, 0x80)),
+			},
 			ToolBarImage image => CreateImage (image),
 			ToolBarToggleButton toggle => CreateToggle (toggle),
 			ToolBarDropDownButton dropDown => CreateDropDown (dropDown),
@@ -2961,6 +3095,7 @@ public sealed class ToolBarRenderer : IDisposable
 		// ... tooltip, then a Visible->Visibility binding with a detacher
 		return element;
 	}
+	// ...
 }
 ```
 
@@ -3005,17 +3140,19 @@ view model handles that event and shows a dialog or mutates the model.
 public sealed class PaletteWidget : SKXamlCanvas
 {
 	private const int WidgetHeight = 42;
+	// ...
 	private static readonly SKRect PrimaryRect = SKRect.Create (4, 3, SwatchSize, SwatchSize);
 	private static readonly SKRect SecondaryRect = SKRect.Create (17, 16, SwatchSize, SwatchSize);
 	private static readonly SKRect SwapRect = SKRect.Create (27, 2, 15, 15);
 	private static readonly SKRect ResetRect = SKRect.Create (2, 27, 15, 15);
-
+	// ...
 	/// <summary>
 	/// Raised when the user asks to edit a colour - a click on either swatch,
 	/// or a modifier-click on a palette entry.
 	/// </summary>
 	public event EventHandler<PaletteColorEditEventArgs>? ColorEditRequested;
 
+	/// <summary>Creates the widget.</summary>
 	public PaletteWidget ()
 	{
 		Height = WidgetHeight;
@@ -3031,7 +3168,7 @@ public sealed class PaletteWidget : SKXamlCanvas
 	}
 
 	private void OnPaletteChanged (object? sender, EventArgs e) => Invalidate ();
-
+	// ...
 	private void OnPointerPressedHandler (object sender, PointerRoutedEventArgs e)
 	{
 		PointerPoint point = e.GetCurrentPoint (this);
@@ -3044,6 +3181,7 @@ public sealed class PaletteWidget : SKXamlCanvas
 		}
 		// ...
 	}
+	// ...
 }
 ```
 
@@ -3086,6 +3224,9 @@ control has no resize policy of its own.
 // From CodeBrix.Samples/Pinta.Brix/src/libs/Pinta.Brix.Controls/ThumbSplitter.cs
 public sealed class ThumbSplitter : Border
 {
+	private bool dragging;
+	private Windows.Foundation.Point last_position;
+
 	/// <summary>
 	/// Raised while dragging with the movement since the last report, in the
 	/// axis the splitter resizes: X for a vertical bar, Y for a horizontal one.
@@ -3095,6 +3236,7 @@ public sealed class ThumbSplitter : Border
 	public ThumbSplitter (Orientation orientation)
 	{
 		Orientation = orientation;
+
 		Background = new SolidColorBrush (Windows.UI.Color.FromArgb (0x30, 0x80, 0x80, 0x80));
 
 		if (orientation == Orientation.Vertical)
@@ -3111,6 +3253,7 @@ public sealed class ThumbSplitter : Border
 		PointerMoved += OnPointerMovedHandler;
 		PointerReleased += OnPointerReleasedHandler;
 	}
+	// ...
 }
 ```
 
@@ -3159,7 +3302,7 @@ it like a dialog. The content is supplied by the caller.
 // the live preview stays fully visible and interactive; ContentDialog dims
 // and blocks the whole window, which defeats the preview. Every effect
 // configuration dialog in the port goes through this host.
-
+// ...
 public static async Task<bool> ShowAsync (string title, UIElement content, XamlRoot xamlRoot, double maxWidth = 460)
 {
     TaskCompletionSource<bool> completion = new (TaskCreationOptions.RunContinuationsAsynchronously);
@@ -3574,8 +3717,8 @@ one page, and the application must contribute no controls of its own.
 
 **The MVVM shape.** The page owns the hosting element and its lifecycle, because
 only the page has the element and only the page knows when it has been loaded. It
-holds one small facade type - here a `RuntimeHost` with a start method and a
-dispose - so the code-behind never sees the interpreter, the toolkit bridge or the
+holds one small facade type - here a `RuntimeHost`, of which the page calls only a
+start method and a dispose - so the code-behind never sees the interpreter, the toolkit bridge or the
 boot sequence. The view model is a `SimpleViewModel` that stays empty on purpose:
 the guest owns every pixel, so there is nothing to bind yet, and the design-mode
 guard and the empty regions are kept so application state has somewhere to go the
@@ -3632,6 +3775,9 @@ public sealed partial class MainPage : Page
 
         this.InitializeComponent(); //Leave this line last
     }
+
+    //The page's DRAKON runtime owner (readiness, quit action); read by the PlayTests.
+    internal RuntimeHost RuntimeHost => _runtimeHost;
 }
 ```
 
@@ -3643,7 +3789,7 @@ that a double start or a double dispose costs nothing:
 public sealed class RuntimeHost : IDisposable
 {
     private DrakonRuntime _runtime;
-
+    // ...
     /// <summary>
     /// Creates and starts the DRAKON runtime inside the given host view. Call
     /// once, from the UI thread, after the host has loaded (its tree and
@@ -3656,9 +3802,14 @@ public sealed class RuntimeHost : IDisposable
         if (_runtime != null) { return; }
 
         _runtime = new DrakonRuntime();
-        _runtime.Start(host);
+        _runtime.Diagnostic += OnDiagnostic;
+        _runtime.Start(host, code =>
+        {
+            Action<int> quit = QuitAction;
+            if (quit != null) { quit(code); }
+        });
     }
-
+    // ...
     /// <summary>
     /// Stops the Tcl thread and disposes the runtime. Safe to call more than
     /// once, and safe to call when <see cref="Start"/> was never called.
@@ -3921,7 +4072,7 @@ private void AddConsoleTab(ConsoleTabViewModel model)
     ConsoleTabs.SelectedItem = tab;
     ShowConsoleBody(host);
 }
-
+// ...
 //Exactly one console body is visible at a time; the others stay in the tree, collapsed, so
 //  their terminals remain loaded and keep receiving their sessions' output.
 private void ShowConsoleBody(ConsoleHost selected)
@@ -3946,6 +4097,9 @@ public ObservableCollection<ConsoleTabViewModel> Tabs { get; } = [];
 /// Opens a console tab on a container. The page notices the new tab through the collection
 /// and does the rest: it builds a terminal, asks for the tab's session and starts the pump.
 /// </summary>
+/// <param name="containerId">The container to open a shell in.</param>
+/// <param name="containerName">The name to put on the tab.</param>
+/// <returns>The new tab.</returns>
 public ConsoleTabViewModel OpenConsole(string containerId, string containerName)
 {
     if (string.IsNullOrEmpty(containerId)) { return null; }
@@ -4036,7 +4190,7 @@ public class ParameterFieldViewModel : SimpleViewModel
     /// <summary>Whether the multi-line editor is showing.</summary>
     public Visibility MultiLineVisibility =>
         GetVisibility(Kind == TopologyParameterKind.MultiLineText);
-
+    // ...
     /// <summary>
     /// The value of an integer field. <c>NumberBox</c> reports an emptied box as
     /// <see cref="double.NaN"/>, which is left in place rather than written through, so the
@@ -4055,6 +4209,7 @@ public class ParameterFieldViewModel : SimpleViewModel
             Value = ((long)Math.Round(value)).ToString(CultureInfo.InvariantCulture);
         }
     }
+    // ...
 }
 ```
 
@@ -4123,6 +4278,7 @@ private void Select(TopologyChoiceViewModel choice)
 
     // ...
     Revalidate();
+    // ...
 }
 
 private void Revalidate()
@@ -4202,6 +4358,10 @@ private EndpointRowViewModel(string label, string secret, Action<string> copy, b
 /// password is also readable through <c>docker inspect</c>, so this is convenience rather
 /// than secrecy — the card says so.
 /// </summary>
+/// <param name="label">The label on the left.</param>
+/// <param name="secret">The value to hide.</param>
+/// <param name="copy">What copying does.</param>
+/// <returns>The masked row.</returns>
 public static EndpointRowViewModel Secret(string label, string secret, Action<string> copy) =>
     new(label, secret, copy, true);
 
@@ -4209,6 +4369,9 @@ public static EndpointRowViewModel Secret(string label, string secret, Action<st
 
 /// <summary>The value shown on the row: bullets while a secret is hidden.</summary>
 public string Value { get; private set; }
+
+/// <summary>Whether this row hides its value.</summary>
+public bool IsSecret { get; }
 
 /// <summary>Whether the reveal button is offered.</summary>
 public Visibility RevealVisibility => GetVisibility(IsSecret);
@@ -4364,19 +4527,24 @@ which view-model type any of them uses.
 /// canvas can be wired before the page's <c>DataContext</c> has arrived and keeps working
 /// after the view model is disposed.
 /// </summary>
+/// <param name="canvas">The canvas to wire up; nothing happens when it is <c>null</c>.</param>
+/// <param name="sessionGetter">
+/// Returns the current drawing session, or <c>null</c> when there is not one yet.
+/// </param>
 public static void BindToSession(this DrawingCanvas canvas, Func<DrawingSession> sessionGetter)
 {
     if (canvas == null || sessionGetter == null) { return; }
 
     canvas.PaintSurface += (_, e) => sessionGetter()?.Render(e.Surface, e.Info);
 
-// ...
+    // ...
     canvas.PointerMoved += (_, e) =>
     {
         var session = sessionGetter();
         if (session is not { IsPointerActive: true }) { return; }
-// ...
+        // ...
     };
+    // ...
 }
 ```
 
@@ -5465,7 +5633,7 @@ every arc rewritten as cubics and both parsers tried again:
 
 ```csharp
 // From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs
-private static Geometry? TryParseGeometry(string data)
+private static Geometry TryParseGeometry(string data)
 {
     try { return (Geometry)Microsoft.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(typeof(Geometry), data); }
     catch (Exception) { /* try the reader */ }
@@ -5581,7 +5749,7 @@ public void FlipToFaceUp()
     if (IsFaceUp) { return; }
     try
     {
-        void OnDone(object? s, object e)
+        void OnDone(object s, object e)
         {
             FlipOutStory.Completed -= OnDone;
             IsFaceUp = true;
@@ -5684,7 +5852,7 @@ private const char HairSpace = ' ';
 /// TextBlock.CharacterSpacing is ignored on this head, so "tracked caps" are faked by
 /// inserting thin spaces between letters. Existing spaces become a wider gap.
 /// </summary>
-public static string Track(string? text, bool upper = true)
+public static string Track(string text, bool upper = true)
 {
     if (string.IsNullOrEmpty(text)) { return string.Empty; }
     var source = upper ? text.ToUpperInvariant() : text;
@@ -5702,7 +5870,7 @@ public static string Track(string? text, bool upper = true)
 }
 
 /// <summary>Light tracking (hair spaces only) for longer strings that must still fit.</summary>
-public static string TrackLight(string? text, bool upper = true)
+public static string TrackLight(string text, bool upper = true)
 {
     if (string.IsNullOrEmpty(text)) { return string.Empty; }
     var source = upper ? text.ToUpperInvariant() : text;

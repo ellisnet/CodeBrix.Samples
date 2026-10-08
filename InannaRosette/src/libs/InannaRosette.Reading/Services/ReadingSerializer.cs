@@ -12,11 +12,18 @@ namespace InannaRosette.Reading.Services;
 /// </summary>
 public sealed class ReadingSerializer : IReadingSerializer
 {
+    /// <summary>
+    /// The document-format version this serializer writes and the only one it reads. Version 1
+    /// is the first and only format there has ever been, so there is no older format to migrate
+    /// from: a document carrying any other version is refused.
+    /// </summary>
+    public const int CurrentVersion = 1;
+
     /// <summary>The document actually written to disk. Public so callers may inspect or build one.</summary>
     public sealed record ReadingDocument
     {
-        /// <summary>The document-format version; 1 is the only one written so far.</summary>
-        public int Version { get; init; } = 1;
+        /// <summary>The document-format version; see <see cref="CurrentVersion"/>.</summary>
+        public int Version { get; init; } = CurrentVersion;
 
         /// <summary>When the reading was laid.</summary>
         public DateTime Created { get; init; }
@@ -73,8 +80,12 @@ public sealed class ReadingSerializer : IReadingSerializer
         return JsonSerializer.Serialize(doc, Options);
     }
 
-    /// <summary>Reads a reading back from JSON. Unknown card ids or station indexes are skipped.</summary>
-    /// <exception cref="FormatException">The text is not a reading document.</exception>
+    /// <summary>
+    /// Reads a reading back from JSON. The document must carry <see cref="CurrentVersion"/>;
+    /// unknown card ids or station indexes are skipped.
+    /// </summary>
+    /// <exception cref="FormatException">The text is not a reading document, carries no
+    /// version, or carries a version other than <see cref="CurrentVersion"/>.</exception>
     public RosetteReading FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
@@ -82,7 +93,15 @@ public sealed class ReadingSerializer : IReadingSerializer
         ReadingDocument? doc;
         try
         {
-            doc = JsonSerializer.Deserialize<ReadingDocument>(json, Options);
+            using var parsed = JsonDocument.Parse(json);
+            var root = parsed.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                throw new FormatException("The text is not a valid reading document.");
+            }
+
+            CheckVersion(root);
+            doc = root.Deserialize<ReadingDocument>(Options);
         }
         catch (JsonException ex)
         {
@@ -108,5 +127,38 @@ public sealed class ReadingSerializer : IReadingSerializer
         }
 
         return reading;
+    }
+
+    //Every document this application has ever written carries a version, so one without it was
+    //  not saved by InannaRosette. Version 1 is the only format there has been: an older number
+    //  names no real format, and a newer one was written by a later InannaRosette whose changes
+    //  this one cannot know, so both are refused rather than half-read.
+    private static void CheckVersion(JsonElement root)
+    {
+        if (!root.TryGetProperty("version", out var element))
+        {
+            throw new FormatException(
+                "The text is not a valid reading document: it has no format version.");
+        }
+
+        if (element.ValueKind != JsonValueKind.Number || !element.TryGetInt32(out var version))
+        {
+            throw new FormatException(
+                "The text is not a valid reading document: its format version is not a whole number.");
+        }
+
+        if (version > CurrentVersion)
+        {
+            throw new FormatException(
+                $"This reading was saved in format version {version} by a newer InannaRosette; "
+                + $"this one reads format version {CurrentVersion}.");
+        }
+
+        if (version < CurrentVersion)
+        {
+            throw new FormatException(
+                $"The text is not a valid reading document: format version {version} does not exist; "
+                + $"the first format version is {CurrentVersion}.");
+        }
     }
 }

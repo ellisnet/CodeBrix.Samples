@@ -1,6 +1,6 @@
 # CodeBrix.Samples Blueprints: Hosting a game engine
 
-These recipes cover three things. The first is hosting the CodeBrix.Platform
+These recipes cover four things. The first is hosting the CodeBrix.Platform
 GameEngine loop inside an ordinary page: handing the view model a game canvas
 once it has a real, non-zero layout size, and owning the engine lifecycle in a
 session class so the loop can start, pause, resume and stop as the user moves
@@ -28,6 +28,13 @@ that name what is really playing. Reach for this file when an
 engine-driven surface has to live alongside regular pages and controls, when
 the music has to react to what is happening on that surface, or when you are
 building a whole game rather than a surface.
+
+A fourth group comes from a turn-based game of cards and dice: the CardsAndDice add-on's
+table wired into a game host and painted into the game's own draw list, card faces
+composed as self-contained SVG with every letter a vector path, the table's dice made to
+land on the rules engine's roll, the engine's events played on the table one step at a
+time with the computer players paced to the animations, and a turn-based rules engine
+with no package reference whose seeded games are pinned by a hash of its whole state.
 
 This file is one of the CodeBrix.Samples blueprints. The [index](BLUEPRINTS-Index.md)
 lists every recipe across all of the blueprint files and explains the
@@ -59,6 +66,11 @@ conventions the code blocks follow.
 - [Duck the music for a pause menu and hold a game-over duck with PlayStingerWithHeldDuck until the title](#duck-the-music-for-a-pause-menu-and-hold-a-game-over-duck-with-playstingerwithheldduck-until-the-title)
 - [Keep the music for each level in a table the tests can read](#keep-the-music-for-each-level-in-a-table-the-tests-can-read)
 - [Show the player which model and instruments are really playing](#show-the-player-which-model-and-instruments-are-really-playing)
+- [Wire a CardsAndDice table into a CodeBrixGameHost and paint it into the game's draw list](#wire-a-cardsanddice-table-into-a-codebrixgamehost-and-paint-it-into-the-games-draw-list)
+- [Compose card faces as SVG with every letter a vector path](#compose-card-faces-as-svg-with-every-letter-a-vector-path)
+- [Force the table's dice to show the rules engine's roll](#force-the-tables-dice-to-show-the-rules-engines-roll)
+- [Play a rules engine's events on the table one step at a time and pace the computer turns](#play-a-rules-engines-events-on-the-table-one-step-at-a-time-and-pace-the-computer-turns)
+- [Keep a turn-based rules engine package-free and pin seeded games with a state hash](#keep-a-turn-based-rules-engine-package-free-and-pin-seeded-games-with-a-state-hash)
 
 ## Related blueprints
 
@@ -212,6 +224,11 @@ public void Start()
     IsStarted = true;
 }
 
+/// <summary>
+/// Parks the visual at ~zero cost (the global engine pause) while the user is back at
+/// Camera Mode, releasing every palm attractor so a later <see cref="Resume"/> starts
+/// from the undisturbed visual. Safe to call when not started or already paused.
+/// </summary>
 public void Pause()
 {
     if (!IsStarted || Engine.Instance.IsPaused) { return; }
@@ -220,13 +237,17 @@ public void Pause()
     Engine.Instance.Pause();
 }
 
+/// <summary>
+/// Wakes the visual after a <see cref="Pause"/> - the pause is invisible to engine
+/// time, so the colors resume mid-motion. Safe to call when not started or not paused.
+/// </summary>
 public void Resume()
 {
     if (!IsStarted || !Engine.Instance.IsPaused) { return; }
 
     Engine.Instance.Resume();
 }
-
+// ...
 public void Stop()
 {
     if (!IsStarted) { return; }
@@ -262,6 +283,16 @@ private Task DoVisualize()
     StatusText = "Show the camera your open palm - the colors will gather toward it.";
     return Task.CompletedTask;
 }
+
+#endregion
+
+#region BackCommand
+
+private SimpleCommand _backCommand;
+public SimpleCommand BackCommand =>
+    (_backCommand ??= new SimpleCommand(CanGoBack, DoGoBack));
+
+private bool CanGoBack() => IsVisualizeMode;
 
 private Task DoGoBack()
 {
@@ -572,6 +603,9 @@ private void OnCrossfadeNow(object sender, object e)
 private void OnCrossfadeOnBar(object sender, object e)
     => Demo?.CrossfadeToTrackB(MusicTransitionQuantize.Bar);
 
+private void OnCrossfadeBackOnBar(object sender, object e)
+    => Demo?.CrossfadeToTrackA(MusicTransitionQuantize.Bar);
+
 private void OnCancelQueued(object sender, object e) => Demo?.CancelQueuedTransition();
 ```
 
@@ -664,7 +698,7 @@ private void FadeStem(int index, float target, Slider slider)
 
     // The slider would otherwise keep showing where the layer WAS; setting it here would fight
     // the fade, so it is moved to the destination and the fade is left to do the audible part.
-    slider.Value = target * 100.0;
+    MoveStemSlider(slider, target * 100.0);
 }
 ```
 
@@ -1106,15 +1140,16 @@ return new GeneratedMusicOptions
 };
 ```
 
-The view model builds the director over the engine's real seams:
+Unless an alternate host (the PlayTests) has registered its own director, the
+view model builds one over the engine's real seams:
 `EngineGeneratedMusicStarter` calls `Engine.UseGeneratedMusic` and returns the
 provider as an `IGeneratedMusicSession`, and `MusicManager` is the `IMusicManager`
 whose `MusicVolume` is the player's music slider:
 
 ```csharp
 // From CodeBrix.Samples/BrixInvaders/src/BrixInvaders.Core/ViewModels/MainViewModel.cs
-var music = new GeneratedMusicDirector(new EngineGeneratedMusicStarter(), MusicManager.Instance,
-    Engine.Instance.EngineDispatcher);
+var music = GetServices<IMusicDirector>().LastOrDefault()
+    ?? new GeneratedMusicDirector(new EngineGeneratedMusicStarter(), MusicManager.Instance, Engine.Instance.EngineDispatcher);
 ```
 
 From then on the music is moved on, never restarted. A new sector or a boss is a
@@ -2961,11 +2996,12 @@ is built before the host has read the packs or the music has started:
 
 ```csharp
 // From CodeBrix.Samples/BrixInvaders/src/BrixInvaders.Core/ViewModels/MainViewModel.cs
-var music = new GeneratedMusicDirector(new EngineGeneratedMusicStarter(), MusicManager.Instance,
-    Engine.Instance.EngineDispatcher);
-var links = new LauncherLinkOpener();
+var music = GetServices<IMusicDirector>().LastOrDefault()
+    ?? new GeneratedMusicDirector(new EngineGeneratedMusicStarter(), MusicManager.Instance, Engine.Instance.EngineDispatcher);
+var links = GetServices<IExternalLinkOpener>().LastOrDefault() ?? new LauncherLinkOpener();
 BrixInvadersGameHost host = null;
-var credits = new KenneyCreditsContent(() => host?.PackCredits ?? Array.Empty<string>(), music.CreditLines);
+var credits = new KenneyCreditsContent(() => host?.PackCredits ?? Array.Empty<string>(),
+    music is GeneratedMusicDirector generated ? generated.CreditLines : null);
 host = new BrixInvadersGameHost(canvas, music, links, credits);
 ```
 
@@ -2992,3 +3028,897 @@ and `Audio/GeneratedMusicDirectorTests.cs` (`CreditLines_name_the_model_and_libr
 - The credit lines hang off the concrete director rather than the director
   interface, which is why the view model captures the director before handing it
   to the host.
+
+### Wire a CardsAndDice table into a CodeBrixGameHost and paint it into the game's draw list
+
+**When you want this.** Your game is cards and dice - decks, rows, a hand, a roll - and
+you want the CardsAndDice add-on to do the dealing, flipping, tumbling and hit-testing,
+while the rest of the frame (a board under the cards, a HUD over them, buttons) is your
+own drawing. The table is not a page control: it lives inside the engine loop, and it has
+to be created, fed input, advanced and drawn at the right points of your game host.
+
+**The MVVM shape.** The game library's `CodeBrixGameHost` owns the table for its whole
+life; the view model only creates the host and never sees the table. A session class
+lays the game's state out on the table - one add-on deck per rules deck, an area per row,
+the dice - and the host advances it from the fixed step. The table draws into the same
+engine draw list the host's painter fills, so the z-order is simply the order of the
+calls.
+
+**Code.**
+
+The table is created when the host loads its assets, next to the pieces that draw
+around it; the card faces are composed on a worker meanwhile (see
+[Compose card faces as SVG with every letter a vector path](#compose-card-faces-as-svg-with-every-letter-a-vector-path)):
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs
+protected override void LoadAssets()
+{
+    _table = new CardsAndDiceTable();
+    _artwork = new TableArtwork(_table);
+    _deco = new DecoPieces(_artwork);
+    _fonts = new HudFonts();
+    _painter = new HudPainter(_deco, _fonts);
+    _preparationClock = Stopwatch.StartNew();
+    _facesTask = Task.Run(CardFaceLibrary.ForCatalog);
+}
+```
+
+Its events are subscribed once the engine is up, in `OnEngineInitialized`:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs
+_table.CardClicked += OnCardClicked;
+_table.DieClicked += OnDieClicked;
+_table.InspectRequested += OnInspectRequested;
+```
+
+Every fixed step drains the mouse events the engine's poller queued and offers each to
+the HUD first by hit-testing the published draw list. A HUD button fires on the release,
+as a control does: the press arms it, a release on the same button fires it, a release
+anywhere else disarms it, so the release reaches the canvas before a pane the button opens
+covers it and the table's next click is a fresh press. While the view model reports a pane
+over the table through `SetPanesOpen`, neither the table nor the HUD takes a click.
+Everything else goes to the table:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs
+private void Mouse()
+{
+    while (_mouse.TryDequeue(out var e))
+    {
+        var point = new Vector2(e.CurrentPosition.X, e.CurrentPosition.Y);
+        _frame.PointerX = point.X;
+        _frame.PointerY = point.Y;
+        HoverSlot(point);
+        if (_armedButton != null && e.LeftButtonJustReleased)
+        {
+            var armed = _armedButton;
+            _armedButton = null;
+            if (!_panesOpen && _hud.Published.HitTest(point.X, point.Y) is { } released && released.Id == armed)
+            {
+                Button(armed);
+            }
+
+            continue;
+        }
+
+        if (_panesOpen)
+        {
+            _table.CancelDrag();
+            continue;
+        }
+
+        if (e.LeftButtonJustPressed && _hud.Published.HitTest(point.X, point.Y) is { } hit)
+        {
+            _armedButton = hit.Id;
+            continue;
+        }
+
+        _table.Pointer(point, e.LeftButtonJustPressed, e.LeftButtonJustReleased, e.RightButtonJustPressed);
+    }
+}
+```
+
+After the steps, one draw list is cleared, painted and published. The painter draws the
+board, then the table, then the HUD over it:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs
+protected override void OnAfterFixedUpdates(int stepCount)
+{
+    if (_painter == null)
+    {
+        return;
+    }
+
+    _hud.Clear();
+    _frame.IsHumanTurn = IsHumanTurn();
+    _frame.IsGameOver = _session?.Engine.State.IsGameOver ?? false;
+    _frame.Preparation = PreparationProgress();
+    _painter.Paint(_hud, _table, _cardPreparation == null ? _session : null, _controls, _frame, _tableWidth);
+    _hud.Publish();
+    AutoPlayScreenshot();
+}
+```
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hud/HudPainter.cs
+var layout = session?.Layout ?? new TableLayout(width);
+Board(list, layout, session != null);
+if (session != null)
+{
+    SyncSelection(session, controls);
+}
+
+table.Draw(list);
+
+Header(list, layout, frame);
+```
+
+The session builds one add-on deck per rules deck, keeping each card's rules record in
+the definition's `Data`, so a clicked table card leads straight back to it:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/TableSession.cs
+_siteDeck = BuildDeck("Site deck", AllDiscoveries(state), d => new CardDefinition(d.Id, d.Title, CardFaceComposer.FaceKey(d.Id), CelestialBack) { Data = d });
+```
+
+and lays the table out once, with its own rules about input: clicks on, dragging and the
+add-on's selection off, no drops anywhere, and three dice of which only the first two
+normally leave their parking place off the table:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/TableSession.cs
+private void BuildTable()
+{
+    _table.Clear();
+    _table.InputEnabled = true;
+    _table.DragEnabled = false;
+    _table.SelectionMode = CardSelectionMode.None;
+
+    _tell = Add(_siteDeck.DrawPile, CardLayout.Stack, TableLayout.SiteCard);
+    _tabletArea = Add(_tabletDeck.DrawPile, CardLayout.Stack, new SkiaSharp.SKSize(90, 144));
+    _expeditionDeckArea = Add(_expeditionDeck.DrawPile, CardLayout.Stack, TableLayout.ExpeditionCard);
+    _favorDeckArea = Add(_favorDeck.DrawPile, CardLayout.Stack, TableLayout.SmallCard);
+    _favorShow = Add(new CardPile("Favor shown"), CardLayout.Stack, TableLayout.ShowcaseCard);
+    _favorDiscard = Add(_favorDeck.DiscardPile, CardLayout.Stack, TableLayout.SmallCard);
+    for (var slot = 0; slot < _siteSlots.Length; slot++)
+    {
+        _siteSlots[slot] = Add(new CardPile("Site " + (slot + 1)), CardLayout.Stack, TableLayout.SiteCard);
+        _siteSlots[slot].SingleCard = true;
+    }
+
+    for (var slot = 0; slot < _expeditionSlots.Length; slot++)
+    {
+        _expeditionSlots[slot] = Add(new CardPile("Expedition " + (slot + 1)), CardLayout.Stack, TableLayout.ExpeditionCard);
+        _expeditionSlots[slot].SingleCard = true;
+    }
+
+    _hand = Add(new CardPile("Hand"), CardLayout.Fan, TableLayout.HandCard);
+    _shelf = Add(new CardPile("Specialists"), CardLayout.Row, TableLayout.SmallCard);
+    foreach (var team in Engine.State.Teams)
+    {
+        _reports[team.Name] = Add(new CardPile(team.Name + " reports"), CardLayout.Stack, TableLayout.SmallCard);
+        _handStash[team.Name] = new CardPile(team.Name + " hand");
+        _shelfStash[team.Name] = new CardPile(team.Name + " specialists");
+    }
+
+    foreach (var area in _table.Areas)
+    {
+        area.AcceptsDrops = false;
+    }
+
+    for (var i = 0; i < _dice.Length; i++)
+    {
+        _dice[i] = _table.AddDie(Die.Traditional(), TableLayout.DieParked, TableLayout.DieSize);
+    }
+
+    PlaceAreas();
+}
+
+private TableArea Add(CardPile pile, CardLayout layout, SkiaSharp.SKSize cardSize)
+{
+    var area = _table.AddArea(pile, TableLayout.Point(Vector2.Zero), layout);
+    area.CardWidth = cardSize.Width;
+    area.CardHeight = cardSize.Height;
+    return area;
+}
+```
+
+**Where to look.**
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs`
+(`LoadAssets`, `OnEngineInitialized`, `OnFixedUpdate`, `OnAfterFixedUpdates`, `Mouse`,
+`OnCardClicked`, `OnDieClicked`, `OnInspectRequested`)
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/TableSession.cs`
+(`BuildTable`, `PlaceAreas`, `Update`) and `TableLayout.cs`
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hud/HudPainter.cs` (`Paint`)
+`GoddessTempleDiscovery/tests/libs/GoddessTempleDiscovery.Game.Tests/Session/TableSessionTests.cs`
+and `Support/SessionFixture.cs` (a headless table with every face registered)
+
+**Sharp edges.**
+- The table is engine-thread state. Create it in `LoadAssets`, touch it only from the
+  engine thread, and post anything the page asks for (a new game, new settings) through
+  the engine dispatcher.
+- Hit-test your own buttons against the published draw list before the table sees the
+  press, or a click on a button over a card also clicks the card.
+- Fire a drawn button on the release, not the press. A button that opens a XAML pane on
+  the press leaves its release to land on the pane instead of the canvas, and the
+  table's next click is then lost.
+- Tell the host when a XAML pane covers the canvas, and drop the table's clicks while
+  it does, or a click on the pane also plays the card beneath it.
+- The add-on toggles a die's hold flag when it is clicked. A game that uses a click to
+  choose a die rather than hold it clears the flag in its `DieClicked` handler.
+- An add-on deck deals from the top of its draw pile. To deal a particular card - the one
+  the rules engine says came off the deck - put it on top first, then deal.
+- A table can be relaid out at any width. When the render resolution follows the window,
+  cancel any drag and move every area in the same step, or a card lands where the old
+  layout had its slot.
+- The table is drawn into your list, not over it. Draw what goes under the cards before
+  `table.Draw` and the HUD after it, and dispose the table with the host.
+
+### Compose card faces as SVG with every letter a vector path
+
+**When you want this.** Your cards are generated from data - a title, a few lines of
+text, a picture, a number badge - and you want each face to be one self-contained
+picture that looks the same on every machine and in every renderer: the table, a large
+inspector image, a printed PDF. A face that names a font depends on that font being
+installed; a face whose letters are paths does not.
+
+**The MVVM shape.** None of this is UI. A composer class in the game library turns a
+rules card and the embedded art into SVG text, with a small helper that turns a line of
+text into SVG path data from an embedded font. A face library composes every card once,
+on a worker thread, and the host registers the results on the table a few at a time so
+the engine thread never stalls.
+
+**Code.**
+
+A line of text becomes path data by asking SkiaSharp for each run's outline, in the main
+face or in a fallback face for the characters the main face lacks:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Cards/VectorText.cs
+public string PathData(string text, float size, float x, float baseline, float tracking = 0)
+{
+    if (string.IsNullOrEmpty(text))
+    {
+        return string.Empty;
+    }
+
+    var data = new StringBuilder();
+    var pen = x;
+    foreach (var (run, face) in Runs(text, tracking != 0))
+    {
+        using var font = face.Font(size);
+        using var path = font.GetTextPath(run, new SKPoint(pen, baseline));
+        if (path != null && !path.IsEmpty)
+        {
+            data.Append(path.ToSvgPathData());
+        }
+
+        pen += font.MeasureText(run) + (tracking == 0 ? 0 : tracking * size / 1000f);
+    }
+
+    return Zeros.Replace(Decimals.Replace(data.ToString(), "$1"), "$1");
+}
+```
+
+A face starts with the art window, the card's picture inlined into it and clipped to
+its own view box, and the frame stretched over both:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Cards/CardFaceComposer.cs
+private Face Begin(string artKey, bool starredFrame)
+{
+    var ns = SvgInliner.Svg;
+    var root = new XElement(ns + "svg",
+        new XAttribute("viewBox", "0 0 250 400"),
+        new XAttribute("width", Width),
+        new XAttribute("height", Height));
+    var face = new Face { Root = root };
+
+    //The window ground, then the art in it, then the frame over both (the frame's ground has the window cut out)
+    root.Add(Rect(WindowX, WindowY, WindowW, WindowH, CardPalette.Sky));
+    root.Add(SvgInliner.Fit(Picture(artKey), Next(face), WindowX + 4, WindowY + 4, WindowW - 8, WindowH - 8, clip: true));
+    root.Add(SvgInliner.Fit(Picture(starredFrame ? StarredFrameKey : FrameKey), Next(face), 0, 0, Width, Height, stretch: true));
+    return face;
+}
+```
+
+and each kind of card adds its band, its lettering and its badges:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Cards/CardFaceComposer.cs
+public string Compose(DiscoveryCard card)
+{
+    ArgumentNullException.ThrowIfNull(card);
+    var band = CardPalette.Band(card);
+    var face = Begin(card.ArtKey, card.IsStarred);
+    Band(face, band, CardText.PeriodName(card.Period));
+    Title(face, card.Title);
+    Body(face, card.Cuneiform, card.CardText);
+    Badge(face, 38, 96, CardText.N(card.DigNumber), "DIG", CardPalette.Night, CardPalette.Gold, CardPalette.Limestone);
+    Badge(face, 212, 96, CardText.N(card.Points), "PTS", CardPalette.Gold, CardPalette.Ink, CardPalette.Ink);
+    if (card.IsStarred)
+    {
+        Star(face, 125, 256, 12);
+    }
+
+    return End(face);
+}
+```
+
+Every inlined picture's ids, and every reference to them, get a prefix of their own, so
+two pictures with a `star` id or a gradient of the same name never collide in one face:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Cards/SvgInliner.cs
+private static XElement Prefix(XElement element, string prefix)
+{
+    if (string.IsNullOrEmpty(prefix))
+    {
+        return element;
+    }
+
+    foreach (var node in element.DescendantsAndSelf())
+    {
+        foreach (var attribute in node.Attributes().ToArray())
+        {
+            if (attribute.Name.LocalName == "id")
+            {
+                attribute.Value = prefix + attribute.Value;
+            }
+            else if (attribute.Name.LocalName == "href" || attribute.Name == XLink + "href")
+            {
+                if (attribute.Value.StartsWith('#'))
+                {
+                    attribute.Value = "#" + prefix + attribute.Value.Substring(1);
+                }
+            }
+            else if (attribute.Value.Contains("url(#", StringComparison.Ordinal))
+            {
+                attribute.Value = attribute.Value.Replace("url(#", "url(#" + prefix, StringComparison.Ordinal);
+            }
+        }
+    }
+
+    return element;
+}
+```
+
+The add-on rasterizes a picture when it is registered, so registration is the slow part.
+The host spends a fixed budget of each fixed step on it while a progress bar fills:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs
+var budget = Stopwatch.StartNew();
+while (_registeredFaces < _pendingFaces.Count && budget.Elapsed.TotalMilliseconds < RegistrationBudgetMs)
+{
+    var key = _pendingFaces[_registeredFaces++];
+    _artwork.Register(key, _faces.Faces[key]);
+}
+```
+
+and a small wrapper remembers what is registered, because the add-on refuses a key twice:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/TableArtwork.cs
+public void Register(string key, string svg)
+{
+    if (_registered.Contains(key))
+    {
+        return;
+    }
+
+    Table.RegisterSvg(key, svg);
+    _registered.Add(key);
+}
+```
+
+**Where to look.**
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Cards/CardFaceComposer.cs`,
+`VectorText.cs`, `SvgInliner.cs` and `CardPalette.cs`
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/CardFaceLibrary.cs`
+and `TableArtwork.cs`
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs`
+(`LoadAssets`, `Prepare`)
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Assets/FontAssets.cs` and `ArtCatalog.cs`
+`GoddessTempleDiscovery/tests/libs/GoddessTempleDiscovery.Game.Tests/Cards/CardFaceComposerTests.cs`
+
+**Sharp edges.**
+- Give the cuneiform face a fallback. A script face rarely carries Latin modifier letters
+  or punctuation; text runs switch to the fallback for exactly the characters the main
+  face lacks.
+- Trim the decimals of the generated path data. Glyph outlines come back with long
+  fractions, and a face of several lines of text grows quickly; the composer keeps one
+  decimal and tests every face against a size limit.
+- Wrap and fit by measuring with the same face you outline with, or a line that fits in
+  the measurement overflows on the card.
+- Inlined pictures keep their root's presentation attributes (a fill, a stroke width)
+  only if you move them onto the wrapping group; the inliner does, and drops the size
+  attributes that belong to the root alone.
+- Composing is pure work and thread-safe per composer, so do it on a worker; registering
+  touches the table, so do it on the engine thread, within a budget.
+- Test the faces as data: well-formed XML, no `<text>`, no external reference, the title
+  present as paths, and a non-blank raster through the add-on's own loader.
+
+### Force the table's dice to show the rules engine's roll
+
+**When you want this.** Your rules engine rolls its own dice, from its own seeded
+generator, so a game is repeatable and testable. The table's dice still have to tumble
+and land - on the engine's values, not on whatever the add-on's random source would
+have chosen.
+
+**The MVVM shape.** The rules engine owns the roll; its event carries the values. The
+session that presents the event starts the table's tumble and then sets each die's
+logical face to the engine's value. The add-on keeps no state of a roll beyond the face
+index, so the tumble ends on the value the rules decided.
+
+**Code.**
+
+A `Random` that can only answer one index - the add-on's `Die.Roll(Random)` takes its
+result from `random.Next(faceCount)`:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/FixedFaceRandom.cs
+public sealed class FixedFaceRandom : Random
+{
+    private readonly int _index;
+
+    /// <summary>Creates the source.</summary>
+    /// <param name="index">The face index every draw returns.</param>
+    public FixedFaceRandom(int index)
+    {
+        _index = Math.Max(0, index);
+    }
+
+    /// <inheritdoc />
+    public override int Next(int maxValue) => maxValue <= 0 ? 0 : Math.Min(_index, maxValue - 1);
+
+    /// <inheritdoc />
+    public override int Next(int minValue, int maxValue) => maxValue <= minValue ? minValue : Math.Clamp(minValue + _index, minValue, maxValue - 1);
+
+    /// <inheritdoc />
+    public override int Next() => _index;
+}
+```
+
+The session starts the tumble for the dice in play - holding the parked ones, or every
+die but the one being re-rolled - then rolls each again through that source:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/TableSession.cs
+private void RollTo(IReadOnlyList<int> values, int? onlyIndex)
+{
+    var count = Math.Min(values.Count, _dice.Length);
+    DiceInPlay = count;
+    PlaceDice(count);
+    for (var i = 0; i < _dice.Length; i++)
+    {
+        _dice[i].Die.IsHeld = i >= count || (onlyIndex != null && onlyIndex != i);
+    }
+
+    _table.Roll();
+    for (var i = 0; i < count; i++)
+    {
+        if (onlyIndex == null || onlyIndex == i)
+        {
+            ForceFace(_dice[i].Die, values[i]);
+        }
+    }
+
+    foreach (var die in _dice)
+    {
+        die.Die.IsHeld = false;
+    }
+}
+
+private static void ForceFace(Die die, int value)
+{
+    var index = -1;
+    for (var f = 0; f < die.Faces.Count; f++)
+    {
+        if (die.Faces[f].Value == value)
+        {
+            index = f;
+            break;
+        }
+    }
+
+    if (index >= 0)
+    {
+        die.Roll(new FixedFaceRandom(index));
+    }
+}
+```
+
+The engine's roll event becomes one queued step that does both:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/TableSession.cs
+case DiceRolled rolled:
+    _queue.Enqueue("roll", () =>
+    {
+        RollTo(rolled.Values, null);
+        Presented(captured);
+    }, Hold(0.2));
+```
+
+**Where to look.**
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/FixedFaceRandom.cs`
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/TableSession.cs`
+(`RollTo`, `ForceFace`, `PlaceDice`, the `DiceRolled` and `DieRerolled` steps)
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Rules/Engine/GameEngine.Apply.cs`
+(`ApplyRoll`, `ApplyReroll`)
+`GoddessTempleDiscovery/tests/libs/GoddessTempleDiscovery.Game.Tests/Session/TableSessionTests.cs`
+(`the_table_dice_show_the_engine_values_after_a_roll`)
+
+**Sharp edges.**
+- Find the face by value, not by index. A die's faces are a list; look up the face whose
+  value is the engine's number and roll to that index.
+- Hold every die you do not want to move before calling the table's roll, and release
+  them afterwards: the table rolls every unheld die it has.
+- Let the engine say how many dice there are. A rule that adds a third die for one turn
+  arrives as three values; park the unused die off the table the rest of the time.
+- Keep the add-on's random source out of the rules. The tumble may use any randomness it
+  likes; only the face index decides the result, and only the engine decides that.
+- Test it headless: apply a roll, settle the table, and compare every die's result with
+  the engine's values.
+
+### Play a rules engine's events on the table one step at a time and pace the computer turns
+
+**When you want this.** One action of the rules - a dig, a report, the end of a turn -
+can raise several events at once: a card flips, it moves to the hand, a slot is refilled,
+a Favor is drawn. Applied instantly, the table would teleport; and computer players that
+act as fast as the engine allows would finish the game before anyone saw a card.
+
+**The MVVM shape.** The session applies the action to the engine at once and turns each
+event the engine returns into a queued step that starts a table animation. A small queue
+starts one step at a time and waits until the table has settled and the step's hold time
+has passed. The host lets a computer team act only when the queue is idle, no inspector
+page is open, and a pause scaled by the animation speed has passed. The engine is never
+waiting on the table; only the presentation is.
+
+**Code.**
+
+The session never decides a rule. It applies the action and translates what came back:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/TableSession.cs
+public ApplyResult Apply(GameAction action)
+{
+    var result = Engine.Apply(action);
+    Engine.ClearEvents();
+    Translate(result.Events);
+    return result;
+}
+```
+
+A dig becomes two steps: the flip, held so the find can be seen, and the move to the
+hand:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/TableSession.cs
+case SiteExcavated excavated:
+    _queue.Enqueue("flip " + excavated.Card.Id, () =>
+    {
+        var card = Find(_siteDeck, excavated.Card);
+        if (!ReferenceEquals(card.Pile, _siteSlots[excavated.Slot].Pile))
+        {
+            _siteSlots[excavated.Slot].Pile.Add(card, onTop: true);
+        }
+
+        _table.Flip(card, true);
+        Presented(captured);
+    }, Hold(0.5));
+    _queue.Enqueue("to hand " + excavated.Card.Id, () =>
+    {
+        HandPileOf(excavated.TeamName).Add(Find(_siteDeck, excavated.Card));
+        SortHand();
+    });
+    break;
+```
+
+The queue advances once per update, after the table's own update. Steps that animate
+nothing and hold for nothing finish in the same update:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/PresentationQueue.cs
+public void Update(double seconds)
+{
+    if (!IsIdle)
+    {
+        _flushSeconds += seconds;
+    }
+
+    if (_current != null)
+    {
+        _currentSeconds += seconds;
+    }
+
+    //Steps that animate nothing and hold for nothing finish in the same update, so a burst of bookkeeping
+    //  steps never costs a frame each
+    for (var guard = 0; guard < 64; guard++)
+    {
+        if (_current != null)
+        {
+            if (_tableBusy() || _currentSeconds < _current.Hold)
+            {
+                return;
+            }
+
+            _current = null;
+        }
+
+        if (_steps.Count == 0)
+        {
+            if (_flushSteps > 0)
+            {
+                Flushed?.Invoke(_flushSeconds, _flushSteps);
+            }
+
+            _flushSeconds = 0;
+            _flushSteps = 0;
+            return;
+        }
+
+        _current = _steps.Dequeue();
+        _currentSeconds = 0;
+        _flushSteps++;
+        _current.Start();
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/TableSession.cs
+public bool IsBusy => !_queue.IsIdle || _table.IsAnimating;
+```
+
+And the host paces the computer teams from the fixed step:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs
+private void Pace(double dt)
+{
+    if (_inspectorOpen)
+    {
+        _inspectorSeconds += dt;
+        if (_inspectorLimit > 0 && _inspectorSeconds > _inspectorLimit + 1.0)
+        {
+            //The page did not report the inspector closed (no page, or it stayed open under the pointer for long)
+            _inspectorOpen = false;
+        }
+    }
+
+    var session = _session;
+    if (session == null || _cardPreparation != null || session.Engine.State.IsGameOver || session.IsBusy || _inspectorOpen)
+    {
+        _idleSeconds = 0;
+        return;
+    }
+
+    var team = session.Engine.State.CurrentTeam;
+    if (team == null || team.Kind != SeatKind.Computer)
+    {
+        return;
+    }
+
+    _idleSeconds += dt;
+    var pause = _table.ReducedMotion ? 0.1 : ComputerPauseSeconds / Math.Max(0.25, _table.AnimationSpeed);
+    if (_idleSeconds < pause)
+    {
+        return;
+    }
+
+    _idleSeconds = 0;
+    Act(ComputerBrain.Choose(session.Engine, team.Temperament, _brainRandom));
+}
+```
+
+**Where to look.**
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/PresentationQueue.cs`
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Session/TableSession.cs`
+(`Apply`, `Update`, `Settle`, `Translate`, `Hold`)
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Game/Hosting/GoddessTempleGameHost.cs`
+(`Pace`, `Act`, `OnEventPresented`)
+`GoddessTempleDiscovery/tests/libs/GoddessTempleDiscovery.Game.Tests/Session/TableSessionTests.cs`
+(`a_full_season_drives_the_table_headless_and_keeps_it_in_step_with_the_engine`,
+`every_event_kind_of_the_engine_is_translated_over_a_whole_game`)
+
+**Sharp edges.**
+- Raise your own "presented" event from each step, and drive the rest of the
+  presentation - the inspector, the standings, the ticker - from it rather than from the
+  engine's result, so the newspaper opens when the card flips, not before it moves.
+- Scale every hold by the animation speed and drop it to zero under reduced motion; a
+  player who asked for no motion should not wait for animations that do not play.
+- Give the queue a guard against a step that never settles, and a `Settle` that plays
+  everything at once, for tests and for starting a new game.
+- Let the humans act only when the session is not busy, the same as the computers, or a
+  fast click lands on a card that is still moving.
+- Keep a set of the event kinds the session has translated, and test over a whole game
+  that every kind the engine raised is in it; a new event kind then fails a test instead
+  of silently doing nothing on the table.
+- Seed the computer players' randomness from the game's seed, so a seeded game also plays
+  its computer turns the same way.
+
+### Keep a turn-based rules engine package-free and pin seeded games with a state hash
+
+**When you want this.** Your game is turn-based: a player chooses one action at a time
+from what the rules allow. You want the rules - and the content of every card - in a
+library you can test in milliseconds, that refuses an illegal move instead of corrupting
+the game, that can list the legal moves for a computer player and for the buttons, and
+that plays the same game from the same seed and the same moves on any machine.
+
+**The MVVM shape.** The rules library references nothing. Its engine takes a setup and a
+catalog of cards, applies one action at a time, validates each before applying it, and
+returns the events the action raised; its state is read-only to everyone else. The game
+library applies actions and presents the events; the view model never touches either.
+Compare
+[Keep a deterministic game simulation apart from the engine and step it from OnFixedUpdate](#keep-a-deterministic-game-simulation-apart-from-the-engine-and-step-it-from-onfixedupdate),
+the same idea for a real-time game advanced in fixed steps.
+
+**Code.**
+
+The whole dependency story is the project file:
+
+```xml
+<!-- From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Rules/GoddessTempleDiscovery.Rules.csproj -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <!-- The rules of the game and every card's content: no package, no engine, no Skia, no I/O. -->
+</Project>
+```
+
+Every action goes through one door, and an illegal one changes nothing:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Rules/Engine/GameEngine.Apply.cs
+public ApplyResult Apply(GameAction action)
+{
+    var reason = Validate(action);
+    if (reason != null)
+    {
+        throw new InvalidOperationException(reason);
+    }
+
+    _applyEvents.Clear();
+    switch (action)
+    {
+        case RollAction:
+            ApplyRoll();
+            break;
+        case RerollAction reroll:
+            ApplyReroll(reroll);
+            break;
+        case DigAction dig:
+            ApplyDig(dig);
+            break;
+        case RecruitAction recruit:
+            ApplyRecruit(recruit);
+            break;
+        case StudyAction study:
+            ApplyStudy(study);
+            break;
+        case SurveyAction survey:
+            ApplySurvey(survey);
+            break;
+        case PublishAction publish:
+            ApplyPublish(publish);
+            break;
+        case DiscardAction discard:
+            ApplyDiscard(discard);
+            break;
+        case EndTurnAction:
+            ApplyEndTurn();
+            break;
+    }
+
+    _state.ActionCount++;
+    return new ApplyResult(action, _applyEvents.ToArray());
+}
+```
+
+The same check answers the presentation's questions, so the buttons and the prompts
+never work a rule out themselves:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Rules/Engine/GameEngine.Legal.cs
+public bool IsLegal(GameAction action) => Validate(action) == null;
+
+/// <summary>Why <paramref name="action"/> may not be applied now, or null when it may.</summary>
+/// <param name="action">The action.</param>
+/// <returns>A plain reason, or null.</returns>
+public string WhyIllegal(GameAction action) => Validate(action);
+```
+
+Every die and every shuffle comes from one small generator the library owns:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Rules/Engine/GameRandom.cs
+internal int RollDie() => Next(6) + 1;
+
+internal void Shuffle<T>(IList<T> list)
+{
+    for (var i = list.Count - 1; i > 0; i--)
+    {
+        var j = Next(i + 1);
+        (list[i], list[j]) = (list[j], list[i]);
+    }
+}
+```
+
+and the whole state - decks in order, rows, dice, every team, the journal, the
+generator - is hashed into one stable string:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Rules/Engine/GameEngine.Hash.cs
+public string StateHash()
+{
+    var hash = 14695981039346656037UL;
+    foreach (var ch in CanonicalState())
+    {
+        hash ^= ch;
+        hash *= 1099511628211UL;
+    }
+
+    return hash.ToString("x16", CultureInfo.InvariantCulture);
+}
+```
+
+A whole game is then a test. The computer brain plays a seeded game against a small
+made-up catalog, and the action count, the scores and the hash are pinned in one
+assertion, so a rule change shows every new value at once:
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/tests/libs/GoddessTempleDiscovery.Rules.Tests/Engine/GameEngineDeterminismTests.cs
+private static GameEngine Golden(int seed, out int actions)
+{
+    var engine = new GameEngine(Fixtures.Setup(seats: 4, seed: seed, temperaments: Mixed), Fixtures.Catalog());
+    actions = Harness.PlayOut(engine, new Random(seed));
+    return engine;
+}
+```
+
+```csharp
+// From CodeBrix.Samples/GoddessTempleDiscovery/tests/libs/GoddessTempleDiscovery.Rules.Tests/Engine/GameEngineDeterminismTests.cs
+[Fact]
+public void Golden_seed_2718_full_game()
+{
+    //Act
+    var engine = Golden(2718, out var actions);
+
+    //Assert
+    engine.State.IsGameOver.Should().BeTrue();
+    //One assertion over all three pinned values, so a rule change shows every new value at once
+    $"{actions}|{Scores(engine)}|{engine.StateHash()}".Should().Be($"{GoldenValues.Actions2718}|{GoldenValues.Scores2718}|{GoldenValues.Hash2718}");
+}
+```
+
+**Where to look.**
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Rules/Engine/GameEngine.cs`,
+`GameEngine.Flow.cs`, `GameEngine.Legal.cs`, `GameEngine.Apply.cs` and `GameEngine.Hash.cs`
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Rules/Engine/GameRandom.cs`,
+`ICardCatalog.cs` and `CatalogSnapshot.cs`
+`GoddessTempleDiscovery/src/libs/GoddessTempleDiscovery.Rules/Brains/ComputerBrain.cs`
+`GoddessTempleDiscovery/tests/libs/GoddessTempleDiscovery.Rules.Tests/Engine/GameEngineDeterminismTests.cs`,
+`GoldenValues.cs` and `Support/Fixtures.cs`
+`GoddessTempleDiscovery/DESIGN.md` (every number the rules use)
+
+**Sharp edges.**
+- Validate in one place and return a reason. `WhyIllegal` gives the prompt its words, and
+  `Apply` throws on the same reason without touching the state.
+- Have the computer player choose only from the legal-actions list. It can then never
+  make a move the rules would refuse, and a test that plays whole games checks every
+  choice anyway.
+- Test the rules against small made-up catalogs, not the real content, so writing a new
+  card never moves a pinned game; test the content separately.
+- A computer player's jitter is randomness too. Seed it from the game's seed in the host
+  and from a fixed seed in the tests, and keep it out of the engine's own generator.
+- List the legal actions in a stable order. A brain that breaks ties by order, and a
+  test that picks the first discard, both depend on it.
+- Re-pin a golden game only when a rule change is intended, and in the same change -
+  never to make a test pass.

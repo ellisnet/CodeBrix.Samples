@@ -1,0 +1,17 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: End Turn
+  Subject: Interface icon for ending the turn: an hourglass with the sand run down.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<path d="M 160,124 L 240,124 L 200,184 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 132,330 C 140,290 170,270 200,266 C 230,270 260,290 268,330 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,190 L 200,262" fill="none" stroke="#1E1A17" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 132,58 C 132,150 188,172 188,200 C 188,228 132,250 132,342 L 268,342 C 268,250 212,228 212,200 C 212,172 268,150 268,58 Z" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 96,50 L 304,50 M 96,350 L 304,350" fill="none" stroke="#1E1A17" stroke-width="22" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

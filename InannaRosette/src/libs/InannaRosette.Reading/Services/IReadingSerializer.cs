@@ -8,7 +8,11 @@ public interface IReadingSerializer
     /// <summary>Writes a reading as indented JSON.</summary>
     string ToJson(RosetteReading reading);
 
-    /// <summary>Reads a reading back from JSON. Unknown card ids or station indexes are skipped.</summary>
-    /// <exception cref="FormatException">The text is not a reading document.</exception>
+    /// <summary>
+    /// Reads a reading back from JSON. The document must carry the current format version;
+    /// unknown card ids or station indexes are skipped.
+    /// </summary>
+    /// <exception cref="FormatException">The text is not a reading document, carries no
+    /// version, or carries a version this reader does not understand.</exception>
     RosetteReading FromJson(string json);
 }

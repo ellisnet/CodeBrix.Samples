@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Lapis and Carnelian Necklace
+  Subject: A string of graduated lapis lazuli and carnelian beads with gold spacers and a large biconical carnelian at the centre, after the dedicated necklaces found in Eanna such as the one that carried the name of Tiamatbashti.
+  Sources consulted: BUILDING_HIGHLIGHTS.txt Narrow-Brick Building sealed fill (lapis lazuli from Badakhshan, carnelian); images/Holy_Inanna/IMAGES.md (lapis and carnelian notes)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="necklace">
+<polyline points="64.1,85 64.2,86.1 64.3,87.5 64.5,89.2 64.8,91.1 65.1,93.2 65.5,95.5 65.9,98 66.3,100.7 66.8,103.5 67.4,106.5 68,109.6 68.7,112.8 69.4,116.2 70.1,119.7 70.9,123.3 71.8,127 72.6,130.8 73.6,134.7 74.6,138.7 75.6,142.7 76.7,146.8 77.8,151 79,155.3 80.2,159.6 81.5,163.9 82.8,168.3 84.1,172.8 85.5,177.2 86.9,181.7 88.4,186.2 89.9,190.7 91.5,195.3 93.1,199.8 94.7,204.3 96.4,208.9 98.1,213.4 99.9,217.9 101.7,222.3 103.5,226.8 105.4,231.2 107.3,235.6 109.2,239.9 111.1,244.2 113.1,248.4 115.2,252.6 117.2,256.7 119.3,260.7 121.5,264.7 123.6,268.6 125.8,272.4 128,276.1 130.2,279.8 132.5,283.3 134.8,286.8 137.1,290.2 139.4,293.4 141.8,296.6 144.1,299.6 146.5,302.6 148.9,305.4 151.4,308.1 153.8,310.7 156.3,313.1 158.8,315.5 161.3,317.7 163.8,319.7 166.3,321.7 168.9,323.5 171.4,325.1 174,326.7 176.6,328 179.1,329.3 181.7,330.4 184.3,331.3 186.9,332.2 189.5,332.8 192.2,333.3 194.8,333.7 197.4,333.9 200,334 202.6,333.9 205.2,333.7 207.8,333.3 210.5,332.8 213.1,332.2 215.7,331.3 218.3,330.4 220.9,329.3 223.4,328 226,326.7 228.6,325.1 231.1,323.5 233.7,321.7 236.2,319.7 238.7,317.7 241.2,315.5 243.7,313.1 246.2,310.7 248.6,308.1 251.1,305.4 253.5,302.6 255.9,299.6 258.2,296.6 260.6,293.4 262.9,290.2 265.2,286.8 267.5,283.3 269.8,279.8 272,276.1 274.2,272.4 276.4,268.6 278.5,264.7 280.7,260.7 282.8,256.7 284.8,252.6 286.9,248.4 288.9,244.2 290.8,239.9 292.7,235.6 294.6,231.2 296.5,226.8 298.3,222.3 300.1,217.9 301.9,213.4 303.6,208.9 305.3,204.3 306.9,199.8 308.5,195.3 310.1,190.7 311.6,186.2 313.1,181.7 314.5,177.2 315.9,172.8 317.2,168.3 318.5,163.9 319.8,159.6 321,155.3 322.2,151 323.3,146.8 324.4,142.7 325.4,138.7 326.4,134.7 327.4,130.8 328.2,127 329.1,123.3 329.9,119.7 330.6,116.2 331.3,112.8 332,109.6 332.6,106.5 333.2,103.5 333.7,100.7 334.1,98 334.5,95.5 334.9,93.2 335.2,91.1 335.5,89.2 335.7,87.5 335.8,86.1 335.9,85" fill="none" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="161" cy="317.4" r="13.3" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3"/>
+<circle cx="156.4" cy="312.8" r="4" fill="#5B7BC4"/>
+<ellipse cx="147.8" cy="304" rx="4.4" ry="11.7" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(49.5 147.8 304)"/>
+<ellipse cx="134.1" cy="285.8" rx="17" ry="10.2" fill="#B8322A" stroke="#1E1A17" stroke-width="3" transform="rotate(56.4 134.1 285.8)"/>
+<ellipse cx="130" cy="281.8" rx="5.4" ry="2.2" fill="#FFFFFF" transform="rotate(56.4 130 281.8)"/>
+<ellipse cx="122.3" cy="266.3" rx="4.3" ry="11.4" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(61.2 122.3 266.3)"/>
+<circle cx="114" cy="250.1" r="12.5" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3"/>
+<circle cx="109.6" cy="245.7" r="3.8" fill="#5B7BC4"/>
+<ellipse cx="106.4" cy="233.7" rx="4.1" ry="11" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(66.5 106.4 233.7)"/>
+<ellipse cx="98.3" cy="213.7" rx="15.9" ry="9.6" fill="#B8322A" stroke="#1E1A17" stroke-width="3" transform="rotate(68.9 98.3 213.7)"/>
+<ellipse cx="94.4" cy="209.9" rx="5.1" ry="2" fill="#FFFFFF" transform="rotate(68.9 94.4 209.9)"/>
+<ellipse cx="91" cy="193.8" rx="4" ry="10.7" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(71 91 193.8)"/>
+<circle cx="85.6" cy="177.6" r="11.7" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3"/>
+<circle cx="81.5" cy="173.5" r="3.5" fill="#5B7BC4"/>
+<ellipse cx="80.7" cy="161.4" rx="3.9" ry="10.3" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(73.9 80.7 161.4)"/>
+<ellipse cx="75.4" cy="142" rx="14.9" ry="8.9" fill="#B8322A" stroke="#1E1A17" stroke-width="3" transform="rotate(75.6 75.4 142)"/>
+<ellipse cx="71.9" cy="138.5" rx="4.8" ry="1.9" fill="#FFFFFF" transform="rotate(75.6 71.9 138.5)"/>
+<ellipse cx="70.7" cy="122.5" rx="3.7" ry="10" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(77.4 70.7 122.5)"/>
+<circle cx="67.5" cy="106.9" r="10.9" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3"/>
+<circle cx="63.6" cy="103" r="3.3" fill="#5B7BC4"/>
+<circle cx="239.2" cy="317.3" r="13.3" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3"/>
+<circle cx="234.5" cy="312.6" r="4" fill="#5B7BC4"/>
+<ellipse cx="252.4" cy="303.8" rx="4.4" ry="11.7" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(-49.5 252.4 303.8)"/>
+<ellipse cx="266.1" cy="285.5" rx="17" ry="10.2" fill="#B8322A" stroke="#1E1A17" stroke-width="3" transform="rotate(-56.4 266.1 285.5)"/>
+<ellipse cx="262" cy="281.5" rx="5.4" ry="2.2" fill="#FFFFFF" transform="rotate(-56.4 262 281.5)"/>
+<ellipse cx="277.9" cy="266" rx="4.3" ry="11.4" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(-61.2 277.9 266)"/>
+<circle cx="286.2" cy="249.8" r="12.5" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3"/>
+<circle cx="281.8" cy="245.4" r="3.8" fill="#5B7BC4"/>
+<ellipse cx="293.7" cy="233.3" rx="4.1" ry="11" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(-66.5 293.7 233.3)"/>
+<ellipse cx="301.9" cy="213.4" rx="15.9" ry="9.6" fill="#B8322A" stroke="#1E1A17" stroke-width="3" transform="rotate(-68.9 301.9 213.4)"/>
+<ellipse cx="298" cy="209.5" rx="5.1" ry="2" fill="#FFFFFF" transform="rotate(-68.9 298 209.5)"/>
+<ellipse cx="309.1" cy="193.4" rx="4" ry="10.7" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(-71 309.1 193.4)"/>
+<circle cx="314.5" cy="177.2" r="11.7" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3"/>
+<circle cx="310.4" cy="173.1" r="3.5" fill="#5B7BC4"/>
+<ellipse cx="319.4" cy="161" rx="3.9" ry="10.3" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(-73.9 319.4 161)"/>
+<ellipse cx="324.6" cy="141.7" rx="14.9" ry="8.9" fill="#B8322A" stroke="#1E1A17" stroke-width="3" transform="rotate(-75.6 324.6 141.7)"/>
+<ellipse cx="321.1" cy="138.1" rx="4.8" ry="1.9" fill="#FFFFFF" transform="rotate(-75.6 321.1 138.1)"/>
+<ellipse cx="329.3" cy="122.2" rx="3.7" ry="10" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" transform="rotate(-77.4 329.3 122.2)"/>
+<circle cx="332.6" cy="106.6" r="10.9" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3"/>
+<circle cx="328.8" cy="102.8" r="3.3" fill="#5B7BC4"/>
+<path d="M200.2,310 L214.2,334 L200.2,358 L186.2,334 Z" fill="#B8322A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M200.2,310 L214.2,334 L200.2,358 Z" fill="#B8322A"/>
+<path d="M196.2,320 L192.2,334 L196.2,338" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="200.2" cy="309" rx="7" ry="3" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<ellipse cx="200.2" cy="359" rx="7" ry="3" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5"/>
+<path d="M64.1,85 Q150,46 194,56 M335.9,85 Q250,46 206,56" fill="none" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="56" r="6" fill="#A8761F" stroke="#1E1A17" stroke-width="1.5"/>
+<path d="M200,62 Q196,78 188,86 M200,62 Q206,78 214,86" fill="none" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

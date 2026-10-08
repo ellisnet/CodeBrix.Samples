@@ -24,8 +24,9 @@ namespace PolyHavenBrowser.Display;
 /// <para>
 /// The context comes from <see cref="OffscreenGLContext"/>, which resolves the same per-head
 /// native OpenGL machinery that backs Graphics3DGL's on-screen <c>GLCanvasElement</c> - WGL on
-/// the Windows heads, GLX on X11, EGL on Wayland/FrameBuffer, CGL on macOS - so this engine
-/// renders on every head, not just Linux. The app never P/Invokes a platform GL loader itself.
+/// the Windows heads, GLX on X11, EGL on Wayland/FrameBuffer, and OpenGL ES through ANGLE on
+/// macOS - so this engine renders on every head, not just Linux. The app never P/Invokes a
+/// platform GL loader itself.
 /// </para>
 /// <para>
 /// The context is created <b>lazily</b> on the first <see cref="RenderFrame"/> call, because a GL

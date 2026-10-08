@@ -113,6 +113,20 @@ public sealed class ApplicationTests(AppFixture fixture) : PintaTest(fixture)
     }
 
     [Fact]
+    public async Task Alt_number_switches_between_documents()
+    {
+        await ToolbarButton("New").ClickAsync();
+        await Expect(Tabs).ToHaveCountAsync(2);
+        (await EvaluateAsync(() => PintaCore.Workspace.ActiveDocumentIndex)).Should().Be(1);
+        await Page.Keyboard.PressAsync("Alt+1");
+        await WaitAsync(() => PintaCore.Workspace.ActiveDocumentIndex, index => index == 0, "the first document active");
+        await Page.Keyboard.PressAsync("Alt+2");
+        await WaitAsync(() => PintaCore.Workspace.ActiveDocumentIndex, index => index == 1, "the second document active");
+        await Page.Keyboard.PressAsync("Alt+3");
+        (await EvaluateAsync(() => PintaCore.Workspace.ActiveDocumentIndex)).Should().Be(1);
+    }
+
+    [Fact]
     public async Task Status_bar_follows_the_cursor_over_the_canvas()
     {
         var box = await Canvas.BoundingBoxAsync();

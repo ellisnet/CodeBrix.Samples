@@ -670,17 +670,22 @@ up in `RosetteSpread`, so a saved file is a few hundred bytes, stays readable, a
 any later correction to the lore for free.
 
 `FromJson` is tolerant by design and says so in its own doc comment: an unknown card id or
-an out-of-range station index is skipped rather than throwing, a second card on a station
-already filled is ignored, and only a document that is not JSON at all raises a
-`FormatException` - which the view model turns into a dialog. `MainViewModel.ApplyReading`
-then clears the table and adds each placement with its station already set, which is why
+an out-of-range station index is skipped rather than throwing, and a second card on a station
+already filled is ignored. What it refuses is a document it cannot trust at all: text that is
+not a JSON object, a document with no `version`, and a document whose version is not
+`ReadingSerializer.CurrentVersion`. Each raises a `FormatException` whose message says which,
+and the view model shows that message in its "That reading could not be opened" dialog.
+`MainViewModel.ApplyReading` then clears the table and adds each placement with its station already set, which is why
 `CardAdded` has to look at `ReadingCard.Station` rather than assuming a new card goes to the
 tray.
 
 Sharp edges met here. `cardId` is the deck's dense 1-based index, so the deck's *order* is
 now part of the file format; inserting a card in the middle of `DeckData` would silently
-re-point every saved reading. The `Version` field is written but not yet checked on read,
-which is a hook rather than a mechanism. And `Created` falls back to `DateTime.Now` when the
+re-point every saved reading. The `version` field is checked on read. Version 1 is
+the only format there has ever been, so there is nothing older to migrate: a lower number is
+refused as a document that does not exist, and a higher one is refused as the work of a newer
+InannaRosette rather than half-read. The day the format changes, the old number becomes a
+migration instead of a refusal. And `Created` falls back to `DateTime.Now` when the
 document carries the default value, so a hand-written file with no timestamp still opens.
 [Save only identity and rehydrate the text from the data tables](../BLUEPRINTS-DocumentsAndData.md#save-only-identity-and-rehydrate-the-text-from-the-data-tables)
 

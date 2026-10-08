@@ -1,0 +1,16 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Star of Inanna Badge
+  Subject: Interface badge: a round gold medallion bearing Her eight-pointed star, awarded for Eanna finds.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions; Holy_Inanna/IMAGES.md
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<circle cx="200" cy="200" r="168" fill="#D9A441" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="200" r="136" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="200,88 217.6,157.5 279.2,120.8 242.5,182.4 312,200 242.5,217.6 279.2,279.2 217.6,242.5 200,312 182.4,242.5 120.8,279.2 157.5,217.6 88,200 157.5,182.4 120.8,120.8 182.4,157.5" fill="none" stroke="#1E1A17" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="200" r="16" fill="#1E1A17"/>
+</g>
+</svg>

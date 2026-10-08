@@ -1,0 +1,24 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Dingir (AN) Sign
+  Subject: The cuneiform sign AN, read dingir, god, drawn as the archaic eight-armed star of impressed wedges that stood before every divine name.
+  Sources consulted: Getty Uruk transcript chapters 9, 11 and 28 (Writing Cuneiform)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="tablet-disc">
+<circle cx="200" cy="200" r="176" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="wedges">
+<g transform="rotate(0 200 200)"><path d="M 200,166 L 207,92 C 222,84 230,70 230,52 L 170,52 C 170,70 178,84 193,92 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 176,57 L 224,57 C 222,70 214,80 200,86 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(45 200 200)"><path d="M 200,166 L 207,92 C 222,84 230,70 230,52 L 170,52 C 170,70 178,84 193,92 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 176,57 L 224,57 C 222,70 214,80 200,86 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(90 200 200)"><path d="M 200,166 L 207,92 C 222,84 230,70 230,52 L 170,52 C 170,70 178,84 193,92 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 176,57 L 224,57 C 222,70 214,80 200,86 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(135 200 200)"><path d="M 200,166 L 207,92 C 222,84 230,70 230,52 L 170,52 C 170,70 178,84 193,92 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 176,57 L 224,57 C 222,70 214,80 200,86 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(180 200 200)"><path d="M 200,166 L 207,92 C 222,84 230,70 230,52 L 170,52 C 170,70 178,84 193,92 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 176,57 L 224,57 C 222,70 214,80 200,86 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(225 200 200)"><path d="M 200,166 L 207,92 C 222,84 230,70 230,52 L 170,52 C 170,70 178,84 193,92 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 176,57 L 224,57 C 222,70 214,80 200,86 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(270 200 200)"><path d="M 200,166 L 207,92 C 222,84 230,70 230,52 L 170,52 C 170,70 178,84 193,92 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 176,57 L 224,57 C 222,70 214,80 200,86 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<g transform="rotate(315 200 200)"><path d="M 200,166 L 207,92 C 222,84 230,70 230,52 L 170,52 C 170,70 178,84 193,92 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M 176,57 L 224,57 C 222,70 214,80 200,86 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></g>
+<circle cx="200" cy="200" r="16" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

@@ -1,0 +1,25 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Button Plate, Active
+  Subject: The pressed or selected state of the Deco button: the same chevron-ended plate inverted, night rules and chevrons on a gold ground.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="button">
+<polygon points="40,200 72,150 328,150 360,200 328,250 72,250" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="rules">
+<polygon points="50.7,200 76.9,159 323.1,159 349.3,200 323.1,241 76.9,241" fill="none" stroke="#16213A" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="57.8,200 80.2,165 319.8,165 342.2,200 319.8,235 80.2,235" fill="none" stroke="#16213A" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="chevrons">
+<polyline points="90,190 84,200 90,210" fill="none" stroke="#16213A" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="82,190 76,200 82,210" fill="none" stroke="#16213A" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="74,190 68,200 74,210" fill="none" stroke="#16213A" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="310,190 316,200 310,210" fill="none" stroke="#16213A" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="318,190 324,200 318,210" fill="none" stroke="#16213A" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="326,190 332,200 326,210" fill="none" stroke="#16213A" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

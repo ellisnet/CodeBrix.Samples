@@ -1,0 +1,26 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Two-Step Altar
+  Subject: The two-stepped stone platform from the top register of the Warka Vase, on which offerings stand before Holy Inanna, drawn in the shared isometric view.
+  Sources consulted: Holy_Inanna/IMAGES.md (Warka Vase top register, ring-post close-up); Getty Uruk transcript chapter 11
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="altar">
+<polygon points="40.5,234 239.7,349 239.7,289.2 40.5,174.2" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="359.2,280 239.7,349 239.7,289.2 359.2,220.2" fill="#C9BFA8" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="160,105.2 359.2,220.2 239.7,289.2 40.5,174.2" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="100.2,185.7 219.8,254.7 219.8,194.9 100.2,125.9" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="299.4,208.7 219.8,254.7 219.8,194.9 299.4,148.9" fill="#C9BFA8" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="179.9,79.9 299.4,148.9 219.8,194.9 100.2,125.9" fill="#F4EFE3" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="40.5" y1="213.3" x2="239.7" y2="328.3" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="359.2" y1="259.3" x2="239.7" y2="328.3" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="40.5" y1="192.6" x2="239.7" y2="307.6" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="359.2" y1="238.6" x2="239.7" y2="307.6" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="100.2" y1="165" x2="219.8" y2="234" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="299.4" y1="188" x2="219.8" y2="234" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="100.2" y1="144.3" x2="219.8" y2="213.3" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="299.4" y1="167.3" x2="219.8" y2="213.3" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

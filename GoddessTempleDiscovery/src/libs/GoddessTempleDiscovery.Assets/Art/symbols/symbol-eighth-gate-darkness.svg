@@ -1,0 +1,37 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Beyond the Seventh Gate
+  Subject: A last arched doorway filled with night in which Her star has dimmed to a faint lapis glimmer, Holy Inanna stripped and hung in the realm of Ereshkigal.
+  Sources consulted: Getty Uruk transcript chapter 9 (Astral Manifestation, the descent to the netherworld) and chapter 11
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="darkness">
+<path d="M 54,362 L 54,196 A 146 146 0 0 1 346,196 L 346,362 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 84,362 L 84,196 A 116 116 0 0 1 316,196 L 316,362 Z" fill="#16213A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="54" y1="220" x2="84" y2="220" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="316" y1="220" x2="346" y2="220" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="54" y1="250" x2="84" y2="250" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="316" y1="250" x2="346" y2="250" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="54" y1="280" x2="84" y2="280" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="316" y1="280" x2="346" y2="280" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="54" y1="310" x2="84" y2="310" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="316" y1="310" x2="346" y2="310" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="54" y1="340" x2="84" y2="340" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="316" y1="340" x2="346" y2="340" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="85.8" y1="175.9" x2="56.2" y2="170.6" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="113.8" y1="118.4" x2="91.5" y2="98.3" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="168" y1="84.5" x2="159.8" y2="55.7" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="232" y1="84.5" x2="240.2" y2="55.7" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="286.2" y1="118.4" x2="308.5" y2="98.3" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="314.2" y1="175.9" x2="343.8" y2="170.6" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="200,152 209.2,191.8 243.8,170.2 222.2,204.8 262,214 222.2,223.2 243.8,257.8 209.2,236.2 200,276 190.8,236.2 156.2,257.8 177.8,223.2 138,214 177.8,204.8 156.2,170.2 190.8,191.8" fill="#2A4B8D" stroke="#5B7BC4" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="214" r="10" fill="#A8761F"/>
+<circle cx="140" cy="150" r="2.5" fill="#5B7BC4"/>
+<circle cx="262" cy="300" r="2.5" fill="#5B7BC4"/>
+<circle cx="130" cy="300" r="2.5" fill="#5B7BC4"/>
+<circle cx="270" cy="140" r="2.5" fill="#5B7BC4"/>
+<line x1="30" y1="362" x2="370" y2="362" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

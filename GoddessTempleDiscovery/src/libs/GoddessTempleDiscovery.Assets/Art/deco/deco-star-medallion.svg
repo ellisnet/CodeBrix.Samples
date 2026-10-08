@@ -1,0 +1,47 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Deco Star Medallion
+  Subject: Her eight-pointed star in bevelled gold on a lapis disc, set inside a night octagon formed from stepped ziggurat corners with heavy and hairline gold rules.
+  Sources consulted: ART_BIBLE.md section 6 (Art Deco chrome); art/symbols and art/deities contact sheets (for scale and palette fit); art/symbols/symbol-eight-pointed-star.svg (form of Her star)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="octagon">
+<polygon points="24,114 54,114 54,84 84,84 84,54 114,54 286,54 316,54 316,84 346,84 346,114 376,114 376,286 346,286 346,316 316,316 316,346 286,346 114,346 84,346 84,316 54,316 54,286 24,286" fill="#16213A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="38,116 64,116 64,90 90,90 90,64 116,64 284,64 310,64 310,90 336,90 336,116 362,116 362,284 336,284 336,310 310,310 310,336 284,336 116,336 90,336 90,310 64,310 64,284 38,284" fill="none" stroke="#D9A441" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="47,119 71,119 71,95 95,95 95,71 119,71 281,71 305,71 305,95 329,95 329,119 353,119 353,281 329,281 329,305 305,305 305,329 281,329 119,329 95,329 95,305 71,305 71,281 47,281" fill="none" stroke="#D9A441" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="field">
+<circle cx="200" cy="200" r="132" fill="#2A4B8D" stroke="#1E1A17" stroke-width="3"/>
+<circle cx="200" cy="200" r="122" fill="none" stroke="#D9A441" stroke-width="1.5"/>
+<polygon points="254,65.7 258,69.7 254,73.7 250,69.7" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="330.3,142 334.3,146 330.3,150 326.3,146" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="330.3,250 334.3,254 330.3,258 326.3,254" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="254,326.3 258,330.3 254,334.3 250,330.3" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="146,326.3 150,330.3 146,334.3 142,330.3" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="69.7,250 73.7,254 69.7,258 65.7,254" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="69.7,142 73.7,146 69.7,150 65.7,146" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="146,65.7 150,69.7 146,73.7 142,69.7" fill="#D9A441" stroke="#1E1A17" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="star">
+<polygon points="200,200 200,88 183.9,161.2" fill="#D9A441"/>
+<polygon points="200,200 200,88 216.1,161.2" fill="#A8761F"/>
+<polygon points="200,200 279.2,120.8 216.1,161.2" fill="#D9A441"/>
+<polygon points="200,200 279.2,120.8 238.8,183.9" fill="#A8761F"/>
+<polygon points="200,200 312,200 238.8,183.9" fill="#D9A441"/>
+<polygon points="200,200 312,200 238.8,216.1" fill="#A8761F"/>
+<polygon points="200,200 279.2,279.2 238.8,216.1" fill="#D9A441"/>
+<polygon points="200,200 279.2,279.2 216.1,238.8" fill="#A8761F"/>
+<polygon points="200,200 200,312 216.1,238.8" fill="#D9A441"/>
+<polygon points="200,200 200,312 183.9,238.8" fill="#A8761F"/>
+<polygon points="200,200 120.8,279.2 183.9,238.8" fill="#D9A441"/>
+<polygon points="200,200 120.8,279.2 161.2,216.1" fill="#A8761F"/>
+<polygon points="200,200 88,200 161.2,216.1" fill="#D9A441"/>
+<polygon points="200,200 88,200 161.2,183.9" fill="#A8761F"/>
+<polygon points="200,200 120.8,120.8 161.2,183.9" fill="#D9A441"/>
+<polygon points="200,200 120.8,120.8 183.9,161.2" fill="#A8761F"/>
+<polygon points="200,88 216.1,161.2 279.2,120.8 238.8,183.9 312,200 238.8,216.1 279.2,279.2 216.1,238.8 200,312 183.9,238.8 120.8,279.2 161.2,216.1 88,200 161.2,183.9 120.8,120.8 183.9,161.2" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="200" r="15.7" fill="#D9A441" stroke="#1E1A17" stroke-width="3"/>
+</g>
+</svg>

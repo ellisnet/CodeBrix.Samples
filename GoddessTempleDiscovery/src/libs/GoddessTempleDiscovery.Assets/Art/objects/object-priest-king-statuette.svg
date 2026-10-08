@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Priest-King Statuette
+  Subject: The small stone figure of the Late Uruk priest-king, the man in the rolled-brim cap and long beard who serves the Goddess on the Warka Vase, standing with hands clasped in his net skirt.
+  Sources consulted: images/Holy_Inanna/IMAGES.md sections 2 and 8 (priest-king on the Warka Vase and on cylinder seal BM 116722); BUILDING_HIGHLIGHTS.txt Late Uruk Eanna
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="statuette">
+<path d="M138,352 L262,352 L270,370 L130,370 Z" fill="#C9BFA8" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M154,214 L246,214 L258,350 L142,350 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M220,214 L246,214 L258,350 L232,350 Z" fill="#C9BFA8"/>
+<line x1="145.6" y1="330" x2="151.4" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="148.4" y1="298" x2="164.4" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="151.2" y1="266" x2="177.4" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="153.9" y1="234" x2="190.4" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="165" y1="228" x2="203.4" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="178" y1="228" x2="216.4" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="191" y1="228" x2="229.4" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="204" y1="228" x2="242.4" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="217" y1="228" x2="255.4" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="230" y1="228" x2="251.4" y2="295" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="243" y1="228" x2="246.5" y2="239" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="165" y1="228" x2="150.3" y2="274" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="178" y1="228" x2="145.4" y2="330" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="191" y1="228" x2="152.6" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="204" y1="228" x2="165.6" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="217" y1="228" x2="178.6" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="230" y1="228" x2="191.6" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="243" y1="228" x2="204.6" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="247.7" y1="254" x2="217.6" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="250.8" y1="285" x2="230.6" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="253.5" y1="317" x2="243.6" y2="348" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M154,214 L246,214 L258,350 L142,350 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M152,214 L248,214 L248,226 L152,226 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M160,214 C150,180 150,146 168,130 L232,130 C250,146 250,180 240,214 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M224,130 L232,130 C250,146 250,180 240,214 L226,214 C234,186 236,156 224,130 Z" fill="#C9BFA8"/>
+<path d="M160,214 C150,180 150,146 168,130 L232,130 C250,146 250,180 240,214 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M168,132 C150,140 146,170 156,188 C164,198 184,198 196,192 L196,178 C182,180 170,176 168,164 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M232,132 C250,140 254,170 244,188 C236,198 216,198 204,192 L204,178 C218,180 230,176 232,164 Z" fill="#C9BFA8" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="200" cy="186" rx="14" ry="11" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3"/>
+<path d="M190,182 L210,182 M190,188 L210,188" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M176,104 C176,126 186,152 200,158 C214,152 224,126 224,104 Z" fill="#C9BFA8" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M178,114 Q189,119 200,114 Q211,119 222,114" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M181.5,126 Q190.8,131 200,126 Q209.2,131 218.5,126" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M185,138 Q192.5,143 200,138 Q207.5,143 215,138" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M188.5,148 Q194.2,153 200,148 Q205.8,153 211.5,148" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M178,70 C178,58 222,58 222,70 L222,100 C222,110 212,116 200,116 C188,116 178,110 178,100 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M214,62 C220,64 222,66 222,70 L222,100 C222,108 218,112 212,114 C216,100 216,80 214,62 Z" fill="#C9BFA8"/>
+<path d="M178,70 C178,58 222,58 222,70 L222,100 C222,110 212,116 200,116 C188,116 178,110 178,100 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M181,84 Q189,77 197,84 Q189,90 181,84 Z" fill="#F4EFE3" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="189" cy="84" r="3.2" fill="#2B2622" stroke="#1E1A17" stroke-width="1.5"/>
+<path d="M203,84 Q211,77 219,84 Q211,90 203,84 Z" fill="#F4EFE3" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="211" cy="84" r="3.2" fill="#2B2622" stroke="#1E1A17" stroke-width="1.5"/>
+<path d="M200,88 L197,100 L203,101" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M192,106 Q200,109 208,106" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M184,104 Q200,98 216,104" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M176,62 C176,42 224,42 224,62 Z" fill="#C9BFA8" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M170,62 C170,52 230,52 230,62 C230,72 170,72 170,62 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M174,64 C190,70 210,70 226,64" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M178,350 L178,342 Q186,338 196,342 L196,350 Z M204,350 L204,342 Q214,338 222,342 L222,350 Z" fill="#EDE6D6" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

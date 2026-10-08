@@ -1,0 +1,53 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Tablet of the Divine Powers (me)
+  Subject: A clay tablet bearing Her gold star between ruled lines of wedges, standing for the me, the divine powers Holy Inanna carried from Eridu to Uruk.
+  Sources consulted: Getty Uruk transcript chapter 9 (Mistress of the Innumerable Divine Powers, Inanna and Enki)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="me-tablet">
+<path d="M 84,70 C 84,56 94,46 108,46 L 292,46 C 306,46 316,56 316,70 L 318,330 C 318,344 308,354 294,354 L 106,354 C 92,354 82,344 82,330 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 316,70 L 318,330 C 318,344 308,354 294,354 L 106,354 C 92,354 82,344 82,330 C 90,338 98,340 108,340 L 292,340 C 300,340 304,334 304,324 L 304,66 C 304,58 300,52 296,48 C 308,50 316,58 316,70 Z" fill="#9C6B3C"/>
+<path d="M 84,70 C 84,56 94,46 108,46 L 292,46 C 306,46 316,56 316,70 L 318,330 C 318,344 308,354 294,354 L 106,354 C 92,354 82,344 82,330 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="104" y1="84" x2="296" y2="84" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="104" y1="316" x2="296" y2="316" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 112,62 L 122,62 L 117,69 Z M 117,69 L 117,76" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 112,324 L 122,324 L 117,331 Z M 117,331 L 117,338" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 134,62 L 144,62 L 139,69 Z M 139,69 L 139,76" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 134,324 L 144,324 L 139,331 Z M 139,331 L 139,338" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 156,62 L 166,62 L 161,69 Z M 161,69 L 161,76" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 156,324 L 166,324 L 161,331 Z M 161,331 L 161,338" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 178,62 L 188,62 L 183,69 Z M 183,69 L 183,76" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 178,324 L 188,324 L 183,331 Z M 183,331 L 183,338" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,62 L 210,62 L 205,69 Z M 205,69 L 205,76" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,324 L 210,324 L 205,331 Z M 205,331 L 205,338" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 222,62 L 232,62 L 227,69 Z M 227,69 L 227,76" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 222,324 L 232,324 L 227,331 Z M 227,331 L 227,338" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 244,62 L 254,62 L 249,69 Z M 249,69 L 249,76" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 244,324 L 254,324 L 249,331 Z M 249,331 L 249,338" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 266,62 L 276,62 L 271,69 Z M 271,69 L 271,76" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 266,324 L 276,324 L 271,331 Z M 271,331 L 271,338" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 288,62 L 298,62 L 293,69 Z M 293,69 L 293,76" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 288,324 L 298,324 L 293,331 Z M 293,331 L 293,338" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="200,200 200,100 185.5,164.9" fill="#D9A441"/>
+<polygon points="200,200 200,100 214.5,164.9" fill="#A8761F"/>
+<polygon points="200,200 270.7,129.3 214.5,164.9" fill="#D9A441"/>
+<polygon points="200,200 270.7,129.3 235.1,185.5" fill="#A8761F"/>
+<polygon points="200,200 300,200 235.1,185.5" fill="#D9A441"/>
+<polygon points="200,200 300,200 235.1,214.5" fill="#A8761F"/>
+<polygon points="200,200 270.7,270.7 235.1,214.5" fill="#D9A441"/>
+<polygon points="200,200 270.7,270.7 214.5,235.1" fill="#A8761F"/>
+<polygon points="200,200 200,300 214.5,235.1" fill="#A8761F"/>
+<polygon points="200,200 200,300 185.5,235.1" fill="#D9A441"/>
+<polygon points="200,200 129.3,270.7 185.5,235.1" fill="#A8761F"/>
+<polygon points="200,200 129.3,270.7 164.9,214.5" fill="#D9A441"/>
+<polygon points="200,200 100,200 164.9,214.5" fill="#A8761F"/>
+<polygon points="200,200 100,200 164.9,185.5" fill="#D9A441"/>
+<polygon points="200,200 129.3,129.3 164.9,185.5" fill="#A8761F"/>
+<polygon points="200,200 129.3,129.3 185.5,164.9" fill="#D9A441"/>
+<polygon points="200,100 214.5,164.9 270.7,129.3 235.1,185.5 300,200 235.1,214.5 270.7,270.7 214.5,235.1 200,300 185.5,235.1 129.3,270.7 164.9,214.5 100,200 164.9,185.5 129.3,129.3 185.5,164.9" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="200" r="14" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

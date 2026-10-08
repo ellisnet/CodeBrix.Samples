@@ -98,7 +98,21 @@ state and knows nothing about GL.
 // From CodeBrix.Samples/KenneyAssetBrowser/src/libs/KenneyAssetBrowser.Rendering/GL/ModelSceneGlCanvas.cs
 public sealed class ModelSceneGlCanvas : GLCanvasElement
 {
+    // Orbit sensitivity: how many degrees the camera turns per pixel (DIP) of drag. The base
+    // renders at the element's logical size, so drag deltas are measured in the same units.
+    private const float OrbitDegreesPerPixel = 0.25f;
+
+    // The dark solid clear colour behind the model (linear RGBA in [0, 1]).
+    private static readonly (float R, float G, float B, float A) SolidBackground = (0.13f, 0.13f, 0.15f, 1f);
+
+    // The framework-free shader renderer. It owns the OrbitCamera and knows nothing about the
+    // element, the framebuffer, or pointer input; this control drives it through the
+    // GLCanvasElement lifecycle (Init/RenderOverride/OnDestroy) on the GL thread.
     private readonly IModelSceneRenderer _renderer = new GlModelSceneRenderer();
+
+    private bool _dragging;
+    private double _lastX;
+    private double _lastY;
 
     /// <summary>Creates the preview control and wires its pointer (rotate/zoom) input.</summary>
     // getWindowFunc is only used on WinUI; on CodeBrix.Platform heads it is null.
@@ -113,6 +127,10 @@ public sealed class ModelSceneGlCanvas : GLCanvasElement
         PointerWheelChanged += OnPointerWheelChanged;
     }
 
+    /// <summary>
+    /// Identifies the <see cref="Model"/> dependency property - the 3D model to preview, or
+    /// <see langword="null"/> to clear it.
+    /// </summary>
     public static readonly DependencyProperty ModelProperty =
         DependencyProperty.Register(
             nameof(Model),
@@ -120,6 +138,10 @@ public sealed class ModelSceneGlCanvas : GLCanvasElement
             typeof(ModelSceneGlCanvas),
             new PropertyMetadata(null, OnModelChanged));
 
+    /// <summary>
+    /// The 3D model to preview, or <see langword="null"/> to show an empty scene. Set this
+    /// (typically via a binding); the camera re-frames to each new model automatically.
+    /// </summary>
     public LoadedModel? Model
     {
         get => (LoadedModel?)GetValue(ModelProperty);
@@ -135,7 +157,10 @@ public sealed class ModelSceneGlCanvas : GLCanvasElement
         ApplyDefaultFraming(canvas._renderer.Camera);
         canvas._renderer.SetModel(e.NewValue as LoadedModel, frameCamera: true);
         canvas.Invalidate();
+        // ...
     }
+
+    private bool _rendererInitialized;
 
     /// <inheritdoc />
     protected override void Init(GL gl) => EnsureInitialized(gl);
@@ -156,6 +181,8 @@ public sealed class ModelSceneGlCanvas : GLCanvasElement
     /// <inheritdoc />
     protected override void RenderOverride(GL gl)
     {
+        // Defensive: GLCanvasElement calls Init before the first RenderOverride, but initializing
+        // here too (idempotent) keeps the control robust against any host lifecycle ordering.
         EnsureInitialized(gl);
 
         // Both this preview and the head's own Skia renderer share the GL context, so save the
@@ -182,6 +209,7 @@ public sealed class ModelSceneGlCanvas : GLCanvasElement
         _renderer.Uninitialize(gl);
         _rendererInitialized = false;
     }
+    // ...
 }
 ```
 
@@ -205,9 +233,11 @@ constructed:
 // From CodeBrix.Samples/PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs
 /// <summary>The model shown in the 3D preview (null while browsing); the preview control binds to this.</summary>
 public LoadedModel CurrentModel => _currentModel;
-
+// ...
 private async Task OpenModelViewAsync(PolyHavenAsset asset, DownloadedModel downloaded)
 {
+    DownloadStatusText = $"Loading “{asset.Name ?? downloaded.Slug}”…";
+
     //Parse the glTF and gather its stats off the UI thread; GPU upload happens lazily
     //at first paint.
     var (model, stats) = await Task.Run(() =>
@@ -279,10 +309,24 @@ renderer.
 /// </summary>
 public interface IModelSceneRenderer
 {
+    /// <summary>The orbit camera driven by the host's pointer/scroll input.</summary>
     OrbitCamera Camera { get; }
+
+    /// <summary>The background clear color as linear RGBA in [0, 1].</summary>
     (float R, float G, float B, float A) BackgroundColor { get; set; }
 
+    /// <summary>
+    /// Sets the model to display (or <see langword="null"/> to clear). Takes effect on the
+    /// next <see cref="Render"/>; when <paramref name="frameCamera"/> is true the camera is
+    /// re-framed to the model's bounds at that time.
+    /// </summary>
     void SetModel(LoadedModel? model, bool frameCamera = true);
+
+    /// <summary>
+    /// Queues one baked animation frame's vertex data (aligned with the current model's
+    /// primitives) to overwrite the vertex buffers at the next render, or <see langword="null"/>
+    /// to leave them as they are. May be called from any thread.
+    /// </summary>
     void SetFrameVertices(IReadOnlyList<ModelFramePrimitive>? frame);
 
     /// <summary>Compiles shaders and creates GL resources. Call once, on the GL thread.</summary>
@@ -351,6 +395,7 @@ public void Initialize(GL gl)
         .Contains("OpenGL ES", StringComparison.OrdinalIgnoreCase);
     var header = isGles ? "#version 300 es\n" : "#version 330 core\n";
 
+    // Compile the vertex + fragment shaders and link them into a program.
     var vertexShader = CompileShader(gl, ShaderType.VertexShader, header + VertexShaderBody);
     var fragmentShader = CompileShader(gl, ShaderType.FragmentShader, header + FragmentShaderBody);
     // ... link, check LinkStatus, then cache every uniform location once ...
@@ -594,7 +639,7 @@ private const uint Supersample = 2;
 //A conservative ceiling for the supersampled framebuffer, kept below every desktop
 //  GL/GLES 3.0 implementation's minimum guarantees.
 private const uint MaxFramebufferSide = 4096;
-
+// ...
 //Flips the GL-oriented (bottom-up) pixels the right way up, downscales the supersampled
 //  frame to the requested output size, and encodes a PNG.
 private static unsafe byte[] EncodePng(byte[] pixels, int frameWidth, int frameHeight, int width, int height)
@@ -709,18 +754,55 @@ unchanged by the choice.
 // From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/Display/IModelRenderEngine.cs
 public interface IModelRenderEngine : IDisposable
 {
+    /// <summary>
+    /// The orbit camera the engine renders from. Drive it from pointer input, and set its
+    /// framing (fov / margin / bias) before calling <see cref="SetModel"/>.
+    /// </summary>
     OrbitCamera Camera { get; }
+
+    /// <summary>
+    /// A fixed world-space key-light direction for solid-shape shading, or <see langword="null"/>
+    /// for a camera headlight (which double-sides the lighting, better for flat/foliage models).
+    /// </summary>
     Vector3? FixedLightDirection { get; set; }
+
+    /// <summary>
+    /// Sets (or clears with <see langword="null"/>) the model to draw, re-framing the camera to
+    /// it on the next render. Safe to call from any thread; the GPU upload happens at render time.
+    /// </summary>
     void SetModel(LoadedModel model);
+
+    /// <summary>
+    /// Renders the current model at the given pixel size over the given background colour and
+    /// returns the frame's pixels. Called on the render thread (the UI thread, from the Skia
+    /// paint callback).
+    /// </summary>
+    /// <param name="width">The frame width in pixels.</param>
+    /// <param name="height">The frame height in pixels.</param>
+    /// <param name="background">The clear colour as linear RGBA in [0, 1]; an alpha of 0 clears transparent so a background can show through.</param>
     RenderedFrame RenderFrame(int width, int height, (float R, float G, float B, float A) background);
 }
 
+/// <summary>
+/// The pixels produced by one <see cref="IModelRenderEngine.RenderFrame"/> call: tightly packed
+/// RGBA bytes (4 per pixel, row-major).
+/// </summary>
 public readonly struct RenderedFrame
 {
     public RenderedFrame(byte[] rgba, int width, int height, bool isBottomUp) { /* ... */ }
     public byte[] Rgba { get; }
+
+    /// <summary>The frame width in pixels.</summary>
     public int Width { get; }
+
+    /// <summary>The frame height in pixels.</summary>
     public int Height { get; }
+
+    /// <summary>
+    /// Whether the first pixel row is the bottom of the image. OpenGL reads bottom-up, so its
+    /// engine returns <see langword="true"/> and the Skia bridge flips the image vertically to
+    /// match Skia's top-down surface. A top-down engine (e.g. some Vulkan setups) returns false.
+    /// </summary>
     public bool IsBottomUp { get; }
 }
 ```
@@ -732,8 +814,10 @@ public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
     private static readonly RenderEngineKind[] Kinds =
         [RenderEngineKind.OpenGL, RenderEngineKind.Vulkan, RenderEngineKind.Metal];
 
+    /// <inheritdoc />
     public IReadOnlyList<RenderEngineKind> AvailableKinds => Kinds;
 
+    /// <inheritdoc />
     public bool IsSupported(RenderEngineKind kind) => kind switch
     {
         RenderEngineKind.OpenGL => true,
@@ -742,6 +826,7 @@ public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
         _ => false,
     };
 
+    /// <inheritdoc />
     public IModelRenderEngine Create(RenderEngineKind kind, Func<XamlRoot> getXamlRoot)
     {
         if (!IsSupported(kind))
@@ -831,10 +916,15 @@ policy.
 // From CodeBrix.Samples/PolyHavenBrowser_viewer_only/src/libs/PolyHavenBrowser.Rendering/Vulkan/VulkanPlatformSupport.cs
 public static class VulkanPlatformSupport
 {
+    // Head runtime assembly names (exactly one is loaded per app), checked as prefixes so
+    // satellite assemblies such as CodeBrix.Platform.UI.Runtime.Skia.Win32.Support match
+    // their head too. Longer names are listed before their prefixes (FrameBuffer before
+    // X11/Wayland ordering doesn't matter, but Wpf/Win32 are distinct).
     private const string HeadAssemblyPrefix = "CodeBrix.Platform.UI.Runtime.Skia.";
 
     private static readonly Lazy<PlatformHead> DetectedHead = new(DetectCurrentHead);
 
+    /// <summary>Whether Vulkan rendering is okayed for the given platform head.</summary>
     public static bool IsSupported(PlatformHead head) => head switch
     {
         PlatformHead.LinuxX11 => true,
@@ -844,10 +934,17 @@ public static class VulkanPlatformSupport
         _ => false,
     };
 
+    /// <summary>Whether Vulkan rendering is okayed for the platform the app is running on.</summary>
     public static bool IsCurrentPlatformSupported => IsSupported(CurrentHead);
 
+    /// <summary>The platform head the app is running on (detected once, then cached).</summary>
     public static PlatformHead CurrentHead => DetectedHead.Value;
 
+    /// <summary>
+    /// Classifies a CodeBrix.Platform head runtime assembly name (e.g.
+    /// <c>CodeBrix.Platform.UI.Runtime.Skia.X11</c>), returning
+    /// <see cref="PlatformHead.Unknown"/> for anything that is not a head runtime.
+    /// </summary>
     public static PlatformHead ClassifyAssemblyName(string? assemblyName)
     {
         if (assemblyName is null || !assemblyName.StartsWith(HeadAssemblyPrefix, StringComparison.Ordinal))
@@ -868,6 +965,7 @@ public static class VulkanPlatformSupport
 
         return PlatformHead.Unknown;
     }
+    // ...
 }
 ```
 
@@ -924,23 +1022,32 @@ public RenderedFrame RenderFrame(int width, int height, (float R, float G, float
     {
         var gl = _context.Gl;
 
+        // One-time GL setup: compile shaders and link the program.
         if (!_rendererInitialized)
         {
             _renderer.Initialize(gl);
             _rendererInitialized = true;
         }
 
+        // Make sure we have a framebuffer (colour + depth) of the requested size.
         EnsureFramebuffer(gl, (uint)width, (uint)height);
 
+        // Draw the model into our framebuffer over the requested background colour.
         _renderer.BackgroundColor = background;
         gl.BindFramebuffer(FramebufferTarget.Framebuffer, _framebuffer);
         _renderer.Render(gl, (uint)width, (uint)height);
 
+        // Copy the rendered pixels from the GPU back to CPU memory (RGBA8). This GPU->CPU
+        // sync is the main per-frame cost - it is why interaction drops frames rather than
+        // lowering resolution.
         var pixels = new byte[width * height * 4];
         gl.ReadPixels(0, 0, (uint)width, (uint)height, PixelFormat.Rgba, PixelType.UnsignedByte, pixels.AsSpan());
         gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 
+        // OpenGL's first pixel row is the bottom of the image; flag that so the Skia bridge
+        // flips it to match Skia's top-down surface.
         return new RenderedFrame(pixels, width, height, isBottomUp: true);
+        // Disposing the MakeCurrent() scope hands the thread's GL state back to the host head.
     }
 }
 ```
@@ -980,16 +1087,20 @@ public sealed class VulkanModelRenderEngine : IModelRenderEngine
 {
     private readonly VulkanSceneRenderer _renderer = new();
 
+    /// <inheritdoc />
     public OrbitCamera Camera => _renderer.Camera;
 
+    /// <inheritdoc />
     public Vector3? FixedLightDirection
     {
         get => _renderer.FixedLightDirection;
         set => _renderer.FixedLightDirection = value;
     }
 
+    /// <inheritdoc />
     public void SetModel(LoadedModel model) => _renderer.SetModel(model);
 
+    /// <inheritdoc />
     public RenderedFrame RenderFrame(int width, int height, (float R, float G, float B, float A) background)
     {
         var pixels = _renderer.RenderFrame(width, height, background);
@@ -1000,11 +1111,14 @@ public sealed class VulkanModelRenderEngine : IModelRenderEngine
         return new RenderedFrame(pixels, width, height, isBottomUp: true);
     }
 
+    /// <inheritdoc />
     public void Dispose() => _renderer.Dispose();
 }
 
+/// <summary>Creates <see cref="VulkanModelRenderEngine"/> instances.</summary>
 public sealed class VulkanModelRenderEngineFactory : IModelRenderEngineFactory
 {
+    /// <inheritdoc />
     public IModelRenderEngine Create() => new VulkanModelRenderEngine();
 }
 ```
@@ -1045,6 +1159,8 @@ internal static unsafe class MetalInterop
 {
     private const string Objc = "/usr/lib/libobjc.A.dylib";
     private const string Metal = "/System/Library/Frameworks/Metal.framework/Metal";
+
+    // ---- Objective-C runtime + Metal framework entry points -------------------------------
 
     [DllImport(Objc, EntryPoint = "objc_getClass")]
     private static extern IntPtr objc_getClass([MarshalAs(UnmanagedType.LPUTF8Str)] string name);
@@ -1133,6 +1249,8 @@ public void Paint(SKSurface surface, SKImageInfo info)
     DrawFrame(surface, info, frame);
 }
 
+// Composites one engine frame onto the Skia canvas: the darkened background texture first,
+// then the rendered model (flipped if the engine's pixels are bottom-up, as OpenGL's are).
 private void DrawFrame(SKSurface surface, SKImageInfo info, RenderedFrame frame)
 {
     var canvas = surface.Canvas;
@@ -1190,7 +1308,7 @@ active.
 //the crisp full cap is used once the drag stops.
 private const int MaxRenderDimension = 1440;
 private const int DragRenderDimension = 960;
-
+// ...
 public void Paint(SKSurface surface, SKImageInfo info)
 {
     if (_disposed || info.Width <= 0 || info.Height <= 0)
@@ -1384,7 +1502,7 @@ public ImageCanvasPainter ImagePainter { get; } = new();
 
 /// <inheritdoc />
 public Action InvalidateImageCanvas { get; set; }
-
+// ...
 /// <summary>The zoom toolbar's visibility (2D viewer only).</summary>
 [AffectsCommands(nameof(ZoomInCommand), nameof(ZoomOutCommand), nameof(ZoomResetCommand))]
 public Visibility ZoomBarVisibility => ImageViewerVisibility;
@@ -1400,10 +1518,22 @@ public SimpleCommand ZoomInCommand => field ??= new SimpleCommand(CanZoom, () =>
 /// <summary>Zooms the 2D viewer out one step.</summary>
 public SimpleCommand ZoomOutCommand => field ??= new SimpleCommand(CanZoom, () => AdjustZoom(0.8f));
 
+/// <summary>Resets the 2D viewer's zoom to fit.</summary>
+public SimpleCommand ZoomResetCommand => field ??= new SimpleCommand(CanZoom, () =>
+{
+    ImagePainter.ZoomFactor = 1f;
+    NotifyPropertyChanged(nameof(ZoomText));
+    InvalidateImageCanvas?.Invoke();
+});
+
 //Only the 2D viewer has a zoom; the toolbar carrying these is shown with the same test,
 //and SetViewerMode's notification for it is what refreshes them.
 private bool CanZoom() => _viewerMode == ViewerMode.Image;
 
+/// <summary>
+/// Applies one wheel notch of zoom from the page's pointer-wheel handler.
+/// </summary>
+/// <param name="wheelDelta">The wheel delta (positive zooms in).</param>
 public void AdjustZoomFromWheel(int wheelDelta) => AdjustZoom(wheelDelta > 0 ? 1.25f : 0.8f);
 
 private void AdjustZoom(float factor)
@@ -1418,9 +1548,9 @@ private void AdjustZoom(float factor)
 // From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml.cs
 IImageCanvasBridge canvasBridge = viewModel;
 // ...
-//Marshal 2D-canvas invalidations from the view model onto the UI thread
-canvasBridge.InvalidateImageCanvas = () => DispatcherQueue?.TryEnqueue(() => ImageCanvas?.Invalidate());
-
+        //Marshal 2D-canvas invalidations from the view model onto the UI thread
+        canvasBridge.InvalidateImageCanvas = () => DispatcherQueue?.TryEnqueue(() => ImageCanvas?.Invalidate());
+// ...
 //The 2D viewer: the view model's painter draws images and spritesheets (checkerboard,
 //zoom, sprite spotlight) onto this SkiaSharp surface.
 ImageCanvas.PaintSurface += (_, e) =>
@@ -1584,6 +1714,7 @@ private void UpdateAnimationTimer()
     _animationTimer ??= CreateAnimationTimer();
     _animationTimer.Interval = TimeSpan.FromSeconds(1d / clip.FrameRate);
     _animationTimer.Start();
+    // ...
 }
 
 private void PushAnimationFrame()
@@ -1834,6 +1965,10 @@ using CodeBrix.Imaging.Formats.Jpeg;
 using CodeBrix.Imaging.Formats.Png;
 using CodeBrix.Imaging.Formats.Webp;
 using CodeBrix.Imaging.Processing;
+using System;
+using System.IO;
+
+namespace NotionDocumentCreator.CreateDocument.Internal;
 
 /// <summary>
 /// Normalises a downloaded image for PDF embedding: capped pixel width, JPEG for
@@ -1931,10 +2066,20 @@ public const string PainLayerName = "Pain";
 public const string NumbnessLayerName = "Numbness";
 public const string TinglingLayerName = "Tingling";
 
+//The body-map image is embedded with this logical name by every head that compiles
+//  this file (PainDiagram.Core, PainDiagram.WinUI, and PainDiagram.Wpf)
+private const string BodyMapResourceName = "PainDiagram.Assets.body_map_master.png";
+
+private const int ExportPixelSize = 1000;
+
+private DrawingSession _session;
+
 public MainViewModel()
 {
     if (!IsDesignMode(true))
     {
+        Debug.WriteLine("Main view model startup.");
+
         _session = new DrawingSession(new DrawingSessionOptions
         {
             BackgroundFillColor = Color.White,
@@ -1956,7 +2101,7 @@ public MainViewModel()
 /// forwards pointer events to it.
 /// </summary>
 public DrawingSession Session => _session;
-
+// ...
 private void SetActiveLayer(string layerName)
 {
     DrawingLayer layer = _session?.GetLayer(layerName);
@@ -1997,6 +2142,17 @@ supplied as raw pixels:
 
 ```csharp
 // From CodeBrix.Samples/WebcamPainter/src/libs/WebcamPainter.Painting/PaintingSession.cs
+private PaintingSession(DrawingSession session)
+{
+    _session = session;
+
+    foreach (HighlighterColor color in HighlighterPalette.Colors)
+    {
+        _session.AddLayer(color.Name, color.Color);
+    }
+    ActiveColorName = HighlighterPalette.Colors[0].Name;
+}
+// ...
 public static PaintingSession Create(byte[] bgraPixels, int width, int height, bool mirrorHorizontally)
 {
     if (bgraPixels == null) { throw new ArgumentNullException(nameof(bgraPixels)); }
@@ -2017,18 +2173,12 @@ public static PaintingSession Create(byte[] bgraPixels, int width, int height, b
         mirrorHorizontally);
     return new PaintingSession(session);
 }
-
-private PaintingSession(DrawingSession session)
-{
-    _session = session;
-
-    foreach (HighlighterColor color in HighlighterPalette.Colors)
-    {
-        _session.AddLayer(color.Name, color.Color);
-    }
-    ActiveColorName = HighlighterPalette.Colors[0].Name;
-}
-
+// ...
+/// <summary>
+/// Switches the active highlighter color.
+/// </summary>
+/// <param name="colorName">One of the <see cref="HighlighterPalette"/> color names.</param>
+/// <returns><c>true</c> when the color was found and made active.</returns>
 public bool SelectColor(string colorName)
 {
     DrawingLayer layer = _session.GetLayer(colorName);
@@ -2122,11 +2272,20 @@ stroke calls directly. Nothing in the input path knows the canvas size.
 public bool BeginStroke(float normX, float normY)
     => _session.PointerPressedNormalized(normX, normY);
 
+/// <summary>
+/// Extends the in-progress stroke to the given normalized still-image position.
+/// </summary>
+/// <param name="normX">Horizontal position across the still, 0..1.</param>
+/// <param name="normY">Vertical position down the still, 0..1.</param>
+/// <returns><c>true</c> when the stroke was extended.</returns>
 public bool ContinueStroke(float normX, float normY)
     => _session.PointerMovedNormalized(normX, normY);
 
+/// <summary>Completes and commits the in-progress stroke ("spatula" lifted).</summary>
+/// <returns><c>true</c> when a stroke was committed.</returns>
 public bool EndStroke() => _session.PointerReleased();
 
+/// <summary>Discards the in-progress stroke without committing it.</summary>
 public void CancelStroke() => _session.PointerCanceled();
 ```
 
@@ -2284,9 +2443,23 @@ public PointF NormalizedToView(float normX, float normY, float viewWidth, float 
     return new PointF(fit.X + (normX * fit.Width), fit.Y + (normY * fit.Height));
 }
 
+/// <summary>
+/// The centered aspect-fit rectangle that the captured still occupies within a canvas of
+/// the given size (the same mapping the drawing renderer uses).
+/// </summary>
+/// <param name="viewWidth">The hosting canvas's width.</param>
+/// <param name="viewHeight">The hosting canvas's height.</param>
+/// <returns>The still's display rectangle in canvas coordinates.</returns>
 public RectangleF GetImageRectInView(float viewWidth, float viewHeight)
     => _session.GetDrawingRect(new SizeF(viewWidth, viewHeight));
 
+/// <summary>
+/// The brush radius in canvas coordinates for a canvas of the given size - for drawing
+/// a brush-sized cursor ring that matches what a stroke will actually cover.
+/// </summary>
+/// <param name="viewWidth">The hosting canvas's width.</param>
+/// <param name="viewHeight">The hosting canvas's height.</param>
+/// <returns>The brush radius, scaled to canvas coordinates.</returns>
 public float GetBrushRadiusInView(float viewWidth, float viewHeight)
     => _session.ScaleToView(BrushRadius, new SizeF(viewWidth, viewHeight));
 ```
@@ -2348,6 +2521,15 @@ model.
 // From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealBackdrop.cs
 public sealed class EtherealBackdrop : DirectDrawingBase
 {
+    private const int StarCount = 220;
+
+    //How far (as a fraction of the shorter screen edge) a palm's pull reaches the stars
+    private const float StarPullRadiusFraction = 0.38f;
+
+    //The base plasma is three interfering waves plus a slow radial swirl, palette-cycled;
+    //  each palm adds a coordinate warp (pull + vortex), inward-drifting color rings, and
+    //  a soft glow. With all palm strengths at zero every palm term vanishes and the
+    //  shader is exactly the undisturbed plasma.
     private const string EtherealSksl = @"
 uniform float iTime;
 uniform float2 iResolution;
@@ -2361,7 +2543,7 @@ half4 main(float2 fragCoord) {
     // ... three interfering waves, a radial swirl, and the palm warp/ripple/glow terms
     return half4(half3(col), 1.0);
 }";
-
+    // ...
     public EtherealBackdrop(RenderSurfaceHostBase renderSurfaceHost, View view, Rectangle screenBounds,
         PalmAttractorField attractorField)
         : base(renderSurfaceHost, DirectDrawingMode.View, null, view, screenBounds, null, "ethereal-backdrop")
@@ -2375,16 +2557,25 @@ half4 main(float2 fragCoord) {
     /// <summary>
     /// Compiles the backdrop's SkSL shader (also exercised directly by the unit tests).
     /// </summary>
+    /// <returns>The compiled runtime effect.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the SkSL shader fails to compile.</exception>
     internal static SKRuntimeEffect CreateEffect()
         => SKRuntimeEffect.CreateShader(EtherealSksl, out var errors)
             ?? throw new InvalidOperationException($"Ethereal shader failed to compile: {errors}");
 
+    /// <summary>
+    /// Marks the backdrop dirty every engine frame so the CpuRendering (CPU) dirty-rectangle path
+    /// keeps animating it; the GpuRendering-OpenGL (GPU) path re-renders the full surface each frame
+    /// regardless.
+    /// </summary>
+    /// <param name="tick">The current engine tick.</param>
     public override void Update(long tick)
     {
         base.Update(tick);
         ForceRefresh();
     }
 
+    /// <inheritdoc />
     protected override void OnDraw(BackbufferBase backbuffer, RectangleF destRectScreen)
     {
         var canvas = backbuffer.Canvas;
@@ -2399,6 +2590,11 @@ half4 main(float2 fragCoord) {
         _attractorField.Step(delta);
         _attractorField.CopyState(_palmState);
 
+        var rect = destRectScreen.ToSKRect();
+        float aspect = w / h;
+
+        // 1) Plasma: one rect through the SkSL shader, with the palms as uniforms
+        //    (positions converted into the shader's aspect-corrected -1..1 space).
         _uniforms["iTime"] = time;
         _resolutionUniform[0] = w;
         _resolutionUniform[1] = h;
@@ -2463,10 +2659,16 @@ so a moving item keeps its animation state.
 ```csharp
 // From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/PalmAttractorField.cs
 public const int MaxAttractors = 4;
-public const float PositionLerpPerSecond = 12f;
-public const float StrengthAttackPerSecond = 4f;
-public const float StrengthReleasePerSecond = 2.5f;
 
+/// <summary>How quickly a slot's position glides toward its target, per second (higher = tighter chase).</summary>
+public const float PositionLerpPerSecond = 12f;
+
+/// <summary>How quickly a newly seen palm's influence swells in, per second.</summary>
+public const float StrengthAttackPerSecond = 4f;
+
+/// <summary>How quickly a closed or lost palm's influence melts away, per second.</summary>
+public const float StrengthReleasePerSecond = 2.5f;
+// ...
 public void SetTargets(IReadOnlyList<PalmAttractor> palms)
 {
     lock (_lock)
@@ -2507,6 +2709,12 @@ public void SetTargets(IReadOnlyList<PalmAttractor> palms)
     }
 }
 
+/// <summary>
+/// Advances the field by one rendered frame: positions glide toward their targets and
+/// strengths ease toward full (attack) or nothing (release); fully released slots are
+/// freed. Safe to call from any thread - the renderer calls it once per frame.
+/// </summary>
+/// <param name="deltaSeconds">The seconds elapsed since the previous step.</param>
 public void Step(float deltaSeconds)
 {
     if (deltaSeconds <= 0f) { return; }
@@ -2536,7 +2744,7 @@ public void Step(float deltaSeconds)
         }
     }
 }
-
+// ...
 //Returns the index of the slot already owned by this id, else a free slot, else -1.
 //  A slot mid-fade keeps its id, so a returning palm re-attaches instead of popping.
 private int FindSlot(int id)
@@ -2586,6 +2794,12 @@ translate.
 /// </summary>
 public readonly struct PalmAttractor
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PalmAttractor"/> struct.
+    /// </summary>
+    /// <param name="id">A stable identifier for the palm while it stays in view.</param>
+    /// <param name="x">The palm's horizontal position, 0 (left) .. 1 (right) across the visual.</param>
+    /// <param name="y">The palm's vertical position, 0 (top) .. 1 (bottom) down the visual.</param>
     public PalmAttractor(int id, float x, float y)
     {
         Id = id;
@@ -2685,15 +2899,23 @@ renderer; nothing about resolution lives in the page.
     /// <summary>The fit-the-page level; also the minimum.</summary>
     public const int MinimumPercent = 100;
 
+    /// <summary>The closest look the ladder offers.</summary>
+    public const int MaximumPercent = 1000;
+
     /// <summary>The highest resolution a page is ever rendered at, whatever the zoom.</summary>
     public const int MaximumRenderDpi = 600;
 
     /// <summary>The zoom levels, in order, that <see cref="ZoomIn"/> and <see cref="ZoomOut"/> step through.</summary>
     public static IReadOnlyList<int> Levels { get; } = [100, 125, 150, 200, 300, 400, 500, 700, 1000];
 
+    private int _index;
+
+    /// <summary>The current level as a percentage (100 = fit the page).</summary>
+    public int Percent => Levels[_index];
+
     /// <summary>The current level as a multiplier of the fit-the-page size (1.0 at 100%).</summary>
     public double Factor => Percent / 100.0;
-
+    // ...
     /// <summary>
     /// The resolution to render a page at for the current level: baseDpi scaled by the
     /// zoom factor so text stays sharp, capped at <see cref="MaximumRenderDpi"/> (past the cap
@@ -2746,6 +2968,15 @@ public sealed class PintaCanvas : SKXamlCanvas, ICanvasView
     private Drawing.ImageSurface? canvas_surface;
     private RectangleI? pending_dirty; // union of invalidated canvas rects; null = everything
     private bool surface_stale = true;
+    private ToolCursor? tool_cursor;
+
+    //Marching ants: the dash offset ticks backwards while a selection is
+    //visible (upstream ticks -1 per timer fire), wrapping at the dash
+    //pattern's period. The redraw is display-only.
+    private readonly Microsoft.UI.Xaml.DispatcherTimer ants_timer = new () {
+        Interval = TimeSpan.FromMilliseconds (100),
+    };
+    private float ants_offset;
 
     public PintaCanvas ()
     {
@@ -3123,6 +3354,11 @@ using (SKCanvas canvas = new (layer.Surface.Bitmap)) {
 	canvas.DrawBitmap (decoded, 0, 0, SKSamplingOptions.Default, paint: null);
 }
 
+layer.Surface.MarkDirty ();
+
+return newDocument;
+}
+
 /// <summary>
 /// Returns the transform that maps decoded (encoded-orientation) pixels to
 /// the upright image, mirroring Skia's SkEncodedOriginToMatrix. The width
@@ -3174,6 +3410,7 @@ public PolyClip SelectionClipper { get; } = new ();
 SelectionClipper.AddPath (documentPolygon, PolyType.ptSubject, true);
 SelectionClipper.AddPaths (SelectionPolygons, PolyType.ptClip, true);
 SelectionClipper.Execute (ClipType.ctDifference, resultingPolygons);
+
 SelectionClipper.Clear ();
 ```
 
@@ -3215,7 +3452,7 @@ the facade knows SkiaSharp.
 // buffer with span access, mirroring the surface API the upstream Pinta code
 // used. Backed by an SKBitmap so drawing Contexts and SkiaSharp interop share
 // the same pixel memory with no copies.
-
+// ...
 public ImageSurface (Format format, int width, int height)
 {
 	if (width < 0 || height < 0)
@@ -3515,6 +3752,7 @@ private void InvalidateVideoCanvas()
 public void OnVideoSurfaceReady(bool gpuCanvasAvailable)
 {
     IsGpuCanvasAvailable = gpuCanvasAvailable;
+    isVideoSurfaceReady = true;
 
     if (!gpuCanvasAvailable)
     {
@@ -3682,6 +3920,8 @@ public sealed class LutChain
     // ...
 
     /// <summary>Replaces the chain, if the new one differs from the old one.</summary>
+    /// <param name="newEntries">The tables to apply, in order; null or empty clears the chain.</param>
+    /// <returns>True when the chain changed and the effects have to be rebuilt; false when nothing moved.</returns>
     public bool TrySet(IReadOnlyList<LutChainEntry> newEntries)
     {
         IReadOnlyList<LutChainEntry> replacement = newEntries == null
@@ -3699,6 +3939,7 @@ public sealed class LutChain
     }
 
     /// <summary>Builds the signature of a chain: its files, its order and its percentages.</summary>
+    /// <param name="entries">The chain to describe; null counts as empty.</param>
     /// <returns>A string that is equal for two chains exactly when they would render the same picture.</returns>
     public static string ComputeSignature(IReadOnlyList<LutChainEntry> entries)
     {
@@ -3799,7 +4040,7 @@ public void DrawVideo(SKCanvas canvas, SKRect bounds)
     //A capture belongs here, inside the paint handler, where the graphics context is current.
     CompletePendingSnapshot();
 }
-
+// ...
 private void CompletePendingSnapshot()
 {
     if (pendingSnapshotPath == null || controller == null) { return; }

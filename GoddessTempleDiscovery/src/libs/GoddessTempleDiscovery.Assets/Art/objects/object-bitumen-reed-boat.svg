@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Bitumen-Coated Reed Boat
+  Subject: A small marsh boat of bound reed bundles with high curled prow and stern, coated in bitumen with the reed lashings showing through, the craft of the waters around Uruk.
+  Sources consulted: BUILDING_HIGHLIGHTS.txt Ziggurat of Ur-Nammu (reed huts, reed-mat platforms and bitumen) and the marsh setting of Eanna; images/Holy_Inanna/IMAGES.md section 3 (Uruk trough reed architecture)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="boat">
+<path d="M44,150 C40,132 52,122 62,130 C70,176 110,214 200,218 C290,214 334,176 346,104 C352,92 366,96 362,112 C356,192 300,262 200,264 C100,262 52,214 44,150 Z" fill="#2B2622" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M76,168 C100,196 150,212 200,214 C252,212 304,192 330,150 C300,184 256,200 200,202 C146,200 104,190 76,168 Z" fill="#4E5A22" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M80,172.8 L90,172.8 L92,189.8 L82,189.8 Z" fill="#7A8A3A" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="85" y1="175.8" x2="86" y2="186.8" stroke="#1E1A17" stroke-width="1" stroke-linecap="round"/>
+<path d="M124,198.7 L136,198.7 L138,229.4 L126,229.4 Z" fill="#7A8A3A" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="130" y1="201.7" x2="131" y2="226.4" stroke="#1E1A17" stroke-width="1" stroke-linecap="round"/>
+<path d="M170,213.3 L182,213.3 L184,251.9 L172,251.9 Z" fill="#7A8A3A" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="176" y1="216.3" x2="177" y2="248.9" stroke="#1E1A17" stroke-width="1" stroke-linecap="round"/>
+<path d="M230,213.3 L242,213.3 L244,251.9 L232,251.9 Z" fill="#7A8A3A" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="236" y1="216.3" x2="237" y2="248.9" stroke="#1E1A17" stroke-width="1" stroke-linecap="round"/>
+<path d="M276,198.7 L288,198.7 L290,229.4 L278,229.4 Z" fill="#7A8A3A" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="282" y1="201.7" x2="283" y2="226.4" stroke="#1E1A17" stroke-width="1" stroke-linecap="round"/>
+<path d="M318,174.2 L328,174.2 L330,191.9 L320,191.9 Z" fill="#7A8A3A" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="323" y1="177.2" x2="324" y2="188.9" stroke="#1E1A17" stroke-width="1" stroke-linecap="round"/>
+<path d="M48,130 L64,136" fill="none" stroke="#7A8A3A" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M44,142 L60,148" fill="none" stroke="#7A8A3A" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M344,102 L360,108" fill="none" stroke="#7A8A3A" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M348,114 L364,120" fill="none" stroke="#7A8A3A" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M92,226 C120,246 160,254 196,256" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M44,150 C40,132 52,122 62,130 C70,176 110,214 200,218 C290,214 334,176 346,104 C352,92 366,96 362,112 C356,192 300,262 200,264 C100,262 52,214 44,150 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="water">
+<path d="M40,280 Q51.4,275 62.9,280 Q74.3,285 85.7,280 Q97.1,275 108.6,280 Q120,285 131.4,280 Q142.9,275 154.3,280 Q165.7,285 177.1,280 Q188.6,275 200,280 Q211.4,285 222.9,280 Q234.3,275 245.7,280 Q257.1,285 268.6,280 Q280,275 291.4,280 Q302.9,285 314.3,280 Q325.7,275 337.1,280 Q348.6,285 360,280" fill="none" stroke="#5B7BC4" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M90,298 Q101,293 112,298 Q123,303 134,298 Q145,293 156,298 Q167,303 178,298 Q189,293 200,298 Q211,303 222,298 Q233,293 244,298 Q255,303 266,298 Q277,293 288,298 Q299,303 310,298" fill="none" stroke="#5B7BC4" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

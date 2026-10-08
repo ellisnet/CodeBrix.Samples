@@ -64,8 +64,18 @@ public static class SettingsService
     /// <summary>The application name the settings store is registered under.</summary>
     public const string AppName = "KenneyAssetBrowser";
 
+    /// <summary>Whether <see cref="Initialize()"/> has been called.</summary>
     public static bool IsInitialized => AppSettingsService.IsInitialized;
+
+    /// <summary>
+    /// The settings store; only available after <see cref="Initialize()"/>.
+    /// </summary>
     public static AppSettingsStore Store => AppSettingsService.Store;
+
+    /// <summary>
+    /// The default settings folder: the "settings" subfolder of the
+    /// application's per-user CodeBrix-family configuration folder.
+    /// </summary>
     public static string DefaultDirectory => AppSettingsService.GetDefaultDirectory(AppName);
 
     /// <summary>
@@ -74,6 +84,7 @@ public static class SettingsService
     /// </summary>
     public static void Initialize() => AppSettingsService.Initialize(AppName);
 
+    /// <summary>Opens the settings store in the given folder.</summary>
     public static void Initialize(string directoryPath) =>
         AppSettingsService.Initialize(AppName, directoryPath);
 
@@ -82,14 +93,29 @@ public static class SettingsService
     /// </summary>
     public static void Shutdown() => AppSettingsService.Shutdown();
 
+    /// <summary>Wraps a setting in a typed <see cref="AppSettingProperty{T}"/> handle.</summary>
     public static AppSettingProperty<T> Wrap<T>(string property, T defaultValue) =>
         AppSettingsService.Wrap(property, defaultValue);
 
+    /// <summary>Whether a value is stored for the given key.</summary>
+    public static bool HasValue(string property) => AppSettingsService.HasValue(property);
+
+    /// <summary>Returns the stored value for the key, or the given default when not set.</summary>
+    public static T Get<T>(string property, T defaultValue) => AppSettingsService.Get(property, defaultValue);
+
+    /// <summary>Returns the stored value for the key, or the type's default when not set.</summary>
     public static T Get<T>(string property) => AppSettingsService.Get<T>(property);
+
+    /// <summary>Stores a value for the key; a null value removes the key.</summary>
     public static void Set(string key, object val) => AppSettingsService.Set(key, val);
 
+    /// <summary>Registers a handler raised when the given key's value changes.</summary>
     public static void AddPropertyHandler(string propertyName, EventHandler<AppSettingChangedEventArgs> handler) =>
         AppSettingsService.AddSettingHandler(propertyName, handler);
+
+    /// <summary>Removes a handler previously added with <see cref="AddPropertyHandler"/>.</summary>
+    public static void RemovePropertyHandler(string propertyName, EventHandler<AppSettingChangedEventArgs> handler) =>
+        AppSettingsService.RemoveSettingHandler(propertyName, handler);
 }
 ```
 
@@ -152,7 +178,14 @@ before `InitializeComponent()`; the ordering comment travels with the call.
 //including its startup auto-backup and pruning - before anything reads
 //a setting. PintaCore's static constructor builds the palette manager,
 //which reads settings, so this must come first.
-Pinta.Brix.Settings.SettingsService.Initialize();
+if (settingsDirectory is null)
+{
+    Pinta.Brix.Settings.SettingsService.Initialize();
+}
+else
+{
+    Pinta.Brix.Settings.SettingsService.Initialize(settingsDirectory);
+}
 ```
 
 **Where to look.**
@@ -194,12 +227,16 @@ prompt for the real content.
 // From CodeBrix.Samples/KenneyAssetBrowser/src/KenneyAssetBrowser.Core/ViewModels/MainViewModel.cs
 public bool HasAssetsFolder => !string.IsNullOrWhiteSpace(_assetsFolder);
 
+/// <summary>The folder-picker button's caption: an invitation, or the chosen path.</summary>
 public string AssetsFolderLabel => HasAssetsFolder ? _assetsFolder : "Choose assets folder…";
 
+/// <summary>The first-launch prompt's visibility (shown until an assets folder is chosen).</summary>
 public Visibility FolderPromptVisibility => HasAssetsFolder ? Visibility.Collapsed : Visibility.Visible;
 
+/// <summary>The catalog area's visibility (the inverse of the first-launch prompt).</summary>
 public Visibility CatalogAreaVisibility => HasAssetsFolder ? Visibility.Visible : Visibility.Collapsed;
 
+/// <summary>Opens the folder picker to choose where the bundle zips live; the choice persists in settings.sqlite.</summary>
 public SimpleCommand PickFolderCommand => field ??=
     new SimpleCommand((Func<object, Task>)(_ => PickFolderAsync()));
 
@@ -245,8 +282,10 @@ private async Task PickFolderAsync()
 left it, and the head creates the native window before your page loads.
 
 **The MVVM shape.** A settings read in the `App` constructor feeding the
-platform's preferred launch size, plus a write-through handler on the window's
-size-changed event. The scale conversion is the part that is easy to get wrong.
+platform's preferred launch size, a write-through handler on the window's
+size-changed event, and a framed size stored beside it and put back through
+`AppWindow.Resize` once the page loads. The units and the frame are the parts
+that are easy to get wrong.
 
 **Code.**
 
@@ -258,41 +297,118 @@ size-changed event. The scale conversion is the part that is easy to get wrong.
 //initial size. Setting names and the 1100x750 defaults match
 //upstream. The maximized flag is not restored: the platform exposes
 //no public presenter state on the Skia heads.
+//The launch size is the client area in effective pixels, which is
+//what X11, Wayland and macOS open; Win32Skia and WPF open it as the
+//framed window instead, a frame too small. RestoreFramedWindowSize
+//puts that right once the page has loaded.
 int windowWidth = Pinta.Brix.Settings.SettingsService.Get("window-size-width", 1100);
 int windowHeight = Pinta.Brix.Settings.SettingsService.Get("window-size-height", 750);
 Windows.UI.ViewManagement.ApplicationView.PreferredLaunchViewSize =
     new Windows.Foundation.Size(windowWidth, windowHeight);
+
+//The framed size the window had when it last changed. It is read now,
+//before the window exists, because the window's own first layout
+//writes over it.
+savedFramedWidth = Pinta.Brix.Settings.SettingsService.Get("window-framed-width", 0);
+savedFramedHeight = Pinta.Brix.Settings.SettingsService.Get("window-framed-height", 0);
 ```
 
 ```csharp
 // From CodeBrix.Samples/Pinta.Brix/src/Pinta.Brix.UI/App.xaml.cs
 //Write-through persistence of the window size; the store ignores
-//writes when the value is unchanged. args.Size is in logical units
-//but the X11 head consumes PreferredLaunchViewSize as NATIVE pixels,
-//so the stored value must be native pixels or every restart would
-//rescale the window by the display-scale factor.
+//writes when the value is unchanged. args.Size is the client area in
+//effective pixels - the same unit PreferredLaunchViewSize takes.
 MainWindow.SizeChanged += (_, args) =>
 {
-    if (MainWindow.Content?.XamlRoot is not { } root) { return; }
+    //Sizes reported before the content is in place are not the
+    //window the user sees.
+    if (MainWindow.Content?.XamlRoot is null) { return; }
 
-    double scale = root.RasterizationScale;
-    Pinta.Brix.Settings.SettingsService.Set("window-size-width", (int)Math.Round(args.Size.Width * scale));
-    Pinta.Brix.Settings.SettingsService.Set("window-size-height", (int)Math.Round(args.Size.Height * scale));
+    Pinta.Brix.Settings.SettingsService.Set("window-size-width", (int)Math.Round(args.Size.Width));
+    Pinta.Brix.Settings.SettingsService.Set("window-size-height", (int)Math.Round(args.Size.Height));
 };
+
+//The framed size is stored next to it: AppWindow.Size, the window plus
+//whatever frame the windowing system draws around it, in physical
+//pixels. AppWindow.Resize takes that same quantity, so the pair
+//round-trips exactly. AppWindow.Changed rather than SizeChanged,
+//because some heads update AppWindow.Size after they raise SizeChanged.
+MainWindow.AppWindow.Changed += (sender, args) =>
+{
+    if (!args.DidSizeChange) { return; }
+
+    Pinta.Brix.Settings.SettingsService.Set("window-framed-width", sender.Size.Width);
+    Pinta.Brix.Settings.SettingsService.Set("window-framed-height", sender.Size.Height);
+};
+```
+
+```csharp
+// From CodeBrix.Samples/Pinta.Brix/src/Pinta.Brix.UI/App.xaml.cs
+if (MainWindow.Content is not Frame rootFrame)
+{
+    rootFrame = new Frame();
+    MainWindow.Content = rootFrame;
+    rootFrame.NavigationFailed += OnNavigationFailed;
+    rootFrame.Loaded += RestoreFramedWindowSize;
+}
+```
+
+```csharp
+// From CodeBrix.Samples/Pinta.Brix/src/Pinta.Brix.UI/App.xaml.cs
+//Once the page is in place the window has its first real size. On the
+//heads that open the launch size as the framed window (Win32Skia and WPF)
+//it is a frame smaller than the window the user left, so the stored framed
+//size is put back through AppWindow.Resize. Where the launch size already
+//restored the window (X11, Wayland, macOS) the framed size matches and
+//nothing is called, which also keeps Wayland, where a client cannot resize
+//its own window, from logging a warning. A pixel or two either way is
+//rounding between effective and physical pixels, not a frame.
+private void RestoreFramedWindowSize(object sender, RoutedEventArgs e)
+{
+    ((FrameworkElement)sender).Loaded -= RestoreFramedWindowSize;
+
+    if (savedFramedWidth <= 0 || savedFramedHeight <= 0) { return; }
+
+    Windows.Graphics.SizeInt32 current = MainWindow.AppWindow.Size;
+    if (Math.Abs(current.Width - savedFramedWidth) <= 2
+        && Math.Abs(current.Height - savedFramedHeight) <= 2) { return; }
+
+    MainWindow.AppWindow.Resize(new Windows.Graphics.SizeInt32
+    {
+        Width = savedFramedWidth,
+        Height = savedFramedHeight
+    });
+}
 ```
 
 **Where to look.**
 `Pinta.Brix/src/Pinta.Brix.UI/App.xaml.cs`
 
 **Sharp edges.**
-- The size-changed event reports logical units while the preferred launch size is
-  consumed as native pixels on the X11 head. Multiply by the root's rasterization
-  scale on the way in, or the window shrinks or grows at every restart on a scaled
+- The size-changed event and the preferred launch size both use effective pixels
+  on every head. Multiplying by the root's rasterization scale on the way in makes
+  the window grow by the display-scale factor at every restart on a scaled
   display.
-- Pinta.Brix restores the size and not a maximized flag, and the comment above says
-  why it was written that way. The presenter itself is reachable from application
-  code: `MainWindow.AppWindow.Presenter` is an `OverlappedPresenter` as soon as the
-  `Window` is constructed, and that is where a minimum or maximum size goes. See
+- The size-changed event reports the client area on every head, but the Win32Skia
+  and WinWpfSkia heads read the launch size as the framed window, title bar and
+  borders included, so on those two heads the launch size alone reopens the window
+  a frame smaller each time. The X11, Wayland and macOS heads read the launch size
+  as the client area, so the launch size alone is exact there. The framed size
+  closes the gap: `AppWindow.Size` and `AppWindow.Resize` are a matched pair, both
+  the framed window in physical pixels, so storing one and handing it to the other
+  reopens the same window on every head.
+- Read the stored framed size in the constructor, before the window exists. The
+  window's first layout raises `AppWindow.Changed` with the launch-time size, and
+  a write-through handler would overwrite the value before the page loads.
+- Only call `AppWindow.Resize` when the size is actually wrong. On Wayland a client
+  cannot resize its own window and the call logs a warning; there the launch size
+  has already restored it, so the comparison skips the call.
+- Pinta.Brix restores the size and not a maximized flag. The reason its comment
+  gives, that the platform exposes no public presenter state, no longer holds (the
+  same file reaches `MainWindow.AppWindow` for the framed size): the presenter is
+  reachable from application code, because `MainWindow.AppWindow.Presenter` is an
+  `OverlappedPresenter` as soon as the `Window` is constructed, and that is where a
+  minimum or maximum size goes, as well as where a maximized state can be read. See
   [Keep the window from shrinking below a minimum](BLUEPRINTS-AppStructureAndStartup.md#keep-the-window-from-shrinking-below-a-minimum).
 - Setting the launch size from a settings read is one use of the same seam. For the
   plain form, where the size is a constant in the `App` class rather than a stored
@@ -339,10 +455,14 @@ private void SaveColors ()
 internal static class SettingNames
 {
 	internal const string DEFAULT_IMAGE_TYPE = "default-image-type";
+
 	internal const string JPG_QUALITY = "jpg-quality";
 	// ...
 	internal static string ToolAntialias (BaseTool tool)
 		=> $"{tool.GetType ().Name.ToLowerInvariant ()}-antialias";
+
+	internal static string ToolAlphaBlend (BaseTool tool)
+		=> $"{tool.GetType ().Name.ToLowerInvariant ()}-alpha-blend";
 }
 ```
 
@@ -461,11 +581,20 @@ public static class InstanceLabels
         new Dictionary<string, string>(StringComparer.Ordinal) { [Instance] = null };
 
     /// <summary>Gets a filter matching one instance's resources.</summary>
+    /// <param name="instanceId">The instance id.</param>
+    /// <returns>A fresh filter dictionary.</returns>
     public static IDictionary<string, string> InstanceFilter(string instanceId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(instanceId);
         return new Dictionary<string, string>(StringComparer.Ordinal) { [Instance] = instanceId };
     }
+
+    /// <summary>Reads one label, returning null when it is absent.</summary>
+    /// <param name="labels">The label set, which may be null.</param>
+    /// <param name="name">The label name.</param>
+    /// <returns>The value, or null.</returns>
+    public static string Read(IReadOnlyDictionary<string, string> labels, string name) =>
+        labels is not null && labels.TryGetValue(name, out var value) ? value : null;
 }
 ```
 
@@ -473,6 +602,7 @@ public static class InstanceLabels
 // From CodeBrix.Samples/RedisSetupTool/src/libs/RedisSetupTool.DockerManagement/Topologies/Builders/TopologyBuildContext.cs
 /// <summary>Builds the label set every resource of the instance carries.</summary>
 /// <param name="resourceKind">One of <c>network</c>, <c>volume</c> or <c>container</c>.</param>
+/// <returns>A fresh dictionary.</returns>
 internal Dictionary<string, string> BaseLabels(string resourceKind)
 {
     var labels = new Dictionary<string, string>(StringComparer.Ordinal)

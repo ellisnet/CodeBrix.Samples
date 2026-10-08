@@ -1,0 +1,56 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Scorpion
+  Subject: A scorpion seen from above with raised pincers, eight legs and a segmented tail ending in a red sting, a frequent symbol on Mesopotamian seals and kudurru.
+  Sources consulted: Getty Uruk transcript chapter 11 (seal iconography)
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="legs">
+<path d="M 172,168 L 136,146 L 112,148" fill="none" stroke="#1E1A17" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 172,168 L 136,146 L 112,148" fill="none" stroke="#9C6B3C" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 172,186 L 130,169.2 L 102,192" fill="none" stroke="#1E1A17" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 172,186 L 130,169.2 L 102,192" fill="none" stroke="#9C6B3C" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 172,204 L 132.4,192 L 106,234" fill="none" stroke="#1E1A17" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 172,204 L 132.4,192 L 106,234" fill="none" stroke="#9C6B3C" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 172,222 L 138.4,214.4 L 116,274" fill="none" stroke="#1E1A17" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 172,222 L 138.4,214.4 L 116,274" fill="none" stroke="#9C6B3C" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 228,168 L 264,146 L 288,148" fill="none" stroke="#1E1A17" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 228,168 L 264,146 L 288,148" fill="none" stroke="#9C6B3C" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 228,186 L 270,169.2 L 298,192" fill="none" stroke="#1E1A17" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 228,186 L 270,169.2 L 298,192" fill="none" stroke="#9C6B3C" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 228,204 L 267.6,192 L 294,234" fill="none" stroke="#1E1A17" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 228,204 L 267.6,192 L 294,234" fill="none" stroke="#9C6B3C" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 228,222 L 261.6,214.4 L 284,274" fill="none" stroke="#1E1A17" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 228,222 L 261.6,214.4 L 284,274" fill="none" stroke="#9C6B3C" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="tail">
+<circle cx="200" cy="278" r="17" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="204" cy="306" r="16" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="216" cy="332" r="15" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="240" cy="350" r="14" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="268" cy="354" r="13" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="292" cy="342" r="12" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300,334 C 318,322 326,300 316,282 C 312,300 302,312 286,320 Z" fill="#B8322A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="claws">
+<path d="M 182,140 L 142,116 L 120,84" fill="none" stroke="#1E1A17" stroke-width="19" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 182,140 L 142,116 L 120,84" fill="none" stroke="#9C6B3C" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 120,96 C 134,70 128,38 104,28 C 110,48 106,62 96,70 C 82,58 76,44 78,34 C 64,52 74,88 104,100 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 116,88 C 120,70 118,54 108,42" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 218,140 L 258,116 L 280,84" fill="none" stroke="#1E1A17" stroke-width="19" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 218,140 L 258,116 L 280,84" fill="none" stroke="#9C6B3C" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 280,96 C 266,70 272,38 296,28 C 290,48 294,62 304,70 C 318,58 324,44 322,34 C 336,52 326,88 296,100 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 284,88 C 280,70 282,54 292,42" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="body">
+<ellipse cx="200" cy="150" rx="32" ry="30" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="200" cy="214" rx="40" ry="54" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 200,162 C 180,170 172,200 176,236 C 166,214 166,186 176,168 C 182,162 192,160 200,162 Z" fill="#C8955A"/>
+<ellipse cx="200" cy="214" rx="40" ry="54" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 166,194 C 188,200 212,200 234,194 M 162,216 C 186,222 214,222 238,216 M 166,238 C 188,244 212,244 234,238" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="190" cy="138" r="4" fill="#1E1A17"/>
+<circle cx="210" cy="138" r="4" fill="#1E1A17"/>
+</g>
+</svg>

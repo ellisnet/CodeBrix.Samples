@@ -103,7 +103,7 @@ cache.
   returns a scope that **saves and restores** whatever context the host head had current, so
   this engine never disturbs the head's own renderer even though they share the thread. The
   context itself is cross-platform — Graphics3DGL resolves the head's native GL wrapper (WGL on
-  Windows, GLX on X11, EGL on Wayland/FrameBuffer, CGL on macOS) — so the app P/Invokes no
+  Windows, GLX on X11, EGL on Wayland/FrameBuffer, OpenGL ES through ANGLE on macOS) — so the app P/Invokes no
   platform GL loader of its own. Vulkan and Metal have no ambient context at all —
   `VulkanSceneRenderer`/`MetalSceneRenderer` each own their whole stack (own device/queue) and
   cannot collide with the head — but both still initialize lazily on first use.

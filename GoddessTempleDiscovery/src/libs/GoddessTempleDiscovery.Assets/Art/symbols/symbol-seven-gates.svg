@@ -1,0 +1,20 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Seven Gates of the Netherworld
+  Subject: Seven nested arched gateways stepping inward to a dark doorway, the seven gates of Ganzir through which Holy Inanna passed in Her Descent.
+  Sources consulted: Getty Uruk transcript chapter 9 (Astral Manifestation, the descent to the netherworld) and chapter 11
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="gates">
+<path d="M 44,362 L 44,196 A 156 156 0 0 1 356,196 L 356,362 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 63,358 L 63,196 A 137 137 0 0 1 337,196 L 337,358 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 82,354 L 82,196 A 118 118 0 0 1 318,196 L 318,354 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 101,350 L 101,196 A 99 99 0 0 1 299,196 L 299,350 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 120,346 L 120,196 A 80 80 0 0 1 280,196 L 280,346 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 139,342 L 139,196 A 61 61 0 0 1 261,196 L 261,342 Z" fill="#C8955A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 158,338 L 158,196 A 42 42 0 0 1 242,196 L 242,338 Z" fill="#16213A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="30" y1="362" x2="370" y2="362" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

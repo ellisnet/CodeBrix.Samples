@@ -1,0 +1,18 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Survey
+  Subject: Interface icon for surveying: a surveyor's level, a brass telescope on a tripod.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<path d="M 200,196 L 100,370 M 200,196 L 200,370 M 200,196 L 300,370" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 120,300 L 280,300" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 168,174 L 232,174 L 224,200 L 176,200 Z" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 92,120 L 290,110 L 330,96 L 334,190 L 290,176 L 92,168 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 92,120 L 64,124 L 64,164 L 92,168" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 180,114 L 180,92 L 218,92 L 218,112" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

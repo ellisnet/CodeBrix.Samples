@@ -1,0 +1,16 @@
+<!--
+  Goddess Temple Discovery vector art
+  Title: Points
+  Subject: Interface icon for score points: a small round medal with a star hanging from a ribbon.
+  Sources consulted: Goddess Temple Discovery game design; ART_BIBLE.md interface conventions
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<g id="icon">
+<path d="M 140,40 L 196,170 M 260,40 L 204,170" fill="none" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 140,40 L 260,40" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="250" r="104" fill="#D9A441" stroke="#1E1A17" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="200,188 209.9,226 243.8,206.2 224,240.1 262,250 224,259.9 243.8,293.8 209.9,274 200,312 190.1,274 156.2,293.8 176,259.9 138,250 176,240.1 156.2,206.2 190.1,226" fill="none" stroke="#1E1A17" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>

@@ -69,12 +69,13 @@ public partial class App : Application
         //only public seam an application has for its own launch size: every desktop head
         //reads it while it is creating the native window and falls back to the platform's
         //own 1024 by 640 when it is empty, so it has to be set before any window exists.
-        //On the Linux X11 head the numbers are NATIVE pixels of the window's CLIENT area,
-        //which on a display at scale 1 is the same as logical units; how each of the other
-        //heads reads them is written up in the report that accompanied this change. The
-        //value is set on every launch, unconditionally, because the platform remembers it
-        //in its own settings file; setting it every time keeps that file in step with this
-        //source file instead of letting an old value linger.
+        //Every head takes the numbers in effective pixels and converts them to device
+        //pixels itself, so nothing here corrects for the display scale. The heads differ
+        //only in what the numbers measure: Win32Skia and WPF open a framed window of this
+        //size, title bar and borders included, and the other heads open a client area of
+        //this size. The value is set on every launch, unconditionally, because the
+        //platform remembers it in its own settings file; setting it every time keeps that
+        //file in step with this source file instead of letting an old value linger.
         Windows.UI.ViewManagement.ApplicationView.PreferredLaunchViewSize =
             new Windows.Foundation.Size(LaunchWidth, LaunchHeight);
 

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" width="400" height="560">
+<!--
+  Goddess Temple Discovery vector art
+  Title: The Field Darkroom
+  Subject: The photo laboratory of the dig house: a wooden plate camera on the bench, developing trays and prints drying on a line under the red safelight.
+  Sources consulted: Julius_Jordan_Eanna texts/18_game_season_and_people_cards.txt (C4, C7 photography; Getty 2019 fig. 66.1 Photo Atelier); texts/07
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<rect x="0" y="0" width="400" height="560" fill="#2B2622"/>
+<g id="lamp">
+<circle cx="200" cy="136" r="92" fill="#9C6B3C"/>
+<circle cx="200" cy="136" r="60" fill="#B8322A"/>
+<path d="M 200,-2 L 200,96" fill="none" stroke="#C9BFA8" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M178,96 L222,96 L226,108 L174,108 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M176,108 L224,108 L224,160 L176,160 Z" fill="#B8322A" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M186,116 L186,152 M200,116 L200,152 M214,116 L214,152" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M174,160 L226,160 L222,168 L178,168 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="drying-line">
+<path d="M 10,214 Q 200,232 390,214" fill="none" stroke="#C9BFA8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M22,225.2 L58,225.2 L58,275.2 L22,275.2 Z" fill="#C9BFA8" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 28,263.2 L 36,249.2 L 42,247.2 L 52,263.2 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="37" y="217.2" width="6" height="12" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M272,234 L308,234 L308,284 L272,284 Z" fill="#C9BFA8" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 278,272 L 286,258 L 292,256 L 302,272 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="287" y="226" width="6" height="12" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M322,228.2 L358,228.2 L358,278.2 L322,278.2 Z" fill="#C9BFA8" stroke="#1E1A17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 328,266.2 L 336,252.2 L 342,250.2 L 352,266.2 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="337" y="220.2" width="6" height="12" fill="#D9A441" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="bench">
+<path d="M-2,380 L402,380 L402,400 L-2,400 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M-2,400 L402,400 L402,562 L-2,562 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M130,400 L130,562 M270,400 L270,562 M-2,480 L402,480" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="200" cy="440" r="4" fill="#D9A441" stroke="#1E1A17" stroke-width="2"/>
+</g>
+<g id="trays">
+<path d="M116,362 L196,362 L204,382 L108,382 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M119,365 L193,365 L199,378 L113,378 Z" fill="#C9BFA8"/>
+<path d="M210,362 L290,362 L298,382 L202,382 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M213,365 L287,365 L293,378 L207,378 Z" fill="#C9BFA8"/>
+<path d="M313,362 L367,362 L375,382 L305,382 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M316,365 L364,365 L370,378 L310,378 Z" fill="#C9BFA8"/>
+<path d="M140,368 L176,366 L178,376 L138,377 Z" fill="#FFFFFF" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g id="plate-camera">
+<path d="M14,300 L52,300 L52,380 L14,380 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M52,312 L62,314 L62,366 L52,368 Z" fill="#2B2622" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M62,311 L72,313 L72,367 L62,369 Z" fill="#1E1A17" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M72,310 L82,312 L82,368 L72,370 Z" fill="#2B2622" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M82,309 L92,311 L92,369 L82,371 Z" fill="#1E1A17" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M92,308 L102,310 L102,370 L92,372 Z" fill="#2B2622" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M102,296 L116,296 L116,384 L102,384 Z" fill="#9C6B3C" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M116,324 L134,324 L134,356 L116,356 Z" fill="#D9A441" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="134" cy="340" rx="4" ry="16" fill="#D9A441" stroke="#1E1A17" stroke-width="2.5"/>
+<path d="M 14,380 L 116,380" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<rect x="1.5" y="1.5" width="397" height="557" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

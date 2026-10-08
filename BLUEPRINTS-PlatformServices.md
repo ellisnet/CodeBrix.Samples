@@ -446,6 +446,11 @@ where there is no windowing system still starts and still explains itself.
 /// </summary>
 public interface IMediaFileBridge
 {
+    /// <summary>
+    /// Shows an "open file" dialog filtered to the containers this application reads, and returns
+    /// the full path the person chose, or null if they cancelled. The head leaves this null when it
+    /// has no file dialog, in which case nothing can be opened by hand.
+    /// </summary>
     Func<Task<string>> PickMediaFileAsync { get; set; }
 }
 ```
@@ -455,8 +460,21 @@ public interface IMediaFileBridge
 public SimpleCommand OpenCommand => field ??= new SimpleCommand(
     () => !IsBusy, (Func<object, Task>)(_ => DoOpenAsync()));
 
+/// <summary>Takes the selected file out of the list. The file itself is left alone.</summary>
+public SimpleCommand RemoveCommand => field ??= new SimpleCommand(
+    () => !IsBusy && SelectedItem is not null, _ => DoRemove());
+
 private async Task DoOpenAsync()
 {
+    //The FIRST Open of the session checks the external tools, once, and warns about the first one that is
+    //missing. The flag is set before the check runs, so a second click never checks or warns again. The
+    //warning is dismissed with OK and the Open carries on: a .cbv file opens and plays without FFmpeg.
+    if (!toolsChecked)
+    {
+        toolsChecked = true;
+        await WarnAboutMissingToolsAsync();
+    }
+
     if (PickMediaFileAsync is null)
     {
         StatusText = "This head has no file dialog, so a file cannot be chosen by hand.";
@@ -985,8 +1003,9 @@ public class MainViewModel : SimpleViewModel, ICopyToClipboard, IPageReadyNotifi
             }
         }
     }
-
+    // ...
     public Action<string> CopyTextToClipboard { get; set; }
+    // ...
 }
 ```
 
@@ -1103,7 +1122,9 @@ private async Task OpenUrlAsync(string url)
             return;
         }
 
-        var opened = await Windows.System.Launcher.LaunchUriAsync(uri);
+        var opened = _urlOpener != null
+            ? await _urlOpener.OpenAsync(uri)
+            : await Windows.System.Launcher.LaunchUriAsync(uri);
         if (!opened)
         {
             SetStatus("No browser was available to open that page.", SearchStatusKind.Failed);
@@ -1218,11 +1239,13 @@ public void SetImage (ImageSurface surface)
     using SKImage image = SKImage.FromBitmap (surface.Bitmap);
     using SKData data = image.Encode (SKEncodedImageFormat.Png, 100);
 
+    // The write adapter is deliberately NOT disposed: disposing it closes
+    // the stream underneath, which the clipboard still has to read from
+    // (the Seek below threw ObjectDisposedException, so Copy never worked).
     InMemoryRandomAccessStream stream = new ();
-    using (Stream outStream = stream.AsStreamForWrite ()) {
+    Stream outStream = stream.AsStreamForWrite ();
         data.SaveTo (outStream);
         outStream.Flush ();
-    }
     stream.Seek (0);
 
     DataPackage package = new ();
@@ -1268,7 +1291,7 @@ page - or, in a cleaner shape, the view model - installs them once it has a
 public delegate Task<ErrorDialogResponse> ErrorDialogHandler (string message, string body, string details);
 public delegate Task MessageDialogHandler (string message, string body);
 public delegate Task<bool> SimpleEffectDialogHandler (BaseEffect effect, IWorkspaceService workspace);
-
+// ...
 public interface IProgressDialog
 {
 	void Show ();
@@ -1309,6 +1332,7 @@ public override Task<bool> LaunchConfiguration ()
 	// directly; this library stays UI-free, so the dialog request goes
 	// through the chrome seam and the UI layer routes it to the ported
 	// PosterizeDialog by effect type.
+	// ...
 	return chrome.LaunchSimpleEffectDialog (this, workspace);
 }
 ```
@@ -1375,6 +1399,13 @@ public IDisposable Start (uint intervalMilliseconds, Func<bool> callback)
 /// </summary>
 public sealed class TimerServiceProxy : ITimerService
 {
+	private sealed class NullHandle : IDisposable
+	{
+		public void Dispose ()
+		{
+		}
+	}
+
 	public ITimerService? Inner { get; set; }
 
 	public IDisposable Start (uint intervalMilliseconds, Func<bool> callback)
@@ -1619,7 +1650,7 @@ modelViewBridge.ModelViewOpened = () => _ = MaybeReportRenderingUnavailableAsync
 //The canvas may only attempt its OpenGL initialization when it loads into the visual
 //tree, which can happen after IsModelViewActive is set - so check at both moments.
 ModelCanvas.Loaded += (_, _) => _ = MaybeReportRenderingUnavailableAsync();
-
+// ...
 //When the Model View is active and the preview canvas reports failed OpenGL initialization,
 //surface the failure (status + reason) in a dialog instead of leaving a silently empty pane.
 private async Task MaybeReportRenderingUnavailableAsync()
@@ -1699,15 +1730,15 @@ private Task DoSearch()
     //  picks an article by navigating to it, and Publish uses whatever page is displayed.
     if (CanSearch() && NavigateToUrl != null)
     {
-        var searchUrl =
-            $"https://{WikiHost}/w/index.php?search={Uri.EscapeDataString(SearchTerms.Trim())}";
+        var searchUrl = new Uri(_wikiBaseUri,
+            "w/index.php?search=" + Uri.EscapeDataString(SearchTerms.Trim())).AbsoluteUri;
         Navigate(searchUrl);
         StatusText = "Browse to the article you want, then click Publish.";
     }
 
     return Task.CompletedTask;
 }
-
+// ...
 private void Navigate(string url)
 {
     if (NavigateToUrl != null && (!string.IsNullOrWhiteSpace(url)))
@@ -1720,7 +1751,7 @@ public void NotifyBrowserReady()
 {
     //The view model, not the page, decides where the browser starts, so every head opens
     //  on the same page and all navigation flows one way.
-    Navigate(HomeUrl);
+    Navigate(new Uri(_wikiBaseUri, "wiki/Main_Page").AbsoluteUri);
 }
 
 public void SetCurrentBrowserUrl(string url)
@@ -1956,9 +1987,14 @@ window tree - is captured on the UI thread before the background work starts.
 /// loaded (its tree and dispatcher exist).
 /// </summary>
 /// <param name="host">The loaded Tk host view.</param>
-public void Start(TkHostView host)
+/// <param name="onQuit">
+/// What DRAKON's <c>exit</c> does; the application passes
+/// <c>Environment.Exit</c>.
+/// </param>
+public void Start(TkHostView host, Action<int> onQuit)
 {
     if (host == null) { throw new ArgumentNullException(nameof(host)); }
+    if (onQuit == null) { throw new ArgumentNullException(nameof(onQuit)); }
     if (_started) { return; }
     _started = true;
 
@@ -1969,7 +2005,7 @@ public void Start(TkHostView host)
     {
         try
         {
-            if (!Boot(tree, hosted: true, code => Environment.Exit(code), new TkHostFileDialogs(), assets))
+            if (!Boot(tree, hosted: true, onQuit, new TkHostFileDialogs(), assets))
             {
                 return;
             }
@@ -3373,11 +3409,12 @@ public async Task<bool> Open(string url)
 }
 ```
 
-The view model has nothing to supply:
+The view model supplies nothing of its own; it only lets an alternate host (the
+PlayTests) register a different opener:
 
 ```csharp
 // From CodeBrix.Samples/BrixInvaders/src/BrixInvaders.Core/ViewModels/MainViewModel.cs
-var links = new LauncherLinkOpener();
+var links = GetServices<IExternalLinkOpener>().LastOrDefault() ?? new LauncherLinkOpener();
 ```
 
 And the test replaces the engine helper with a recorder, which is how it proves that

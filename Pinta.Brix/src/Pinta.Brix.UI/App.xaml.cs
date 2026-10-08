@@ -47,10 +47,20 @@ public partial class App : Application
         //initial size. Setting names and the 1100x750 defaults match
         //upstream. The maximized flag is not restored: the platform exposes
         //no public presenter state on the Skia heads.
+        //The launch size is the client area in effective pixels, which is
+        //what X11, Wayland and macOS open; Win32Skia and WPF open it as the
+        //framed window instead, a frame too small. RestoreFramedWindowSize
+        //puts that right once the page has loaded.
         int windowWidth = Pinta.Brix.Settings.SettingsService.Get("window-size-width", 1100);
         int windowHeight = Pinta.Brix.Settings.SettingsService.Get("window-size-height", 750);
         Windows.UI.ViewManagement.ApplicationView.PreferredLaunchViewSize =
             new Windows.Foundation.Size(windowWidth, windowHeight);
+
+        //The framed size the window had when it last changed. It is read now,
+        //before the window exists, because the window's own first layout
+        //writes over it.
+        savedFramedWidth = Pinta.Brix.Settings.SettingsService.Get("window-framed-width", 0);
+        savedFramedHeight = Pinta.Brix.Settings.SettingsService.Get("window-framed-height", 0);
 
         InitializeComponent();
     }
@@ -58,6 +68,10 @@ public partial class App : Application
     protected Window MainWindow { get; private set; }
 
     private bool windowCloseConfirmed;
+
+    private readonly int savedFramedWidth;
+
+    private readonly int savedFramedHeight;
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
@@ -114,17 +128,29 @@ public partial class App : Application
         };
 
         //Write-through persistence of the window size; the store ignores
-        //writes when the value is unchanged. args.Size is in logical units
-        //but the X11 head consumes PreferredLaunchViewSize as NATIVE pixels,
-        //so the stored value must be native pixels or every restart would
-        //rescale the window by the display-scale factor.
+        //writes when the value is unchanged. args.Size is the client area in
+        //effective pixels - the same unit PreferredLaunchViewSize takes.
         MainWindow.SizeChanged += (_, args) =>
         {
-            if (MainWindow.Content?.XamlRoot is not { } root) { return; }
+            //Sizes reported before the content is in place are not the
+            //window the user sees.
+            if (MainWindow.Content?.XamlRoot is null) { return; }
 
-            double scale = root.RasterizationScale;
-            Pinta.Brix.Settings.SettingsService.Set("window-size-width", (int)Math.Round(args.Size.Width * scale));
-            Pinta.Brix.Settings.SettingsService.Set("window-size-height", (int)Math.Round(args.Size.Height * scale));
+            Pinta.Brix.Settings.SettingsService.Set("window-size-width", (int)Math.Round(args.Size.Width));
+            Pinta.Brix.Settings.SettingsService.Set("window-size-height", (int)Math.Round(args.Size.Height));
+        };
+
+        //The framed size is stored next to it: AppWindow.Size, the window plus
+        //whatever frame the windowing system draws around it, in physical
+        //pixels. AppWindow.Resize takes that same quantity, so the pair
+        //round-trips exactly. AppWindow.Changed rather than SizeChanged,
+        //because some heads update AppWindow.Size after they raise SizeChanged.
+        MainWindow.AppWindow.Changed += (sender, args) =>
+        {
+            if (!args.DidSizeChange) { return; }
+
+            Pinta.Brix.Settings.SettingsService.Set("window-framed-width", sender.Size.Width);
+            Pinta.Brix.Settings.SettingsService.Set("window-framed-height", sender.Size.Height);
         };
 
         if (MainWindow.Content is not Frame rootFrame)
@@ -132,6 +158,7 @@ public partial class App : Application
             rootFrame = new Frame();
             MainWindow.Content = rootFrame;
             rootFrame.NavigationFailed += OnNavigationFailed;
+            rootFrame.Loaded += RestoreFramedWindowSize;
         }
 
         if (rootFrame.Content == null)
@@ -140,6 +167,31 @@ public partial class App : Application
         }
 
         MainWindow.Activate();
+    }
+
+    //Once the page is in place the window has its first real size. On the
+    //heads that open the launch size as the framed window (Win32Skia and WPF)
+    //it is a frame smaller than the window the user left, so the stored framed
+    //size is put back through AppWindow.Resize. Where the launch size already
+    //restored the window (X11, Wayland, macOS) the framed size matches and
+    //nothing is called, which also keeps Wayland, where a client cannot resize
+    //its own window, from logging a warning. A pixel or two either way is
+    //rounding between effective and physical pixels, not a frame.
+    private void RestoreFramedWindowSize(object sender, RoutedEventArgs e)
+    {
+        ((FrameworkElement)sender).Loaded -= RestoreFramedWindowSize;
+
+        if (savedFramedWidth <= 0 || savedFramedHeight <= 0) { return; }
+
+        Windows.Graphics.SizeInt32 current = MainWindow.AppWindow.Size;
+        if (Math.Abs(current.Width - savedFramedWidth) <= 2
+            && Math.Abs(current.Height - savedFramedHeight) <= 2) { return; }
+
+        MainWindow.AppWindow.Resize(new Windows.Graphics.SizeInt32
+        {
+            Width = savedFramedWidth,
+            Height = savedFramedHeight
+        });
     }
 
     void OnNavigationFailed(object sender, NavigationFailedEventArgs e)

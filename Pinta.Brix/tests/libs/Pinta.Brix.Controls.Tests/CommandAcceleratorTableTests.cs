@@ -1,7 +1,7 @@
 // CommandAcceleratorTableTests.cs
 //
-// The table is what actually fires every keyboard shortcut in the application,
-// because XAML KeyboardAccelerators do not invoke on the Skia heads.
+// The table is what actually fires every keyboard shortcut in the application;
+// the menu items show the shortcut text but carry no KeyboardAccelerators.
 
 using Pinta.Brix.Controls;
 using Pinta.Brix.Engine;

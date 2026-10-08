@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!--
+  Goddess Temple Discovery vector art
+  Title: Ubaid Clay Figurine
+  Subject: A slender painted clay figurine of the Ubaid age, the oldest horizon under Eanna, with the lizard-like head, coffee-bean eyes, tall bitumen headdress, applied shoulder pellets and hands set on the hips.
+  Sources consulted: story/13_buildings_of_inanna_chronological_catalog.txt (Ubaid levels at the base of Eanna); BUILDING_HIGHLIGHTS.txt Deep Temples
+  Author: Claude (Opus) for Jeremy Ellis, 2026
+  License: Apache License 2.0 (see the LICENSE file at the repository root)
+-->
+<g id="figurine">
+<polyline points="158,172 142,206 180,238" fill="none" stroke="#1E1A17" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="158,172 142,206 180,238" fill="none" stroke="#E8C597" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="242,172 258,206 220,238" fill="none" stroke="#1E1A17" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="242,172 258,206 220,238" fill="none" stroke="#C8955A" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M150,166 C156,154 180,150 192,150 L208,150 C220,150 244,154 250,166 C252,178 246,186 236,190 C230,206 222,220 220,234 C228,248 230,262 226,280 C222,310 214,340 210,362 L190,362 C186,340 178,310 174,280 C170,262 172,248 180,234 C178,220 170,206 164,190 C154,186 148,178 150,166 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M208,150 C220,150 244,154 250,166 C252,178 246,186 236,190 C230,206 222,220 220,234 C228,248 230,262 226,280 C222,310 214,340 210,362 L204,362 C210,320 216,280 214,250 C210,220 222,190 214,152 Z" fill="#C8955A"/>
+<path d="M150,166 C156,154 180,150 192,150 L208,150 C220,150 244,154 250,166 C252,178 246,186 236,190 C230,206 222,220 220,234 C228,248 230,262 226,280 C222,310 214,340 210,362 L190,362 C186,340 178,310 174,280 C170,262 172,248 180,234 C178,220 170,206 164,190 C154,186 148,178 150,166 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="200" y1="286" x2="200" y2="360" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M184,238 Q200,246 216,238" fill="none" stroke="#1E1A17" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M162,164 Q176,158 190,160 M210,160 Q224,158 238,164" fill="none" stroke="#2B2622" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="166" cy="176" r="3.5" fill="#2B2622" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="178" cy="172" r="3.5" fill="#2B2622" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="222" cy="172" r="3.5" fill="#2B2622" stroke="#1E1A17" stroke-width="1.5"/>
+<circle cx="234" cy="176" r="3.5" fill="#2B2622" stroke="#1E1A17" stroke-width="1.5"/>
+<path d="M184.0,300 L198,302 M202,302 L216.0,300" fill="none" stroke="#2B2622" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M186.7,318 L198,320 M202,320 L213.3,318" fill="none" stroke="#2B2622" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M189.4,336 L198,338 M202,338 L210.6,336" fill="none" stroke="#2B2622" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M190,152 L192,128 L208,128 L210,152 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M190,140 Q200,144 210,140" fill="none" stroke="#2B2622" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M184,104 C184,88 216,88 216,104 C216,118 210,130 200,136 C190,130 184,118 184,104 Z" fill="#E8C597" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M206,92 C212,94 216,98 216,104 C216,118 210,130 200,136 C206,124 208,108 206,92 Z" fill="#C8955A"/>
+<path d="M184,104 C184,88 216,88 216,104 C216,118 210,130 200,136 C190,130 184,118 184,104 Z" fill="none" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="193" cy="108" rx="6.5" ry="3.5" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" transform="rotate(25 193 108)"/>
+<line x1="188.5" y1="106" x2="197.5" y2="110" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<ellipse cx="207" cy="108" rx="6.5" ry="3.5" fill="#E8C597" stroke="#1E1A17" stroke-width="1.5" transform="rotate(-25 207 108)"/>
+<line x1="202.5" y1="110" x2="211.5" y2="106" stroke="#1E1A17" stroke-width="1.5" stroke-linecap="round"/>
+<circle cx="198" cy="126" r="1.2" fill="#1E1A17"/>
+<circle cx="202" cy="126" r="1.2" fill="#1E1A17"/>
+<path d="M186,96 C182,74 190,52 200,44 C210,52 218,74 214,96 C206,92 194,92 186,96 Z" fill="#2B2622" stroke="#1E1A17" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M194,86 C192,70 196,58 200,52" fill="none" stroke="#C8955A" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+</svg>
