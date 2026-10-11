@@ -482,6 +482,11 @@ immediately. Its companion removes the zero-length placeholder file the save pic
 at a brand-new path, and only when the file is genuinely empty, because a file with content
 is one the user chose to overwrite.
 
+A picked folder can also come back with no local path at all (a document tree picked on
+Android reports an empty `Path`), and the download code writes with System.IO. In that case
+the view model downloads into a `Downloads` folder in the app's own storage
+(`ApplicationData.Current.LocalFolder`) instead, and the folder button's caption says so.
+
 The LinuxFrameBuffer head has no OS chrome, so its pickers and its software keyboard are
 opt-in, one builder call each in that head's `Program.cs`. A head that registers no picker
 raises `NotSupportedException`, which the view model catches specifically and turns into an

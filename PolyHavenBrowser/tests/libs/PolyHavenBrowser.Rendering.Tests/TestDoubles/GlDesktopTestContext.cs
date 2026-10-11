@@ -5,7 +5,7 @@ namespace PolyHavenBrowser.Rendering.Tests;
 
 /// <summary>
 /// Creates a headless <b>desktop</b> OpenGL (core profile 3.3) context via EGL — matching what
-/// the X11/Win32/WPF/macOS heads give through GLX/WGL/CGL, as opposed to the GL ES context
+/// the desktop-GL heads give (GLX or EGL on Linux, WGL on Windows), as opposed to the GL ES context
 /// <see cref="EglTestContext"/> creates. Used to reproduce the "renders on Linux only" problem,
 /// which appeared when the app moved from a forced GL ES context to the head's native desktop GL.
 /// Returns <see langword="null"/> when no desktop-GL-over-EGL stack is available.

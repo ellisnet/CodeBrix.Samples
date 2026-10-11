@@ -464,12 +464,12 @@ public sealed partial class MainPage
 
     private void ToggleFullscreen()
     {
-        //DEFERRED. Microsoft.UI.Windowing.AppWindow - the route to a full-screen
-        //presenter - is internal in CodeBrix.Platform unless HAS_CODEBRIX_WINUI
-        //is defined, so an application cannot reach it. Per the chrome decision
-        //this must be a NO-OP rather than an error: the Frame Buffer head is
-        //already full-screen, so there is nothing to toggle there anyway.
-        //Chase the presenter seam when the rest of the View menu lands.
+        //DEFERRED. The route to a full-screen presenter is the window's public
+        //AppWindow (AppWindow.SetPresenter with a FullScreenPresenter); it is not
+        //wired up here yet. Per the chrome decision this must be a NO-OP rather
+        //than an error: the Frame Buffer head is already full-screen, so there is
+        //nothing to toggle there anyway.
+        //Wire the presenter in when the rest of the View menu lands.
         isFullscreen = !isFullscreen;
 
         PintaCore.Chrome.SetStatusBarText(isFullscreen

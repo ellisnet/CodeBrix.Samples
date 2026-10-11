@@ -45,8 +45,8 @@ public partial class App : Application
         //Skia heads consult ApplicationView.PreferredLaunchViewSize when they
         //create the native window, and that is the only public seam for the
         //initial size. Setting names and the 1100x750 defaults match
-        //upstream. The maximized flag is not restored: the platform exposes
-        //no public presenter state on the Skia heads.
+        //upstream. The maximized flag is not restored: that would go through the
+        //window's AppWindow presenter, which this sample does not use yet.
         //The launch size is the client area in effective pixels, which is
         //what X11, Wayland and macOS open; Win32Skia and WPF open it as the
         //framed window instead, a frame too small. RestoreFramedWindowSize

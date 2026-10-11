@@ -74,4 +74,32 @@ public class AssetFolderCatalogTests : IDisposable
         catalog.Bundles[0].DisplayName.Should().Be("Alpha Kit");
         catalog.Bundles[1].DisplayName.Should().Be("Zebra Kit");
     }
+
+    [Fact]
+    public void Given_zip_files_load_without_a_folder_path()
+    {
+        //Arrange - the zips of a folder with no local path (Android) each reach the disk on their own
+        var first = Path.Combine(_root, "copy-1", "kenney_beta-kit.zip");
+        var second = Path.Combine(_root, "copy-2", "kenney_alpha-kit.zip");
+        Directory.CreateDirectory(Path.GetDirectoryName(first));
+        Directory.CreateDirectory(Path.GetDirectoryName(second));
+        TestZipBuilder.Build(first, new Dictionary<string, byte[]>
+        {
+            ["License.txt"] = TestZipBuilder.Text("Beta Kit (1.0)\r\n"),
+        });
+        TestZipBuilder.Build(second, new Dictionary<string, byte[]>
+        {
+            ["License.txt"] = TestZipBuilder.Text("Alpha Kit (1.0)\r\n"),
+        });
+
+        //Act
+        var catalog = AssetFolderCatalog.LoadFrom("Kenney", [first, second, null]);
+
+        //Assert
+        catalog.FolderPath.Should().Be("Kenney");
+        catalog.Bundles.Count.Should().Be(2);
+        catalog.Bundles[0].DisplayName.Should().Be("Alpha Kit");
+        catalog.Bundles[1].DisplayName.Should().Be("Beta Kit");
+        catalog.Warnings.Count.Should().Be(0);
+    }
 }

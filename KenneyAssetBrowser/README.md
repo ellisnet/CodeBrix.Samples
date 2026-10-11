@@ -550,6 +550,11 @@ first-launch prompt and once on the header button - so there is a single code pa
 way. When the folder is already known, the constructor starts the catalog load it cannot
 await through a private wrapper of its own, so a failure becomes the sidebar's caption
 rather than a task nobody is watching.
+A folder picker can also hand back a folder with no local path at all (a document tree
+picked on Android reports an empty `Path`). The view model then keeps the `StorageFolder`
+itself for the session, and `AssetCatalogService` lists its zips through `GetFilesAsync`;
+each zip's own `Path` is a local copy of it, so the zip reader is unchanged. Such a folder
+cannot be remembered as a path, so the next launch asks for it again.
 See [Wrap the AppSettings add-in in one application named facade](../BLUEPRINTS-SettingsAndPersistence.md#wrap-the-appsettings-add-in-in-one-application-named-facade),
 [Open the settings store before any other startup work](../BLUEPRINTS-SettingsAndPersistence.md#open-the-settings-store-before-any-other-startup-work),
 [Choose a folder with the picker and remember it across runs](../BLUEPRINTS-SettingsAndPersistence.md#choose-a-folder-with-the-picker-and-remember-it-across-runs),
