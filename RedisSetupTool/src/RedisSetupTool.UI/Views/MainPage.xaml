@@ -1216,8 +1216,9 @@
                         <Border Padding="18,15" CornerRadius="12" BorderThickness="1"
                                 Background="{StaticResource CardBrush}"
                                 BorderBrush="{StaticResource HairlineBrush}">
-                            <StackPanel Spacing="12"
-                                        IsEnabled="{d:Binding FormEnabled}">
+                            <!-- A panel has no IsEnabled (only a Control does), so the form is
+                                 disabled while a create runs by binding each Control in it. -->
+                            <StackPanel Spacing="12">
                                 <TextBlock Text="SETTINGS" FontSize="11" FontWeight="SemiBold"
                                            CharacterSpacing="80"
                                            Foreground="{StaticResource AccentBrush}" />
@@ -1228,6 +1229,7 @@
                                                Foreground="{StaticResource TextSecondaryBrush}" />
                                     <TextBox a:AutomationProperties.AutomationId="InstanceName" a:AutomationProperties.Name="Instance Name" CornerRadius="8"
                                              PlaceholderText="A name you will recognise later"
+                                             IsEnabled="{d:Binding FormEnabled}"
                                              Text="{d:Binding InstanceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                     <TextBlock Text="Used for the container, volume and network names, and shown on the card."
                                                FontSize="10.5" TextWrapping="Wrap"
@@ -1236,6 +1238,7 @@
 
                                 <ItemsControl ItemsSource="{d:Binding Fields}"
                                               ItemTemplate="{StaticResource ParameterFieldTemplate}"
+                                              IsEnabled="{d:Binding FormEnabled}"
                                               Visibility="{d:Binding FieldsVisibility}" />
                             </StackPanel>
                         </Border>

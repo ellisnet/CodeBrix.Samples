@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application android:allowBackup="true" android:label="PolyHavenBrowser Viewer" android:supportsRtl="true"></application>
+  <!-- The application downloads its three sample assets from the Poly Haven API over https. -->
+  <uses-permission android:name="android.permission.INTERNET" />
+</manifest>

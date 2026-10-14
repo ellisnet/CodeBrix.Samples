@@ -76,6 +76,12 @@ public class RecolorTool : BaseBrushTool
 		document.Layers.ToolLayer.Clear ();
 		stencil = new BitMask (document.ImageSize.Width, document.ImageSize.Height);
 
+		//A stroke starts at the pressed point. Touch and pen input send no hover
+		//moves between strokes, so the previous stroke's last point is cleared here
+		//(otherwise the new stroke is joined to where the last one ended).
+		if (mouse_button == MouseButton.None)
+			last_point = null;
+
 		base.OnMouseDown (document, e);
 	}
 

@@ -1,13 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
 
     <!-- Match the namespace used by the app code -->
     <RootNamespace>PainDiagram</RootNamespace>
 
-    <!-- CodeBrix.Platform needs this define for its internal conditional compilation;
-         HAS_CODEBRIXPLATFORM selects the SKXamlCanvas base for the shared DrawingCanvas -->
-    <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI;HAS_CODEBRIXPLATFORM</DefineConstants>
+    <!-- HAS_CODEBRIXPLATFORM selects the SKXamlCanvas base for the shared DrawingCanvas
+         (both target frameworks) -->
+    <DefineConstants>$(DefineConstants);HAS_CODEBRIXPLATFORM</DefineConstants>
+  </PropertyGroup>
+
+  <!-- CodeBrix.Platform needs this define for its internal conditional compilation
+       (the CodeBrix.Android package defines it for the Android build) -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,16 +39,26 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.281.314" />
-
-    <!-- SKXamlCanvas - the SkiaSharp drawing surface hosted in CodeBrix.Platform XAML -->
-    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.153.1" />
 
     <!-- Bundled Open Sans font -->
     <PackageReference Include="CodeBrix.Platform.Fonts.OpenSans.ApacheLicenseForever" Version="1.0.248.1181" />
   </ItemGroup>
 
+  <!-- The desktop heads: CodeBrix.Platform and its add-ins -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.281.314" />
+
+    <!-- SKXamlCanvas - the SkiaSharp drawing surface hosted in CodeBrix.Platform XAML -->
+    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.153.1" />
+  </ItemGroup>
+
+  <!-- The Android head: the CodeBrix.Android twins of the same packages -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.281.1188" />
+    <PackageReference Include="CodeBrix.Android.SkiaSharp.Views.ApacheLicenseForever" Version="1.0.281.1188" />
+  </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Imaging.Drawing.ApacheLicenseForever" Version="1.0.278.1180" />
+    <PackageReference Include="CodeBrix.Imaging.Drawing.ApacheLicenseForever" Version="1.0.285.659" />
   </ItemGroup>
 </Project>

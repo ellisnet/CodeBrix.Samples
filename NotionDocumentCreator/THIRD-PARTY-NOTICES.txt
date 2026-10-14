@@ -63,6 +63,26 @@ distributed by, this application, and the application degrades gracefully
 (rendering a media card instead of a poster frame) when ffmpeg is absent.
 
 ------------------------------------------------------------------------
+Android head  (src/NotionDocumentCreator.Android)
+------------------------------------------------------------------------
+The Android head contains no third-party files of its own. Its build brings
+in, as NuGet packages, the following third-party code that ends up inside the
+Android application package:
+
+  - Material Components for Android and the AndroidX libraries (Google), in
+    their .NET bindings (Xamarin.Google.Android.Material, Xamarin.AndroidX.*),
+    licensed under the Apache License, Version 2.0. They arrive through the
+    CodeBrix.Android package, which draws every control with them.
+
+No FFmpeg binaries reach the Android application package either: the
+CodeBrix.VideoProcessing package is managed code only, and on Android, where
+no ffmpeg exists, video and audio render as media cards.
+
+Each of those packages carries its own license and notices, and the
+CodeBrix.Android packages ship their own THIRD-PARTY-NOTICES.txt; they are
+not reproduced here.
+
+------------------------------------------------------------------------
 Notion page content and media (downloaded at run time)
 ------------------------------------------------------------------------
 This sample fetches page content and media files from the user's own Notion

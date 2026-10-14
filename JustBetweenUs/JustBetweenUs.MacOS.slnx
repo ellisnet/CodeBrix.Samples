@@ -17,6 +17,7 @@
     <Project Path="CodeBrixPlatform/JustBetweenUs.MacOS/JustBetweenUs.MacOS.csproj" />
     <Project Path="CodeBrixPlatform/JustBetweenUs.UI/JustBetweenUs.UI.shproj" />
     <Project Path="CodeBrixPlatform/JustBetweenUs.Win32Skia/JustBetweenUs.Win32Skia.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.Android/JustBetweenUs.Android.csproj" />
   </Folder>
   <Folder Name="/Mobile/">
     <Project Path="Mobile/JustBetweenUs.Mobile.csproj">

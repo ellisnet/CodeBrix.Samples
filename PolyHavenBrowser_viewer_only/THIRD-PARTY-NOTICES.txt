@@ -11,6 +11,30 @@ carries its own license and third-party notices in its own repository/package
 not reproduced here.
 
 ------------------------------------------------------------------------
+Android head  (src/PolyHavenBrowser.Android)
+------------------------------------------------------------------------
+The Android head contains no third-party files of its own. Its build brings
+in, as NuGet packages, the following third-party code that ends up inside the
+Android application package:
+
+  - Material Components for Android and the AndroidX libraries (Google), in
+    their .NET bindings (Xamarin.Google.Android.Material, Xamarin.AndroidX.*),
+    licensed under the Apache License, Version 2.0. They arrive through the
+    CodeBrix.Android package, which draws every control with them.
+
+  - SkiaSharp (Microsoft), licensed under the MIT License, with its Android
+    native library: Skia (Google, BSD 3-Clause License). It arrives through
+    the CodeBrix.Android SkiaSharp.Views and Graphics3DGL add-ins, and draws
+    the canvas the rendered scenes are composited onto.
+
+The Android build does not include Silk.NET.Vulkan or TinyEXR.NET: the Vulkan
+renderer and the OpenEXR decoder are desktop only.
+
+Each of those packages carries its own license and notices, and the
+CodeBrix.Android packages ship their own THIRD-PARTY-NOTICES.txt; they are
+not reproduced here.
+
+------------------------------------------------------------------------
 Poly Haven assets (downloaded at run time)
 ------------------------------------------------------------------------
 This sample downloads sample textures, HDRI environments, and 3D models from

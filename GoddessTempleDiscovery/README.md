@@ -39,7 +39,7 @@ Deco panes in XAML over the game canvas, computer opponents paced to the table's
 animations, and a hand-placed PDF whose art is drawn as vectors. The art - every picture on
 every card and every piece of the Deco chrome - is original vector work made for this
 application and ships under the repository's Apache License as a free resource; see
-`src/libs/GoddessTempleDiscovery.Assets/Art/ART-LICENSE.md`. InannaRosette, a sibling
+`src/libs/GoddessTempleDiscovery.Assets/Art/ART-LICENSE.md`. InannaOctaquetra, a sibling
 application, is the reference for the hand-placed PDF technique the Field Journal builds
 on; BrixInvaders is the one for a real-time game on the same engine.
 
@@ -79,7 +79,7 @@ do, and while a pane is open over the table the table takes no clicks.
 | Read any face-up card | right-click it | |
 | Close what is on top, leave a mode | the inspector's or the pane's close button | Escape |
 | The Field Journal | the JOURNAL button | J |
-| The Gallery of the game's art | the GALLERY button on the title screen or the table's header; click a picture to see it large | Left and Right, or Page Up and Page Down, turn its pages |
+| The Gallery of the game's art | the GALLERY button on the title screen or the table's header; click a picture to see it large, then PREVIOUS and NEXT to step through the pictures | Left and Right, or Page Up and Page Down, turn its pages (or, with a picture large, step to the previous or next picture) |
 
 - **A turn.** Roll both dice and spend them one at a time, each alone or both together as
   one sum. A dig succeeds when the dice plus modifiers reach the trench's Dig Number, which
@@ -101,10 +101,15 @@ do, and while a pane is open over the table the table takes no clicks.
   for the deepest layers and chases Her stars; and the Scholar, the gentle one who studies
   and publishes sequences. Their turns play out on the table at animation pace, and their
   discoveries open in the inspector too, unless the setting says otherwise.
-- **Setup and settings.** Two to four seats, a season length the setup suggests for the seat
-  count, Easy, Standard or Hard digging, and an optional seed for a repeatable game. The
-  settings pane holds sound, reduced motion, the animation speed and whether the computer
-  teams' finds open in the inspector. The settings and the last setup are kept between runs.
+- **Setup and settings.** Two to four seats, each a team card or a name of your own with an
+  emblem chosen from the team cards' emblems (a card or an emblem belongs to one seat), a
+  season length the setup suggests for the seat count, Easy, Standard or Hard digging, and
+  an optional seed for a repeatable game. The
+  settings pane holds sound, reduced motion, the animation speed, whether the computer
+  teams' finds open in the inspector, and - for the human teams' headlines and the computer
+  teams' apart - whether a headline closes by itself and after how many seconds. A headline
+  that closes by itself shows a countdown bar and a KEEP READING button that stops it. The
+  settings and the last setup are kept between runs.
 
 `DESIGN.md` in this folder has every number the rules use - the tiers and Dig Numbers, the
 points, the season and Favor effects, the specialists' powers and costs, the report
@@ -156,9 +161,10 @@ screens, the input and the stored settings.
   buttons, which arm on the press and fire on the release, and drop the table's clicks
   while the view model reports a pane over it:
   [Build each frame as engine DrawList commands and paint only the published copy](../BLUEPRINTS-GameEngine.md#build-each-frame-as-engine-drawlist-commands-and-paint-only-the-published-copy).
-  The table keeps its height and widens its render resolution with the window's aspect,
-  spreading its layout into the extra width; a window narrower than the base table is
-  letterboxed by the engine, as in
+  The table keeps its height in table units and widens with the window's aspect, spreading
+  its layout into the extra width; it is rendered at the canvas's real pixel size (the
+  display scale included) with the view zoomed to fit, so it stays sharp on a big or Retina
+  display. A window narrower than the base table is letterboxed by the engine, as in
   [Pin a fixed playfield size and let the engine letterbox drawings and clicks](../BLUEPRINTS-GameEngine.md#pin-a-fixed-playfield-size-and-let-the-engine-letterbox-drawings-and-clicks).
 - Bind named actions to keys with the engine's input-action map and read them once per
   fixed step:
@@ -466,9 +472,11 @@ front page, a Tablet a Learned Society column and a Favor a small notice. The ho
 when a page opens - a team's discovery, a Favor, a new season, a right-click - and builds a
 `CardView` on a worker thread, with the face and the art rendered to PNG there, then hands it
 to `IInspectorBridge.ShowCard` on the UI thread. The view model implements the bridge, sets
-its newspaper properties from the view and starts the page's auto-close timer; the page
-slides the newspaper in and tells the view model when the pointer is over it, which holds
-the timer. A computer turn waits while a page is open. Each Discovery and Season has
+its newspaper properties from the view and starts the page's countdown when the settings
+ask the page to close by itself; the bar empties as it runs and KEEP READING stops it (and
+tells the host the page now stays). The page slides the newspaper in and tells the view
+model when the pointer is over it, which holds a finished countdown until the pointer
+leaves. A computer turn waits while a page is open. Each Discovery and Season has
 several editions in the content, and `Editions` picks the one a game prints from a stable
 hash of the game's seed and the card's id, so a game prints the same edition of a card
 everywhere - the inspector, the season banner, the journal and the PDF - and another game
@@ -516,7 +524,7 @@ and `Brains/TemperamentWeights.cs`, and section 10 of `DESIGN.md`.
 ### The Field Journal PDF
 
 `JournalPdfBuilder` draws the journal page by page straight onto `XGraphics`, in the manner
-of InannaRosette's report: a cover with the masthead and the wordmark, then the game's
+of InannaOctaquetra's report: a cover with the masthead and the wordmark, then the game's
 editions in the order they were read - a front page for each season, an EXTRA! page for each
 discovery with its headline, columns, framed art and boxes, and the Tablets, Favors,
 specialists and reports as notices between them - then the Final Edition with the results,
@@ -541,12 +549,15 @@ icons set apart. The view model filters them by the chosen category, shows them 
 time as `GalleryItem` cell view models, each with its own open command, and renders each
 thumbnail on a worker through `SvgRaster` the first time it shows, keeping it for the rest of
 the run; a click shows the picture large, rendered again at a larger size, with its title,
-subject, sources and the art's license line from `ArtCatalog.LicenseText`. The title screen
+subject, sources and the art's license line from `ArtCatalog.LicenseText`, and its Previous
+and Next buttons step through the whole chosen category, wrapping at either end, while the
+grid's page follows the picture shown. The title screen
 opens it with a bound XAML command, and the table's header opens it with a HUD button that
 the host forwards through `ISessionBridge.PaneRequested`. While it is open the view model
 reports a pane over the table, so the table takes no clicks, and the page passes the keys
-the game surface did not take to the view model, which pages the gallery on the arrows and
-closes the topmost layer on Escape. Read `Rendering/ArtInfo.cs`, `MainViewModel.Gallery.cs`,
+the game surface did not take to the view model, which pages the gallery on the arrows (or,
+with a picture large, steps to the previous or next picture) and closes the topmost layer
+on Escape. Read `Rendering/ArtInfo.cs`, `MainViewModel.Gallery.cs`,
 the gallery pane in `MainPage.xaml` and `tests/GoddessTempleDiscovery.PlayTests/GalleryTests.cs`.
 See
 [Give each grid cell its own command and lazily loaded thumbnail](../BLUEPRINTS-MVVM.md#give-each-grid-cell-its-own-command-and-lazily-loaded-thumbnail).

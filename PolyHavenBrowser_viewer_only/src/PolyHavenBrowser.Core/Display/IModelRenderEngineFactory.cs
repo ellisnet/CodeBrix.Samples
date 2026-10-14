@@ -17,7 +17,7 @@ public interface IModelRenderEngineFactory
 
 /// <summary>
 /// Creates the OpenGL engine, <see cref="OpenGlModelRenderEngine"/> - the default backend,
-/// available on every head. Its Vulkan sibling is <see cref="VulkanModelRenderEngineFactory"/>.
+/// available on every head. Its Vulkan sibling is <c>VulkanModelRenderEngineFactory</c>.
 /// </summary>
 public sealed class OpenGlModelRenderEngineFactory : IModelRenderEngineFactory
 {

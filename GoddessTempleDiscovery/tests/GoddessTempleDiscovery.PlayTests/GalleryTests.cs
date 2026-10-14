@@ -34,6 +34,19 @@ public sealed partial class ApplicationTests
         first.Sources.Should().NotBeEmpty();
         await Expect(Id("GalleryLargeSources")).ToHaveTextAsync(first.Sources);
         await Expect(Id("GalleryLicense")).ToHaveTextAsync(ArtCatalog.LicenseText);
+        await Expect(Id("GalleryLargePosition")).ToHaveTextAsync("Picture 1 of " + deco);
+
+        //Next and Previous walk the category, wrapping at either end, without going back to the grid
+        var second = await ReadAsync(() => Model.GalleryItems[1].Info);
+        await Id("NextGalleryLarge").ClickAsync();
+        await Expect(Id("GalleryLargeTitle")).ToHaveTextAsync(second.Title);
+        await Expect(Id("GalleryLargePosition")).ToHaveTextAsync("Picture 2 of " + deco);
+        await Id("PreviousGalleryLarge").ClickAsync();
+        await Expect(Id("GalleryLargeTitle")).ToHaveTextAsync(first.Title);
+        await Id("PreviousGalleryLarge").ClickAsync();
+        await Expect(Id("GalleryLargePosition")).ToHaveTextAsync("Picture " + deco + " of " + deco);
+        await ReadAsync(() => Model.HandleKey(Windows.System.VirtualKey.Right));
+        await Expect(Id("GalleryLargeTitle")).ToHaveTextAsync(first.Title);
         await Id("CloseGalleryLarge").ClickAsync();
         await Expect(Id("GalleryLarge")).ToBeHiddenAsync();
 

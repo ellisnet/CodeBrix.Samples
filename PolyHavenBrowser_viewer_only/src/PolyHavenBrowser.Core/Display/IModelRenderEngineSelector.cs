@@ -13,7 +13,7 @@ public enum RenderEngineKind
     /// <summary>OpenGL via the head's native GL context (<see cref="OpenGlModelRenderEngine"/>) - the default, available on every head.</summary>
     OpenGL,
 
-    /// <summary>Vulkan via Silk.NET (<see cref="VulkanModelRenderEngine"/>) - only on platforms <see cref="VulkanPlatformSupport"/> okays.</summary>
+    /// <summary>Vulkan via Silk.NET (<c>VulkanModelRenderEngine</c>) - only on platforms <see cref="VulkanPlatformSupport"/> okays.</summary>
     Vulkan,
 
     /// <summary>Metal via the raw Objective-C runtime (<see cref="MetalModelRenderEngine"/>) - only on platforms <see cref="MetalPlatformSupport"/> okays (macOS).</summary>
@@ -82,7 +82,11 @@ public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
         return kind switch
         {
             RenderEngineKind.OpenGL => new OpenGlModelRenderEngineFactory(getXamlRoot).Create(),
+#if HAS_CODEBRIX_ANDROID
+            //The Vulkan engine is not built for Android; IsSupported is false there, so this is unreachable.
+#else
             RenderEngineKind.Vulkan => new VulkanModelRenderEngineFactory().Create(),
+#endif
             RenderEngineKind.Metal => new MetalModelRenderEngineFactory().Create(),
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };

@@ -11,7 +11,7 @@ namespace PolyHavenBrowser.Display;
 /// <para>
 /// This interface is the <b>seam that makes the graphics API replaceable</b>. Two engines
 /// implement it - <see cref="OpenGlModelRenderEngine"/> (OpenGL via the head's native GL
-/// context, the default) and <see cref="VulkanModelRenderEngine"/> (Vulkan via Silk.NET) - and the user picks between
+/// context, the default) and <c>VulkanModelRenderEngine</c> (Vulkan via Silk.NET) - and the user picks between
 /// them at runtime through <see cref="IModelRenderEngineSelector"/> with no change to the
 /// painter, camera, mesh loading, or UI. Everything <i>below</i> this seam is
 /// graphics-API-specific (GL/Vulkan contexts, shaders/pipelines, pixel readback); everything

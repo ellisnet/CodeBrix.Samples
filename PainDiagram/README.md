@@ -12,9 +12,9 @@ dialog, confirms a replace if the file already exists, and then offers to clear 
 for the next diagram.
 
 It is the reference application for the CodeBrix.Imaging.Drawing library, and the clearest
-example in this repository of one view model file driving eight heads: the six
-CodeBrix.Platform Skia heads plus native WinUI 3 and WPF heads that reuse the same view
-model source without the CodeBrix.Platform UI stack.
+example in this repository of one view model file driving nine heads: the six
+CodeBrix.Platform Skia desktop heads and the Android head, plus native WinUI 3 and WPF
+heads that reuse the same view model source without the CodeBrix.Platform UI stack.
 
 ## What this sample shows a CodeBrix.Platform developer
 
@@ -38,7 +38,7 @@ model source without the CodeBrix.Platform UI stack.
 - Disposing the commands, the bridge delegates and the library object the view model owns: [Dispose a view model its commands and its bridge delegates](../BLUEPRINTS-MVVM.md#dispose-a-view-model-its-commands-and-its-bridge-delegates).
 - Handing the view model a lazy getter for the XAML root so its dialogs have somewhere to show: [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
 - Declaring the shared Skia page and binding it with the platform's `Binding` markup extension: [Declare a Skia page and bind with the platform Binding markup extension](../BLUEPRINTS-ViewsAndControls.md#declare-a-skia-page-and-bind-with-the-platform-binding-markup-extension).
-- Keeping one `App.xaml` and one page for all six Skia heads in a shared project: [Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
+- Keeping one `App.xaml` and one page for all six Skia heads and the Android head in a shared project: [Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
 - Giving the Core library the application's root namespace so linked source and XAML agree: [Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace).
 - Starting a head from a `Program.Main()` that differs from its siblings only by the backend call: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
 - Doing the whole application bootstrap in the `App` constructor, including `SetIsDesignMode(false)`: [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
@@ -56,7 +56,7 @@ model source without the CodeBrix.Platform UI stack.
 
 | Solution | Open it on | Contains |
 | --- | --- | --- |
-| `PainDiagram.slnx` | Linux, macOS, Windows | `PainDiagram.UI`, `PainDiagram.Core`, the six CodeBrix.Platform Skia heads and `PainDiagram.PlayTests` |
+| `PainDiagram.slnx` | Linux, macOS, Windows | `PainDiagram.UI`, `PainDiagram.Core`, the six CodeBrix.Platform Skia heads, the Android head and `PainDiagram.PlayTests` |
 | `PainDiagram.Windows.slnx` | Windows | Everything in the cross-platform solution, plus the native `PainDiagram.WinUI` and `PainDiagram.Wpf` heads |
 
 Both files carry a comment at the top saying which is which. The Windows solution declares
@@ -78,6 +78,16 @@ CodeBrix.Platform Skia heads, all under `CodeBrixPlatform/`:
 | `PainDiagram.LinuxFrameBuffer` | Linux framebuffer, for embedded and kiosk devices with no desktop | `UseLinuxFrameBuffer()` |
 | `PainDiagram.MacOS` | macOS | `UseMacOS()` |
 
+The Android head, also under `CodeBrixPlatform/`:
+
+| Project | Platform | Entry point |
+| --- | --- | --- |
+| `PainDiagram.Android` | Android phones, tablets and Android laptops, Android 13 (API level 33) and later | `MainApplication` and `MainActivity`, no `Program.cs` |
+
+It targets `net10.0-android36.1` and builds on Linux, macOS and Windows. It imports the same
+`PainDiagram.UI` shared project and references the same `PainDiagram.Core` as the Skia
+heads; `PainDiagram.Core` builds for both `net10.0` and `net10.0-android36.1`.
+
 Native, non-Skia heads at the application root:
 
 | Project | UI stack |
@@ -87,8 +97,13 @@ Native, non-Skia heads at the application root:
 
 ### Prerequisites
 
-- The .NET 10 SDK. Every Skia head targets `net10.0`, except `PainDiagram.WinWpfSkia`
-  which targets `net10.0-windows`; both native heads target a Windows platform TFM.
+- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). Every
+  Skia head targets `net10.0`, except `PainDiagram.WinWpfSkia` which targets
+  `net10.0-windows`; both native heads target a Windows platform TFM. The workload is
+  needed for every build of the CodeBrix.Platform projects, a desktop-only build and the
+  test run included, because `PainDiagram.Core` also builds for Android.
+- For the Android head, which a build of either solution includes, the Android SDK; to run
+  it, an Android device or emulator reachable with `adb`.
 - No accounts, tokens, network access, downloaded data or special hardware. The one asset
   the application needs, `Shared/Assets/body_map_master.png`, is in this folder and is
   embedded into every head assembly at build time.
@@ -112,6 +127,25 @@ built and run on Windows from `PainDiagram.Windows.slnx` with an explicit platfo
 they have no Any CPU configuration. The WinUI head ships two launch profiles,
 `PainDiagram.WinUI (Package)` for the MSIX build and `PainDiagram.WinUI (Unpackaged)`.
 
+Build the Android head, and install it on a device or emulator. The install target needs
+the device's runtime identifier on the command line - `android-arm64` for most phones and
+tablets, `android-x64` for an emulator or an x86-64 Android laptop - and it works per
+project, not on the solution. Add `-p:AdbTarget="-s <serial>"` when more than one device is
+attached. From this folder:
+
+```text
+dotnet build CodeBrixPlatform/PainDiagram.Android/PainDiagram.Android.csproj -c Release
+dotnet build CodeBrixPlatform/PainDiagram.Android/PainDiagram.Android.csproj -c Debug -t:Install -p:RuntimeIdentifier=android-x64
+dotnet build CodeBrixPlatform/PainDiagram.Android/PainDiagram.Android.csproj -c Release -t:Install -p:RuntimeIdentifier=android-arm64
+```
+
+A Release build is trimmed and produces an installable `.apk` under
+`CodeBrixPlatform/PainDiagram.Android/bin/Release/net10.0-android36.1/`. A Debug build
+installs with fast deployment, so install it with the `Install` target rather than copying
+its `.apk` to the device. The Android package name is `com.codebrix.samples.paindiagram`.
+On Android the canvas takes finger and pen strokes; the application fills the screen in
+either orientation and keeps the drawing when the device is rotated.
+
 ### Tests
 
 `CodeBrixPlatform/tests/PainDiagram.PlayTests` drives the real page through the
@@ -129,7 +163,7 @@ The drawing logic itself lives in the CodeBrix.Imaging.Drawing library and is te
 
 ```text
 PainDiagram/
-  PainDiagram.slnx                        Cross-platform solution: shared UI and Core, the six Skia heads and the PlayTests
+  PainDiagram.slnx                        Cross-platform solution: shared UI and Core, the six Skia heads, the Android head and the PlayTests
   PainDiagram.Windows.slnx                Windows solution: the above plus the WinUI 3 and WPF heads
   global.json                             Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt                 Provenance of the bundled body-map image
@@ -149,12 +183,13 @@ PainDiagram/
     PainDiagram.LinuxWayland/             Head: Program.cs plus one runtime package
     PainDiagram.LinuxFrameBuffer/         Head: Program.cs plus one runtime package
     PainDiagram.MacOS/                    Head: Program.cs plus one runtime package
+    PainDiagram.Android/                  Head: the Android application and activity, the manifest, one runtime package
     tests/PainDiagram.PlayTests/          PlayTest UI suite for the CodeBrix.Platform page
   PainDiagram.WinUI/                      Native WinUI 3 head: own App and MainPage, Win32SaveFileDialog, MSIX assets and manifests
   PainDiagram.Wpf/                        Native WPF head: own App and MainWindow, WPF SaveFileDialog
 ```
 
-Nothing depends on a head. Each of the six Skia heads has a `ProjectReference` to
+Nothing depends on a head. Each of the six Skia heads and the Android head has a `ProjectReference` to
 `PainDiagram.Core` and an `Import` of `PainDiagram.UI/PainDiagram.UI.projitems`, so the
 shared XAML is compiled into the head assembly while the view model and the canvas type
 come from `PainDiagram.Core`. The two native heads reference neither project: they link
@@ -169,6 +204,16 @@ picker that the Skia heads use, and neither native head goes through that picker
 other four files - the canvas, its binder, the host helper and the view model - are
 linked by all three projects.
 
+`PainDiagram.Core` builds for two target frameworks. The `net10.0` build references the
+CodeBrix.Platform packages and serves the Skia heads; the `net10.0-android36.1` build
+references their CodeBrix.Android counterparts and serves the Android head. The choice is
+made by a target-framework condition on each package group in the project file, so the
+linked source is the same for both. `HAS_CODEBRIXPLATFORM` is defined for both target
+frameworks, so the canvas is an `SKXamlCanvas` on Android too; `HAS_CODEBRIX` and
+`HAS_CODEBRIX_WINUI` are defined by the project for `net10.0` and by the CodeBrix.Android
+package for Android. The Android head adds no code of its own beyond its application and
+activity classes; `App.xaml`, `MainPage.xaml` and the view model run unchanged.
+
 ## CodeBrix libraries and add-ins used
 
 | Library or add-in | What it does in this application | Where |
@@ -180,6 +225,7 @@ linked by all three projects.
 | CodeBrix.Platform Skia runtime for each head | One backend package per head (Win32, WPF-hosted, X11, Wayland, framebuffer, macOS). Nothing else is added at head level | each head csproj under `CodeBrixPlatform/PainDiagram.*/` |
 | CodeBrix.Platform WinUI support | Lets the native WinUI 3 head use the Simple MVVM toolkit and the shared view model | `PainDiagram.WinUI/PainDiagram.WinUI.csproj` |
 | CodeBrix.Platform WPF support | The same for the native WPF head | `PainDiagram.Wpf/PainDiagram.Wpf.csproj` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android form of the SkiaSharp views add-in; the Android head and the Android build of `PainDiagram.Core` reference these instead of the CodeBrix.Platform packages | `CodeBrixPlatform/PainDiagram.Android/PainDiagram.Android.csproj`, `CodeBrixPlatform/PainDiagram.Core/PainDiagram.Core.csproj` |
 
 Third-party libraries:
 
@@ -197,17 +243,18 @@ the package ships under is part of its identifier.
 
 ## Worth studying in this application
 
-### One view model file, eight heads
+### One view model file, nine heads
 
 `Shared/ViewModels/MainViewModel.cs` holds every piece of state, every command and the
 drawing session. It is not shipped as a library: `PainDiagram.Core` links it for the six
-Skia heads, and `PainDiagram.WinUI` and `PainDiagram.Wpf` link the same file directly, so
+Skia heads and the Android head, and `PainDiagram.WinUI` and `PainDiagram.Wpf` link the same file directly, so
 the identical source is compiled into three different assemblies. Everything a head can do
 that the view model cannot is expressed as a small interface the view model implements -
 `IFileSaveBridge` and `ICanvasInvalidator`, both declared in the same file - and each
 head's page assigns the delegate in one place. The only conditional compilation inside the
 view model is a single `[Bindable]` attribute guarded by `HAS_CODEBRIX`, a symbol
-`PainDiagram.Core` and the six Skia heads define and the native heads do not.
+`PainDiagram.Core` and the six Skia heads define (on Android the CodeBrix.Android package
+defines it) and the native heads do not.
 
 Read `Shared/ViewModels/MainViewModel.cs` first, then the `<Compile Include>` block in
 `CodeBrixPlatform/PainDiagram.Core/PainDiagram.Core.csproj`, then the same block in
@@ -309,7 +356,10 @@ reporting "File dialogs are not supported on this head" - that is the arm a head
 when its page did assign a delegate but the underlying dialog cannot run there. The `GetDefaultSavePath()` branch above
 it runs only when `PickSavePngPathAsync` is still null, which is the case for a head that
 deliberately leaves the delegate unset; the shared `MainPage` used by all six Skia heads
-always sets it.
+and the Android head always sets it. On Android the same `WinRtFileSavePicker` shows the
+system document picker; the path it returns is a working copy in the application's cache
+folder, which is what the "Image saved" message shows, and the PNG written there is copied
+to the document the user chose.
 
 Read `Shared/ViewModels/MainViewModel.cs` (`DoSave()`), then
 `CodeBrixPlatform/PainDiagram.UI/Views/MainPage.xaml.cs`, then
@@ -512,7 +562,8 @@ image, `Shared/Assets/body_map_master.png`: it is the author's own original work
 than third-party content, and it is provided under this repository's license. The same file
 states the repository's rule for code, namely that third-party code arrives as NuGet
 packages that carry their own licenses and their own notices, so those are not reproduced
-here. There are no `LICENSE_*.txt` files in this folder.
+here, and it names the third-party libraries the Android head brings into the Android
+application package. There are no `LICENSE_*.txt` files in this folder.
 
 ## License
 

@@ -31,6 +31,25 @@ Licensed under the SIL Open Font License, Version 1.1.
 Full license text: WikipediaPublisher.RenderArticle/Fonts/OFL-SourceSans3.txt
 
 ------------------------------------------------------------------------
+Android head  (CodeBrixPlatform/WikipediaPublisher.Android)
+------------------------------------------------------------------------
+The Android head contains no third-party files of its own. Its build brings
+in, as NuGet packages, the following third-party code that ends up inside the
+Android application package:
+
+  - Material Components for Android and the AndroidX libraries (Google), in
+    their .NET bindings (Xamarin.Google.Android.Material, Xamarin.AndroidX.*),
+    licensed under the Apache License, Version 2.0. They arrive through the
+    CodeBrix.Android package, which draws every control with them, and
+    through CodeBrix.Android.WebView, which adds AndroidX WebKit
+    (Xamarin.AndroidX.WebKit) to host the device's system WebView.
+
+Each of those packages carries its own license and notices, and the
+CodeBrix.Android packages ship their own THIRD-PARTY-NOTICES.txt; they are
+not reproduced here. The system WebView itself is part of the device, not of
+the application package.
+
+------------------------------------------------------------------------
 Wikipedia article content and images (downloaded at run time)
 ------------------------------------------------------------------------
 This sample fetches article text and images from Wikipedia

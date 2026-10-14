@@ -113,7 +113,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="SeatTemplate">
-            <Grid ColumnSpacing="12" Margin="0,0,0,10">
+            <Grid ColumnSpacing="12" RowSpacing="6" Margin="0,0,0,10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="70" />
                     <ColumnDefinition Width="260" />
@@ -122,12 +122,43 @@
                     <ColumnDefinition Width="160" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <TextBlock Grid.Column="0" Text="{d:Binding SeatLabel}" Style="{StaticResource DecoLabelStyle}" VerticalAlignment="Center" />
                 <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="SeatTeam"
                           ItemsSource="{d:Binding TeamOptions}" SelectedItem="{d:Binding SelectedTeam, Mode=TwoWay}" />
                 <TextBox Grid.Column="2" PlaceholderText="Team name" AutomationProperties.AutomationId="SeatName"
-                         Style="{StaticResource DecoTextBoxStyle}"
+                         Style="{StaticResource DecoTextBoxStyle}" Visibility="{d:Binding NameBoxVisibility}"
                          Text="{d:Binding TeamName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <!-- A team of its own name carries an emblem chosen from the team cards' emblems; another seat's are veiled -->
+                <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" Orientation="Horizontal" Spacing="10"
+                            Visibility="{d:Binding EmblemVisibility}" AutomationProperties.AutomationId="SeatEmblems">
+                    <TextBlock Text="EMBLEM" Style="{StaticResource DecoLabelStyle}" VerticalAlignment="Center" />
+                    <ItemsControl ItemsSource="{d:Binding Emblems}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="6" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Width="44" Height="44" Padding="2" MinWidth="0" Background="Transparent" BorderThickness="0"
+                                        Command="{d:Binding ChooseCommand}" IsEnabled="{d:Binding IsAvailable}"
+                                        AutomationProperties.AutomationId="SeatEmblem" AutomationProperties.Name="{d:Binding Name}"
+                                        ToolTipService.ToolTip="{d:Binding Name}">
+                                    <Grid>
+                                        <Image Source="{d:Binding Image}" Stretch="Uniform" />
+                                        <Border Background="#B30B1220" CornerRadius="20" Visibility="{d:Binding TakenVisibility}" />
+                                        <Border BorderBrush="{StaticResource GoldBrush}" BorderThickness="3" CornerRadius="22" Margin="-2"
+                                                Visibility="{d:Binding ChosenVisibility}" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
                 <ToggleSwitch Grid.Column="3" OnContent="COMPUTER" OffContent="HUMAN" AutomationProperties.AutomationId="SeatComputer"
                               Foreground="{StaticResource LimestoneBrush}" IsOn="{d:Binding IsComputer, Mode=TwoWay}" />
                 <ComboBox Grid.Column="4" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="SeatTemperament"
@@ -473,21 +504,50 @@
 
         <!-- ===================================== SETTINGS ===================================== -->
         <Grid Visibility="{d:Binding SettingsVisibility}" Background="{StaticResource ScrimBrush}" AutomationProperties.AutomationId="SettingsPane">
-            <ContentControl Style="{StaticResource DecoPanelStyle}" Width="480" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <ContentControl Style="{StaticResource DecoPanelStyle}" Width="860" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <StackPanel Spacing="14">
                     <TextBlock Text="SETTINGS" Style="{StaticResource DecoHeadingStyle}" />
-                    <Image Source="{d:Binding DividerImage}" Height="10" Stretch="Fill" Margin="60,0" />
-                    <ToggleSwitch Header="Card and dice sounds" OnContent="ON" OffContent="OFF" Foreground="{StaticResource LimestoneBrush}"
-                                  AutomationProperties.AutomationId="SoundEnabled" IsOn="{d:Binding SoundEnabled, Mode=TwoWay}" />
-                    <ToggleSwitch Header="Reduced motion" OnContent="ON" OffContent="OFF" Foreground="{StaticResource LimestoneBrush}"
-                                  AutomationProperties.AutomationId="ReducedMotion" IsOn="{d:Binding ReducedMotion, Mode=TwoWay}" />
-                    <ToggleSwitch Header="Show the computer teams' discoveries" OnContent="ON" OffContent="OFF" Foreground="{StaticResource LimestoneBrush}"
-                                  AutomationProperties.AutomationId="RevealComputerDiscoveries" IsOn="{d:Binding RevealComputerDiscoveries, Mode=TwoWay}" />
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="ANIMATION SPEED" Style="{StaticResource DecoLabelStyle}" />
-                        <ComboBox Width="160" AutomationProperties.AutomationId="AnimationSpeed"
-                                  ItemsSource="{d:Binding SpeedOptions}" SelectedItem="{d:Binding SelectedSpeed, Mode=TwoWay}" />
-                    </StackPanel>
+                    <Image Source="{d:Binding DividerImage}" Height="10" Stretch="Fill" Margin="250,0" />
+                    <Grid ColumnSpacing="36">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="14">
+                            <ToggleSwitch Header="Card and dice sounds" OnContent="ON" OffContent="OFF" Foreground="{StaticResource LimestoneBrush}"
+                                          AutomationProperties.AutomationId="SoundEnabled" IsOn="{d:Binding SoundEnabled, Mode=TwoWay}" />
+                            <ToggleSwitch Header="Reduced motion" OnContent="ON" OffContent="OFF" Foreground="{StaticResource LimestoneBrush}"
+                                          AutomationProperties.AutomationId="ReducedMotion" IsOn="{d:Binding ReducedMotion, Mode=TwoWay}" />
+                            <ToggleSwitch Header="Show the computer teams' discoveries" OnContent="ON" OffContent="OFF" Foreground="{StaticResource LimestoneBrush}"
+                                          AutomationProperties.AutomationId="RevealComputerDiscoveries" IsOn="{d:Binding RevealComputerDiscoveries, Mode=TwoWay}" />
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="ANIMATION SPEED" Style="{StaticResource DecoLabelStyle}" />
+                                <ComboBox Width="160" AutomationProperties.AutomationId="AnimationSpeed"
+                                          ItemsSource="{d:Binding SpeedOptions}" SelectedItem="{d:Binding SelectedSpeed, Mode=TwoWay}" />
+                            </StackPanel>
+                        </StackPanel>
+                        <!-- The headlines: whether they close by themselves, and when - the human teams' and the computer teams' apart -->
+                        <StackPanel Grid.Column="1" Spacing="14">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="YOUR HEADLINES" Style="{StaticResource DecoLabelStyle}" />
+                                <ToggleSwitch Header="Close by themselves" OnContent="ON" OffContent="OFF" Foreground="{StaticResource LimestoneBrush}"
+                                              AutomationProperties.AutomationId="HumanHeadlinesAutoDismiss" IsOn="{d:Binding HumanHeadlinesAutoDismiss, Mode=TwoWay}" />
+                                <Slider Foreground="{StaticResource GoldBrush}" Minimum="{d:Binding MinHeadlineSeconds}" Maximum="{d:Binding MaxHeadlineSeconds}" StepFrequency="1" SmallChange="1" LargeChange="10"
+                                        IsEnabled="{d:Binding HumanHeadlinesAutoDismiss}" Value="{d:Binding HumanHeadlinesSeconds, Mode=TwoWay}"
+                                        AutomationProperties.AutomationId="HumanHeadlinesSeconds" />
+                                <TextBlock Text="{d:Binding HumanHeadlinesText}" Style="{StaticResource CaptionTextStyle}" AutomationProperties.AutomationId="HumanHeadlinesText" />
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="COMPUTER TEAMS' HEADLINES" Style="{StaticResource DecoLabelStyle}" />
+                                <ToggleSwitch Header="Close by themselves" OnContent="ON" OffContent="OFF" Foreground="{StaticResource LimestoneBrush}"
+                                              AutomationProperties.AutomationId="ComputerHeadlinesAutoDismiss" IsOn="{d:Binding ComputerHeadlinesAutoDismiss, Mode=TwoWay}" />
+                                <Slider Foreground="{StaticResource GoldBrush}" Minimum="{d:Binding MinHeadlineSeconds}" Maximum="{d:Binding MaxHeadlineSeconds}" StepFrequency="1" SmallChange="1" LargeChange="10"
+                                        IsEnabled="{d:Binding ComputerHeadlinesAutoDismiss}" Value="{d:Binding ComputerHeadlinesSeconds, Mode=TwoWay}"
+                                        AutomationProperties.AutomationId="ComputerHeadlinesSeconds" />
+                                <TextBlock Text="{d:Binding ComputerHeadlinesText}" Style="{StaticResource CaptionTextStyle}" AutomationProperties.AutomationId="ComputerHeadlinesText" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
                     <Button Content="CLOSE" HorizontalAlignment="Center" Style="{StaticResource DecoButtonStyle}"
                             AutomationProperties.AutomationId="CloseSettings" Command="{d:Binding CloseSettingsCommand}" />
                 </StackPanel>
@@ -563,8 +623,18 @@
                                     <TextBlock Text="{d:Binding GalleryLicense}" Style="{StaticResource CaptionTextStyle}" AutomationProperties.AutomationId="GalleryLicense" />
                                 </StackPanel>
                             </ScrollViewer>
-                            <Button Grid.Row="1" Content="BACK TO THE GALLERY" HorizontalAlignment="Center" Style="{StaticResource DecoButtonStyle}"
-                                    AutomationProperties.AutomationId="CloseGalleryLarge" Command="{d:Binding CloseGalleryLargeCommand}" />
+                            <StackPanel Grid.Row="1" Spacing="10" HorizontalAlignment="Center">
+                                <TextBlock Text="{d:Binding GalleryLargePositionText}" Style="{StaticResource CaptionTextStyle}" HorizontalAlignment="Center"
+                                           AutomationProperties.AutomationId="GalleryLargePosition" />
+                                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                                    <Button Content="PREVIOUS" Style="{StaticResource DecoButtonStyle}"
+                                            AutomationProperties.AutomationId="PreviousGalleryLarge" Command="{d:Binding PreviousGalleryLargeCommand}" />
+                                    <Button Content="NEXT" Style="{StaticResource DecoButtonStyle}"
+                                            AutomationProperties.AutomationId="NextGalleryLarge" Command="{d:Binding NextGalleryLargeCommand}" />
+                                </StackPanel>
+                                <Button Content="BACK TO THE GALLERY" HorizontalAlignment="Center" Style="{StaticResource DecoButtonStyle}"
+                                        AutomationProperties.AutomationId="CloseGalleryLarge" Command="{d:Binding CloseGalleryLargeCommand}" />
+                            </StackPanel>
                         </Grid>
                     </Grid>
                 </ContentControl>
@@ -675,8 +745,27 @@
                         </ScrollViewer>
                     </Grid>
 
-                    <Button Grid.Row="3" HorizontalAlignment="Center" Content="CLOSE" Style="{StaticResource NewsButtonStyle}"
-                            AutomationProperties.AutomationId="CloseInspector" Command="{d:Binding CloseInspectorCommand}" />
+                    <!-- The countdown to closing by itself (when the settings ask for it), KEEP READING to stop the countdown, and CLOSE
+                         always at the bottom right -->
+                    <Grid Grid.Row="3" ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="3" VerticalAlignment="Center" HorizontalAlignment="Left" Width="240" Visibility="{d:Binding CountdownVisibility}"
+                                    AutomationProperties.AutomationId="InspectorCountdown">
+                            <ProgressBar Minimum="0" Maximum="100" Value="{d:Binding InspectorCountdownPercent}" Height="6"
+                                         Foreground="{StaticResource InkBrush}" Background="#33000000" AutomationProperties.AutomationId="InspectorCountdownBar" />
+                            <TextBlock Text="{d:Binding InspectorCountdownText}" Style="{StaticResource NewsSmallStyle}" FontSize="10"
+                                       AutomationProperties.AutomationId="InspectorCountdownText" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="KEEP READING" Style="{StaticResource NewsButtonStyle}"
+                                Visibility="{d:Binding KeepReadingVisibility}"
+                                AutomationProperties.AutomationId="KeepReading" Command="{d:Binding KeepReadingCommand}" />
+                        <Button Grid.Column="2" HorizontalAlignment="Right" Content="CLOSE" Style="{StaticResource NewsButtonStyle}"
+                                AutomationProperties.AutomationId="CloseInspector" Command="{d:Binding CloseInspectorCommand}" />
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

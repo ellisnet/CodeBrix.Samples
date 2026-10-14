@@ -12,6 +12,25 @@ not reproduced here. That includes the PDF rasterizer library and the PDFium
 natives it bundles.
 
 ------------------------------------------------------------------------
+Android head  (src/PdfSideBySide.Android)
+------------------------------------------------------------------------
+The Android head contains no third-party files of its own. Its build brings
+in, as NuGet packages, the following third-party code that ends up inside the
+Android application package:
+
+  - Material Components for Android and the AndroidX libraries (Google), in
+    their .NET bindings (Xamarin.Google.Android.Material, Xamarin.AndroidX.*),
+    licensed under the Apache License, Version 2.0. They arrive through the
+    CodeBrix.Android package, which draws every control with them.
+
+  - The PDFium native libraries for android-arm64 and android-x64, which the
+    PDF rasterizer package redistributes beside its desktop ones (see above).
+
+Each of those packages carries its own license and notices, and the
+CodeBrix.Android packages ship their own THIRD-PARTY-NOTICES.txt; they are
+not reproduced here.
+
+------------------------------------------------------------------------
 Test fixture: Inanna.pdf
   (bundled: tests/libs/PdfSideBySide.PdfRender.Tests/assets/Inanna.pdf)
 ------------------------------------------------------------------------

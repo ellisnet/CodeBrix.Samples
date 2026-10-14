@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using CodeBrix.Platform.PlayTest;
 using CodeBrix.Platform.UI.VideoPlayer.Skia;
 using CodeBrix.Samples.PlayTests;
 using CodeBrix.VideoPlayback.Captions;
@@ -43,6 +44,10 @@ public sealed class AppFixture : SampleFixture<MainPage>
         PlainClip = ClipWriter.Write(Path.Combine(DataDirectory, "plain.cbv"), false);
         RichClip = ClipWriter.Write(Path.Combine(DataDirectory, "rich.cbv"), true);
     }
+
+    // The application initializes OpenGL elements. These tests cover the no-OpenGL fallback, so the launch opts out;
+    // to give the elements real contexts instead, call CodeBrixPlayTestOpenGL.Register() in Prepare() and drop this override.
+    protected override void Configure(PlayTestOptions options) => options.OpenGL = PlayTestOpenGL.Unavailable;
 
     protected override Application CreateApplication() => new App(services => services
         .AddSingleton<IMediaProbe>(Probe)

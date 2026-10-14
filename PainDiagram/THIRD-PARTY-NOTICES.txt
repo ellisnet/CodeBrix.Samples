@@ -19,3 +19,24 @@ This body-map image is the author's own original work — not third-party
 content — and is made available under the repository's overall license, the
 Apache License, Version 2.0 (see the repository LICENSE file). It is recorded
 here only to document its provenance.
+
+------------------------------------------------------------------------
+Android head  (CodeBrixPlatform/PainDiagram.Android)
+------------------------------------------------------------------------
+The Android head contains no third-party files of its own. Its build brings
+in, as NuGet packages, the following third-party code that ends up inside the
+Android application package:
+
+  - Material Components for Android and the AndroidX libraries (Google), in
+    their .NET bindings (Xamarin.Google.Android.Material, Xamarin.AndroidX.*),
+    licensed under the Apache License, Version 2.0. They arrive through the
+    CodeBrix.Android package, which draws every control with them.
+
+  - SkiaSharp and its Android native library (SkiaSharp.NativeAssets.Android),
+    licensed under the MIT License, with the Skia graphics library it bundles
+    (BSD 3-Clause License). They arrive through
+    CodeBrix.Android.SkiaSharp.Views and draw the body-map canvas.
+
+Each of those packages carries its own license and notices, and the
+CodeBrix.Android packages ship their own THIRD-PARTY-NOTICES.txt; they are
+not reproduced here.

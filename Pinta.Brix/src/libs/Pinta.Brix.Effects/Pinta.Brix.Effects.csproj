@@ -1,8 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <!-- Builds for Android too because it references Pinta.Brix.Engine, which does -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Pinta.Brix.Engine\Pinta.Brix.Engine.csproj" />
   </ItemGroup>

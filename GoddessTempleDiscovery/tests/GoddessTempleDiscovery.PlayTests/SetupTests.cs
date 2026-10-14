@@ -68,15 +68,62 @@ public sealed partial class ApplicationTests
         await OpenSetupAsync();
         await SetSeatCountAsync(2);
         await Id("SeatComputer").Nth(1).CheckAsync();
-        var team = Catalog.Teams.Last().Name;
+        // The last team card, unless the other seat holds it (a card belongs to one seat): then the first free one.
+        var team = await ReadAsync(() => Model.Seats[0].TeamOptions.Contains(Catalog.Teams.Last().Name)
+            ? Catalog.Teams.Last().Name
+            : Model.Seats[0].TeamOptions.First(o => o != SeatViewModel.OwnName));
         await Id("SeatTeam").Nth(0).SelectOptionAsync(team);
+        var teamId = Catalog.Teams.Single(t => t.Name == team).Id;
         await Id("SeatTeam").Nth(1).SelectOptionAsync(SeatViewModel.OwnName);
-        await Id("SeatName").Nth(1).FillAsync("The Babylon Rivals");
+        // Only a seat with a name of its own shows its name box, so the second seat's is the only one.
+        await Expect(Id("SeatName")).ToHaveCountAsync(1);
+        await Id("SeatName").First.FillAsync("The Babylon Rivals");
         await Id("SeatTemperament").First.SelectOptionAsync(nameof(Temperament.DeepDigger));
         var setups = await ReadAsync(() => Model.Seats.Select(s => s.ToSetup()).ToArray());
-        setups[0].TeamProfileId.Should().Be(Catalog.Teams.Last().Id);
+        setups[0].TeamProfileId.Should().Be(teamId);
+        // A name of its own carries an emblem: the team card's it had, or the first one no seat holds.
+        var emblem = await ReadAsync(() => Model.Seats[1].EmblemProfileId);
+        emblem.Should().NotBeEmpty();
+        emblem.Should().NotBe(teamId);
         (setups[1].TeamName, setups[1].TeamProfileId, setups[1].Kind, setups[1].Temperament)
-            .Should().Be(("The Babylon Rivals", null, SeatKind.Computer, Temperament.DeepDigger));
+            .Should().Be(("The Babylon Rivals", emblem, SeatKind.Computer, Temperament.DeepDigger));
+    }
+
+    [Fact]
+    public async Task A_team_of_its_own_name_chooses_an_emblem_no_other_seat_holds()
+    {
+        await OpenSetupAsync();
+        await SetSeatCountAsync(3);
+        // The first seat takes a team card it may have (one no other seat holds).
+        var firstName = await ReadAsync(() => Model.Seats[0].TeamOptions.First(o => o != SeatViewModel.OwnName));
+        await Id("SeatTeam").Nth(0).SelectOptionAsync(firstName);
+        var first = Catalog.Teams.Single(t => t.Name == firstName);
+        await Id("SeatTeam").Nth(1).SelectOptionAsync(SeatViewModel.OwnName);
+        await Expect(Id("SeatName").First).ToBeVisibleAsync();
+        await Expect(Id("SeatEmblems").Nth(0)).ToBeVisibleAsync();
+
+        // The first seat's card is veiled for the second seat and missing from the others' team lists.
+        (await ReadAsync(() => Model.Seats[1].Emblems.Single(e => e.ProfileId == first.Id).IsAvailable)).Should().BeFalse();
+        (await ReadAsync(() => Model.Seats[2].TeamOptions.Contains(first.Name))).Should().BeFalse();
+        (await ReadAsync(() => Model.Seats[0].TeamOptions.Contains(first.Name))).Should().BeTrue();
+
+        // Choosing a free emblem takes it from every other seat; the one it left is free again.
+        var before = await ReadAsync(() => Model.Seats[1].EmblemProfileId);
+        var free = await ReadAsync(() => Model.Seats[1].Emblems.First(e => e.IsAvailable && !e.IsChosen).Profile);
+        await ReadAsync(() =>
+        {
+            Model.Seats[1].Emblems.Single(e => e.ProfileId == free.Id).ChooseCommand.Execute(null);
+            return true;
+        });
+        (await ReadAsync(() => Model.Seats[1].EmblemProfileId)).Should().Be(free.Id);
+        (await ReadAsync(() => Model.Seats[2].TeamOptions.Contains(free.Name))).Should().BeFalse();
+        (await ReadAsync(() => Model.Seats[2].TeamOptions.Contains(Catalog.Teams.Single(t => t.Id == before).Name))).Should().BeTrue();
+
+        // No two seats ever hold the same card, and the stored setup keeps the emblem.
+        var claims = await ReadAsync(() => Model.Seats.Select(s => s.ClaimedProfileId).ToArray());
+        claims.Should().OnlyHaveUniqueItems();
+        claims.Should().NotContainNulls();
+        (await ReadAsync(() => Model.Seats[1].ToRecord().EmblemProfileId)).Should().Be(free.Id);
     }
 
     [Fact]
@@ -136,8 +183,11 @@ public sealed partial class ApplicationTests
         SettingsService.TurnsPerSeason.Should().Be(1);
         SettingsService.Difficulty.Should().Be(Difficulty.Hard);
 
-        // Through the table and back to the title: the next setup is the stored one.
+        // Through the table and back to the title: the next setup is the stored one. The first season's front page
+        // opens over the table and stays a while by default, so it is closed first, as a person would.
         await Id("Begin").ClickAsync();
+        await Expect(Id("InspectorPane")).ToBeVisibleAsync();
+        await Id("CloseInspector").ClickAsync();
         await Id("PlayMenu").ClickAsync();
         await OpenSetupAsync();
         (await ReadAsync(() => Model.Seats.Select(s => (s.ToRecord().TeamProfileId, s.IsComputer, s.Temperament)).ToArray()))

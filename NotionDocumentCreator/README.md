@@ -124,11 +124,12 @@ There is one solution, and it opens everywhere.
 
 | Solution | Contains | Open on |
 | --- | --- | --- |
-| `NotionDocumentCreator/NotionDocumentCreator.slnx` | The shared UI project, the Core library, all six heads, a `Libraries/` folder holding `NotionDocumentCreator.CreateDocument`, and a `Tests/` folder holding its test projects | Linux, macOS or Windows |
+| `NotionDocumentCreator/NotionDocumentCreator.slnx` | The shared UI project, the Core library, the six desktop heads and the Android head, a `Libraries/` folder holding `NotionDocumentCreator.CreateDocument`, and a `Tests/` folder holding its test projects | Linux, macOS or Windows |
 
 Its own comment describes it as a CodeBrix.Platform application with everything
-that builds with the plain .NET SDK on Linux, macOS and Windows. There are no
-native (non-Skia) heads here: no WinUI 3, WPF or .NET MAUI project.
+that builds with the plain .NET SDK on Linux, macOS and Windows. Besides the six
+Skia desktop heads there is an Android head built on CodeBrix.Android. There are no
+other native heads here: no WinUI 3, WPF or .NET MAUI project.
 
 | Head project | Platform |
 | --- | --- |
@@ -138,13 +139,24 @@ native (non-Skia) heads here: no WinUI 3, WPF or .NET MAUI project.
 | `src/NotionDocumentCreator.MacOS` | macOS |
 | `src/NotionDocumentCreator.Win32Skia` | Windows, native Win32 window |
 | `src/NotionDocumentCreator.WinWpfSkia` | Windows, Skia hosted in a WPF window |
+| `src/NotionDocumentCreator.Android` | Android phones, tablets and Android laptops |
+
+The six desktop heads target `net10.0` (WinWpfSkia `net10.0-windows`). The Android head
+targets `net10.0-android36.1`, builds on Linux, macOS and Windows, and runs on Android 13
+(API level 33) and later. It has no `Program.cs`; its entry points are `MainApplication`
+and `MainActivity`. `NotionDocumentCreator.Core` builds for both target frameworks, so a
+single change to it reaches every head.
 
 ### Prerequisites
 
-- The .NET 10 SDK. No workloads are needed. Every project targets `net10.0`
-  except the WinWpfSkia head, which targets `net10.0-windows` and sets
-  `EnableWindowsTargeting`, so the whole solution still restores and builds on
-  Linux and macOS even though that head only runs on Windows.
+- The .NET 10 SDK with the `android` workload (`dotnet workload install android`).
+  The workload is needed for every build of this application, a desktop-only build
+  and the test runs included, because the Core project also builds for Android.
+  The WinWpfSkia head targets `net10.0-windows` and sets `EnableWindowsTargeting`,
+  so the whole solution still restores and builds on Linux and macOS even though
+  that head only runs on Windows.
+- For the Android head, which a build of the whole solution includes, the Android
+  SDK; to run it, an Android device or emulator reachable with `adb`.
 - **A Notion integration token that you supply at run time.** Nothing ships with
   one and nothing stores one. You create an integration in your own Notion
   account, copy its token, and paste it into the `PasswordBox` in the header bar
@@ -160,7 +172,8 @@ native (non-Skia) heads here: no WinUI 3, WPF or .NET MAUI project.
 - **Optional:** `ffmpeg` and `ffprobe` on the host, used only to pull a poster
   frame out of a video and to probe media durations. Without them the application
   still produces the book; video and audio render as media cards and a note goes
-  into the warnings list. No FFmpeg binaries are bundled.
+  into the warnings list. No FFmpeg binaries are bundled. Android has no
+  ffmpeg, so on the Android head video and audio always render as media cards.
 
 ### Running one head
 
@@ -170,8 +183,28 @@ From the `NotionDocumentCreator` folder:
 dotnet run --project src/NotionDocumentCreator.LinuxX11/NotionDocumentCreator.LinuxX11.csproj
 ```
 
-Substitute any other head project for the one named there. The WinWpfSkia head
-runs on Windows only.
+Substitute any other desktop head project for the one named there. The WinWpfSkia
+head runs on Windows only.
+
+Build the Android head, and install it on a device or emulator. The install target
+needs the device's runtime identifier on the command line - `android-arm64` for most
+phones and tablets, `android-x64` for an emulator or an x86-64 Android laptop - and it
+works per project, not on the solution. Add `-p:AdbTarget="-s <serial>"` when more than
+one device is attached:
+
+```text
+dotnet build src/NotionDocumentCreator.Android/NotionDocumentCreator.Android.csproj -c Release
+dotnet build src/NotionDocumentCreator.Android/NotionDocumentCreator.Android.csproj -c Debug -t:Install -p:RuntimeIdentifier=android-x64
+dotnet build src/NotionDocumentCreator.Android/NotionDocumentCreator.Android.csproj -c Release -t:Install -p:RuntimeIdentifier=android-arm64
+```
+
+A Release build is trimmed and produces an installable `.apk` under
+`src/NotionDocumentCreator.Android/bin/Release/net10.0-android36.1/`. A Debug build
+installs with fast deployment, so install it with the `Install` target rather than
+copying its `.apk` to the device. The Android package name is
+`com.codebrix.samples.notiondocumentcreator`. On Android the token is typed or pasted
+into the same `PasswordBox` and, as on the desktop, lives only in memory until the
+application is closed.
 
 ### Testing
 
@@ -221,6 +254,8 @@ NotionDocumentCreator/
     NotionDocumentCreator.MacOS/            Head: Program.cs plus one runtime package
     NotionDocumentCreator.Win32Skia/        Head: Program.cs plus one runtime package
     NotionDocumentCreator.WinWpfSkia/       Head: Program.cs also forces the software render surface
+    NotionDocumentCreator.Android/          Head: the Android application and activity, the manifest
+                                            (network access), one runtime package
     libs/
       NotionDocumentCreator.CreateDocument/  The whole Notion-to-PDF pipeline; no UI reference at all
         Fonts/                               The embedded OFL fonts and their license texts
@@ -255,6 +290,15 @@ references no UI and no platform package at all, only the Notion, PDF, imaging a
 video-processing libraries plus hosting abstractions, which is why the test project
 can reference it directly and run headless.
 
+Core builds for two target frameworks. The `net10.0` build references the
+CodeBrix.Platform packages and serves the desktop heads; the `net10.0-android36.1`
+build references their CodeBrix.Android counterparts and serves the Android head. The
+choice is made by a target-framework condition on each package group in the project
+file, so the source files are the same for both. `NotionDocumentCreator.CreateDocument`
+references no UI and no CodeBrix.Platform package, so it stays `net10.0` and the Android
+head uses it as it is. The Android head adds no code of its own beyond its application
+and activity classes; `App.xaml`, `MainPage.xaml` and both view models run unchanged.
+
 ## CodeBrix libraries and add-ins used
 
 | Library or add-in | What it does in this application | Where |
@@ -267,6 +311,7 @@ can reference it directly and run headless.
 | CodeBrix.PdfDocCreate (which brings CodeBrix.PdfDocuments with it) | The document object model the book is built in (documents, sections, paragraphs, formatted text, hyperlinks, tables, units, styles, headers and footers, bookmarks and page-reference fields), the renderer that turns it into a saved PDF, and the font system used to register the embedded faces | `src/libs/NotionDocumentCreator.CreateDocument/Internal/BookComposer.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Internal/BookStyles.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Internal/BookTheme.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Internal/BlockRenderer.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Internal/RichTextWriter.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Internal/BookFonts.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Services/NotionDocumentService.cs` |
 | CodeBrix.Imaging | Decodes and normalizes every downloaded image for print, and supplies the imaging back-end the PDF image pipeline needs before any picture can be placed | `src/libs/NotionDocumentCreator.CreateDocument/Internal/ImagePipeline.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Internal/BookFonts.cs` |
 | CodeBrix.VideoProcessing | Probes media durations and grabs a video poster frame by invoking the host's ffprobe and ffmpeg | `src/libs/NotionDocumentCreator.CreateDocument/Internal/VideoPosterExtractor.cs` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android form of the FlexPanel add-in; the Android head and the Android build of Core reference these instead of the CodeBrix.Platform packages | `src/NotionDocumentCreator.Android/NotionDocumentCreator.Android.csproj`, `src/NotionDocumentCreator.Core/NotionDocumentCreator.Core.csproj` |
 
 Third-party libraries:
 
@@ -445,7 +490,9 @@ the picker creates for a brand-new name is cleared away and the application's ow
 "replace existing file?" prompt fires only for a real, non-empty file; a file with
 content in it is never deleted. Deciding what a chosen path means is application
 behavior, and it belongs on the same side of the bridge as the command that acts on
-it.
+it. On Android the same `FileSavePicker` shows the system document picker; the path it
+returns is a working copy in the application's cache folder, which is what the output
+box shows, and the PDF written there is copied to the document the user chose.
 
 Blueprints: [Save a file through a native dialog from the view model](../BLUEPRINTS-PlatformServices.md#save-a-file-through-a-native-dialog-from-the-view-model),
 [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show),
@@ -610,7 +657,8 @@ path into the source, so the same head runs unchanged on whatever device it reac
 the WPF host, and forces the software render surface before running. The remaining four
 are identical apart from the backend they name. That uniformity is the point: the head
 projects hold no application logic at all, so there is only ever one place to change
-behavior.
+behavior. The Android head goes one step further and has no `Program.cs` at all: an
+`Application` class that creates the shared `App`, and one activity that shows it.
 
 Blueprints: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend),
 [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head),
@@ -651,7 +699,8 @@ text sitting beside the `.ttf` files in
 never bundled: the application invokes the ffmpeg and ffprobe executables already
 installed on the host, and works without them. The Notion page content and media the
 application downloads belong to their owners, and whoever runs the application is
-responsible for having the right to reproduce what they select.
+responsible for having the right to reproduce what they select. The same file names the
+third-party libraries the Android head brings into the Android application package.
 
 ## License
 

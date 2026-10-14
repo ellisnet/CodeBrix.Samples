@@ -11,6 +11,38 @@ carries its own license and third-party notices in its own repository/package
 not reproduced here.
 
 ------------------------------------------------------------------------
+Android head  (src/KenneyAssetBrowser.Android)
+------------------------------------------------------------------------
+The Android head contains no third-party files of its own. Its build brings
+in, as NuGet packages, the following third-party code that ends up inside the
+Android application package:
+
+  - Material Components for Android and the AndroidX libraries (Google), in
+    their .NET bindings (Xamarin.Google.Android.Material, Xamarin.AndroidX.*),
+    licensed under the Apache License, Version 2.0. They arrive through the
+    CodeBrix.Android package, which draws every control with them.
+
+  - SkiaSharp (MIT) and its Android native assets, with the Skia library they
+    bundle (BSD-3-Clause). They arrive through CodeBrix.Android.SkiaSharp.Views
+    and CodeBrix.Android.Graphics3DGL, and the Rendering library references
+    SkiaSharp directly as on the desktop.
+
+  - SQLitePCLRaw (Eric Sink), licensed under the Apache License, Version 2.0,
+    with the SQLite library it bundles (public domain). It arrives through
+    CodeBrix.Android.AppSettings, by way of CodeBrix.Sqlite, and holds the
+    settings store on the device.
+
+  - The native audio code inside CodeBrix.Audio.Android, which plays the
+    packs' clips on the device: Google's Oboe library (Apache License,
+    Version 2.0), miniaudio (Public Domain (Unlicense) or MIT-0) and
+    stb_vorbis (MIT or Public Domain), the last of which decodes Kenney's Ogg
+    Vorbis files. It arrives through CodeBrix.Android.AudioPlayer.
+
+Each of those packages carries its own license and notices, and the
+CodeBrix.Android packages ship their own THIRD-PARTY-NOTICES.txt; they are
+not reproduced here.
+
+------------------------------------------------------------------------
 Kenney asset bundles  (bundled: sample_asset_bundles/*.zip)
 ------------------------------------------------------------------------
 The sample_asset_bundles folder carries four asset packs from Kenney

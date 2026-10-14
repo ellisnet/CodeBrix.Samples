@@ -191,7 +191,7 @@ and every other application's `Views/MainPage.xaml`;
 `JustBetweenUs/JustBetweenUs.WinUI/Views/MainPage.xaml` and
 `JustBetweenUs/JustBetweenUs.Wpf/Views/MainWindow.xaml` show the native heads
 binding the same view model with plain `{Binding ...}`,
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml`
 (the view model declared in `<Page.DataContext>`, `xmlns:d` aliasing the
 platform's data namespace for every `{d:Binding}`, and the page's own control
 namespace taking the `using:` form because that control compiles into the head
@@ -310,7 +310,7 @@ A list's own selection brushes are worth the same treatment:
 **Also shown by.**
 `KenneyAssetBrowser/src/KenneyAssetBrowser.UI/Views/MainPage.xaml` (re-keyed
 slider brushes so the audio scrubber follows the palette),
-`InannaRosette/src/InannaRosette.UI/App.xaml`
+`InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml`
 (the whole `TextControl…` family and the whole `ContentDialog…` family redeclared
 from the same sixteen-color palette that is two sections above them in the same
 dictionary, so the header's text boxes and the application's own dialogs follow
@@ -4671,7 +4671,7 @@ private void OnViewModelPropertyChanged(object sender, PropertyChangedEventArgs 
 `PdfSideBySide/src/PdfSideBySide.Core/ViewModels/MainViewModel.cs`
 
 **Also shown by.**
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs`
 (`WireViewModel()` called from both `DataContextChanged` and `Loaded` and
 returning immediately when the data context is the one already wired, so
 whichever arrives first wins and the other is a no-op; the single subscription
@@ -5049,7 +5049,7 @@ call and nothing else.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs
 private void OnCardPressed(object sender, PointerRoutedEventArgs e)
 {
     var item = ItemOf(sender);
@@ -5075,7 +5075,7 @@ returns a bool, and that bool - not the press itself - is what says a drag is
 running.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs
 private int NearestStation(double x, double y)
 {
     var best = -1;
@@ -5102,7 +5102,8 @@ private void OnCardReleased(object sender, PointerRoutedEventArgs e)
     if (!_dragMoved)
     {
         EndDrag();
-        ShowDetail(item);
+        if (_detailPanel is not null && ReferenceEquals(_detailItem, item)) { return; }
+        ShowDetail(item, animate: _detailPanel is null);
         return;
     }
 
@@ -5133,7 +5134,7 @@ A drag can also end without a release, and a move that nothing claimed can be
 taken for a window drag:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs
 private void OnCardCaptureLost(object sender, PointerRoutedEventArgs e)
 {
     if (_dragging && _dragMoved && _dragItem is not null)
@@ -5157,12 +5158,12 @@ private void OnRootPointerMoved(object sender, PointerRoutedEventArgs e) => e.Ha
 ```
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs`
 (`OnCardPressed`, `OnCardMoved`, `BeginDragVisuals`, `NearestStation`,
 `OnCardReleased`, `OnCardCaptureLost`, `EndDrag`)
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs`
 (`PlaceOnStation`, `ReturnToTray`) and
-`src/InannaRosette.Core/Services/IReadingTableBridge.cs`
+`src/InannaOctaquetra.Core/Services/IReadingTableBridge.cs`
 
 **Sharp edges.**
 - `ReleasePointerCapture` is wrapped in a `try`, because by the time the release
@@ -5198,7 +5199,7 @@ milliseconds.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs
 // double click toggles the orientation
 var now = DateTime.UtcNow;
 if (ReferenceEquals(_lastClickItem, item) && (now - _lastClickAt).TotalMilliseconds < 420)
@@ -5221,7 +5222,7 @@ succession are one double click and one fresh press, not two overlapping ones.
 The press becomes a drag only once the pointer has moved far enough:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs
 private void OnCardMoved(object sender, PointerRoutedEventArgs e)
 {
     if (!_dragging || _dragItem is null) { return; }
@@ -5248,7 +5249,7 @@ event. Until it is crossed, `_dragMoved` stays false and the release takes the
 other road:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs
 private void OnCardReleased(object sender, PointerRoutedEventArgs e)
 {
     var item = ItemOf(sender);
@@ -5261,7 +5262,8 @@ private void OnCardReleased(object sender, PointerRoutedEventArgs e)
     if (!_dragMoved)
     {
         EndDrag();
-        ShowDetail(item);
+        if (_detailPanel is not null && ReferenceEquals(_detailItem, item)) { return; }
+        ShowDetail(item, animate: _detailPanel is null);
         return;
     }
     // ...
@@ -5270,7 +5272,7 @@ private void OnCardReleased(object sender, PointerRoutedEventArgs e)
 And the double click ends in a complete view model transaction:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs
 /// <summary>
 /// Turns a card the other way up, which the page calls on a double click. A reversed card
 /// reads its reversed meaning, so the interpretation goes stale.
@@ -5289,9 +5291,9 @@ public void ToggleReversed(ReadingCard? card)
 ```
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs`
 (`OnCardPressed`, `OnCardMoved`, `OnCardReleased`, `ShowDetail`)
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs`
 (`ToggleReversed`)
 
 **Sharp edges.**
@@ -5328,7 +5330,7 @@ nobody can see.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs
 private void OnContentSizeChanged(object sender, SizeChangedEventArgs e) => Relayout();
 
 private void Relayout()
@@ -5352,19 +5354,25 @@ private void Relayout()
     _railH = _altarH;
 
     Place(AltarBorder, _altarX, _altarY, _altarW, _altarH);
+    // ...
     Place(RailBorder, _railX, _railY, RailWidth, _railH);
     Place(InterpretationBorder, _railX, _railY, RailWidth, _railH);
     // the ScrollViewer on this head measures its child with an unbounded width, so the
     // text column is pinned explicitly or long paragraphs run off the panel edge
     InterpStack.Width = RailWidth - 50;
 
-    // card size: the rosette must fit in the altar with room for the station labels
-    var hFromHeight = (_altarH / 2 - 28) / 2.05;
-    var hFromWidth = (_altarW / 2 - 64) / 1.8625;
-    _cardH = Math.Clamp(Math.Min(hFromHeight, hFromWidth), 88, 176);
+    // the spread: the Octaquetra's lobes sit on the petal stations, and every petal title sits in
+    // a ring just outside the Octaquetra's rim. Size everything so that ring fits the altar.
+    var rimPerStation = 1 / StationShare;
+    var fromHeight = (_altarH / 2 - 8 - TitleBand) / rimPerStation;
+    var fromWidth = (_altarW / 2 - 8 - TitleWidth) / rimPerStation;
+    var stationRadius = Math.Min(fromHeight, fromWidth);
+    // the diagonal neighbours are the tightest pair (their vertical gap is R x 0.707), so a card
+    // may be up to about 0.68 of the station radius tall and still clear them
+    _cardH = Math.Clamp(stationRadius * CardShare, 70, 300);
     _cardW = Math.Round(_cardH * 0.625);
     _cardH = Math.Round(_cardH);
-    _radius = Math.Round(_cardH * 1.55);
+    _radius = Math.Round(_cardH / CardShare);
 
     _centreX = _altarX + _altarW / 2;
     _centreY = _altarY + _altarH / 2;
@@ -5384,33 +5392,34 @@ that depends on all three. A guard at the top refuses to run against a canvas th
 has not been given a real size yet, which is what makes it safe to call from
 `Loaded` as well as from `SizeChanged`.
 
-The one piece of arithmetic worth reading on its own is how far out each label sits:
+The one piece of placement worth reading on its own is where each petal title goes: on its
+own axis, just beyond the Octaquetra's rim, reading away from it - centred above and below,
+left of the rim on the left, right of it on the right:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
-/// <summary>
-/// How far out a station label must sit so its box clears the card box on that petal.
-/// The two rectangles are separated as soon as they clear on EITHER axis, so the smaller
-/// of the two required distances is enough — which keeps the diagonal labels tucked in.
-/// </summary>
-private double LabelRadius(double labelWidth, double angleDegrees)
-{
-    var radians = angleDegrees * Math.PI / 180.0;
-    var sin = Math.Abs(Math.Sin(radians));
-    var cos = Math.Abs(Math.Cos(radians));
-    var needX = sin > 0.02 ? (labelWidth / 2 + _cardW / 2 + 9) / sin : double.MaxValue;
-    var needY = cos > 0.02 ? (9 + _cardH / 2 + 11) / cos : double.MaxValue;
-    return _radius + Math.Min(needX, needY);
-}
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs
+    var angle = AngleOf(i) * Math.PI / 180.0;
+    var sin = Math.Sin(angle);
+    var cos = Math.Cos(angle);
+    var anchor = PointAt(OctaquetraRim + TitleGap, AngleOf(i));
+
+    double left, top;
+    if (Math.Abs(sin) < 0.2) { left = anchor.X - titleW / 2; }
+    else if (sin > 0) { left = anchor.X; }
+    else { left = anchor.X - titleW; }
+
+    if (Math.Abs(cos) < 0.2) { top = anchor.Y - labelH / 2; }
+    else if (cos > 0) { top = anchor.Y - labelH; }
+    else { top = anchor.Y; }
 ```
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs`
 (`Relayout`, `Place`, `StationCentre`, `BuildOrnament`, `BuildSlots`,
-`LabelRadius`, `ComputeRailGeometry`, `RepositionAllCards`)
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml` (the `SizeChanged`
+`ComputeRailGeometry`, `RepositionAllCards`)
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml` (the `SizeChanged`
 handler on the scene canvas) and
-`src/InannaRosette.UI/Controls/Ornament.cs` (`Polar`)
+`src/InannaOctaquetra.UI/Controls/Ornament.cs` (`Polar`)
 
 **Sharp edges.**
 - `Loaded` and `SizeChanged` both have to be wired. On some heads the first real
@@ -5445,7 +5454,7 @@ changed callbacks and from `Loaded`, so there is one code path whatever changed.
 **Code.**
 
 ```xml
-<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml -->
+<!-- From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml -->
 <Grid x:Name="Shell" Width="104" Height="166" RenderTransformOrigin="0.5,0.5">
     <Grid.RenderTransform>
         <CompositeTransform x:Name="LiftTransform" TranslateX="0" TranslateY="0" ScaleX="1" ScaleY="1" />
@@ -5474,7 +5483,7 @@ under a different transform. The two canvases are siblings so that turning the c
 over is a visibility swap, not a rebuild.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml.cs
 private void BuildFace(Card card)
 {
     var gold = Ornament.Brush(Ornament.Gold);
@@ -5485,9 +5494,9 @@ private void BuildFace(Card card)
     // ...
     AddCornerFlourishes();
 
-    // numeral / suit band
-    FaceCanvas.Children.Add(Label(Ornament.Track(card.NumeralLabel), 24, 30, 96, 10, goldDeep));
-    FaceCanvas.Children.Add(Label(Ornament.TrackLight(card.SuitName), 96, 31, 130, 8.6, goldDeep, TextAlignment.Right));
+    // numeral / suit band, centred between the corner flourishes
+    FaceCanvas.Children.Add(Label(Ornament.Track(card.NumeralLabel), 60, 20, DW - 120, 9, goldDeep, TextAlignment.Center));
+    FaceCanvas.Children.Add(Label(Ornament.TrackLight(card.SuitName), 50, 35, DW - 100, 8, goldDeep, TextAlignment.Center));
     FaceCanvas.Children.Add(Rect(24, 52, DW - 48, 1.4, 0, goldRule));
     FaceCanvas.Children.Add(Rect(24, 56.5, DW - 48, 0.8, 0, goldFaint));
 
@@ -5518,7 +5527,7 @@ color towards white for the inner stop and down to the background color for the
 outer one means one data field drives the whole medallion.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml.cs
 private void ApplySize()
 {
     var w = Math.Max(20, CardWidth);
@@ -5558,11 +5567,11 @@ property changed callback that may fire several times before the control is ever
 shown.
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml`
-`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml.cs`
 (`Rebuild`, `BuildFace`, `BuildBack`, `ApplySize`, `Rect`, `Circle`, `Label`,
 `PathBox`, `BuildOverlay`) and
-`src/InannaRosette.UI/Controls/Ornament.cs`
+`src/InannaOctaquetra.UI/Controls/Ornament.cs`
 
 **Sharp edges.**
 - The transform centers are set from the real size in `ApplySize()`, not from the
@@ -5596,7 +5605,7 @@ the same logger.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml.cs
 /// <summary>Parse path mini-language into a Geometry (the XAML parser route, kept in one place).</summary>
 internal static Geometry ParseGeometry(string data)
 {
@@ -5632,7 +5641,7 @@ binding helper's converter first, then the XAML reader, then the same string wit
 every arc rewritten as cubics and both parsers tried again:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml.cs
 private static Geometry TryParseGeometry(string data)
 {
     try { return (Geometry)Microsoft.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(typeof(Geometry), data); }
@@ -5659,7 +5668,7 @@ tracking a current point through relative commands is a different job from the o
 it was written for:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/Ornament.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Controls/Ornament.cs
 /// <summary>
 /// Rewrite every absolute elliptical-arc command (A) in a path as cubic beziers.
 /// This head's path parser only accepts circular arcs ("the arc must be based on a circle,
@@ -5683,9 +5692,9 @@ public static string ArcsToBeziers(string data)
 ```
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml.cs`
 (`ParseGeometry`, `TryParseGeometry`, `_geometryFallbackLogged`)
-`InannaRosette/src/InannaRosette.UI/Controls/Ornament.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Controls/Ornament.cs`
 (`ArcsToBeziers`, `ArcSegment`, `ParseNumbers`, `CirclePath`)
 
 **Sharp edges.**
@@ -5718,7 +5727,7 @@ animation would have arrived at.
 **Code.**
 
 ```xml
-<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml -->
+<!-- From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml -->
 <UserControl.Resources>
     <Storyboard x:Name="FlipOutStory">
         <DoubleAnimation Storyboard.TargetName="FaceTransform" Storyboard.TargetProperty="ScaleX"
@@ -5742,7 +5751,7 @@ flip is two of them with a face swap in between, and each stage carries its own
 fallback:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml.cs
 /// <summary>Flip a face-down card up: ScaleX 1 to 0, swap the face, then 0 to 1.</summary>
 public void FlipToFaceUp()
 {
@@ -5777,7 +5786,7 @@ The same rule applies to a storyboard built in code, where the fallback is also 
 line that guarantees the value even when the animation did run:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs
 private static void FadeIn(UIElement element, bool visible)
 {
     try
@@ -5808,10 +5817,10 @@ element is in the right state whether the storyboard ran, ran and was interrupte
 or never started.
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml` and
+`InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml` and
 `Controls/CardView.xaml.cs` (`FlipToFaceUp`, `PlayAppear`, `ToggleReversed`,
 `ApplyOrientation`, the hover handlers)
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs` (`FadeIn`, `ShowDetail`,
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs` (`FadeIn`, `ShowDetail`,
 `Ease`)
 
 **Sharp edges.**
@@ -5843,7 +5852,7 @@ property, a hand-built text element, a control's own caption.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/Ornament.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Controls/Ornament.cs
 // ---------------------------------------------------------------- typography
 private const char ThinSpace = ' ';
 private const char HairSpace = ' ';
@@ -5890,10 +5899,10 @@ instead of dissolving into one run of letters. Callers ask for the treatment by
 name at the point the string is made:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs
 private static string StationLabel(int index)
 {
-    var positions = RosetteSpread.Positions;
+    var positions = OctaquetraSpread.Positions;
     if (index < 0 || index >= positions.Count)
     {
         return Ornament.Track(index == 0 ? "The Heart" : $"{Card.ToRoman(index)}");
@@ -5912,12 +5921,12 @@ because a graphics surface has a pen position and a text element does not. The
 screen version is the compromise that a text element forces.
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.UI/Controls/Ornament.cs` (`Track`, `TrackLight`)
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs` (`StationLabel`,
+`InannaOctaquetra/src/InannaOctaquetra.UI/Controls/Ornament.cs` (`Track`, `TrackLight`)
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs` (`StationLabel`,
 `BuildChips`, the constructor's title and badge text)
-`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs` (`BuildFace`,
+`InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml.cs` (`BuildFace`,
 `BuildBack`) and
-`src/libs/InannaRosette.Reading/Services/Pdf/PdfText.cs` (`DrawTracked`)
+`src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfText.cs` (`DrawTracked`)
 
 **Sharp edges.**
 - A tracked string is display text only. It is roughly twice as long as the

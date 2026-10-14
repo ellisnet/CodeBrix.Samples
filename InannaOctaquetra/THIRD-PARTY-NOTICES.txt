@@ -1,0 +1,125 @@
+THIRD-PARTY NOTICES
+===================
+
+This file documents third-party content that is bundled with, or used at run
+time by, the InannaOctaquetra sample application, together with the licenses under
+which that content is provided.
+
+Third-party CODE dependencies are consumed as NuGet packages. Each package
+carries its own license and third-party notices in its own repository/package
+(the CodeBrix.* packages ship their own THIRD-PARTY-NOTICES.txt), so those are
+not reproduced here. That includes the PDF document library the report is drawn
+with.
+
+------------------------------------------------------------------------
+Merriweather
+  (bundled: src/libs/InannaOctaquetra.Reading/Fonts/Merriweather-*.ttf)
+------------------------------------------------------------------------
+Copyright 2020 The Merriweather Project Authors
+(https://github.com/EbenSorkin/Merriweather4), with Reserved Font Name
+"Merriweather".
+
+Licensed under the SIL Open Font License, Version 1.1.
+Full license text: src/libs/InannaOctaquetra.Reading/Fonts/OFL-Merriweather.txt
+
+Eight faces (Regular, Bold, Italic, BoldItalic, Light, LightItalic, Medium,
+MediumItalic) are embedded as resources in the InannaOctaquetra.Reading assembly,
+with the license text embedded beside them, and are registered with the PDF
+font system so the generated report renders identically on any machine. The
+files were copied from the CodeBrix.Platform.Fonts.Merriweather package, which
+redistributes Sorkin Type's Merriweather under the same license. Glyph subsets
+of these faces are embedded in every PDF report the application writes.
+
+The same typeface also reaches the application's on-screen text through that
+CodeBrix.Platform.Fonts.Merriweather package, where it is set as the
+application-wide default text font; that copy ships inside the package rather
+than in this folder.
+
+------------------------------------------------------------------------
+Android head  (src/InannaOctaquetra.Android)
+------------------------------------------------------------------------
+The Android head contains no third-party files of its own. Its build brings
+in, as NuGet packages, the following third-party code that ends up inside the
+Android application package:
+
+  - Material Components for Android and the AndroidX libraries (Google), in
+    their .NET bindings (Xamarin.Google.Android.Material, Xamarin.AndroidX.*),
+    licensed under the Apache License, Version 2.0. They arrive through the
+    CodeBrix.Android package, which draws every control with them.
+
+The embedded Merriweather faces described above travel inside the
+InannaOctaquetra.Reading assembly on Android exactly as on the desktop heads, and
+the CodeBrix.Platform.Fonts.Merriweather copy reaches the Android package as
+application assets. Each of those packages carries its own license and
+notices, and the CodeBrix.Android packages ship their own
+THIRD-PARTY-NOTICES.txt; they are not reproduced here.
+
+------------------------------------------------------------------------
+Noto Sans Cuneiform
+  (kept in the repository, NOT shipped in the application:
+   Packaging/Artwork/Tablet/Fonts/NotoSansCuneiform-Regular.ttf)
+------------------------------------------------------------------------
+Copyright 2022 The Noto Project Authors
+(https://github.com/notofonts/cuneiform)
+
+Licensed under the SIL Open Font License, Version 1.1.
+Full license text: Packaging/Artwork/Tablet/Fonts/OFL-NotoSansCuneiform.txt
+
+Version 2.001, obtained from Google Fonts on 2026-10-12; SHA-256
+914131c044cf06c43dd96a49eda9e8ed3d2491d48ce6ac7955a813ea6d5cbb47. It is used
+only by the Packaging/IconRenderer tool to engrave the cuneiform signs into the
+picture src/libs/InannaOctaquetra.Reading/Art/octaquetra-inscribed.png. The
+application ships that picture, not the font. Details and the rebuild command
+are in Packaging/Artwork/Tablet/SOURCES.md.
+
+------------------------------------------------------------------------
+The inscription on the Octaquetra: ETCSL text and the Oracc sign list
+  (Packaging/Artwork/Tablet/tablet-E.json, build_tablet.py, SOURCES.md;
+   rendered into src/libs/InannaOctaquetra.Reading/Art/octaquetra-inscribed.png)
+------------------------------------------------------------------------
+The signs engraved along the gold band are Inana's claiming of the ME from the
+Sumerian composition "Inana and Enki", Segment E, lines 1-36, as edited by The
+Electronic Text Corpus of Sumerian Literature (ETCSL), composition c.1.3.1:
+  https://etcsl.orinst.ox.ac.uk/cgi-bin/etcsl.cgi?text=c.1.3.1
+The ancient text itself is in the public domain. The ETCSL transliteration of
+those 36 lines is reproduced line by line in tablet-E.json. The ETCSL edition
+is "(c) Copyright 2003, 2004, 2005, 2006 The ETCSL project, Faculty of Oriental
+Studies, University of Oxford"; the ETCSL site publishes no open license and
+asks that requests for permission to cite be addressed to
+orient(AT)orinst.ox.ac.uk.
+
+Each reading was mapped to its Unicode cuneiform character through the Oracc
+Global Sign List (https://github.com/oracc/osl, 00lib/osl.asl). The sign list
+itself is not included here: build_tablet.py reads a local copy of it, and only
+the resulting sign names and Unicode code points appear in tablet-E.json. The
+osl repository does not state a license.
+
+------------------------------------------------------------------------
+Pictures and artwork
+------------------------------------------------------------------------
+The Octaquetra of Inanna artwork (Packaging/Artwork/Octaquetra-of-inanna.svg,
+carried in EmblemArt.cs as path data), the royal purple velvet pictures
+(src/libs/InannaOctaquetra.Reading/Art/velvet.jpg and velvet-print.jpg), the
+engraved band (octaquetra-inscribed.png, apart from the text credited above)
+and the application icon (Packaging/AppIcon-1024.png) are original to this
+application. The velvet pictures, the engraved band and the icon are generated
+by the Packaging/IconRenderer tool, which uses the SkiaSharp NuGet packages
+(MIT license); the tool is not part of the application or its solution.
+
+------------------------------------------------------------------------
+Card texts, emblem art and interpretation templates
+------------------------------------------------------------------------
+The forty cards' names, epithets, transliterations, domains, lore, keywords,
+meanings and invocations, the nine stations of the Octaquetra spread, the
+procedural vector art for every emblem and ornament, and the sentence stock the
+interpreter writes from are all original to this application. They draw on
+Mesopotamian mythology, which is in the public domain; apart from the
+inscription credited above, no third-party text, translation or artwork is
+reproduced or redistributed here.
+
+------------------------------------------------------------------------
+Readings and reports (written at run time)
+------------------------------------------------------------------------
+The application writes reading files and PDF reports where the user chooses.
+That content belongs to whoever made it; nothing of it is redistributed as part
+of this repository, and nothing is downloaded at run time.

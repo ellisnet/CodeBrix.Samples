@@ -1,12 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <!-- The settings machinery (store, typed properties, change events, backup/
        import/export) is provided by the CodeBrix.Platform.AppSettings add-in;
        this library is the thin Pinta.Brix-named facade over it. -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <PackageReference Include="CodeBrix.Platform.AppSettings.ApacheLicenseForever" Version="1.0.281.314" />
+  </ItemGroup>
+
+  <!-- The Android head gets the same AppSettings API from its CodeBrix.Android twin -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+    <PackageReference Include="CodeBrix.Android.AppSettings.ApacheLicenseForever" Version="1.0.281.1188" />
   </ItemGroup>
 </Project>

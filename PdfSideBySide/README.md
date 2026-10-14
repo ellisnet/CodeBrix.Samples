@@ -11,8 +11,8 @@ Document 2, which is how the reader lines the two up; once lined up, that offset
 later "both" step. A note between the two page labels reads "Comparing 3:4" so the current
 pairing is always visible, and a small cross of arrow buttons for each pane nudges that pane's
 viewport across its own page, because the interesting part of one document is rarely in the same
-place on the other. Launching any head with two file paths on the command line pre-loads both
-panes.
+place on the other. Launching any desktop head with two file paths on the command line pre-loads
+both panes. The same page also runs on Android phones, tablets and Android laptops.
 
 It is a reference for rasterizing PDF pages with the CodeBrix.PdfRasterizer library and binding
 the result into a XAML `Image`: opening a document and reading its page count, rendering a chosen
@@ -111,7 +111,8 @@ number it alone knows: how big each viewer is.
 
 ## Building, running and testing
 
-There is one solution, `PdfSideBySide.slnx`, and it holds every project in the folder. Its own
+There is one solution, `PdfSideBySide.slnx`, and it holds every project in the folder, the Android
+head included. Its own
 header comment says it contains "everything that builds with the plain .NET SDK on Linux, macOS and
 Windows", and that is accurate: it opens on any of the three. It files the domain library under a
 `Libraries` solution folder and the test projects under a `Tests` solution folder.
@@ -126,14 +127,21 @@ The heads:
 | `PdfSideBySide.MacOS` | macOS |
 | `PdfSideBySide.Win32Skia` | Windows, Win32 window |
 | `PdfSideBySide.WinWpfSkia` | Windows, Skia hosted in a WPF window (`net10.0-windows`) |
+| `PdfSideBySide.Android` | Android phones, tablets and Android laptops (`net10.0-android36.1`, Android 13 / API level 33 and later) |
 
-Prerequisites are unusually light. The .NET 10 SDK is all that is needed to build; there are no
-workloads, no accounts, no tokens and nothing downloaded at run time. Every project targets
-`net10.0` except the WinWpfSkia head, which targets `net10.0-windows` and sets
-`EnableWindowsTargeting` so the whole solution still restores on Linux and macOS even though that
-head cannot run there. The PDF engine is PDFium, and its native libraries arrive inside the
+Prerequisites are light. Building needs the .NET 10 SDK with the `android` workload
+(`dotnet workload install android`); the workload is needed for every build of this application, a
+desktop-only build and the test runs included, because `PdfSideBySide.Core` also builds for Android.
+A build of the whole solution includes the Android head, so it needs the Android SDK as well; running
+that head needs an Android device or emulator reachable with `adb`. There are no accounts, no tokens
+and nothing downloaded at run time. The desktop heads and the libraries target `net10.0`, except the
+WinWpfSkia head, which targets `net10.0-windows` and sets `EnableWindowsTargeting` so the whole
+solution still restores on Linux and macOS even though that head cannot run there. The Android head
+targets `net10.0-android36.1`, and `PdfSideBySide.Core` builds for both `net10.0` and
+`net10.0-android36.1`. The PDF engine is PDFium, and its native libraries arrive inside the
 CodeBrix.PdfRasterizer package for every runtime identifier the application can run on, so there is
-no system PDF library to install and no per-head native fan-out to arrange. The Linux desktop heads
+no system PDF library to install and no per-head native fan-out to arrange; the Android package
+receives the `android-arm64` and `android-x64` PDFium libraries the same way. The Linux desktop heads
 need their windowing system running; the framebuffer head needs a framebuffer device.
 
 The data is supplied by the reader: two PDF files, chosen with the browse buttons. Running a head
@@ -150,6 +158,25 @@ Substitute the head you want: `src/PdfSideBySide.LinuxWayland`,
 `src/PdfSideBySide.WinWpfSkia`. The framebuffer head is the exception to "just browse for a file":
 its picker is opt-in in `Program.cs`, which starts it in the documents folder of whoever is running
 it and keeps it inside that user's home directory.
+
+Build the Android head, and install it on a device or emulator. The install target needs the
+device's runtime identifier on the command line - `android-arm64` for most phones and tablets,
+`android-x64` for an emulator or an x86-64 Android laptop - and it works per project, not on the
+solution. Add `-p:AdbTarget="-s <serial>"` when more than one device is attached:
+
+```text
+dotnet build src/PdfSideBySide.Android/PdfSideBySide.Android.csproj -c Release
+dotnet build src/PdfSideBySide.Android/PdfSideBySide.Android.csproj -c Debug -t:Install -p:RuntimeIdentifier=android-x64
+dotnet build src/PdfSideBySide.Android/PdfSideBySide.Android.csproj -c Release -t:Install -p:RuntimeIdentifier=android-arm64
+```
+
+A Release build is trimmed and produces an installable `.apk` under
+`src/PdfSideBySide.Android/bin/Release/net10.0-android36.1/`. A Debug build installs with fast
+deployment, so install it with the `Install` target rather than copying its `.apk` to the device.
+The Android package name is `com.codebrix.samples.pdfsidebyside`. On Android the browse buttons open
+the system document picker; the platform copies the chosen document into the application's cache
+folder, and that copy's path is what the pane shows. An Android application has no command line, so
+the Android head always starts with two empty panes.
 
 `tests/libs/PdfSideBySide.PdfRender.Tests` covers the `PdfSideBySide.PdfRender` library;
 `tests/PdfSideBySide.PlayTests` drives the real page and view models through the CodeBrix.Platform
@@ -193,6 +220,7 @@ PdfSideBySide/
     PdfSideBySide.MacOS/              Head
     PdfSideBySide.Win32Skia/          Head
     PdfSideBySide.WinWpfSkia/         Head; net10.0-windows, forces a software render surface
+    PdfSideBySide.Android/            Head: the Android application and activity, the manifest, one runtime package
     libs/
       PdfSideBySide.PdfRender/        The domain library; no CodeBrix.Platform dependency at all
         DocumentSide.cs               Left / Right
@@ -233,6 +261,15 @@ head's `Program` can see `App` without a using directive (they share the namespa
 `PdfSideBySide`). The library test project project-references the render library only, so the domain tests
 never load a UI package.
 
+`PdfSideBySide.Core` builds for two target frameworks. The `net10.0` build references the
+CodeBrix.Platform package and serves the desktop heads; the `net10.0-android36.1` build references
+its CodeBrix.Android counterpart and serves the Android head. The choice is made by a
+target-framework condition on each package group in the project file, so the source files are the
+same for both. `PdfSideBySide.PdfRender` holds no UI types and references no CodeBrix.Platform
+package, so it stays `net10.0` and the Android head uses it as it is. The Android head adds no code
+of its own beyond its application and activity classes; `App.xaml`, `MainPage.xaml` and both view
+models run unchanged.
+
 One naming detail is worth catching early: the Core library sets `RootNamespace` to
 `PdfSideBySide`, not `PdfSideBySide.Core`, so the view models live in `PdfSideBySide.ViewModels`
 inside an assembly called `PdfSideBySide.Core`. `MainPage.xaml` therefore has to name both:
@@ -244,6 +281,7 @@ inside an assembly called `PdfSideBySide.Core`. `MainPage.xaml` therefore has to
 | --- | --- | --- |
 | CodeBrix.Platform | The whole UI: `Application`, `Window`, `Frame`, `Page`, every control in `MainPage.xaml`, and the "Simple" toolkit — `SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`, `[AffectsAllCommands]`, `IXamlRootGetter`, the inherited `ShowInfo` and `ShowError` helpers, and the ambient logger factory the view model writes to. It also supplies the `Windows.Storage.Pickers` file picker the page shows | `src/PdfSideBySide.Core/PdfSideBySide.Core.csproj`, `src/PdfSideBySide.UI/App.xaml.cs`, both view models, `src/PdfSideBySide.UI/Views/MainPage.xaml(.cs)` |
 | CodeBrix.Platform runtime for each head | One rendering backend per head — X11, Wayland, framebuffer, macOS, Win32 and WPF — each selected by its own `Use…()` call on the host builder | the six `src/PdfSideBySide.<Head>/PdfSideBySide.<Head>.csproj` files and their `Program.cs` |
+| CodeBrix.Android | The Android implementation of the same framework; the Android head and the Android build of the Core library reference it instead of the CodeBrix.Platform package, and its document picker serves the browse buttons on Android | `src/PdfSideBySide.Android/PdfSideBySide.Android.csproj`, `src/PdfSideBySide.Core/PdfSideBySide.Core.csproj` |
 | CodeBrix.Platform.Fonts.Roboto | Supplies Roboto as the application-wide default text font, the `RobotoFont` XAML resource, and the Armenian and Georgian Noto Sans faces registered as fallbacks | `src/PdfSideBySide.UI/App.xaml`, `src/PdfSideBySide.UI/App.xaml.cs`, `src/PdfSideBySide.Core/PdfSideBySide.Core.csproj` |
 | CodeBrix.PdfRasterizer | The PDF engine: `GetPageCount()` when a document is opened, and `RasterizeToImage()` to turn one page at a chosen resolution into an image. Bundles its own PDFium natives per runtime identifier | `src/libs/PdfSideBySide.PdfRender/Documents/PdfPageDocument.cs`, `src/libs/PdfSideBySide.PdfRender/Rendering/PageRenderer.cs`, `src/libs/PdfSideBySide.PdfRender/PdfSideBySide.PdfRender.csproj` |
 | CodeBrix.Imaging | PNG-encodes the rasterized page and reports its pixel size. Arrives transitively through CodeBrix.PdfRasterizer — the csproj never names it | `src/libs/PdfSideBySide.PdfRender/Rendering/PageRenderer.cs` |
@@ -635,7 +673,9 @@ bundled with, or used at run time by, this application: the PDFium native librar
 CodeBrix.PdfRasterizer package redistributes with every build, and the committed test fixture
 `assets/Inanna.pdf` — a Wikipedia article rendered to PDF, whose text is under a Creative Commons
 Attribution-ShareAlike license — which is used only by the test project and is not part of the
-application. No fonts, models or other assets live in this folder, and nothing is downloaded at run
+application. The Android head also brings in, through the CodeBrix.Android package, the Material
+Components for Android and AndroidX libraries (Apache License 2.0). No fonts, models or other assets
+live in this folder, and nothing is downloaded at run
 time. The PDF documents a reader opens with the application are their own; nothing of that content
 is redistributed.
 

@@ -16,7 +16,7 @@ file at the chosen path triggers a replace confirmation before anything is writt
 For a CodeBrix.Platform developer this is the reference for the document side of the
 family: chaining CodeBrix.MarkupParse, CodeBrix.Imaging and CodeBrix.PdfDocCreate inside a
 UI-free library that one `SimpleViewModel` drives through a single service interface, plus
-the embedded-WebView bridge running on all eight heads.
+the embedded-WebView bridge running on all nine heads, the Android head included.
 
 ## What this sample shows a CodeBrix.Platform developer
 
@@ -37,7 +37,7 @@ the embedded-WebView bridge running on all eight heads.
 - The pipeline library exposes one `AddRenderArticle()` extension method, which is the only thing `App` knows about it: [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
 - `HostHelper` supplies the `IHostBuilderProvider` that `SimpleServiceResolver` builds its container from: [Supply a generic host builder to SimpleServiceResolver](../BLUEPRINTS-AppStructureAndStartup.md#supply-a-generic-host-builder-to-simpleserviceresolver).
 - The `App` constructor does the same four things every application in the family does: default font, service registration, design mode off, `InitializeComponent()`: [Bootstrap the application in the App constructor](../BLUEPRINTS-AppStructureAndStartup.md#bootstrap-the-application-in-the-app-constructor).
-- The same `Shared/ViewModels/MainViewModel.cs` is compiled into the six Skia heads and file-linked into the native WinUI 3 and WPF heads: [Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS-AppStructureAndStartup.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads).
+- The same `Shared/ViewModels/MainViewModel.cs` is compiled into the six Skia heads and the Android head and file-linked into the native WinUI 3 and WPF heads: [Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS-AppStructureAndStartup.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads).
 - Each Skia head is a tiny `Program.cs` whose only distinguishing line is the backend call on the host builder: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
 - The Win32Skia head's `Main` is deliberately synchronous and `[STAThread]`, with a comment saying what breaks in the WebView if it is not: [Keep Main synchronous and STA so an embedded WebView can start](../BLUEPRINTS-AppStructureAndStartup.md#keep-main-synchronous-and-sta-so-an-embedded-webview-can-start).
 - The WinWpfSkia head casts its host after `Build()` to force the software render surface, and says why in a comment: [Force the software render surface on the WinWpfSkia head](../BLUEPRINTS-AppStructureAndStartup.md#force-the-software-render-surface-on-the-winwpfskia-head).
@@ -78,7 +78,7 @@ the embedded-WebView bridge running on all eight heads.
 
 | Solution | Open on | Contains |
 | --- | --- | --- |
-| `WikipediaPublisher.slnx` | Linux, macOS, Windows | The shared UI shared project, the Core library, the six CodeBrix.Platform (Skia) heads, the RenderArticle library and the test project |
+| `WikipediaPublisher.slnx` | Linux, macOS, Windows | The shared UI shared project, the Core library, the six CodeBrix.Platform (Skia) heads, the Android head, the RenderArticle library and the test project |
 | `WikipediaPublisher.Windows.slnx` | Windows | Everything above, plus the native WinUI 3 and WPF heads; it also restricts the solution platforms to x86, x64 and ARM64, and puts RenderArticle under a `/Libraries/` solution folder |
 
 Both files carry a comment explaining the split: the native heads require Windows-host-only
@@ -98,6 +98,12 @@ Six CodeBrix.Platform (Skia) heads, all under `CodeBrixPlatform/`, all sharing o
 | `CodeBrixPlatform/WikipediaPublisher.LinuxFrameBuffer` | Linux, direct framebuffer, no windowing system |
 | `CodeBrixPlatform/WikipediaPublisher.MacOS` | macOS |
 
+One Android head, also under `CodeBrixPlatform/`, sharing the same XAML UI:
+
+| Project | Platform |
+| --- | --- |
+| `CodeBrixPlatform/WikipediaPublisher.Android` | Android phones, tablets and Android laptops (targets `net10.0-android36.1`; runs on Android 13, API level 33, and later) |
+
 Two native (non-Skia) heads at the application root:
 
 | Project | Platform |
@@ -105,13 +111,19 @@ Two native (non-Skia) heads at the application root:
 | `WikipediaPublisher.WinUI` | WinUI 3, its own XAML page and a Win32 common item save dialog reached through COM interop |
 | `WikipediaPublisher.Wpf` | WPF, its own window and the WPF `SaveFileDialog` |
 
-Eight heads in total. All eight embed a WebView and all eight bind the same `MainViewModel`.
+Nine heads in total. All nine embed a WebView and all nine bind the same `MainViewModel`.
 
 ### Prerequisites
 
-- The .NET 10 SDK. Every project targets net10.0; the WinWpfSkia head targets
-  `net10.0-windows` and sets `EnableWindowsTargeting`, so it compiles on Linux and macOS
-  but only runs on Windows.
+- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). The
+  workload is needed for every build of this application, a desktop-only build and the
+  test runs included, because the Core project also builds for Android. The projects
+  target net10.0, with three exceptions: the WinWpfSkia head targets `net10.0-windows` and
+  sets `EnableWindowsTargeting`, so it compiles on Linux and macOS but only runs on
+  Windows; Core targets both `net10.0` and `net10.0-android36.1`; and the Android head
+  targets `net10.0-android36.1`.
+- For the Android head, which a build of either solution includes, the Android SDK; to run
+  it, an Android device or emulator reachable with `adb`.
 - Network access at run time. Nothing is bundled: the application fetches article HTML,
   downloads the article's images, and queries the Wikimedia image-metadata API.
 - On the Linux Skia heads, the system WPE WebKit engine, which the WebView add-in needs at
@@ -134,6 +146,24 @@ dotnet run --project CodeBrixPlatform/WikipediaPublisher.LinuxX11/WikipediaPubli
 
 Substitute any of the other head projects. The two native heads build and run only from
 `WikipediaPublisher.Windows.slnx` on a Windows machine.
+
+Build the Android head, and install it on a device or emulator. The install target needs
+the device's runtime identifier on the command line - `android-arm64` for most phones and
+tablets, `android-x64` for an emulator or an x86-64 Android laptop - and it works per
+project, not on the solution. Add `-p:AdbTarget="-s <serial>"` when more than one device is
+attached:
+
+```text
+dotnet build CodeBrixPlatform/WikipediaPublisher.Android/WikipediaPublisher.Android.csproj -c Release
+dotnet build CodeBrixPlatform/WikipediaPublisher.Android/WikipediaPublisher.Android.csproj -c Debug -t:Install -p:RuntimeIdentifier=android-x64
+dotnet build CodeBrixPlatform/WikipediaPublisher.Android/WikipediaPublisher.Android.csproj -c Release -t:Install -p:RuntimeIdentifier=android-arm64
+```
+
+A Release build is trimmed and produces an installable `.apk` under
+`CodeBrixPlatform/WikipediaPublisher.Android/bin/Release/net10.0-android36.1/`. A Debug
+build installs with fast deployment, so install it with the `Install` target rather than
+copying its `.apk` to the device. The Android package name is
+`com.codebrix.samples.wikipediapublisher`.
 
 ### Tests
 
@@ -172,7 +202,7 @@ WikipediaPublisher/
   global.json                                 Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt                     Bundled-font and run-time-content attribution
 
-  CodeBrixPlatform/                           The six Skia heads and what they share
+  CodeBrixPlatform/                           The six Skia heads, the Android head and what they share
     WikipediaPublisher.UI/                    Shared XAML UI as a .shproj (App.xaml, Views/MainPage.xaml)
     WikipediaPublisher.Core/                  Shared application library; carries every platform package
     WikipediaPublisher.Win32Skia/             Head: Windows Win32 backend
@@ -181,12 +211,13 @@ WikipediaPublisher/
     WikipediaPublisher.LinuxWayland/          Head: native Wayland backend
     WikipediaPublisher.LinuxFrameBuffer/      Head: Linux framebuffer backend (picker + software keyboard)
     WikipediaPublisher.MacOS/                 Head: macOS backend
+    WikipediaPublisher.Android/               Head: the Android application and activity, the manifest, one runtime package
 
   WikipediaPublisher.WinUI/                   Native WinUI 3 head (own XAML page, Win32 save-dialog interop)
   WikipediaPublisher.Wpf/                     Native WPF head (own window, WPF SaveFileDialog)
 
   Shared/                                     Source files linked into the projects that need them
-    ViewModels/MainViewModel.cs               The one view model all eight heads bind to
+    ViewModels/MainViewModel.cs               The one view model all nine heads bind to
     Helpers/HostHelper.cs                     IHostBuilderProvider for SimpleServiceResolver
     Helpers/FileDialogHelper.cs               Picker-path decoding and placeholder-file cleanup
     Helpers/EmbeddedResourceHelper.cs         Embedded-resource reader (linked into the tests)
@@ -214,6 +245,19 @@ CodeBrix.Imaging, and exposes `IArticleRenderService`. `WikipediaPublisher.Core`
 project-references RenderArticle and carries every CodeBrix.Platform package; each of the
 six Skia heads project-references Core and adds exactly one runtime package of its own.
 
+Core builds for two target frameworks. The `net10.0` build references the CodeBrix.Platform
+packages (the framework and the WebView and FlexPanel add-ins) and serves the desktop heads;
+the `net10.0-android36.1` build references their CodeBrix.Android counterparts and serves
+the Android head, which project-references Core, imports the shared UI and adds one runtime
+package, as the Skia heads do. The choice is made by a target-framework condition on each
+package group in the Core project file, so the source files are the same for both. The
+`HAS_CODEBRIX` and `HAS_CODEBRIX_WINUI` symbols that Core defines for its desktop build are
+defined by the CodeBrix.Android package for the Android build. `WikipediaPublisher.RenderArticle`
+holds no UI types and references no CodeBrix.Platform package, so it stays `net10.0` and the
+Android head uses it as it is: the whole PDF pipeline runs on the device exactly as on the
+desktop. The Android head adds no code of its own beyond its application and activity
+classes.
+
 What is file-linked rather than referenced matters here. The shared XAML lives in
 `WikipediaPublisher.UI.projitems`, which each Skia head imports with `Label="Shared"`, so
 the UI is compiled into every head rather than referenced from a library. Core file-links
@@ -233,6 +277,7 @@ project file-links `SimpleTestFixture.cs` and `EmbeddedResourceHelper.cs` the sa
 | The CodeBrix.Platform runtime for each backend | One runtime package per head (Win32, Skia-on-WPF, X11, Wayland, framebuffer, macOS); the head's `Program.cs` selects it through the host builder | the six head csprojs under `CodeBrixPlatform/` and their `Program.cs` files |
 | CodeBrix.Platform.WebView add-in | Gives the Linux Skia heads an embedded WebView backed by WPE WebKit, offscreen. Referenced once in Core so every Skia head inherits it, and inert on the Windows, Skia-on-WPF and macOS runtimes, which already have one | `CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.Core.csproj`, `CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml` |
 | CodeBrix.Platform.FlexPanel add-in | The flexbox-style layout panel that lays out the bottom bar so the save-target group and the page-size/Publish group wrap onto two rows when the window is too narrow for both | `CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.Core.csproj`, `CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the WebView add-in (pages are shown in the device's system WebView) and the FlexPanel add-in; the Android head and the Android build of Core reference these instead of the CodeBrix.Platform packages | `CodeBrixPlatform/WikipediaPublisher.Android/WikipediaPublisher.Android.csproj`, `CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.Core.csproj` |
 | CodeBrix.Platform.Fonts.OpenSans | The bundled application font, set as the default text font and exposed as a `FontFamily` resource | `CodeBrixPlatform/WikipediaPublisher.UI/App.xaml`, `CodeBrixPlatform/WikipediaPublisher.UI/App.xaml.cs` |
 | CodeBrix.Platform.WinUI | Brings the Simple toolkit to the native WinUI 3 head so it can bind the shared view model | `WikipediaPublisher.WinUI/WikipediaPublisher.WinUI.csproj` |
 | CodeBrix.Platform.WPF | Brings the Simple toolkit to the native WPF head so it can bind the shared view model | `WikipediaPublisher.Wpf/WikipediaPublisher.Wpf.csproj` |
@@ -294,11 +339,11 @@ See [Put the real work in a UI free library behind a service interface](../BLUEP
 [Run a multi stage pipeline behind one service method](../BLUEPRINTS-DocumentsAndData.md#run-a-multi-stage-pipeline-behind-one-service-method)
 and [Register library services with one AddXxx extension method](../BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method).
 
-### One view model, eight heads, two bridge interfaces
+### One view model, nine heads, two bridge interfaces
 
 `Shared/ViewModels/MainViewModel.cs` is the only view model in the application, and it is
-the same file in all eight heads: compiled into `WikipediaPublisher.Core` for the six Skia
-heads, file-linked into the two native head projects. It derives from `SimpleViewModel` and
+the same file in all nine heads: compiled into `WikipediaPublisher.Core` for the six Skia
+heads and the Android head, file-linked into the two native head projects. It derives from `SimpleViewModel` and
 implements two interfaces it declares itself, `IWebViewBridge` and `IFileSaveBridge`. Each
 is a small contract the page fills in, which is the whole of its knowledge of the platform:
 one delegate each, an `Action<string> NavigateToUrl` and a
@@ -315,7 +360,8 @@ they are different platforms doing the same two jobs, and the differences betwee
 exactly the platform-specific parts the interfaces exist to absorb.
 
 One sharp edge is the compilation symbol. `HAS_CODEBRIX` and `HAS_CODEBRIX_WINUI` are
-defined by Core and by every Skia head csproj, but not by the two native head projects, and
+defined by Core and by every Skia head csproj (and, for the Android build, by the
+CodeBrix.Android package), but not by the two native head projects, and
 the view model uses `#if HAS_CODEBRIX` to apply the `[Bindable]` attribute only where the
 platform supplies it. Link view-model source into a native head and you have to check which
 symbols that project defines.
@@ -328,7 +374,7 @@ and [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#w
 Search does not call an API. It builds a Wikipedia search URL and navigates the embedded
 browser to it; the user then browses freely, and Publish uses whatever article page is
 displayed. That makes the browser the application's primary input, and it has to work on
-all eight heads.
+all nine heads.
 
 The view model side is three members of `IWebViewBridge`: the page sets `NavigateToUrl`,
 calls `NotifyBrowserReady()` once that delegate is in place, and calls
@@ -357,6 +403,10 @@ referenced once in `CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.
 rather than in each Linux head, because it is inert where a WebView already exists. The
 comment on that reference is the one to read: it names the system WPE WebKit packages that
 must be installed at run time, which is a run-time dependency the build cannot catch.
+On the Android head the browser comes from the CodeBrix.Android form of the same add-in,
+which shows pages in the device's system WebView; the head's `AndroidManifest.xml`
+declares the INTERNET permission that the browser and the article and image downloads
+need.
 
 The Win32Skia head's `Program.cs` carries the matching Windows-side pitfall in a comment:
 `Main` must be a synchronous `[STAThread]` method, because `[STAThread]` is silently ignored
@@ -368,7 +418,7 @@ and [Keep Main synchronous and STA so an embedded WebView can start](../BLUEPRIN
 
 ### Choosing where the PDF goes, on heads that disagree about dialogs
 
-The save path is the other place the eight heads differ, and it is worth reading as a
+The save path is the other place the nine heads differ, and it is worth reading as a
 worked example of graceful degradation. `IFileSaveBridge` is one delegate: in a suggested
 file name, out the chosen path or null. `DoSelectOutputFile()` handles four outcomes: the
 delegate is null (a head that never wired a dialog), the delegate throws
@@ -387,6 +437,11 @@ Each head then supplies the dialog its platform offers, and each has a wrinkle:
   check for `%` followed by two hex digits so a legitimate name containing a percent sign
   is left alone. Decoding is the only thing the page does to the path, because decoding is
   platform plumbing.
+- The Android head opens the same `FileSavePicker`, which on Android is the system save
+  dialog. The path it returns is a working copy inside the application's cache folder: the
+  PDF is written there, and each time the file is closed after writing it is copied back to
+  the document the user chose. A path typed into the box has to be one the application may
+  write, such as its own folders or the shared Download folder.
 - The WinUI head drops to the Win32 common item dialog through COM interop in
   `WikipediaPublisher.WinUI/Views/Win32SaveFileDialog.cs`, and its class comment gives both
   reasons: that dialog can be told not to prompt about overwriting, and it creates no
@@ -735,7 +790,9 @@ fetched from Wikipedia at run time rather than redistributed: the text is under 
 each image carries its own license, and every generated PDF prints the attribution in its
 colophon. The exception is the example PDFs in `SampleOutput/`, which are generated output
 committed to the folder. Third-party code arrives as packages, each carrying its own
-notices, so those are not repeated here.
+notices, so those are not repeated here; the one exception is the Android head, whose
+package brings the AndroidX and Material Components libraries into the application
+package, and THIRD-PARTY-NOTICES.txt names them.
 
 ## License
 

@@ -1,11 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
     <!-- Ported-from-Pinta code keeps upstream nullable annotations
          (same approach as other vendored/ported CodeBrix code) -->
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- Every persisted setting, option and remembered value goes through the
          settings store; only Pinta.Brix.Settings references the SQLite package. -->
@@ -13,11 +18,20 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="SkiaSharp" Version="4.153.1" />
-    <!-- The Pango replacement. Host-free and XAML-free, over the same engine
-         that lays out every TextBlock in CodeBrix.Platform; see the plan's P12.
-         MUST stay lock-stepped with the CodeBrix.Platform version the heads
-         reference - the family ships at one version. -->
-    <PackageReference Include="CodeBrix.Platform.TextLayout.ApacheLicenseForever" Version="1.0.281.314" />
     <PackageReference Include="CodeBrix.PolygonTools.MitLicenseForever" Version="1.0.252.1257" />
+  </ItemGroup>
+
+  <!-- The Pango replacement. Host-free and XAML-free, over the same engine
+       that lays out every TextBlock in CodeBrix.Platform; see the plan's P12.
+       MUST stay lock-stepped with the CodeBrix.Platform version the heads
+       reference - the family ships at one version. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageReference Include="CodeBrix.Platform.TextLayout.ApacheLicenseForever" Version="1.0.281.314" />
+  </ItemGroup>
+
+  <!-- The Android head: the CodeBrix.Android twin of the TextLayout add-in,
+       lock-stepped with the CodeBrix.Android version the head references -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+    <PackageReference Include="CodeBrix.Android.TextLayout.ApacheLicenseForever" Version="1.0.281.1188" />
   </ItemGroup>
 </Project>

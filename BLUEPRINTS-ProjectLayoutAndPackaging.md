@@ -3,7 +3,8 @@
 These recipes cover how a multi-head application is laid out on
 disk and how its packages are apportioned, so that adding a head
 or a dependency does not mean editing every project file. They show
-the Core-library-plus-one-runtime-package rule, the shared project that
+the Core-library-plus-one-runtime-package rule, the second target framework that
+lets the same Core serve an Android head, the shared project that
 compiles App.xaml and the views into each head, the root-namespace settings
 that keep libraries referencing CodeBrix.Platform from colliding, and the
 src/libs plus tests/libs shape that lets non-UI work be tested without a
@@ -25,6 +26,7 @@ conventions the code blocks follow.
 ## Recipes in this file
 
 - [Carry every package in one Core library and give each head exactly one runtime package](#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package)
+- [Add an Android head by giving Core a second target framework](#add-an-android-head-by-giving-core-a-second-target-framework)
 - [Share App xaml and the views across heads with a shared project](#share-app-xaml-and-the-views-across-heads-with-a-shared-project)
 - [Set the Core library root namespace to the application namespace](#set-the-core-library-root-namespace-to-the-application-namespace)
 - [Give a library that references CodeBrix Platform its own root namespace](#give-a-library-that-references-codebrix-platform-its-own-root-namespace)
@@ -143,7 +145,7 @@ true.
 `JustBetweenUs`, `KenneyAssetBrowser`, `NotionDocumentCreator`, `WebcamPainter`,
 `WikipediaPublisher`, `PolyHavenBrowser` - every application in the repository,
 each with the rule written into every head as a comment.
-`InannaRosette/src/InannaRosette.Core/InannaRosette.Core.csproj` and the four head
+`InannaOctaquetra/src/InannaOctaquetra.Core/InannaOctaquetra.Core.csproj` and the four head
 projects
 (four heads rather than six, and every head repeating the "EXACTLY ONE platform
 head package" comment along with the `Nullable` and `ImplicitUsings` settings the
@@ -168,6 +170,186 @@ references, and the csproj comment there states that ownership rule)
   only some of them are meant for application code.
 - The documented exceptions to "exactly one platform package" are native payloads;
   see the native-assets blueprint below.
+
+### Add an Android head by giving Core a second target framework
+
+**When you want this.** You want the application on a phone or tablet, on the
+CodeBrix.Android packages, without a second Core project and without touching
+the shared XAML. The desktop heads must keep building exactly as before.
+
+**The MVVM shape.** Not a view-model concern. The Core library gains a second
+target framework, `net10.0-android36.1`, beside `net10.0`. Every package that
+exists in both families is listed twice, once per target: the CodeBrix.Platform
+package and its add-ins in a `net10.0`-conditioned item group, their
+CodeBrix.Android twins in an android-conditioned one. Everything else (the font
+package, the generic host, UI-free CodeBrix libraries, SkiaSharp) stays
+unconditional. The Android head is one more thin project: the same page glob,
+the same shared-project import, the same single project reference to Core, and
+exactly one runtime package, which here is the CodeBrix.Android framework
+package. Its own files are an `[Application]` subclass that creates the shared
+`App`, an `[Activity]` subclass for the launcher, and a manifest. A library
+under `src/libs` follows Core's two-target shape only when it references a
+CodeBrix.Platform package or add-in itself, or references a project that does;
+a pure library keeps its single target and is consumed unchanged.
+
+**Code.**
+
+```xml
+<!-- Adapted from CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/GitHubIssueFinder.Core.csproj -->
+<!-- Package versions elided; see the project's csproj -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
+
+    <!-- Match the namespace used by the app code -->
+    <RootNamespace>GitHubIssueFinder</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ... the generic host, console logging and the Roboto font package: both targets ... -->
+  </ItemGroup>
+
+  <!-- The desktop heads: CodeBrix.Platform and its add-ins -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="..." />
+    <PackageReference Include="CodeBrix.Platform.FlexPanel.ApacheLicenseForever" Version="..." />
+  </ItemGroup>
+
+  <!-- The Android head: the CodeBrix.Android twins of the same packages -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="..." />
+    <PackageReference Include="CodeBrix.Android.FlexPanel.ApacheLicenseForever" Version="..." />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ... the project references, unchanged ... -->
+  </ItemGroup>
+</Project>
+```
+
+```xml
+<!-- Adapted from CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Android/GitHubIssueFinder.Android.csproj -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.1</TargetFramework>
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+
+    <!-- The Android package name and the name under the launcher icon -->
+    <ApplicationId>com.codebrix.samples.githubissuefinder</ApplicationId>
+    <ApplicationTitle>GitHubIssueFinder</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+  </PropertyGroup>
+
+  <!-- Release builds are trimmed; an .apk can be installed directly (the default, .aab, is for app stores) -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+  </PropertyGroup>
+
+  <!-- Tell MSBuild to treat .xaml files as CodeBrix.Platform XAML pages -->
+  <ItemGroup>
+    <Page Include="**\*.xaml" Exclude="bin\**\*.xaml;obj\**\*.xaml" />
+    <None Remove="**\*.xaml" />
+  </ItemGroup>
+
+  <!-- Shared UI files (App.xaml + Views) -->
+  <Import Project="..\GitHubIssueFinder.UI\GitHubIssueFinder.UI.projitems" Label="Shared" />
+  <ItemGroup>
+    <ProjectReference Include="..\GitHubIssueFinder.Core\GitHubIssueFinder.Core.csproj" />
+  </ItemGroup>
+
+  <!-- EXACTLY ONE platform head package; all other packages come from GitHubIssueFinder.Core -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="..." />
+  </ItemGroup>
+</Project>
+```
+
+```csharp
+// Adapted from CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Android/MainApplication.cs
+[Application]
+public class MainApplication : CodeBrixApplication
+{
+    public MainApplication(IntPtr handle, JniHandleOwnership transfer)
+        : base(handle, transfer)
+    {
+    }
+
+    protected override Microsoft.UI.Xaml.Application CreateApp() => new App();
+}
+```
+
+```csharp
+// Adapted from CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Android/MainActivity.cs
+[Activity(
+    Label = "GitHubIssueFinder",
+    MainLauncher = true,
+    Theme = "@style/Theme.Material3.DayNight.NoActionBar",
+    ConfigurationChanges = CodeBrixActivity.HandledConfigurationChanges)]
+public class MainActivity : CodeBrixActivity
+{
+}
+```
+
+Where a sample needs code that differs on Android, it is fenced with
+`#if HAS_CODEBRIX_ANDROID`, a symbol the CodeBrix.Android package defines for
+every project that references it; the `#else` branch is the desktop code, and no
+project defines the symbol itself. Whole files that cannot compile for Android
+are kept out of the build with a `Compile Remove` item conditioned on the android
+target rather than wrapped in the symbol.
+
+**Where to look.**
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/GitHubIssueFinder.Core.csproj`
+`GitHubIssueFinder/src/GitHubIssueFinder.Android/` (the whole head: four files)
+`GitHubIssueFinder/src/libs/GitHubIssueFinder.Settings/GitHubIssueFinder.Settings.csproj`
+(a library that references an add-in, so it follows the two-target shape; its
+sibling `GitHubIssueFinder.GitHub` references none and keeps one target)
+
+**Also shown by.**
+`Pinta.Brix/src/` (Core and all six libraries two-target, because every library
+either references an add-in or references one that does)
+`PicoScope.Brix/src/PicoScope.Brix.Android/MainApplication.cs` (the head
+registers the simulated instrument in its constructor, the one thing the
+desktop heads do in `Program.cs` that the Android head does differently)
+`PolyHavenBrowser_viewer_only/src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.csproj`
+(two third-party packages and their files kept out of the android target with
+conditioned package references and a `Compile Remove`; the three call sites
+that reach them fenced with the symbol)
+`SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/SimpleCbxVideoPlayer.SkiaVideo.csproj`
+(the audio output package chosen per target: the desktop CodeBrix.Audio natives
+for `net10.0`, CodeBrix.Audio.Android for the android target)
+`JustBetweenUs`, `PainDiagram`, `WikipediaPublisher` (the head line added to
+every solution file the application has)
+
+**Sharp edges.**
+- Once Core targets Android, every build of the application restores the
+  Android framework, including a desktop-only build, a PlayTests run and a
+  Windows or macOS build. The android workload and the Android SDK are
+  prerequisites for the whole application, and its README says so.
+- Keep literal `Version` attributes inside the conditioned item groups; a
+  version property hides the pin from the tooling that updates packages.
+- The CodeBrix.Platform packages pinned for `net10.0` and the CodeBrix.Android
+  packages pinned for the android target must come from matching releases:
+  the Android release re-ships one Platform version, and the two targets
+  compile against the same API only when the desktop pin is that version.
+- Install per project with an explicit runtime identifier
+  (`-t:Install -p:RuntimeIdentifier=android-arm64` or `android-x64`); a
+  solution-level identifier fails.
+- The Android build turns on XML documentation for libraries. A broken
+  `<see cref>` that was silent on the desktop is a warning on the android
+  target, so fix the comment rather than suppress it.
+- A `GetService<T>()` lookup for an optional service throws when nothing is
+  registered. PlayTests register their own doubles and so never see it; the
+  real head does. Use the overload that returns null for an unregistered
+  service, and launch the real head once, not only the tests.
+- A picked folder has no file-system path on Android. Code that stores
+  `StorageFolder.Path` must handle an empty value by reading through the
+  `StorageFolder` or by falling back to the application's own storage.
 
 ### Share App xaml and the views across heads with a shared project
 
@@ -229,7 +411,7 @@ the pages compile into the head itself and can see the head's own types.
 **Also shown by.**
 `JustBetweenUs`, `KenneyAssetBrowser`, `NotionDocumentCreator`, `PalmVisualizer`,
 `PolyHavenBrowser`, `WikipediaPublisher`, `CodeBrixVideoTool`.
-`InannaRosette/src/InannaRosette.UI/InannaRosette.UI.projitems`
+`InannaOctaquetra/src/InannaOctaquetra.UI/InannaOctaquetra.UI.projitems`
 (a shared project carrying a plain `.cs` file, `Controls/Ornament.cs`, alongside
 the three XAML pages and their code-behind, so the palette tokens and geometry
 helpers the drawn scene needs compile into every head with the pages)
@@ -302,10 +484,10 @@ letting the linked files declare theirs:
 `PdfSideBySide`, `PolyHavenBrowser`, `PolyHavenBrowser_viewer_only`,
 `PainDiagram`, `WikipediaPublisher`, `NotionDocumentCreator`, `PalmVisualizer`,
 `KenneyAssetBrowser`, `CodeBrixVideoTool`.
-`InannaRosette/src/InannaRosette.Core/InannaRosette.Core.csproj`
-(`RootNamespace` of `InannaRosette` in an assembly called `InannaRosette.Core`, so
+`InannaOctaquetra/src/InannaOctaquetra.Core/InannaOctaquetra.Core.csproj`
+(`RootNamespace` of `InannaOctaquetra` in an assembly called `InannaOctaquetra.Core`, so
 the page's `xmlns:vm` has to name both), beside
-`InannaRosette/src/libs/InannaRosette.Reading/InannaRosette.Reading.csproj`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/InannaOctaquetra.Reading.csproj`
 (which keeps `RootNamespace` equal to its assembly name, because nothing in it is
 ever addressed from XAML - the two conventions side by side in one folder)
 
@@ -779,7 +961,7 @@ using System.Runtime.CompilerServices;
 **Also shown by.**
 `PolyHavenBrowser_viewer_only`, `NotionDocumentCreator`, `KenneyAssetBrowser`,
 `CodeBrixVideoTool`, `Pinta.Brix`.
-`InannaRosette/`
+`InannaOctaquetra/`
 (`src/` with the shared UI project, the Core library and four heads, `src/libs/`
 with the domain library, `tests/libs/` mirroring it exactly, and one `.slnx`
 filing them under `Libraries` and `Tests` solution folders)
@@ -947,7 +1129,7 @@ assets)
 Every other application folder in the repository carries the same file.
 
 **Also shown by.**
-`InannaRosette/THIRD-PARTY-NOTICES.txt`
+`InannaOctaquetra/THIRD-PARTY-NOTICES.txt`
 (one typeface recorded twice because it arrives twice - embedded in the domain
 library for the report and through a font package for the screen - with the
 license text embedded beside the font files, and the application's own card

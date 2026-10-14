@@ -1,7 +1,7 @@
 <Solution>
   <!-- JustBetweenUs.Windows.slnx
        The Windows solution: everything - all six Skia heads including WinWpfSkia,
-       the shared UI shared-project, Core, the native (non-Skia) WinUI 3 and WPF
+       the Android head, the shared UI shared-project, Core, the native (non-Skia) WinUI 3 and WPF
        heads, the MAUI head, the encryption library and its tests. Open this one
        on a Windows machine. -->
   <!-- JustBetweenUs.WinUI only declares Platforms x86/x64/ARM64 (no Any CPU),
@@ -23,6 +23,7 @@
     <Project Path="CodeBrixPlatform/JustBetweenUs.UI/JustBetweenUs.UI.shproj" />
     <Project Path="CodeBrixPlatform/JustBetweenUs.Win32Skia/JustBetweenUs.Win32Skia.csproj" />
     <Project Path="CodeBrixPlatform/JustBetweenUs.WinWpfSkia/JustBetweenUs.WinWpfSkia.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.Android/JustBetweenUs.Android.csproj" />
   </Folder>
   <Folder Name="/CodeBrixPlatform/Tests/">
     <Project Path="CodeBrixPlatform/tests/JustBetweenUs.PlayTests/JustBetweenUs.PlayTests.csproj" />

@@ -1,6 +1,6 @@
 # PolyHavenBrowser
 
-PolyHavenBrowser is a desktop catalog browser for Poly Haven's free, CC0-licensed 3D model
+PolyHavenBrowser is a desktop and Android catalog browser for Poly Haven's free, CC0-licensed 3D model
 library. It opens on a **Browsing View**: the whole model catalog as a scrolling grid of
 cards, each with a hero thumbnail, a title, a creator credit, a short blurb, its categories
 and a compact download count. A search box (it matches name, slug, categories, tags and
@@ -89,9 +89,9 @@ PolyHavenBrowser is a pure CodeBrix.Platform application: it has no native WinUI
 
 | Solution | Open on | Contains |
 | --- | --- | --- |
-| `PolyHavenBrowser/PolyHavenBrowser.slnx` | Linux, macOS, Windows | The shared UI project, `PolyHavenBrowser.Core`, all six heads, the three libraries (in a `Libraries/` solution folder) and their three test projects (in a `Tests/` solution folder) |
+| `PolyHavenBrowser/PolyHavenBrowser.slnx` | Linux, macOS, Windows | The shared UI project, `PolyHavenBrowser.Core`, all six desktop heads and the Android head, the three libraries (in a `Libraries/` solution folder) and their three test projects (in a `Tests/` solution folder) |
 
-The six heads:
+The seven heads:
 
 | Head project | Platform |
 | --- | --- |
@@ -101,15 +101,25 @@ The six heads:
 | `PolyHavenBrowser/src/PolyHavenBrowser.LinuxWayland` | Linux, Wayland |
 | `PolyHavenBrowser/src/PolyHavenBrowser.LinuxFrameBuffer` | Linux framebuffer (kiosk and embedded) |
 | `PolyHavenBrowser/src/PolyHavenBrowser.MacOS` | macOS |
+| `PolyHavenBrowser/src/PolyHavenBrowser.Android` | Android phones, tablets and Android laptops |
 
-Every head targets `net10.0` except WinWpfSkia, which targets `net10.0-windows` and sets
-`EnableWindowsTargeting` so it still builds on Linux and macOS. Each head adds exactly one
-CodeBrix.Platform Skia runtime package and takes everything else from
-`PolyHavenBrowser.Core`.
+Every desktop head targets `net10.0` except WinWpfSkia, which targets `net10.0-windows` and
+sets `EnableWindowsTargeting` so it still builds on Linux and macOS. Each desktop head adds
+exactly one CodeBrix.Platform Skia runtime package and takes everything else from
+`PolyHavenBrowser.Core`. The Android head targets `net10.0-android36.1`, builds on any of
+the three operating systems as well, and runs on Android 13 (API level 33) and later; it
+adds exactly one package too, the CodeBrix.Android framework package. `PolyHavenBrowser.Core`
+and `PolyHavenBrowser.Rendering` build for both target frameworks, so a single change to
+either reaches every head.
 
 **Prerequisites**
 
-- The .NET 10 SDK. No workloads are needed.
+- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). The
+  workload is needed for every build of this application, a desktop-only build and the
+  test runs included, because `PolyHavenBrowser.Core` and `PolyHavenBrowser.Rendering`
+  also build for Android.
+- For the Android head, which a build of the whole solution includes, the Android SDK; to
+  run it, an Android device or emulator reachable with `adb`.
 - A working OpenGL stack for the 3D preview and for the Document button's product shots.
   The preview degrades gracefully: when the canvas reports that its GL initialization
   failed, the page raises a dialog explaining why the pane is empty, and on Windows it adds
@@ -118,7 +128,9 @@ CodeBrix.Platform Skia runtime package and takes everything else from
 - Network access. The catalog, the thumbnails, the models and the document's backdrop
   textures are all fetched from Poly Haven at run time. No account, key or token is needed.
 - One thing the user supplies: a download folder, chosen through the folder picker. Nothing
-  downloads until they do.
+  downloads until they do. On Android a picked folder has no local path, so the
+  application downloads into its own storage instead (see "Picker paths, and heads that
+  have no picker" below).
 
 **Running one head**
 
@@ -129,6 +141,24 @@ dotnet run --project PolyHavenBrowser/src/PolyHavenBrowser.LinuxX11
 Substitute any other head project for `PolyHavenBrowser.LinuxX11`. The LinuxFrameBuffer
 head derives its picker start and restriction folders from the running user's home folder
 in its own `Program.cs`; an appliance would point them at its own content folder instead.
+
+Build the Android head, and install it on a device or emulator. The install target needs
+the device's runtime identifier on the command line - `android-arm64` for most phones and
+tablets, `android-x64` for an emulator or an x86-64 Android laptop - and it works per
+project, not on the solution. Add `-p:AdbTarget="-s <serial>"` when more than one device is
+attached:
+
+```text
+dotnet build PolyHavenBrowser/src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj -c Release
+dotnet build PolyHavenBrowser/src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj -c Debug -t:Install -p:RuntimeIdentifier=android-x64
+dotnet build PolyHavenBrowser/src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj -c Release -t:Install -p:RuntimeIdentifier=android-arm64
+```
+
+A Release build is trimmed and produces an installable `.apk` under
+`PolyHavenBrowser/src/PolyHavenBrowser.Android/bin/Release/net10.0-android36.1/`. A Debug
+build installs with fast deployment, so install it with the `Install` target rather than
+copying its `.apk` to the device. The Android package name is
+`com.codebrix.samples.polyhavenbrowser`.
 
 **Tests**
 
@@ -191,12 +221,13 @@ PolyHavenBrowser/
       Converters/                      NullToVisibilityConverter
       Helpers/                         HostHelper (the host-builder provider), FileDialogHelper (picker paths)
       RegisterServices.cs              One AddPolyHavenBrowser() extension registering everything
-    PolyHavenBrowser.Win32Skia/        Six thin heads; each is a Program.cs plus one runtime package
+    PolyHavenBrowser.Win32Skia/        Six thin desktop heads; each is a Program.cs plus one runtime package
     PolyHavenBrowser.WinWpfSkia/
     PolyHavenBrowser.LinuxX11/
     PolyHavenBrowser.LinuxWayland/
     PolyHavenBrowser.LinuxFrameBuffer/
     PolyHavenBrowser.MacOS/
+    PolyHavenBrowser.Android/          Android head: the application and activity, the manifest, one runtime package
     libs/
       PolyHavenBrowser.PolyHavenApiClient/  Typed REST client for the Poly Haven API; no UI dependency
         Models/ Exceptions/ Serialization/  Response types, typed errors, the source-generated JSON context
@@ -229,12 +260,24 @@ nothing about each other and nothing about the view models;
 element. Each library carries an `InternalsVisibleTo.cs` naming its own `.Tests` assembly,
 and each test project references only the one library it covers.
 
+`PolyHavenBrowser.Core` and `PolyHavenBrowser.Rendering` build for two target frameworks.
+The `net10.0` build references the CodeBrix.Platform packages (the framework,
+Graphics3DGL and, in Core, FlexPanel) and serves the desktop heads; the
+`net10.0-android36.1` build references their CodeBrix.Android counterparts and serves the
+Android head. The choice is made by a target-framework condition on each package group in
+the project file, so the source files are the same for both. `PolyHavenBrowser.CreateDocument`
+and `PolyHavenBrowser.PolyHavenApiClient` hold no UI types and reference no CodeBrix.Platform
+package, so they stay `net10.0` and the Android head uses them as they are. The Android head
+adds no code of its own beyond its application and activity classes; `App.xaml`,
+`MainPage.xaml`, the 3D preview element and every view model run unchanged.
+
 ## CodeBrix libraries and add-ins used
 
 | Library or add-in | What it does in this application | Where |
 | --- | --- | --- |
 | CodeBrix.Platform | The XAML framework and the Simple MVVM toolkit: `SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`, `SimpleOsInfo`, the `CreateDialog`/`ShowError`/`ShowInfo` dialog helpers and `IXamlRootGetter` | `PolyHavenBrowser.Core`, `PolyHavenBrowser.Rendering`; used throughout `src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs` and `src/PolyHavenBrowser.UI/App.xaml.cs` |
-| CodeBrix.Platform Skia runtime for each head | One runtime package per head project, and nothing else | the six `src/PolyHavenBrowser.<Head>/*.csproj` |
+| CodeBrix.Platform Skia runtime for each head | One runtime package per head project, and nothing else | the six desktop `src/PolyHavenBrowser.<Head>/*.csproj` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the Graphics3DGL and FlexPanel add-ins; the Android head and the Android builds of Core and the Rendering library reference these instead of the CodeBrix.Platform packages | `src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj`, `src/PolyHavenBrowser.Core/PolyHavenBrowser.Core.csproj`, `src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.csproj` |
 | CodeBrix.Platform.Graphics3DGL | Supplies `GLCanvasElement` (the element the preview subclasses, with its cross-platform GL context, off-screen framebuffer and read-back), `GLInitializationState`, and `OffscreenGLContext` for the document's product shots; the OpenGL binding the shaders draw with arrives only transitively through it | `src/libs/PolyHavenBrowser.Rendering/GL/ModelSceneGlCanvas.cs`, `.../GL/GlModelSceneRenderer.cs`, `src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs` |
 | CodeBrix.Platform.FlexPanel add-in | The Browsing View's wrapping header toolbar, and the Model View's info-pane and viewer split whose main axis flips between landscape and portrait | `src/PolyHavenBrowser.UI/Views/MainPage.xaml`, `.../MainPage.xaml.cs` |
 | CodeBrix.Platform.Fonts.Roboto | The application's default text font and its script fallbacks, set in the `App` constructor | `src/PolyHavenBrowser.UI/App.xaml.cs`, `src/PolyHavenBrowser.UI/App.xaml` |
@@ -283,7 +326,8 @@ and [Forward pointer input from a canvas into a model](../BLUEPRINTS-ViewsAndCon
 ### The renderer runs on every head because it asks the context what it is
 
 The same shaders have to run on heads that hand you desktop OpenGL (Win32Skia, WinWpfSkia,
-LinuxX11) and heads that hand you OpenGL ES (MacOS through ANGLE, LinuxWayland, LinuxFrameBuffer).
+LinuxX11) and heads that hand you OpenGL ES (MacOS through ANGLE, LinuxWayland, LinuxFrameBuffer,
+Android).
 `GlModelSceneRenderer.Initialize(GL)` probes the live context's version string and prepends
 either the desktop or the ES version header to shader bodies that are otherwise identical;
 the fragment body opens with a precision qualifier that desktop GL accepts and GLES

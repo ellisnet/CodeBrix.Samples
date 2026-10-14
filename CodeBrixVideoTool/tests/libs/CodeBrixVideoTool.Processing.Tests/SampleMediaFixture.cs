@@ -54,6 +54,9 @@ public sealed class SampleMediaFixture : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
+        // The imports below author .cbv files, which decodes through the registered video-processing engine.
+        CodeBrixVideoProcessing.Register();
+
         Directory.CreateDirectory(Root);
 
         await SampleClipFactory.WriteMp4Async(Mp4Path, Width, Height, Duration).ConfigureAwait(false);

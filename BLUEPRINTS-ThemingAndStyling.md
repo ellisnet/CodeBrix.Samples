@@ -1542,14 +1542,14 @@ brushes, and then the derived brushes - translucent inks and hairlines - that ar
 the ones most of the application actually names:
 
 ```xml
-<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/App.xaml -->
+<!-- From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml -->
             <!-- ============================ PALETTE ============================ -->
             <Color x:Key="NightColor">#0F0A1E</Color>
             <Color x:Key="Night2Color">#1A1030</Color>
             <!-- ... fourteen more named colors ... -->
             <Color x:Key="MalachiteColor">#2E8B6B</Color>
 
-            <SolidColorBrush x:Key="NightBrush" Color="#0F0A1E" />
+            <SolidColorBrush x:Key="NightBrush" Color="#140726" />
             <SolidColorBrush x:Key="Night2Brush" Color="#1A1030" />
             <!-- ... the same sixteen again as brushes ... -->
             <SolidColorBrush x:Key="MalachiteBrush" Color="#2E8B6B" />
@@ -1564,9 +1564,9 @@ the ones most of the application actually names:
             <!-- ... surfaces, the input ground and the shadow ... -->
 
             <LinearGradientBrush x:Key="AppBackgroundBrush" StartPoint="0.1,0" EndPoint="0.9,1">
-                <GradientStop Color="#1A1030" Offset="0" />
-                <GradientStop Color="#0F0A1E" Offset="0.55" />
-                <GradientStop Color="#07050D" Offset="1" />
+                <GradientStop Color="#29124A" Offset="0" />
+                <GradientStop Color="#1E0C36" Offset="0.55" />
+                <GradientStop Color="#140726" Offset="1" />
             </LinearGradientBrush>
 ```
 
@@ -1575,7 +1575,7 @@ font package rather than by family name, and each text style pairs one of them
 with a size, a weight and an ink from the palette above:
 
 ```xml
-<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/App.xaml -->
+<!-- From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml -->
             <!-- ============================ FONTS ============================ -->
             <FontFamily x:Key="MerriweatherFont">ms-appx:///CodeBrix.Platform.Fonts.Merriweather/Fonts/Merriweather.ttf</FontFamily>
             <FontFamily x:Key="MerriweatherBoldFont">ms-appx:///CodeBrix.Platform.Fonts.Merriweather/Fonts/Merriweather-Bold.ttf</FontFamily>
@@ -1598,7 +1598,7 @@ hover, pressed and disabled behavior as visual states, and every variant is then
 a `BasedOn` style that changes only what differs:
 
 ```xml
-<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/App.xaml -->
+<!-- From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml -->
             <Style x:Key="TempleButtonStyle" TargetType="Button">
                 <!-- ... font, ink, border, padding, MinWidth, UseSystemFocusVisuals ... -->
                 <Setter Property="Template">
@@ -1647,7 +1647,7 @@ brush keys, redeclared with the same palette. Nothing in the application
 retemplates a text box or a dialog; they simply resolve these:
 
 ```xml
-<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/App.xaml -->
+<!-- From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml -->
             <!-- ============================ TEXT INPUT ============================ -->
             <SolidColorBrush x:Key="TextControlBackground" Color="#120C24" />
             <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#181030" />
@@ -1668,10 +1668,10 @@ retemplates a text box or a dialog; they simply resolve these:
 ```
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.UI/App.xaml` (the whole file, read top to bottom)
-`InannaRosette/src/InannaRosette.UI/App.xaml.cs` (`RequestedTheme` set in the
+`InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml` (the whole file, read top to bottom)
+`InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml.cs` (`RequestedTheme` set in the
 constructor, before `InitializeComponent()`)
-`InannaRosette/src/InannaRosette.UI/Controls/Ornament.cs` and
+`InannaOctaquetra/src/InannaOctaquetra.UI/Controls/Ornament.cs` and
 `Views/MainPage.xaml`
 
 **Sharp edges.**
@@ -1684,7 +1684,7 @@ constructor, before `InitializeComponent()`)
   whatever that chose - declare a dark palette on top of the light base and the
   keys you did not override will fight the ones you did.
 - Anything drawn rather than templated cannot see the dictionary, and this is the
-  real maintenance edge. The rosette, the card faces and the panels are built in
+  real maintenance edge. The Octaquetra, the card faces and the panels are built in
   code, so `Ornament.cs` carries the same sixteen hex values again as string
   constants (`Night`, `Gold`, `GoldDeep`, `Ivory`, and the rest). Two copies
   already; a UI-free library that has to match the screen makes it three. Change

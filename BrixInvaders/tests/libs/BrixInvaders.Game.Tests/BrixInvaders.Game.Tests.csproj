@@ -26,11 +26,11 @@
     <!-- libSkiaSharp native for the painter tests on Linux: engine draw commands hold real typefaces and images
          (the game gets the native library from its platform head). Same package as BrixInvaders.Assets.Tests. -->
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.153.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="xunit.v3" Version="4.0.1" />
+    <PackageReference Include="xunit.v3" Version="4.0.2" />
   </ItemGroup>
 
 </Project>

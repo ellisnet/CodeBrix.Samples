@@ -23,6 +23,27 @@ work and are covered by the repository's overall license, the Apache License,
 Version 2.0 (see the repository LICENSE file).
 
 ------------------------------------------------------------------------
+Android head  (src/GitHubIssueFinder.Android)
+------------------------------------------------------------------------
+The Android head contains no third-party files of its own. Its build brings
+in, as NuGet packages, the following third-party code that ends up inside the
+Android application package:
+
+  - Material Components for Android and the AndroidX libraries (Google), in
+    their .NET bindings (Xamarin.Google.Android.Material, Xamarin.AndroidX.*),
+    licensed under the Apache License, Version 2.0. They arrive through the
+    CodeBrix.Android package, which draws every control with them.
+
+  - SQLitePCLRaw (Eric Sink), licensed under the Apache License, Version 2.0,
+    with the SQLite library it bundles (public domain). It arrives through
+    CodeBrix.Android.AppSettings, by way of CodeBrix.Sqlite, and holds the
+    settings store on the device.
+
+Each of those packages carries its own license and notices, and the
+CodeBrix.Android packages ship their own THIRD-PARTY-NOTICES.txt; they are
+not reproduced here.
+
+------------------------------------------------------------------------
 Test fixtures  (tests/libs/GitHubIssueFinder.GitHub.Tests/Fixtures/*.json)
 ------------------------------------------------------------------------
 The offline tests replay real GitHub API responses saved as JSON. The files

@@ -30,7 +30,7 @@ public enum PlatformHead
 
 /// <summary>
 /// Declares which platforms the app's Vulkan rendering backend
-/// (<see cref="VulkanSceneRenderer"/>) may be used on. This is a deliberate, hardcoded
+/// (<c>VulkanSceneRenderer</c>) may be used on. This is a deliberate, hardcoded
 /// allow-list - not a runtime driver probe - so Vulkan is only ever attempted on platforms
 /// the app has okayed it for: the Linux X11 and Wayland heads and the two Windows heads.
 /// macOS (no system Vulkan loader) and the Linux frame-buffer head are excluded, and an

@@ -152,7 +152,7 @@ public sealed class EffectsManager
 	/// <summary>
 	/// Unregister an effect with Pinta, causing it to be removed from the Effects menu.
 	/// </summary>
-	/// <param name="effect_type">The type of the effect to unregister</param>
+	/// <typeparam name="T">The type of the effect to unregister</typeparam>
 	public void UnregisterInstanceOfEffect<T> () where T : BaseEffect
 	{
 		Type effectType = typeof (T);
@@ -176,7 +176,7 @@ public sealed class EffectsManager
 	/// <summary>
 	/// Unregister an effect with Pinta, causing it to be removed from the Adjustments menu.
 	/// </summary>
-	/// <param name="adjustment_type">The type of the adjustment to unregister</param>
+	/// <typeparam name="T">The type of the adjustment to unregister</typeparam>
 	public void UnregisterInstanceOfAdjustment<T> () where T : BaseEffect
 	{
 		Type adjustmentType = typeof (T);

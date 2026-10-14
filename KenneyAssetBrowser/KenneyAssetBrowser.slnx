@@ -10,6 +10,7 @@
   <Project Path="src/KenneyAssetBrowser.MacOS/KenneyAssetBrowser.MacOS.csproj" />
   <Project Path="src/KenneyAssetBrowser.Win32Skia/KenneyAssetBrowser.Win32Skia.csproj" />
   <Project Path="src/KenneyAssetBrowser.WinWpfSkia/KenneyAssetBrowser.WinWpfSkia.csproj" />
+  <Project Path="src/KenneyAssetBrowser.Android/KenneyAssetBrowser.Android.csproj" />
   <Folder Name="/Libraries/">
     <Project Path="src/libs/KenneyAssetBrowser.Settings/KenneyAssetBrowser.Settings.csproj" />
     <Project Path="src/libs/KenneyAssetBrowser.AssetRead/KenneyAssetBrowser.AssetRead.csproj" />

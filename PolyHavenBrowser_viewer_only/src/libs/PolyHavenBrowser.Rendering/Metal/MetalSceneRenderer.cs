@@ -8,7 +8,7 @@ namespace PolyHavenBrowser.Rendering;
 
 /// <summary>
 /// A self-contained <b>offscreen Metal renderer</b> for previewing one <see cref="LoadedModel"/>
-/// with an orbit camera - the direct-to-Metal counterpart of <see cref="VulkanSceneRenderer"/>
+/// with an orbit camera - the direct-to-Metal counterpart of <c>VulkanSceneRenderer</c>
 /// and <see cref="GlModelSceneRenderer"/>, drawing the same scene with the same shading (the MSL
 /// in <see cref="MetalShaders"/> mirrors the GL/SPIR-V shaders). It talks to Metal through the
 /// raw Objective-C runtime (see <see cref="MetalInterop"/>): no MoltenVK, no Silk.NET, no managed

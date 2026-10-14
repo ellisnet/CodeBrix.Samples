@@ -16,9 +16,16 @@ LinuxFrameBuffer, MacOS, Win32Skia and WinWpfSkia - with two exceptions worth
 knowing about: three applications (JustBetweenUs, PainDiagram and
 WikipediaPublisher) additionally carry native WinUI 3 and WPF heads that reuse
 the same view model without the CodeBrix.Platform UI stack, and JustBetweenUs
-adds a .NET MAUI head, the only mobile head in the repository, while
-BrixInvaders, CodeBrixVideoTool, GitHubIssueFinder, GoddessTempleDiscovery and
-InannaRosette each build four of the six. Libraries are consumed as packages, never as source references, so each
+adds a .NET MAUI head, while BrixInvaders, CodeBrixVideoTool, GitHubIssueFinder,
+GoddessTempleDiscovery and InannaOctaquetra each build four of the six. Most
+applications also carry an Android head, `<App>.Android`, built on the
+CodeBrix.Android packages: the same shared XAML and the same Core library,
+whose project targets both the desktop and the Android framework and picks the
+CodeBrix.Platform packages or their CodeBrix.Android twins by target. Each
+application's README says whether it has one and what, if anything, differs on
+a phone or tablet; the applications built on the game engine, a camera, a
+Tcl/Tk canvas or the video authoring library have none, because those
+libraries have no Android support. Libraries are consumed as packages, never as source references, so each
 application folder is self-contained and can be opened and built on its own.
 
 Everything in this repository is licensed under the Apache License, Version 2.0.
@@ -44,8 +51,8 @@ collect how-tos mined from all of them.
 | [GameEngineMusicDemo](GameEngineMusicDemo/README.md) | Control surface for the game engine's music system: buses, fades and crossfades, bar-quantized transitions, adaptive stems, MIDI through SFZ and Decent Sampler instruments, ducking, stingers and a global pause, with every asset generated on first run | CodeBrix.Platform.GameEngine |
 | [GitHubIssueFinder](GitHubIssueFinder/README.md) | Finds the open issues and pull requests nobody has picked up across a GitHub user's or organization's public repositories, grouped by repository, paced to the anonymous API allowance with every wait shown on screen and five switchable color schemes | the CodeBrix.Platform FlexPanel and AppSettings add-ins |
 | [GoddessTempleDiscovery](GoddessTempleDiscovery/README.md) | Educational cards-and-dice board game for two to four expeditions digging Holy Inanna's Eanna precinct at Uruk through the twelve real campaigns of 1912 to 1939, on an Art Deco table whose every discovery opens as a newspaper extra, with computer opponents of three temperaments, original vector art for every card, and a Field Journal PDF of the whole game | CodeBrix.Platform.GameEngine with its CardsAndDice add-on, CodeBrix.PdfDocuments; the CodeBrix.Platform AppSettings add-in |
-| [InannaRosette](InannaRosette/README.md) | Forty-card oracle deck of Sumer and Akkad laid on a nine-station rosette spread by dragging cards onto its petals, read as written prose and composed into a print-quality PDF whose card art, ornaments and embedded fonts are all vector | CodeBrix.PdfDocuments, CodeBrix.Platform |
-| [JustBetweenUs](JustBetweenUs/README.md) | Text-encryption utility (AES, Triple DES, Twofish) and the repository's "one view model, many heads" reference, the only application that also runs on mobile | CodeBrix.Cryptography, CodeBrix.SkiaSvg, CodeBrix.Platform with its WinUI, WPF and Mobile support |
+| [InannaOctaquetra](InannaOctaquetra/README.md) | Forty-card oracle deck of Sumer and Akkad laid by dragging cards onto the nine stations of the Octaquetra of Inanna - its gold band engraved in cuneiform, on royal purple velvet under a living starfield - read as written prose and composed into a print-quality PDF with vector card art and embedded fonts | CodeBrix.PdfDocuments, CodeBrix.Imaging, CodeBrix.Platform |
+| [JustBetweenUs](JustBetweenUs/README.md) | Text-encryption utility (AES, Triple DES, Twofish) and the repository's "one view model, many heads" reference, the only application with two mobile heads side by side (CodeBrix.Android and .NET MAUI) | CodeBrix.Cryptography, CodeBrix.SkiaSvg, CodeBrix.Platform with its WinUI, WPF and Mobile support; CodeBrix.Android |
 | [KenneyAssetBrowser](KenneyAssetBrowser/README.md) | Browser for downloaded kenney.nl game-asset packs: reads each zip without extracting it and previews images, SVG art, font specimens, Tiled maps, 3D models and audio | CodeBrix.Compression, CodeBrix.Imaging, CodeBrix.SkiaSvg; the CodeBrix.Platform Graphics3DGL, AudioPlayer, FlexPanel and AppSettings add-ins |
 | [MediaPlayerDemo](MediaPlayerDemo/README.md) | One-page media player - an address box, a stretch picker and the element's own transport controls - and the smallest six-head skeleton here | CodeBrix.Platform.MediaPlayer add-in |
 | [NotionDocumentCreator](NotionDocumentCreator/README.md) | Turns selected pages from a Notion workspace into a single print-ready, book-designed PDF | CodeBrix.NotionApi, CodeBrix.PdfDocCreate, CodeBrix.Imaging, CodeBrix.VideoProcessing |
@@ -93,7 +100,10 @@ Windows-targeting heads compile elsewhere but run only on Windows: they target
 them still restores and builds on Linux and macOS.
 
 Some applications need more than the SDK, and their own READMEs say exactly
-what. In summary: the .NET MAUI workloads (JustBetweenUs); the WPE WebKit system
+what. In summary: the android workload and the Android SDK for every
+application with an Android head (its Core targets Android too, so even a
+desktop-only build of that application restores the Android framework); the
+.NET MAUI workloads (JustBetweenUs); the WPE WebKit system
 packages for the Linux WebView (WikipediaPublisher); a webcam (WebcamPainter,
 PalmVisualizer, WebcamViewer); network access for the applications that download content; a
 Notion integration token (NotionDocumentCreator); ffmpeg and ffprobe on the

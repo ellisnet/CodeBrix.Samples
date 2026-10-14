@@ -1,11 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeBrix.VideoPlayback.MitLicenseForever" Version="1.0.280.1149" />
-    <PackageReference Include="CodeBrix.VideoPlayback.Skia.MitLicenseForever" Version="1.0.280.1149" />
+    <PackageReference Include="CodeBrix.VideoPlayback.MitLicenseForever" Version="1.0.285.833" />
+    <PackageReference Include="CodeBrix.VideoPlayback.Skia.MitLicenseForever" Version="1.0.285.833" />
   </ItemGroup>
 
   <!--
@@ -15,6 +19,19 @@
   -->
   <ItemGroup>
     <PackageReference Include="CodeBrix.VideoPlayback.Dav1d.BsdLicenseForever" Version="1.0.271.1206" />
-    <PackageReference Include="CodeBrix.Audio.Opus.BsdLicenseForever" Version="1.0.271.1185" />
+    <PackageReference Include="CodeBrix.Audio.Opus.BsdLicenseForever" Version="1.0.284.1151" />
+  </ItemGroup>
+
+  <!--
+    The sound device. The playback packages use the device-neutral audio core and leave the output backend
+    to the application: the desktop heads get CodeBrix.Audio's native backends (Linux, macOS, Windows) ...
+  -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageReference Include="CodeBrix.Audio.MitLicenseForever" Version="1.0.283.1382" />
+  </ItemGroup>
+
+  <!-- ... and the Android head gets CodeBrix.Audio's Android backend, initialised in its MainApplication -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+    <PackageReference Include="CodeBrix.Audio.Android.ApacheLicenseForever" Version="1.0.283.1398" />
   </ItemGroup>
 </Project>

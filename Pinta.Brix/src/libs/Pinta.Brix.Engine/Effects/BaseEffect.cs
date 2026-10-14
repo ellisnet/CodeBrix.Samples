@@ -129,7 +129,6 @@ public abstract class BaseEffect
 	/// </summary>
 	/// <param name="src">The source surface. DO NOT MODIFY.</param>
 	/// <param name="dst">The destination surface.</param>
-	/// <param name="length">The number of pixels to render.</param>
 	protected virtual void Render (ReadOnlySpan<ColorBgra> src, Span<ColorBgra> dst)
 	{
 		for (int i = 0; i < src.Length; ++i)

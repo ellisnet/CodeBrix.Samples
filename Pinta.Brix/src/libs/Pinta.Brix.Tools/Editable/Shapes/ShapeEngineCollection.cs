@@ -56,7 +56,7 @@ public static class ShapeEngineCollection
 	/// <param name="closestShapeIndex">The index of the shape with the closest ControlPoint.</param>
 	/// <param name="closestIndex">The index of the closest ControlPoint.</param>
 	/// <param name="closestControlPoint">The closest ControlPoint to currentPoint.</param>
-	/// <param name="closestCPDistance">The closest ControlPoint's distance from currentPoint.</param>
+	/// <param name="closestDistanceSquared">The square of the closest ControlPoint's distance from currentPoint.</param>
 	public static void FindClosestControlPoint (
 		this IReadOnlyList<ShapeEngine> source,
 		PointD reference,

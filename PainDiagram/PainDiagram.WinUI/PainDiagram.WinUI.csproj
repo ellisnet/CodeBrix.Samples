@@ -66,7 +66,7 @@
     <Folder Include="ViewModels\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Imaging.Drawing.ApacheLicenseForever" Version="1.0.278.1180" />
+    <PackageReference Include="CodeBrix.Imaging.Drawing.ApacheLicenseForever" Version="1.0.285.659" />
   </ItemGroup>
   <ItemGroup>
     <Page Update="Views\MainPage.xaml">

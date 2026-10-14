@@ -47,7 +47,7 @@ be chosen. The engine runs all twelve seasons whatever happens to the decks.
 | Expedition Row | 4 slots, face-up | Refilled from the top of the Expedition deck after every recruit |
 | Favor deck | Favors of the Goddess | Shuffled; drawn Favors are reshuffled into a new deck when it runs out |
 | Season deck | The twelve campaigns | Not shuffled: one per season, in order |
-| Team profiles | Fictional expedition names with an emblem and a color | A seat may take one or type its own name |
+| Team profiles | Fictional expedition names with an emblem and a color | A seat may take one, or type its own name and choose one of the profiles' emblems (with its color); a profile - by name or by emblem - belongs to one seat, so the setup takes it out of the other seats' lists and veils its emblem there |
 
 Card backs are the CardsAndDice add-on's celestial back for every deck. The dice are the add-on's traditional pip
 dice; a third die joins only for the turn after an extra-die Favor.
@@ -341,7 +341,8 @@ setup pane says so. A new player should face Scholars and Surveyors first. The j
 
 | Item | Value | Where |
 | --- | --- | --- |
-| Render resolution | 1280 x 800, widened with the window's aspect (never narrower than 1280; a narrower window is letterboxed) | `GoddessTempleGameHost.RenderWidth`, `RenderHeight` |
+| Table units | 1280 x 800, widened with the window's aspect (never narrower than 1280, never wider than 5120; a narrower window is letterboxed) | `GoddessTempleGameHost.RenderWidth`, `RenderHeight`, `MaxTableWidth` |
+| Render resolution | the table units times the canvas's real pixels per unit (its height times the display scale, over 800; 0.5 to 3), the view zoomed by that factor so the table stays sharp on a big or Retina display; clicks are divided back into table units | `GoddessTempleGameHost.Resize`, `MinRenderScale`, `MaxRenderScale` |
 | Window | opens at 1440 x 900; cannot be dragged below 1180 x 740 | `App.xaml.cs` |
 | Engine | 60 frames a second target, fixed step 60 a second | `OnEngineInitialized` |
 | Render tier | GPU unless `GODDESSTEMPLE_USE_CPU=1` | `GoddessTempleGameHost.UseGpuTier` |
@@ -349,8 +350,9 @@ setup pane says so. A new player should face Scholars and Surveyors first. The j
 | Face sizes on the table | Site Row 104 x 166, Expedition Row 96 x 154, hand 100 x 160, small (reports, shelf, Favors) 50 x 80, a drawn Favor 150 x 240, dice 66 | `TableLayout` |
 | Inspector pictures | the face at 500 x 800, the art with its long side 520 pixels | `SvgRaster`, `CardViews.PhotoLongSide` |
 | Computer pause | 0.8 s between two computer actions, divided by the animation speed (at least 0.25); 0.1 s with reduced motion | `ComputerPauseSeconds` |
-| Inspector, own find | a human team's own discovery stays open until it is closed | `AutoCloseFor` |
-| Inspector, everything else | closes itself after 6 s (1.5 s in autoplay) unless the pointer is over it; a computer turn waits while it is open | `InspectorAutoCloseSeconds`, `AutoPlay.InspectorHoldSeconds` |
+| Inspector, a human team's page | a human team's discovery or Favor, and every season's front page: closes itself after 30 s by default (the settings can turn that off, or set 1 to 120 s) | `AutoCloseFor`, settings |
+| Inspector, a computer team's page | a computer team's discovery or Favor: closes itself after 10 s by default (the same choices, set apart) | `AutoCloseFor`, settings |
+| Inspector, the countdown | while a page counts down it shows a bar emptying over the time (when the time is 3 s or more) and KEEP READING, which stops the countdown so the page stays until closed; at the end of the time a page under the pointer waits until the pointer leaves; autoplay closes every page after 1.5 s; a computer turn waits while a page is open | `MainViewModel.AutoCloseAsync`, `AutoPlay.InspectorHoldSeconds` |
 | Reveal computer discoveries | on by default: the inspector opens for every team's finds and Favors | settings |
 | Presentation holds | Season 0.6 s, roll 0.2 s, flip 0.5 s, survey 0.2 s, report 0.4 s, Favor 1.4 s (tossed in 0.6 s); each divided by the animation speed, none with reduced motion | `TableSession.Translate` |
 
@@ -402,7 +404,7 @@ Heritage and History, and the sources. The suggested file name is "Goddess Templ
 | Epilogue | "After 1939": the dig after the war, the Iraq Museum in 2003, the site today | the Final Edition |
 | Final Edition | the results table (rank, team, published, unpublished, Tablets, sets, star, total) and the winner | Play again |
 | How to Play, History, Credits | the rules; the real people and the timeline of periods; the art, the fonts, the table, the sources and the Note on Cultural Heritage and History, verbatim | back to where they were opened from |
-| Gallery | every embedded picture of the Assets art, by category (everything, buildings, plans, objects, symbols, icons, deities, scenes, plates, chrome, deco; `ArtInfo.Categories`, the catalog's folders with the `plan-` and `icon-` pictures set apart), 24 thumbnails a page (`GalleryPageSize`, rendered at 150 pixels the first time they show and kept for the run), "Page n of m · k pictures"; a click shows one picture large (rendered at 700 pixels) with the Title, Subject and "Sources consulted" lines of its SVG header comment, its key and category, and the art's license line (`ArtCatalog.LicenseText`) | Back to the gallery; Close returns to the screen it was opened over |
+| Gallery | every embedded picture of the Assets art, by category (everything, buildings, plans, objects, symbols, icons, deities, scenes, plates, chrome, deco; `ArtInfo.Categories`, the catalog's folders with the `plan-` and `icon-` pictures set apart), 24 thumbnails a page (`GalleryPageSize`, rendered at 150 pixels the first time they show and kept for the run), "Page n of m · k pictures"; a click shows one picture large (rendered at 1200 pixels) with the Title, Subject and "Sources consulted" lines of its SVG header comment, its key and category, and the art's license line (`ArtCatalog.LicenseText`) | Previous and Next (and the arrow keys) step through the chosen category's pictures, wrapping at either end, with "Picture n of k" and the grid's page following; Back to the gallery; Close returns to the screen it was opened over |
 | Inspector | a page of the Warka Herald for any card (section 11) | closes on Escape, its close button or its timer |
 
 ---
@@ -447,9 +449,13 @@ temporary folder.
 | `GoddessTempleDiscovery.ReducedMotion` | bool | false | animations complete at once |
 | `GoddessTempleDiscovery.AnimationSpeed` | double | 1.0 | clamped to 0.25 to 4, stored to two decimals; the settings pane offers 0.5x, 1x, 1.5x, 2x, 3x |
 | `GoddessTempleDiscovery.RevealComputerDiscoveries` | bool | true | the inspector opens for the computer teams' finds |
+| `GoddessTempleDiscovery.HumanHeadlinesAutoDismiss` | bool | true | a human team's pages, and the season front pages, close by themselves |
+| `GoddessTempleDiscovery.HumanHeadlinesSeconds` | int | 30 | clamped to 1 to 120 |
+| `GoddessTempleDiscovery.ComputerHeadlinesAutoDismiss` | bool | true | a computer team's pages close by themselves |
+| `GoddessTempleDiscovery.ComputerHeadlinesSeconds` | int | 10 | clamped to 1 to 120 |
 | `GoddessTempleDiscovery.TurnsPerSeason` | int | 2 | clamped to 1 to 3; written when a game starts |
 | `GoddessTempleDiscovery.Difficulty` | string | Standard | Easy, Standard or Hard; written when a game starts |
-| `GoddessTempleDiscovery.LastSeats` | string | empty | the last setup's seats as a JSON array of `SeatRecord` (team name, profile id, computer or not, temperament); malformed data reads as none |
+| `GoddessTempleDiscovery.LastSeats` | string | empty | the last setup's seats as a JSON array of `SeatRecord` (team name, profile id, the emblem's profile id for a team of its own name, computer or not, temperament); an older seat with both a profile id and a typed name reads as a team of its own name carrying that profile's emblem; malformed data reads as none |
 
 ---
 

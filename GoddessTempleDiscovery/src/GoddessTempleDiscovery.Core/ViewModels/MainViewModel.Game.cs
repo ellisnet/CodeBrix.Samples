@@ -3,17 +3,22 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using CodeBrix.Platform.Simple;
 using GoddessTempleDiscovery.Game.Hosting;
 using GoddessTempleDiscovery.Game.Settings;
 using GoddessTempleDiscovery.Rules.Content;
 using GoddessTempleDiscovery.Rules.Engine;
 using GoddessTempleDiscovery.Rules.Journal;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace GoddessTempleDiscovery.ViewModels;
 
 public partial class MainViewModel
 {
+    private readonly Dictionary<string, BitmapImage> _emblemImages = new Dictionary<string, BitmapImage>(StringComparer.Ordinal);
+    private bool _sharingTeamCards;
+
     #region | Setup |
 
     /// <summary>The seats, two to four.</summary>
@@ -111,12 +116,105 @@ public partial class MainViewModel
         SeedText = string.Empty;
         SeatsChanged();
         Show(Pane.Setup);
+        _ = LoadEmblemImagesAsync();
     }
 
     private void AddSeat(SeatRecord record)
     {
-        var seat = new SeatViewModel(Seats.Count + 1, record, RemoveSeat, () => StartCommand.RaiseCanExecuteChanged());
+        var seat = new SeatViewModel(Seats.Count + 1, record, RemoveSeat, SeatChoicesChanged);
+        foreach (var emblem in seat.Emblems)
+        {
+            emblem.Image = _emblemImages.GetValueOrDefault(emblem.ProfileId);
+        }
+
         Seats.Add(seat);
+        ShareTeamCards();
+    }
+
+    private void SeatChoicesChanged()
+    {
+        ShareTeamCards();
+        StartCommand.RaiseCanExecuteChanged();
+    }
+
+    //A team card - by its name or as the emblem of a team of its own name - belongs to one seat. A clash (a stored
+    //  setup from before, a new seat's default card) goes to the earlier seat; the later one takes the first card no
+    //  seat holds. Then every seat's lists leave out what the others hold.
+    private void ShareTeamCards()
+    {
+        if (_sharingTeamCards)
+        {
+            return;
+        }
+
+        _sharingTeamCards = true;
+        try
+        {
+            var held = Seats.Select(s => s.ClaimedProfileId).Where(id => id != null).ToHashSet(StringComparer.Ordinal);
+            var earlier = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var seat in Seats)
+            {
+                var claim = seat.ClaimedProfileId;
+                if (claim == null || earlier.Contains(claim))
+                {
+                    var free = Catalog.Teams.FirstOrDefault(t => !earlier.Contains(t.Id) && (t.Id == claim || !held.Contains(t.Id)))
+                               ?? Catalog.Teams.FirstOrDefault(t => !earlier.Contains(t.Id));
+                    if (free != null)
+                    {
+                        if (seat.HasOwnName)
+                        {
+                            seat.EmblemProfileId = free.Id;
+                        }
+                        else
+                        {
+                            seat.SelectedTeam = free.Name;
+                        }
+
+                        held.Add(free.Id);
+                    }
+                }
+
+                if (seat.ClaimedProfileId is { } now)
+                {
+                    earlier.Add(now);
+                }
+            }
+
+            foreach (var seat in Seats)
+            {
+                var others = Seats.Where(o => !ReferenceEquals(o, seat)).Select(o => o.ClaimedProfileId).Where(id => id != null)
+                    .ToHashSet(StringComparer.Ordinal);
+                seat.SetTakenByOthers(others);
+            }
+        }
+        finally
+        {
+            _sharingTeamCards = false;
+        }
+    }
+
+    //The emblems are rendered once, the first time the setup opens, and shared by every seat's choices
+    private async Task LoadEmblemImagesAsync()
+    {
+        if (_emblemImages.Count > 0)
+        {
+            return;
+        }
+
+        foreach (var team in Catalog.Teams)
+        {
+            var image = await ArtImageAsync(team.ArtKey, 72);
+            if (image == null)
+            {
+                continue;
+            }
+
+            _emblemImages[team.Id] = image;
+            foreach (var emblem in Seats.SelectMany(s => s.Emblems).Where(e => e.ProfileId == team.Id))
+            {
+                emblem.Image = image;
+            }
+        }
     }
 
     private void RemoveSeat(SeatViewModel seat)
@@ -132,6 +230,7 @@ public partial class MainViewModel
             Seats[i].Number = i + 1;
         }
 
+        ShareTeamCards();
         SeatsChanged();
     }
 

@@ -1,0 +1,1493 @@
+[
+ {
+  "line": 1,
+  "etcsl": "[nam]-niĝ2-si-[sa2 ma-an-šum2]",
+  "items": [
+   {
+    "k": "broken",
+    "r": "nam",
+    "n": "NAM",
+    "c": "𒉆",
+    "cp": "U+12246"
+   },
+   {
+    "k": "sign",
+    "r": "niĝ2",
+    "n": "GAR",
+    "c": "𒃻",
+    "cp": "U+120FB"
+   },
+   {
+    "k": "sign",
+    "r": "si",
+    "n": "SI",
+    "c": "𒋛",
+    "cp": "U+122DB"
+   },
+   {
+    "k": "broken",
+    "r": "sa2",
+    "n": "DI",
+    "c": "𒁲",
+    "cp": "U+12072"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "broken",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   },
+   {
+    "k": "broken",
+    "r": "an",
+    "n": "AN",
+    "c": "𒀭",
+    "cp": "U+1202D"
+   },
+   {
+    "k": "broken",
+    "r": "šum2",
+    "n": "SUM",
+    "c": "𒋧",
+    "cp": "U+122E7"
+   }
+  ]
+ },
+ {
+  "line": 2,
+  "etcsl": "iri laḫ5 [ma-an-šum2]",
+  "items": [
+   {
+    "k": "sign",
+    "r": "iri",
+    "n": "URU",
+    "c": "𒌷",
+    "cp": "U+12337"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "laḫ5",
+    "n": "|DU.DU|",
+    "c": "𒁺",
+    "cp": "U+1207A"
+   },
+   {
+    "k": "sign",
+    "r": "laḫ5",
+    "n": "|DU.DU|",
+    "c": "𒁺",
+    "cp": "U+1207A"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "broken",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   },
+   {
+    "k": "broken",
+    "r": "an",
+    "n": "AN",
+    "c": "𒀭",
+    "cp": "U+1202D"
+   },
+   {
+    "k": "broken",
+    "r": "šum2",
+    "n": "SUM",
+    "c": "𒋧",
+    "cp": "U+122E7"
+   }
+  ]
+ },
+ {
+  "line": 3,
+  "etcsl": "i-si-iš ĝa2-ĝa2 ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "i",
+    "n": "I",
+    "c": "𒄿",
+    "cp": "U+1213F"
+   },
+   {
+    "k": "sign",
+    "r": "si",
+    "n": "SI",
+    "c": "𒋛",
+    "cp": "U+122DB"
+   },
+   {
+    "k": "sign",
+    "r": "iš",
+    "n": "IŠ",
+    "c": "𒅖",
+    "cp": "U+12156"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ĝa2",
+    "n": "GA₂",
+    "c": "𒂷",
+    "cp": "U+120B7"
+   },
+   {
+    "k": "sign",
+    "r": "ĝa2",
+    "n": "GA₂",
+    "c": "𒂷",
+    "cp": "U+120B7"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 4,
+  "etcsl": "šag4 ḫul2-la ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "šag4",
+    "n": "ŠA₃",
+    "c": "𒊮",
+    "cp": "U+122AE"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ḫul2",
+    "n": "HUL₂",
+    "c": "𒄾",
+    "cp": "U+1213E"
+   },
+   {
+    "k": "sign",
+    "r": "la",
+    "n": "LA",
+    "c": "𒆷",
+    "cp": "U+121B7"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 5,
+  "etcsl": "lul-da ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "lul",
+    "n": "LUL",
+    "c": "𒈜",
+    "cp": "U+1221C"
+   },
+   {
+    "k": "sign",
+    "r": "da",
+    "n": "DA",
+    "c": "𒁕",
+    "cp": "U+12055"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 6,
+  "etcsl": "kur ki-bal ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "kur",
+    "n": "KUR",
+    "c": "𒆳",
+    "cp": "U+121B3"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ki",
+    "n": "KI",
+    "c": "𒆠",
+    "cp": "U+121A0"
+   },
+   {
+    "k": "sign",
+    "r": "bal",
+    "n": "BAL",
+    "c": "𒁄",
+    "cp": "U+12044"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 7,
+  "etcsl": "nam-dug3-ge ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "nam",
+    "n": "NAM",
+    "c": "𒉆",
+    "cp": "U+12246"
+   },
+   {
+    "k": "sign",
+    "r": "dug3",
+    "n": "HI",
+    "c": "𒄭",
+    "cp": "U+1212D"
+   },
+   {
+    "k": "sign",
+    "r": "ge",
+    "n": "GI",
+    "c": "𒄀",
+    "cp": "U+12100"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 8,
+  "etcsl": "kaš4 du ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "kaš4",
+    "n": "DU@s",
+    "c": "𒁽",
+    "cp": "U+1207D"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "du",
+    "n": "DU",
+    "c": "𒁺",
+    "cp": "U+1207A"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 9,
+  "etcsl": "ki-tuš gen6-na ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "ki",
+    "n": "KI",
+    "c": "𒆠",
+    "cp": "U+121A0"
+   },
+   {
+    "k": "sign",
+    "r": "tuš",
+    "n": "KU",
+    "c": "𒆪",
+    "cp": "U+121AA"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "gen6",
+    "n": "GI",
+    "c": "𒄀",
+    "cp": "U+12100"
+   },
+   {
+    "k": "sign",
+    "r": "na",
+    "n": "NA",
+    "c": "𒈾",
+    "cp": "U+1223E"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 10,
+  "etcsl": "nam-nagar ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "nam",
+    "n": "NAM",
+    "c": "𒉆",
+    "cp": "U+12246"
+   },
+   {
+    "k": "sign",
+    "r": "nagar",
+    "n": "NAGAR",
+    "c": "𒉄",
+    "cp": "U+12244"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 11,
+  "etcsl": "nam-tibira ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "nam",
+    "n": "NAM",
+    "c": "𒉆",
+    "cp": "U+12246"
+   },
+   {
+    "k": "sign",
+    "r": "tibira",
+    "n": "|DUB.NAGAR|",
+    "c": "𒁾",
+    "cp": "U+1207E"
+   },
+   {
+    "k": "sign",
+    "r": "tibira",
+    "n": "|DUB.NAGAR|",
+    "c": "𒉄",
+    "cp": "U+12244"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 12,
+  "etcsl": "nam-dub-sar ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "nam",
+    "n": "NAM",
+    "c": "𒉆",
+    "cp": "U+12246"
+   },
+   {
+    "k": "sign",
+    "r": "dub",
+    "n": "DUB",
+    "c": "𒁾",
+    "cp": "U+1207E"
+   },
+   {
+    "k": "sign",
+    "r": "sar",
+    "n": "SAR",
+    "c": "𒊬",
+    "cp": "U+122AC"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 13,
+  "etcsl": "nam-simug ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "nam",
+    "n": "NAM",
+    "c": "𒉆",
+    "cp": "U+12246"
+   },
+   {
+    "k": "sign",
+    "r": "simug",
+    "n": "UMUM",
+    "c": "𒌣",
+    "cp": "U+12323"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 14,
+  "etcsl": "nam-ašgab ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "nam",
+    "n": "NAM",
+    "c": "𒉆",
+    "cp": "U+12246"
+   },
+   {
+    "k": "sign",
+    "r": "ašgab",
+    "n": "AŠGAB",
+    "c": "𒀿",
+    "cp": "U+1203F"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 15,
+  "etcsl": "nam-azlag2 ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "nam",
+    "n": "NAM",
+    "c": "𒉆",
+    "cp": "U+12246"
+   },
+   {
+    "k": "sign",
+    "r": "azlag2",
+    "n": "TUG₂",
+    "c": "𒌆",
+    "cp": "U+12306"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 16,
+  "etcsl": "nam-šidim ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "nam",
+    "n": "NAM",
+    "c": "𒉆",
+    "cp": "U+12246"
+   },
+   {
+    "k": "sign",
+    "r": "šidim",
+    "n": "DIM₂",
+    "c": "𒁶",
+    "cp": "U+12076"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 17,
+  "etcsl": "nam-ad-KID ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "nam",
+    "n": "NAM",
+    "c": "𒉆",
+    "cp": "U+12246"
+   },
+   {
+    "k": "sign",
+    "r": "ad",
+    "n": "AD",
+    "c": "𒀜",
+    "cp": "U+1201C"
+   },
+   {
+    "k": "sign",
+    "r": "KID",
+    "n": "KID",
+    "c": "𒆤",
+    "cp": "U+121A4"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 18,
+  "etcsl": "ĝeštug2 ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "ĝeštug2",
+    "n": "|GIŠ.TUG₂.PI|",
+    "c": "𒄑",
+    "cp": "U+12111"
+   },
+   {
+    "k": "sign",
+    "r": "ĝeštug2",
+    "n": "|GIŠ.TUG₂.PI|",
+    "c": "𒌆",
+    "cp": "U+12306"
+   },
+   {
+    "k": "sign",
+    "r": "ĝeštug2",
+    "n": "|GIŠ.TUG₂.PI|",
+    "c": "𒉿",
+    "cp": "U+1227F"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 19,
+  "etcsl": "ĝizzal ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "ĝizzal",
+    "n": "|GIŠ.TUG₂.PI.NU₁₁@90.SILA₃|",
+    "c": "𒄑",
+    "cp": "U+12111"
+   },
+   {
+    "k": "sign",
+    "r": "ĝizzal",
+    "n": "|GIŠ.TUG₂.PI.NU₁₁@90.SILA₃|",
+    "c": "𒌆",
+    "cp": "U+12306"
+   },
+   {
+    "k": "sign",
+    "r": "ĝizzal",
+    "n": "|GIŠ.TUG₂.PI.NU₁₁@90.SILA₃|",
+    "c": "𒉿",
+    "cp": "U+1227F"
+   },
+   {
+    "k": "sign",
+    "r": "ĝizzal",
+    "n": "|GIŠ.TUG₂.PI.NU₁₁@90.SILA₃|",
+    "c": "𒎓",
+    "cp": "U+12393"
+   },
+   {
+    "k": "sign",
+    "r": "ĝizzal",
+    "n": "|GIŠ.TUG₂.PI.NU₁₁@90.SILA₃|",
+    "c": "𒋡",
+    "cp": "U+122E1"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 20,
+  "etcsl": "šu-luḫ kug-ge ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "šu",
+    "n": "ŠU",
+    "c": "𒋗",
+    "cp": "U+122D7"
+   },
+   {
+    "k": "sign",
+    "r": "luḫ",
+    "n": "LUH",
+    "c": "𒈛",
+    "cp": "U+1221B"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "kug",
+    "n": "KU₃",
+    "c": "𒆬",
+    "cp": "U+121AC"
+   },
+   {
+    "k": "sign",
+    "r": "ge",
+    "n": "GI",
+    "c": "𒄀",
+    "cp": "U+12100"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 21,
+  "etcsl": "e2-X-ra ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "e2",
+    "n": "E₂",
+    "c": "𒂍",
+    "cp": "U+1208D"
+   },
+   {
+    "k": "illegible",
+    "r": "X"
+   },
+   {
+    "k": "sign",
+    "r": "ra",
+    "n": "RA",
+    "c": "𒊏",
+    "cp": "U+1228F"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 22,
+  "etcsl": "ne-mur dub ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "ne",
+    "n": "NE",
+    "c": "𒉈",
+    "cp": "U+12248"
+   },
+   {
+    "k": "sign",
+    "r": "mur",
+    "n": "|HI×AŠ₂|",
+    "c": "𒄯",
+    "cp": "U+1212F"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "dub",
+    "n": "DUB",
+    "c": "𒁾",
+    "cp": "U+1207E"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 23,
+  "etcsl": "ĝa2 udu ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "ĝa2",
+    "n": "GA₂",
+    "c": "𒂷",
+    "cp": "U+120B7"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "udu",
+    "n": "LU",
+    "c": "𒇻",
+    "cp": "U+121FB"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 24,
+  "etcsl": "ni2 teĝ3-ĝe26 ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "ni2",
+    "n": "NI₂",
+    "c": "𒉎",
+    "cp": "U+1224E"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "teĝ3",
+    "n": "TE",
+    "c": "𒋼",
+    "cp": "U+122FC"
+   },
+   {
+    "k": "sign",
+    "r": "ĝe26",
+    "n": "GA₂",
+    "c": "𒂷",
+    "cp": "U+120B7"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 25,
+  "etcsl": "niĝ2-me-ĝar ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "niĝ2",
+    "n": "GAR",
+    "c": "𒃻",
+    "cp": "U+120FB"
+   },
+   {
+    "k": "sign",
+    "r": "me",
+    "n": "ME",
+    "c": "𒈨",
+    "cp": "U+12228"
+   },
+   {
+    "k": "sign",
+    "r": "ĝar",
+    "n": "GAR",
+    "c": "𒃻",
+    "cp": "U+120FB"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 26,
+  "etcsl": "kur-ku ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "kur",
+    "n": "KUR",
+    "c": "𒆳",
+    "cp": "U+121B3"
+   },
+   {
+    "k": "sign",
+    "r": "ku",
+    "n": "KU",
+    "c": "𒆪",
+    "cp": "U+121AA"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 27,
+  "etcsl": "LUL zu2 sis ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "LUL",
+    "n": "LUL",
+    "c": "𒈜",
+    "cp": "U+1221C"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "zu2",
+    "n": "KA",
+    "c": "𒅗",
+    "cp": "U+12157"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "sis",
+    "n": "ŠEŠ",
+    "c": "𒋀",
+    "cp": "U+122C0"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 28,
+  "etcsl": "izi mu2-mu2 ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "izi",
+    "n": "NE",
+    "c": "𒉈",
+    "cp": "U+12248"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "mu2",
+    "n": "SAR",
+    "c": "𒊬",
+    "cp": "U+122AC"
+   },
+   {
+    "k": "sign",
+    "r": "mu2",
+    "n": "SAR",
+    "c": "𒊬",
+    "cp": "U+122AC"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 29,
+  "etcsl": "izi ten-ten ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "izi",
+    "n": "NE",
+    "c": "𒉈",
+    "cp": "U+12248"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ten",
+    "n": "TE",
+    "c": "𒋼",
+    "cp": "U+122FC"
+   },
+   {
+    "k": "sign",
+    "r": "ten",
+    "n": "TE",
+    "c": "𒋼",
+    "cp": "U+122FC"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 30,
+  "etcsl": "a2 kuš2-u3 ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "a2",
+    "n": "A₂",
+    "c": "𒀉",
+    "cp": "U+12009"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "kuš2",
+    "n": "SAG@g",
+    "c": "𒊨",
+    "cp": "U+122A8"
+   },
+   {
+    "k": "sign",
+    "r": "u3",
+    "n": "|IGI.DIB|",
+    "c": "𒅇",
+    "cp": "U+12147"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 31,
+  "etcsl": "KA.GAN2-ge ma-<an-šum2>",
+  "items": [
+   {
+    "k": "sign",
+    "r": "KA",
+    "n": "KA",
+    "c": "𒅗",
+    "cp": "U+12157"
+   },
+   {
+    "k": "sign",
+    "r": "GAN2",
+    "n": "GAN₂",
+    "c": "𒃷",
+    "cp": "U+120F7"
+   },
+   {
+    "k": "sign",
+    "r": "ge",
+    "n": "GI",
+    "c": "𒄀",
+    "cp": "U+12100"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   }
+  ]
+ },
+ {
+  "line": 32,
+  "etcsl": "im-[ri-a gu2] ĝar-ra [ma-an-šum2]",
+  "items": [
+   {
+    "k": "sign",
+    "r": "im",
+    "n": "IM",
+    "c": "𒅎",
+    "cp": "U+1214E"
+   },
+   {
+    "k": "broken",
+    "r": "ri",
+    "n": "RI",
+    "c": "𒊑",
+    "cp": "U+12291"
+   },
+   {
+    "k": "broken",
+    "r": "a",
+    "n": "A",
+    "c": "𒀀",
+    "cp": "U+12000"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "broken",
+    "r": "gu2",
+    "n": "GU₂",
+    "c": "𒄘",
+    "cp": "U+12118"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "ĝar",
+    "n": "GAR",
+    "c": "𒃻",
+    "cp": "U+120FB"
+   },
+   {
+    "k": "sign",
+    "r": "ra",
+    "n": "RA",
+    "c": "𒊏",
+    "cp": "U+1228F"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "broken",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   },
+   {
+    "k": "broken",
+    "r": "an",
+    "n": "AN",
+    "c": "𒀭",
+    "cp": "U+1202D"
+   },
+   {
+    "k": "broken",
+    "r": "šum2",
+    "n": "SUM",
+    "c": "𒋧",
+    "cp": "U+122E7"
+   }
+  ]
+ },
+ {
+  "line": 33,
+  "etcsl": "[lu-lu]-/bu\\-na [ma-an-šum2]",
+  "items": [
+   {
+    "k": "broken",
+    "r": "lu",
+    "n": "LU",
+    "c": "𒇻",
+    "cp": "U+121FB"
+   },
+   {
+    "k": "broken",
+    "r": "lu",
+    "n": "LU",
+    "c": "𒇻",
+    "cp": "U+121FB"
+   },
+   {
+    "k": "worn",
+    "r": "bu",
+    "n": "BU",
+    "c": "𒁍",
+    "cp": "U+1204D"
+   },
+   {
+    "k": "sign",
+    "r": "na",
+    "n": "NA",
+    "c": "𒈾",
+    "cp": "U+1223E"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "broken",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   },
+   {
+    "k": "broken",
+    "r": "an",
+    "n": "AN",
+    "c": "𒀭",
+    "cp": "U+1202D"
+   },
+   {
+    "k": "broken",
+    "r": "šum2",
+    "n": "SUM",
+    "c": "𒋧",
+    "cp": "U+122E7"
+   }
+  ]
+ },
+ {
+  "line": 34,
+  "etcsl": "du14 mu2-mu2 [ma-an-šum2]",
+  "items": [
+   {
+    "k": "sign",
+    "r": "du14",
+    "n": "|LU₂×NE|",
+    "c": "𒈌",
+    "cp": "U+1220C"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "mu2",
+    "n": "SAR",
+    "c": "𒊬",
+    "cp": "U+122AC"
+   },
+   {
+    "k": "sign",
+    "r": "mu2",
+    "n": "SAR",
+    "c": "𒊬",
+    "cp": "U+122AC"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "broken",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   },
+   {
+    "k": "broken",
+    "r": "an",
+    "n": "AN",
+    "c": "𒀭",
+    "cp": "U+1202D"
+   },
+   {
+    "k": "broken",
+    "r": "šum2",
+    "n": "SUM",
+    "c": "𒋧",
+    "cp": "U+122E7"
+   }
+  ]
+ },
+ {
+  "line": 35,
+  "etcsl": "u3-ma [ma-an-šum2]",
+  "items": [
+   {
+    "k": "sign",
+    "r": "u3",
+    "n": "|IGI.DIB|",
+    "c": "𒅇",
+    "cp": "U+12147"
+   },
+   {
+    "k": "sign",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "broken",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   },
+   {
+    "k": "broken",
+    "r": "an",
+    "n": "AN",
+    "c": "𒀭",
+    "cp": "U+1202D"
+   },
+   {
+    "k": "broken",
+    "r": "šum2",
+    "n": "SUM",
+    "c": "𒋧",
+    "cp": "U+122E7"
+   }
+  ]
+ },
+ {
+  "line": 36,
+  "etcsl": "ad gi4-[gi4 ma-an-šum2]",
+  "items": [
+   {
+    "k": "sign",
+    "r": "ad",
+    "n": "AD",
+    "c": "𒀜",
+    "cp": "U+1201C"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "sign",
+    "r": "gi4",
+    "n": "GI₄",
+    "c": "𒄄",
+    "cp": "U+12104"
+   },
+   {
+    "k": "broken",
+    "r": "gi4",
+    "n": "GI₄",
+    "c": "𒄄",
+    "cp": "U+12104"
+   },
+   {
+    "k": "space"
+   },
+   {
+    "k": "broken",
+    "r": "ma",
+    "n": "MA",
+    "c": "𒈠",
+    "cp": "U+12220"
+   },
+   {
+    "k": "broken",
+    "r": "an",
+    "n": "AN",
+    "c": "𒀭",
+    "cp": "U+1202D"
+   },
+   {
+    "k": "broken",
+    "r": "šum2",
+    "n": "SUM",
+    "c": "𒋧",
+    "cp": "U+122E7"
+   }
+  ]
+ }
+]

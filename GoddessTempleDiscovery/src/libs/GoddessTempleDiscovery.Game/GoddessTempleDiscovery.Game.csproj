@@ -17,7 +17,7 @@
     <!-- Every persisted value (settings, the last setup) goes through Settings/SettingsService over this add-in. -->
     <PackageReference Include="CodeBrix.Platform.AppSettings.ApacheLicenseForever" Version="1.0.281.314" />
     <!-- The Field Journal is a hand-placed document drawn straight onto XGraphics, card art as vector. -->
-    <PackageReference Include="CodeBrix.PdfDocuments.MitLicenseForever" Version="1.0.271.1182" />
+    <PackageReference Include="CodeBrix.PdfDocuments.MitLicenseForever" Version="1.0.285.692" />
   </ItemGroup>
 
   <ItemGroup>

@@ -40,6 +40,12 @@ public sealed class PintaCanvas : SKXamlCanvas, ICanvasView
 		PaintSurface += OnPaintSurface;
 		IsTabStop = true;
 
+		//A drawing surface opts out of the scroll viewer's touch panning, so a
+		//finger stroke reaches the tools even where the canvas can scroll
+		//(with the default System mode the scroll viewer takes the pointer
+		//after the first move and the stroke is lost).
+		ManipulationMode = ManipulationModes.All;
+
 		PointerPressed += OnCanvasPointerPressed;
 		PointerMoved += OnCanvasPointerMoved;
 		PointerReleased += OnCanvasPointerReleased;
@@ -138,8 +144,12 @@ public sealed class PintaCanvas : SKXamlCanvas, ICanvasView
 		SKCanvas canvas = e.Surface.Canvas;
 		canvas.Clear (SKColors.Transparent);
 
-		if (document is null || renderer is null)
+		if (document is null || renderer is null || ActualWidth <= 0 || ActualHeight <= 0)
 			return;
+
+		//The surface is physical pixels; draw in the element's logical space,
+		//the space the pointer input and the view size are measured in.
+		canvas.Scale (e.Info.Width / (float) ActualWidth, e.Info.Height / (float) ActualHeight);
 
 		Size imageSize = document.ImageSize;
 		Size viewSize = document.Workspace.ViewSize;

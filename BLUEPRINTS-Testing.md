@@ -256,8 +256,8 @@ public void TryCopyLatestFrame_returns_false_before_any_frame()
 `CodeBrixVideoTool` - these test projects carry the same two properties and
 the same comment. (`JustBetweenUs/tests/JustBetweenUs.Encryption.Tests` sets
 neither property explicitly.)
-`InannaRosette/tests/libs/InannaRosette.Reading.Tests/InannaRosette.Reading.Tests.csproj`
-and `InannaRosette/global.json`
+`InannaOctaquetra/tests/libs/InannaOctaquetra.Reading.Tests/InannaOctaquetra.Reading.Tests.csproj`
+and `InannaOctaquetra/global.json`
 (the runner selected once for the whole folder in `global.json` and again in the
 csproj, whose `AssemblyName` carries a comment pinning it to the exact name the
 library's `InternalsVisibleTo` grants)
@@ -420,7 +420,7 @@ internal static float[] TestAnchorsY => AnchorsY;
 `NotionDocumentCreator`, `KenneyAssetBrowser`, `CodeBrixVideoTool`,
 `PolyHavenBrowser` (where it is also what lets a test reach the client factory's
 internal constructor).
-`InannaRosette/src/libs/InannaRosette.Reading/InternalsVisibleTo.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/InternalsVisibleTo.cs`
 (its own file at the library root holding nothing but the attribute, which is
 what makes the interpretation templates, the page-flow cursor and the PDF palette
 testable while they stay off the public surface)
@@ -1067,7 +1067,7 @@ public async Task Compose_and_render_fixture_offline_produces_multipage_pdf()
 `WikipediaPublisher/Tests/WikipediaPublisher.RenderArticle.Tests/Services/ArticleRenderServiceTests.cs`
 
 **Also shown by.**
-`InannaRosette/tests/libs/InannaRosette.Reading.Tests/PdfReportBuilderTests.cs`
+`InannaOctaquetra/tests/libs/InannaOctaquetra.Reading.Tests/PdfReportBuilderTests.cs`
 (the `%PDF-` signature, a plausible lower bound on length, `/Font` and `/Page`
 present and the embedded typeface name found in the bytes - plus the comparative
 assertions that a fuller reading produces a longer document than a single-card
@@ -2747,7 +2747,7 @@ public void AddRenderArticle_registers_the_article_render_service_as_a_singleton
 `WikipediaPublisher/WikipediaPublisher.RenderArticle/RegisterServices.cs`
 
 **Also shown by.**
-`InannaRosette/tests/libs/InannaRosette.Reading.Tests/RegisterServicesTests.cs`
+`InannaOctaquetra/tests/libs/InannaOctaquetra.Reading.Tests/RegisterServicesTests.cs`
 (a real `ServiceCollection` and provider asserting that all three services
 resolve, that they resolve to the concrete types the library ships, that each is
 a singleton, and that calling the extension twice neither duplicates a
@@ -2879,22 +2879,22 @@ parameters, so the rest stays constant.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/tests/libs/InannaRosette.Reading.Tests/TestData.cs
+// From CodeBrix.Samples/InannaOctaquetra/tests/libs/InannaOctaquetra.Reading.Tests/TestData.cs
 internal static class TestData
 {
     /// <summary>A fixed timestamp, so file names and serialized documents are reproducible.</summary>
     public static readonly DateTime Created = new(2026, 9, 13, 10, 30, 0, DateTimeKind.Unspecified);
 
-    /// <summary>The nine card ids used for the "full rosette" fixture, station 0 first.</summary>
-    public static readonly int[] FullRosetteCardIds = [1, 2, 7, 12, 25, 30, 33, 18, 40];
+    /// <summary>The nine card ids used for the "full Octaquetra" fixture, station 0 first.</summary>
+    public static readonly int[] FullOctaquetraCardIds = [1, 2, 7, 12, 25, 30, 33, 18, 40];
 
-    /// <summary>The stations that are laid reversed in the "full rosette" fixture.</summary>
-    public static readonly int[] FullRosetteReversedStations = [2, 5, 8];
+    /// <summary>The stations that are laid reversed in the "full Octaquetra" fixture.</summary>
+    public static readonly int[] FullOctaquetraReversedStations = [2, 5, 8];
 
     /// <summary>Builds one placement from a station index, a card id and an orientation.</summary>
     public static PlacedCard Place(int positionIndex, int cardId, bool reversed = false)
     {
-        var position = RosetteSpread.At(positionIndex)
+        var position = OctaquetraSpread.At(positionIndex)
             ?? throw new ArgumentOutOfRangeException(nameof(positionIndex));
         var card = DeckData.ById(cardId)
             ?? throw new ArgumentOutOfRangeException(nameof(cardId));
@@ -2902,18 +2902,18 @@ internal static class TestData
     }
 
     /// <summary>An empty reading with a querent and a question but no cards.</summary>
-    public static RosetteReading EmptyReading(string querent = "Jeremy", string question = "What should I attend to?") =>
+    public static OctaquetraReading EmptyReading(string querent = "Jeremy", string question = "What should I attend to?") =>
         new() { Created = Created, Querent = querent, Question = question };
 
     /// <summary>All nine stations filled, three of them reversed. Always the same cards.</summary>
-    public static RosetteReading FullReading(
+    public static OctaquetraReading FullReading(
         string querent = "Jeremy",
         string question = "What should I attend to this season?")
     {
         var reading = EmptyReading(querent, question);
         for (var i = 0; i < 9; i++)
         {
-            reading.Placements.Add(Place(i, FullRosetteCardIds[i], FullRosetteReversedStations.Contains(i)));
+            reading.Placements.Add(Place(i, FullOctaquetraCardIds[i], FullOctaquetraReversedStations.Contains(i)));
         }
         return reading;
     }
@@ -2925,7 +2925,7 @@ Because the day is a constant, the file name the report suggests is a value the
 test can write down in full:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/tests/libs/InannaRosette.Reading.Tests/PdfReportBuilderTests.cs
+// From CodeBrix.Samples/InannaOctaquetra/tests/libs/InannaOctaquetra.Reading.Tests/PdfReportBuilderTests.cs
     [Fact]
     public void SuggestedFileName_names_the_querent_and_the_day()
     {
@@ -2936,7 +2936,7 @@ test can write down in full:
         var name = TestData.Builder().SuggestedFileName(interpretation);
 
         //Assert
-        name.Should().Be("Rosette-Reading-Jeremy-2026-09-13.pdf");
+        name.Should().Be("Octaquetra-Reading-Jeremy-2026-09-13.pdf");
     }
 ```
 
@@ -2944,7 +2944,7 @@ And because the cards are constants, so is every sentence written from them -
 the closing line character for character, and the heading each station gets:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/tests/libs/InannaRosette.Reading.Tests/ReadingInterpreterTests.cs
+// From CodeBrix.Samples/InannaOctaquetra/tests/libs/InannaOctaquetra.Reading.Tests/ReadingInterpreterTests.cs
     [Fact]
     public void a_full_reading_ends_with_the_closing_blessing()
     {
@@ -2976,8 +2976,8 @@ generated document - so no test file writes its own scanner and every test
 compares the same way.
 
 **Where to look.**
-`InannaRosette/tests/libs/InannaRosette.Reading.Tests/TestData.cs`
-`InannaRosette/tests/libs/InannaRosette.Reading.Tests/ReadingInterpreterTests.cs`,
+`InannaOctaquetra/tests/libs/InannaOctaquetra.Reading.Tests/TestData.cs`
+`InannaOctaquetra/tests/libs/InannaOctaquetra.Reading.Tests/ReadingInterpreterTests.cs`,
 `ReadingSerializerTests.cs` (whose `HandWritten` constant is the same idea for a
 document arriving from outside: a literal JSON document with the same fixed ids,
 positions and timestamp) and
@@ -3023,7 +3023,7 @@ it is for the self-test.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/SvgPathToPdf.cs
     /// <summary>
     /// Parses <paramref name="pathData"/> and reports the number of drawing segments produced.
     /// Throws <see cref="FormatException"/> on malformed input; used by the self-test.
@@ -3050,7 +3050,7 @@ coordinates, because the real one hands them to a graphics type that would accep
 a `NaN` and produce a silently empty figure:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/SvgPathToPdf.cs
     private sealed class SegmentCounter : ISink
     {
         public int Segments { get; private set; }
@@ -3089,7 +3089,7 @@ number of curves, a degenerate arc becomes a line, an arc that goes nowhere
 becomes nothing, and two spellings of the same figure have to agree:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/tests/libs/InannaRosette.Reading.Tests/SvgPathToPdfTests.cs
+// From CodeBrix.Samples/InannaOctaquetra/tests/libs/InannaOctaquetra.Reading.Tests/SvgPathToPdfTests.cs
     [Fact]
     public void a_half_circle_arc_is_emitted_as_two_quarter_turns()
     {
@@ -3118,7 +3118,7 @@ The refusals are a table, and each row names the fragment of the message the
 parser has to produce, so a rewrite that starts accepting nonsense fails loudly:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/tests/libs/InannaRosette.Reading.Tests/SvgPathToPdfTests.cs
+// From CodeBrix.Samples/InannaOctaquetra/tests/libs/InannaOctaquetra.Reading.Tests/SvgPathToPdfTests.cs
     [Theory]
     [InlineData("!!!", "must begin with a command")]
     [InlineData("hello", "must begin with a move-to")]
@@ -3145,9 +3145,9 @@ corpus of art in two tests: every layer of every emblem, and every layer of the
 shared ornaments, parsed and required to produce at least one segment.
 
 **Where to look.**
-`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/SvgPathToPdf.cs`
 (`CountSegments`, `ISink`, `Builder` and `SegmentCounter`)
-`InannaRosette/tests/libs/InannaRosette.Reading.Tests/SvgPathToPdfTests.cs`
+`InannaOctaquetra/tests/libs/InannaOctaquetra.Reading.Tests/SvgPathToPdfTests.cs`
 
 **Sharp edges.**
 - Count the segments the sink is asked for, not the objects the graphics type

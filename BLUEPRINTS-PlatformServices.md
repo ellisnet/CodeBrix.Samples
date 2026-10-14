@@ -146,7 +146,7 @@ anchors to:
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs`,
 `WebcamPainter/src/WebcamPainter.UI/Views/MainPage.xaml.cs`,
 `WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml.cs`,
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs`
 (`(DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot)` wired from
 `DataContextChanged`, in an application that then routes its own dialogs through
 a bridge so it can style them - the wiring is there so the `SimpleViewModel`
@@ -405,7 +405,7 @@ that satisfy it (Skia, WinUI 3, WPF),
 `PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs` (the
 picker call kept in the view model behind a private static method, with
 `NotSupportedException` caught specifically),
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs`
 (`PickSavePathAsync(suggestedFileName, typeName, extension)` as a static method
 on the page, filled into `IReadingFileBridge`; the view model composes the report
 bytes before it asks where to put them, so a report that fails to compose never
@@ -597,7 +597,7 @@ DataContextChanged += (_, _) =>
 `PdfSideBySide/src/PdfSideBySide.LinuxFrameBuffer/Program.cs`
 
 **Also shown by.**
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs`
 (`PickReadingPathAsync`, a `FileOpenPicker` filtered to `.json`, reached through a
 settable `Func<Task<string?>>` that a head with no dialog simply leaves null)
 
@@ -713,7 +713,7 @@ send every download to a literally named `My%20Models`),
 library and the WinUI head only - the WPF head does not link it, because a WPF
 `SaveFileDialog` already returns a plain path),
 `WebcamPainter/src/WebcamPainter.Core/Helpers/FileDialogHelper.cs`,
-`InannaRosette/src/InannaRosette.Core/Helpers/FileDialogHelper.cs`
+`InannaOctaquetra/src/InannaOctaquetra.Core/Helpers/FileDialogHelper.cs`
 (`ToFileSystemPath` unescapes only when the text really carries a `%` followed by
 two hex digits, so a name like "100% done.pdf" is left alone and a plain path
 from a Win32 dialog passes through untouched, and `RemoveEmptyPlaceholder`
@@ -1167,7 +1167,7 @@ rows.Add(new IssueRowViewModel(item, palette, _showAssignees, now, OpenUrlAsync)
 `GitHubIssueFinder/src/GitHubIssueFinder.Core/ViewModels/RepositoryGroupViewModel.cs`
 
 **Also shown by.**
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs`
 (`DoOpenSavedReport` handles both of `LaunchUriAsync`'s failure modes - a false
 return and a throw - in the one place the application asks the host to open
 anything, and the button that runs it lives on a page-built dialog)
@@ -2693,8 +2693,8 @@ if (DataContext is MainViewModel viewModel)
 `WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml.cs`
 (the browser wiring reaches the view model through `IWebViewBridge` and stops
 there),
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs` and
-`InannaRosette/src/InannaRosette.Core/Services/IReadingTableBridge.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs` and
+`InannaOctaquetra/src/InannaOctaquetra.Core/Services/IReadingTableBridge.cs`
 (one `DataContextChanged` handler that tests the data context against three
 bridge interfaces and `IXamlRootGetter` in turn rather than casting once to the
 view model, so each capability is independently absent-able and the page names no
@@ -3203,7 +3203,7 @@ show a dialog is a documented case rather than a crash.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/Services/IReadingDialogBridge.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/Services/IReadingDialogBridge.cs
 /// <summary>
 /// The dialogs this application asks for by name. <c>SimpleViewModel</c>'s own
 /// <c>ConfirmDialog</c> and <c>ShowError</c> helpers would do the job, but the temple styling —
@@ -3237,7 +3237,7 @@ a failure into a documented answer rather than an exception crossing back into t
 view model:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs
 private async Task<bool> ConfirmAsync(string title, string message, string primary)
 {
     try
@@ -3268,7 +3268,7 @@ the page does not act - the button runs the view model's command, so deciding to
 hand a file to the operating system stays a view-model decision.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs
 private async Task ShowReportSavedAsync(string path)
 {
     var stack = new StackPanel { Spacing = 12, Width = 430 };
@@ -3290,7 +3290,7 @@ private async Task ShowReportSavedAsync(string path)
 Every call goes through a helper that states the null policy once:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs
 //A head with no dialog cannot ask, so the answer is yes - exactly what the page's own
 //  dialog did when ContentDialog.ShowAsync threw
 private async Task<bool> Confirm(string title, string message, string primary)
@@ -3325,11 +3325,11 @@ private async Task<string?> PickSavePath(string suggestedFileName, string typeNa
 ```
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.Core/Services/IReadingDialogBridge.cs` and
+`InannaOctaquetra/src/InannaOctaquetra.Core/Services/IReadingDialogBridge.cs` and
 `IReadingFileBridge.cs`
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs` (the region
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs` (the region
 "Head-capability bridges")
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs` (`ConfirmAsync`,
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs` (`ConfirmAsync`,
 `ShowMessageAsync`, `ShowReportSavedAsync`)
 
 **Sharp edges.**

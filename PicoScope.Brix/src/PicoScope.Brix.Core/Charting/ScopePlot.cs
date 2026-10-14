@@ -23,7 +23,7 @@ namespace PicoScope.Brix.Charting;
 /// <para>
 /// <b>Threading.</b> A <see cref="PlotModel"/> is not thread-safe, and streaming
 /// callbacks do not arrive on the UI thread. Every method here therefore
-/// mutates the model under <see cref="PlotModel.SyncRoot"/> and only then
+/// mutates the model under <see cref="CodeBrix.Plotter.Model.SyncRoot"/> and only then
 /// calls <see cref="PlotModel.InvalidatePlot"/>. The PlotterView control renders
 /// under that same lock and accepts the invalidation from any thread, so
 /// callers may use this class from whichever thread their data arrives on.

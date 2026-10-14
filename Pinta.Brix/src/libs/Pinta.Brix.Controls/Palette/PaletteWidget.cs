@@ -76,6 +76,13 @@ public sealed class PaletteWidget : SKXamlCanvas
 		SKCanvas canvas = e.Surface.Canvas;
 		canvas.Clear (SKColors.Transparent);
 
+		if (ActualWidth <= 0 || ActualHeight <= 0)
+			return;
+
+		//The surface is physical pixels; draw in the element's logical space,
+		//the space the swatch hit-testing uses.
+		canvas.Scale (e.Info.Width / (float) ActualWidth, e.Info.Height / (float) ActualHeight);
+
 		PaletteManager palette = PintaCore.Palette;
 
 		DrawSwatch (canvas, SecondaryRect, palette.SecondaryColor);

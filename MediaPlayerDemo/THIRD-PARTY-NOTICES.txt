@@ -12,6 +12,27 @@ not reproduced here. That includes the LibVLC native library package the
 Windows heads reference for the CodeBrix.Platform.MediaPlayer add-in.
 
 ------------------------------------------------------------------------
+Android head  (src/MediaPlayerDemo.Android)
+------------------------------------------------------------------------
+The Android head contains no third-party files of its own. Its build brings
+in, as NuGet packages, the following third-party code that ends up inside the
+Android application package:
+
+  - Material Components for Android and the AndroidX libraries (Google), in
+    their .NET bindings (Xamarin.Google.Android.Material, Xamarin.AndroidX.*),
+    licensed under the Apache License, Version 2.0. They arrive through the
+    CodeBrix.Android package, which draws every control with them.
+
+  - AndroidX Media3 ExoPlayer (Google), in its .NET binding
+    (Xamarin.AndroidX.Media3.ExoPlayer), licensed under the Apache License,
+    Version 2.0. It arrives through CodeBrix.Android.MediaPlayer and plays
+    the media on the device.
+
+Each of those packages carries its own license and notices, and the
+CodeBrix.Android packages ship their own THIRD-PARTY-NOTICES.txt; they are
+not reproduced here.
+
+------------------------------------------------------------------------
 User media (opened at run time)
 ------------------------------------------------------------------------
 The application plays media files the user selects. The rights to that

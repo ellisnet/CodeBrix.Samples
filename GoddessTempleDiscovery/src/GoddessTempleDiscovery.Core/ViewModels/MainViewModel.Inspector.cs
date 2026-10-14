@@ -1,5 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using CodeBrix.Platform.Simple;
@@ -11,6 +13,11 @@ namespace GoddessTempleDiscovery.ViewModels;
 
 public partial class MainViewModel
 {
+    //A countdown shorter than this closes too soon for a bar to be worth showing
+    private const double CountdownBarMinimumSeconds = 3;
+
+    private int _countdownToken;
+
     #region | The inspector: a page of the Warka Herald |
 
     /// <summary>True while the inspector is open.</summary>
@@ -131,6 +138,36 @@ public partial class MainViewModel
     /// <summary>Closes the inspector.</summary>
     public SimpleCommand CloseInspectorCommand => field ??= new SimpleCommand(CloseInspector);
 
+    /// <summary>True while the open page is counting down to closing by itself.</summary>
+    [AffectsProperties(nameof(KeepReadingVisibility), nameof(CountdownVisibility))]
+    public bool IsInspectorCountingDown { get => field; private set => SetProperty(ref field, value); }
+
+    /// <summary>The seconds the open page was given to close by itself.</summary>
+    public double InspectorCountdownSeconds
+    {
+        get;
+        private set => SetDouble(ref field, value, nameof(InspectorCountdownSeconds), nameof(CountdownVisibility));
+    }
+
+    /// <summary>The time left before the page closes by itself, from 100 (all of it) down to 0.</summary>
+    public double InspectorCountdownPercent
+    {
+        get;
+        private set => SetDouble(ref field, value, nameof(InspectorCountdownPercent));
+    }
+
+    /// <summary>"Closes by itself in 23 seconds".</summary>
+    public string InspectorCountdownText { get => field; private set => SetProperty(ref field, value ?? string.Empty); } = string.Empty;
+
+    /// <summary>The KEEP READING button, while the page counts down.</summary>
+    public Visibility KeepReadingVisibility => GetVisibility(IsInspectorCountingDown);
+
+    /// <summary>The countdown bar, while the page counts down from 3 seconds or more.</summary>
+    public Visibility CountdownVisibility => GetVisibility(IsInspectorCountingDown && InspectorCountdownSeconds >= CountdownBarMinimumSeconds);
+
+    /// <summary>Stops the open page from closing by itself: it stays until it is closed.</summary>
+    public SimpleCommand KeepReadingCommand => field ??= new SimpleCommand(KeepReading);
+
     /// <inheritdoc />
     public void ShowCard(CardView card)
     {
@@ -140,6 +177,7 @@ public partial class MainViewModel
         }
 
         var token = ++_inspectorToken;
+        StopCountdown();
         InspectorKind = card.Kind;
         InspectorHeadline = card.Headline;
         InspectorSubHead = card.SubHead;
@@ -181,6 +219,7 @@ public partial class MainViewModel
     private void CloseInspector()
     {
         _inspectorToken++;
+        StopCountdown();
         if (IsInspectorOpen)
         {
             IsInspectorOpen = false;
@@ -200,19 +239,73 @@ public partial class MainViewModel
         }
     }
 
-    //Closes by itself after the given seconds unless the pointer rests on it (then it waits until the pointer leaves)
-    private async Task AutoCloseAsync(int token, double seconds)
+    //SimpleViewModel's SetProperty has no double overload: set, then name the property and what depends on it
+    private void SetDouble(ref double field, double value, params string[] names)
     {
-        await Task.Delay(TimeSpan.FromSeconds(seconds));
-        while (_pointerOverInspector && token == _inspectorToken)
+        if (field.Equals(value))
         {
-            await Task.Delay(500);
+            return;
         }
 
-        if (token == _inspectorToken)
+        field = value;
+        foreach (var name in names)
+        {
+            NotifyPropertyChanged(name);
+        }
+    }
+
+    private void KeepReading()
+    {
+        if (!IsInspectorCountingDown)
+        {
+            return;
+        }
+
+        StopCountdown();
+        Host?.NotifyInspectorKept();
+    }
+
+    private void StopCountdown()
+    {
+        _countdownToken++;
+        IsInspectorCountingDown = false;
+    }
+
+    //Closes by itself after the given seconds, the bar emptying as the time runs out, unless KEEP READING stops it; when
+    //  the time is up while the pointer rests on the page, it waits until the pointer leaves
+    private async Task AutoCloseAsync(int token, double seconds)
+    {
+        var countdown = ++_countdownToken;
+        InspectorCountdownSeconds = seconds;
+        InspectorCountdownPercent = 100;
+        InspectorCountdownText = CountdownText(seconds);
+        IsInspectorCountingDown = true;
+        var clock = Stopwatch.StartNew();
+        while (token == _inspectorToken && countdown == _countdownToken)
+        {
+            var left = Math.Max(0, seconds - clock.Elapsed.TotalSeconds);
+            InspectorCountdownPercent = 100 * left / seconds;
+            InspectorCountdownText = CountdownText(left);
+            if (left <= 0 && !_pointerOverInspector)
+            {
+                break;
+            }
+
+            await Task.Delay(100);
+        }
+
+        if (token == _inspectorToken && countdown == _countdownToken)
         {
             CloseInspector();
         }
+    }
+
+    private static string CountdownText(double secondsLeft)
+    {
+        var whole = (int)Math.Ceiling(secondsLeft);
+        return whole <= 0
+            ? "Closes when the pointer leaves the page"
+            : string.Format(CultureInfo.InvariantCulture, "Closes by itself in {0} second{1}", whole, whole == 1 ? string.Empty : "s");
     }
 
     #endregion

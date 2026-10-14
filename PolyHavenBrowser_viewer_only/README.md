@@ -1,7 +1,7 @@
 # PolyHavenBrowser_viewer_only
 
-PolyHavenBrowser_viewer_only is a single-page CodeBrix.Platform application that shows three
-fixed sample assets from Poly Haven, one at a time, on one shared Skia canvas: a PBR texture
+PolyHavenBrowser_viewer_only is a single-page CodeBrix.Platform application, for the desktop and
+Android, that shows three fixed sample assets from Poly Haven, one at a time, on one shared Skia canvas: a PBR texture
 (wrapped on a lit, orbitable cube over a darkened backdrop of the same texture), an HDRI
 environment (an interactive drag-to-look equirectangular panorama), and a glTF 3D model. Three
 buttons across the top switch modes and the active one carries the accent style. Beside them a
@@ -164,7 +164,7 @@ whole Poly Haven library instead of three curated samples.
 ## Building, running and testing
 
 There is one solution, `PolyHavenBrowser.slnx`, and it opens on Linux, macOS and Windows. It
-holds the shared UI project, the Core library, all six heads, and, under the solution folders
+holds the shared UI project, the Core library, all six desktop heads and the Android head, and, under the solution folders
 `Libraries/` and `Tests/`, the two side libraries, their test projects and the PlayTests UI suite. This is a pure
 CodeBrix.Platform application: there are no native WinUI 3, WPF or .NET MAUI heads, so there is
 no second Windows-only solution.
@@ -177,13 +177,23 @@ no second Windows-only solution.
 | `src/PolyHavenBrowser.LinuxWayland` | Linux desktop, native Wayland |
 | `src/PolyHavenBrowser.LinuxFrameBuffer` | Linux framebuffer |
 | `src/PolyHavenBrowser.MacOS` | macOS |
+| `src/PolyHavenBrowser.Android` | Android phones, tablets and Android laptops |
+
+The desktop heads target `net10.0`. The Android head targets `net10.0-android36.1`, builds on any
+of the three operating systems, and runs on Android 13 (API level 33) and later.
+`PolyHavenBrowser.Core` and `PolyHavenBrowser.Rendering` build for both target frameworks, so a
+single change to either reaches every head.
 
 Prerequisites:
 
-- The .NET 10 SDK. Every project targets `net10.0`; the WinWpfSkia head targets `net10.0-windows`
-  and sets `EnableWindowsTargeting`, so the whole solution still restores and builds on Linux and
-  macOS.
-- No workloads, accounts or API tokens. The Poly Haven API is public; the client sends a
+- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). The workload is
+  needed for every build of this application, a desktop-only build and the test runs included,
+  because the Core library and the rendering library also build for Android. The WinWpfSkia head
+  targets `net10.0-windows` and sets `EnableWindowsTargeting`, so the whole solution still restores
+  and builds on Linux and macOS.
+- For the Android head, which a build of the whole solution includes, the Android SDK; to run it,
+  an Android device or emulator reachable with `adb`.
+- No accounts or API tokens. The Poly Haven API is public; the client sends a
   User-Agent that identifies the application, which Poly Haven asks consumers to do, and it is
   configured in `src/PolyHavenBrowser.Core/RegisterServices.cs`.
 - Network access the first time each of the three samples is opened. After that the cached copy
@@ -192,14 +202,34 @@ Prerequisites:
   on every head, because Graphics3DGL resolves the head's own native GL machinery (WGL on the
   Windows heads, GLX on X11, EGL on Wayland and the framebuffer head, OpenGL ES through ANGLE
   on macOS). Vulkan additionally needs a Vulkan loader and driver, and is offered only on the LinuxX11,
-  LinuxWayland, Win32Skia and WinWpfSkia heads. Metal is offered only on macOS. The HDRI mode
-  needs no GPU at all.
+  LinuxWayland, Win32Skia and WinWpfSkia heads. Metal is offered only on macOS. On Android the
+  OpenGL engine renders through OpenGL ES, and Vulkan is not available: the Vulkan renderer is not
+  built for Android, so the dropdown answers a Vulkan pick (or a Metal one) with its "not available
+  on this platform" alert. The HDRI mode needs no GPU at all.
 
 Run one head from the application folder:
 
 ```bash
 dotnet run --project src/PolyHavenBrowser.LinuxX11
 ```
+
+Build the Android head, and install it on a device or emulator. The install target needs the
+device's runtime identifier on the command line - `android-arm64` for most phones and tablets,
+`android-x64` for an emulator or an x86-64 Android laptop - and it works per project, not on the
+solution. Add `-p:AdbTarget="-s <serial>"` when more than one device is attached:
+
+```bash
+dotnet build src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj -c Release
+dotnet build src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj -c Debug -t:Install -p:RuntimeIdentifier=android-x64
+dotnet build src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj -c Release -t:Install -p:RuntimeIdentifier=android-arm64
+```
+
+A Release build is trimmed and produces an installable `.apk` under
+`src/PolyHavenBrowser.Android/bin/Release/net10.0-android36.1/`. A Debug build installs with fast
+deployment, so install it with the `Install` target rather than copying its `.apk` to the device.
+The Android package name is `com.codebrix.samples.polyhavenviewer` and the launcher shows
+"PolyHavenBrowser Viewer", so the application installs beside the
+[PolyHavenBrowser](../PolyHavenBrowser/README.md) catalog application rather than replacing it.
 
 | Test project | Covers |
 | --- | --- |
@@ -272,6 +302,8 @@ PolyHavenBrowser_viewer_only/
     PolyHavenBrowser.LinuxWayland/         }  PolyHavenBrowser.Core, and adds exactly one
     PolyHavenBrowser.LinuxFrameBuffer/     }  CodeBrix.Platform Skia runtime package
     PolyHavenBrowser.MacOS/                }
+    PolyHavenBrowser.Android/              Head: the Android application and activity, the manifest,
+                                             one runtime package
     libs/
       PolyHavenBrowser.PolyHavenApiClient/ Typed REST client for the Poly Haven API
         Models/                            Asset, author, file tree, file reference, progress
@@ -309,6 +341,20 @@ assembly. The two side libraries enable `Nullable`, `ImplicitUsings` and
 `GenerateDocumentationFile`, which the heads and Core do not, and the rendering library adds
 `AllowUnsafeBlocks` for its pixel and interop code.
 
+`PolyHavenBrowser.Core` and `PolyHavenBrowser.Rendering` build for two target frameworks. The
+`net10.0` build references the CodeBrix.Platform packages and serves the desktop heads; the
+`net10.0-android36.1` build references their CodeBrix.Android counterparts and serves the Android
+head. The choice is made by a target-framework condition on each package group in the project
+file. The Android build leaves out what has no Android form: the rendering library's
+`Vulkan/VulkanSceneRenderer.cs`, `Vulkan/VulkanShaders.cs` and `Images/ExrDecoder.cs`, with the
+Silk.NET.Vulkan and TinyEXR.NET packages they need, and Core's `Display/VulkanModelRenderEngine.cs`.
+Two short `#if HAS_CODEBRIX_ANDROID` sections cover the rest: the Vulkan case of
+`ModelRenderEngineSelector.Create`, and the `.exr` branches of `TextureImageLoader`, which report
+OpenEXR as not supported on Android. `PolyHavenBrowser.PolyHavenApiClient` holds no UI types and
+references no CodeBrix package, so it stays `net10.0` and the Android head uses it as it is. The
+Android head adds no code of its own beyond its application and activity classes; `App.xaml`,
+`MainPage.xaml` and the view model run unchanged.
+
 ## CodeBrix libraries and add-ins used
 
 | Library or add-in | What it does in this application | Where |
@@ -320,6 +366,7 @@ assembly. The two side libraries enable `Nullable`, `ImplicitUsings` and
 | CodeBrix.Platform Fonts (Roboto) | The bundled application font, set as the default text font family and also exposed as a `FontFamily` resource | `src/PolyHavenBrowser.UI/App.xaml`, `src/PolyHavenBrowser.UI/App.xaml.cs` |
 | CodeBrix.Graphics3D.Gltf2 | Reads `.gltf` and `.glb`, walks the node tree, and exposes material channels including `Transmission`; its builders make in-memory `.glb` fixtures in the tests | `src/libs/PolyHavenBrowser.Rendering/Models/GltfModelLoader.cs`, `tests/libs/PolyHavenBrowser.Rendering.Tests/TestData/TestAssets.cs` |
 | CodeBrix.Imaging | Decodes the downloaded JPEG, PNG and WebP maps and glTF embedded textures to `SKBitmap` or raw RGBA | `src/libs/PolyHavenBrowser.Rendering/Images/LdrImageDecoder.cs` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the SkiaSharp Views and Graphics3DGL add-ins; the Android head and the Android builds of Core and the rendering library reference these instead of the CodeBrix.Platform packages | `src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj`, `src/PolyHavenBrowser.Core/PolyHavenBrowser.Core.csproj`, `src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.csproj` |
 | CodeBrix.TestMocks | `Mock<T>` doubles for `IModelLoader`, `IModelSceneRenderer`, `IPolyHavenApiClient` and its factory | `tests/libs/PolyHavenBrowser.Rendering.Tests/Mocked/`, `tests/libs/PolyHavenBrowser.PolyHavenApiClient.Tests/Mocked/` |
 | SilverAssertions | The assertion style in both test projects | both projects under `tests/libs/` |
 
@@ -327,8 +374,8 @@ Third-party libraries:
 
 | Library | What it does in this application | Where |
 | --- | --- | --- |
-| Silk.NET.Vulkan | The whole Vulkan backend: instance, device, off-screen images, pipelines and readback | `src/libs/PolyHavenBrowser.Rendering/Vulkan/VulkanSceneRenderer.cs` |
-| TinyEXR.NET | Decodes OpenEXR images to linear floats | `src/libs/PolyHavenBrowser.Rendering/Images/ExrDecoder.cs` |
+| Silk.NET.Vulkan | The whole Vulkan backend: instance, device, off-screen images, pipelines and readback (desktop builds only) | `src/libs/PolyHavenBrowser.Rendering/Vulkan/VulkanSceneRenderer.cs` |
+| TinyEXR.NET | Decodes OpenEXR images to linear floats (desktop builds only) | `src/libs/PolyHavenBrowser.Rendering/Images/ExrDecoder.cs` |
 | SkiaSharp | The `SKBitmap`, `SKImage` and `SKCanvas` types the painters, decoders and tone mapper work in | throughout `src/PolyHavenBrowser.Core/Display/` and `src/libs/PolyHavenBrowser.Rendering/` |
 | Microsoft.Extensions.Http, Hosting and Logging.Console | `IHttpClientFactory` for the API client, the generic host behind `SimpleServiceResolver`, and console logging in Debug builds | `src/libs/PolyHavenBrowser.PolyHavenApiClient/PolyHavenServiceCollectionExtensions.cs`, `src/PolyHavenBrowser.Core/Helpers/HostHelper.cs`, `src/PolyHavenBrowser.UI/App.xaml.cs` |
 
@@ -415,7 +462,9 @@ CodeBrix.Platform Skia runtime assembly, so a one-time `Lazy<PlatformHead>` scan
 assemblies classifies the head by assembly-name prefix, and the library needs no reference to any
 head project. Prefix matching is used so a head's satellite assemblies still classify correctly,
 and anything unrecognized classifies as `Unknown` and is conservatively unsupported, which is also
-what a unit-test host is; there is a test asserting exactly that. `MetalPlatformSupport` forwards
+what a unit-test host is; there is a test asserting exactly that. The Android head loads no
+CodeBrix.Platform Skia runtime either, so it classifies as `Unknown` too, and both Vulkan and
+Metal report "not available" there. `MetalPlatformSupport` forwards
 to the same detection rather than duplicating it. The one caveat is that the scan relies on the
 runtime assembly already being loaded, which holds by the time any UI runs but not in a static
 initializer that runs before the host is built.

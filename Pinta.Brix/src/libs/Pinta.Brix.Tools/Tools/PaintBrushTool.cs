@@ -40,7 +40,7 @@ public sealed class PaintBrushTool : BaseBrushTool
 
 	private BasePaintBrush? default_brush;
 	private BasePaintBrush? active_brush;
-	private PointI? last_point = PointI.Zero;
+	private PointI? last_point = null;
 	private System.IDisposable? open_repeating_draw_id;
 	private ToolBarContainer brush_specific_options_box;
 
@@ -114,6 +114,12 @@ public sealed class PaintBrushTool : BaseBrushTool
 	{
 		document.Layers.ToolLayer.Clear ();
 		document.Layers.ToolLayer.Hidden = false;
+
+		//A stroke starts at the pressed point. Touch and pen input send no hover
+		//moves between strokes, so the previous stroke's last point is cleared here
+		//(otherwise the new stroke is joined to where the last one ended).
+		if (mouse_button == MouseButton.None)
+			last_point = null;
 
 		base.OnMouseDown (document, e);
 

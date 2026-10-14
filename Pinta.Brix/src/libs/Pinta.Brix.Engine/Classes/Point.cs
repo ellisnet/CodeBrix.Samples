@@ -26,7 +26,7 @@
 
 using System;
 
-/// Replacements for Cairo / GDK points that GtkSharp provided in the GTK3 build.
+// Replacements for Cairo / GDK points that GtkSharp provided in the GTK3 build.
 //was previously: namespace Pinta.Core;
 namespace Pinta.Brix.Engine;
 

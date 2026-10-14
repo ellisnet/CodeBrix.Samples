@@ -1,6 +1,7 @@
 # PicoScope.Brix
 
-PicoScope.Brix is a one-page oscilloscope front end. The window carries a
+PicoScope.Brix is a one-page oscilloscope front end for the desktop and
+Android. The window carries a
 header naming the attached device and its discovered capabilities, a row of
 acquisition controls (single capture, start and stop streaming, a voltage-range
 picker and two channel-visibility checkboxes), a row of signal-generator
@@ -70,8 +71,8 @@ several places that the code names and handles.
 - The one-handler code-behind that hands the view model a `XamlRoot` getter
   through `IXamlRootGetter`:
   [Give the view model a XamlRoot so its dialogs can show](../BLUEPRINTS-PlatformServices.md#give-the-view-model-a-xamlroot-so-its-dialogs-can-show).
-- How `App.xaml` and the `Views` folder are file-linked into all six executables
-  through a shared items project:
+- How `App.xaml` and the `Views` folder are file-linked into every head's
+  executable through a shared items project:
   [Share App xaml and the views across heads with a shared project](../BLUEPRINTS-ProjectLayoutAndPackaging.md#share-app-xaml-and-the-views-across-heads-with-a-shared-project).
 - Why the Core library's `RootNamespace` is set to the application name, and what
   the shared XAML then has to write to reach the view models:
@@ -125,11 +126,13 @@ several places that the code names and handles.
 ## Building, running and testing
 
 There is one solution, `PicoScope.Brix.slnx`, and it holds everything: the
-shared UI project, the Core project, all six heads, the two libraries under a
-`Libraries` solution folder and the test projects under a `Tests` solution
-folder. Its header comment describes it as everything that builds with the plain
-.NET SDK on Linux, macOS and Windows, which holds here because every head is a
-Skia head. There is no second, Windows-only solution.
+shared UI project, the Core project, all six desktop heads and the Android head,
+the two libraries under a `Libraries` solution folder and the test projects
+under a `Tests` solution folder. Its header comment describes it as everything
+that builds with the .NET SDK on Linux, macOS and Windows, which holds here
+because every desktop head is a Skia head and the Android head builds on all
+three once the `android` workload is installed. There is no second,
+Windows-only solution.
 
 The heads:
 
@@ -141,17 +144,32 @@ The heads:
 | `src/PicoScope.Brix.MacOS` | macOS |
 | `src/PicoScope.Brix.Win32Skia` | Windows, Win32 window |
 | `src/PicoScope.Brix.WinWpfSkia` | Windows, Skia hosted in a WPF window |
+| `src/PicoScope.Brix.Android` | Android phones, tablets and Android laptops, with the simulated device only |
+
+The six desktop heads target `net10.0` (WinWpfSkia `net10.0-windows`) and each
+runs only on the platform it is named for. The Android head targets
+`net10.0-android36.1`, builds on any of the three operating systems, and runs on
+Android 13 (API level 33) and later. `PicoScope.Brix.Core` builds for both target
+frameworks, so a single change to it reaches every head.
 
 Prerequisites:
 
-- The .NET 10 SDK. Every project targets `net10.0`; the WinWpfSkia head targets
-  `net10.0-windows` and sets `EnableWindowsTargeting` so the solution still
-  restores and builds on Linux and macOS. No workload is needed.
+- The .NET 10 SDK with the `android` workload (`dotnet workload install android`).
+  The workload is needed for every build of this application, a desktop-only
+  build and the test runs included, because the Core project also builds for
+  Android. The WinWpfSkia head targets `net10.0-windows` and sets
+  `EnableWindowsTargeting` so the solution still restores and builds on Linux and
+  macOS.
+- For the Android head, which a build of the whole solution includes, the
+  Android SDK; to run it, an Android device or emulator reachable with `adb`.
 - All CodeBrix packages come from NuGet. No CodeBrix library is referenced as a
   source project, so this folder builds on its own.
 - **No hardware is required.** With nothing attached, every head falls back to
-  the simulated device and the whole application works. Everything below is only
-  needed to talk to a real instrument.
+  the simulated device and the whole application works. On Android the
+  application runs its simulator only: there is no `ps2000` driver for Android,
+  so the Android head never registers the real device and the SIMULATED badge is
+  always shown. Everything below is only needed to talk to a real instrument
+  from a desktop head.
 - The `ps2000` driver, for real hardware. On Windows that means PicoSDK or the
   PicoScope desktop application, either of which installs the driver. On Linux it
   means the `libps2000` package from Pico's apt repository, on its own or as a
@@ -179,6 +197,26 @@ dotnet run --project src/PicoScope.Brix.MacOS
 dotnet run --project src/PicoScope.Brix.Win32Skia
 dotnet run --project src/PicoScope.Brix.WinWpfSkia
 ```
+
+Build the Android head, and install it on a device or emulator. The install
+target needs the device's runtime identifier on the command line -
+`android-arm64` for most phones and tablets, `android-x64` for an emulator or an
+x86-64 Android laptop - and it works per project, not on the solution. Add
+`-p:AdbTarget="-s <serial>"` when more than one device is attached:
+
+```text
+dotnet build src/PicoScope.Brix.Android/PicoScope.Brix.Android.csproj -c Release
+dotnet build src/PicoScope.Brix.Android/PicoScope.Brix.Android.csproj -c Debug -t:Install -p:RuntimeIdentifier=android-x64
+dotnet build src/PicoScope.Brix.Android/PicoScope.Brix.Android.csproj -c Release -t:Install -p:RuntimeIdentifier=android-arm64
+```
+
+A Release build is trimmed and produces an installable `.apk` under
+`src/PicoScope.Brix.Android/bin/Release/net10.0-android36.1/`. A Debug build
+installs with fast deployment, so install it with the `Install` target rather
+than copying its `.apk` to the device. The Android package name is
+`com.codebrix.samples.picoscopebrix`. On Android the chart takes the chart
+engine's finger gestures: one finger pans, two fingers pinch-zoom, and a finger
+held on a trace shows the tracker.
 
 Console logging is compiled in only for Debug builds - the body of
 `App.InitializeLogging()` is inside `#if DEBUG` - so a Release run is silent. In
@@ -231,6 +269,7 @@ PicoScope.Brix/
     PicoScope.Brix.MacOS/               Head: same, macOS backend
     PicoScope.Brix.Win32Skia/           Head: same, Win32 backend
     PicoScope.Brix.WinWpfSkia/          Same again, plus net10.0-windows and a software render surface
+    PicoScope.Brix.Android/             Head: the Android application (registers the simulator only) and activity, the manifest, one runtime package
     libs/
       PicoScope.Brix.ScopeData/         The device-agnostic contract: IScopeDataDevice, the model types, the finder
         Model/                          Channels, ranges, timebases, triggering, streaming, generator, capture blocks, unit info
@@ -249,7 +288,7 @@ missing from it. Each head project takes a project reference on
 `PicoScope.Brix.Core` and file-links the shared UI by importing
 `..\PicoScope.Brix.UI\PicoScope.Brix.UI.projitems` with `Label="Shared"`, so
 `App.xaml`, `App.xaml.cs`, `MainPage.xaml` and `MainPage.xaml.cs` are compiled
-once into each of the six head assemblies - which is why each head csproj also
+once into each head assembly - which is why each head csproj also
 has to tell MSBuild to treat `.xaml` files as `Page` items. Because the XAML ends
 up inside the head assembly while the view models live in the library, the page
 reaches them with an assembly-qualified `clr-namespace`
@@ -257,11 +296,24 @@ reaches them with an assembly-qualified `clr-namespace`
 
 `PicoScope.Brix.Core` references only `PicoScope.Brix.ScopeData`, the contract
 library. It never sees `PicoScope.Brix.ScopeData.Ps2000`, and neither does the
-view model. Each head references the interop library instead and registers an
-instance of it in `Program.Main`, which is what keeps the shared code free of
-any device-specific reference and makes the simulator an equal citizen rather
-than a fallback bolted on afterwards. `PicoScope.Brix.ScopeData` itself has no
-package references at all, which is what stops it from ever growing one.
+view model. Each desktop head references the interop library instead and
+registers an instance of it in `Program.Main`, which is what keeps the shared
+code free of any device-specific reference and makes the simulator an equal
+citizen rather than a fallback bolted on afterwards. The Android head does not
+reference the interop library at all: its `MainApplication` constructor, the
+Android counterpart of `Program.Main`, registers the simulator alone.
+`PicoScope.Brix.ScopeData` itself has no package references at all, which is
+what stops it from ever growing one.
+
+Core builds for two target frameworks. The `net10.0` build references the
+CodeBrix.Platform packages and serves the desktop heads; the
+`net10.0-android36.1` build references their CodeBrix.Android counterparts and
+serves the Android head. The choice is made by a target-framework condition on
+each package group in the project file, so the source files are the same for
+both. `PicoScope.Brix.ScopeData` references no CodeBrix package, so it stays
+`net10.0` and the Android head uses it as it is. The Android head adds no code of
+its own beyond its application and activity classes; `App.xaml`, `MainPage.xaml`
+and the view model run unchanged.
 
 ## CodeBrix libraries and add-ins used
 
@@ -270,7 +322,8 @@ package references at all, which is what stops it from ever growing one.
 | CodeBrix.Platform | The XAML framework itself: `Application`, `Window`, `Frame`, `Page` and the controls on the page, plus `SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`, `IXamlRootGetter`, `IHostBuilderProvider`, `CodeBrixPlatformHostBuilder`, `LogExtensionPoint` and `FeatureConfiguration.Font` | `src/PicoScope.Brix.Core/PicoScope.Brix.Core.csproj`; used throughout `src/PicoScope.Brix.UI/` and `src/PicoScope.Brix.Core/` |
 | CodeBrix.Platform.PlotterView add-in | Supplies the `PlotterControl` that renders the chart on every head and gives it pan, zoom and tracker interaction. It brings the CodeBrix.Plotter engine with it, which is where `PlotModel`, the axes, the line series and the colors come from, so nothing here references the plotting engine directly | `src/PicoScope.Brix.Core/PicoScope.Brix.Core.csproj`, `src/PicoScope.Brix.UI/Views/MainPage.xaml`, `src/PicoScope.Brix.Core/Charting/ScopePlot.cs` |
 | CodeBrix.Platform.Fonts.Roboto | Ships the Roboto font that is set as the application-wide default and as the page's `FontFamily`, addressed through an `ms-appx:///` URI, together with the Noto faces registered as script fallbacks | `src/PicoScope.Brix.Core/PicoScope.Brix.Core.csproj`, `src/PicoScope.Brix.UI/App.xaml`, `src/PicoScope.Brix.UI/App.xaml.cs`, `src/PicoScope.Brix.UI/Views/MainPage.xaml` |
-| CodeBrix.Platform runtime for the head | Exactly one runtime package per head - the X11, Wayland, framebuffer, macOS, Win32 and WPF Skia runtimes - and nothing else | the six head csproj files under `src/` |
+| CodeBrix.Platform runtime for the head | Exactly one runtime package per desktop head - the X11, Wayland, framebuffer, macOS, Win32 and WPF Skia runtimes - and nothing else | the six desktop head csproj files under `src/` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android form of the PlotterView add-in; the Android head and the Android build of Core reference these instead of the CodeBrix.Platform packages | `src/PicoScope.Brix.Android/PicoScope.Brix.Android.csproj`, `src/PicoScope.Brix.Core/PicoScope.Brix.Core.csproj` |
 | SilverAssertions | The assertion style the test projects use | the test csproj files under `tests/` |
 
 Third-party libraries:
@@ -298,8 +351,8 @@ platform dependency to arrive by accident.
 
 `PicoScope.Brix.ScopeData.Ps2000` implements that contract over the real driver.
 `SimulatedScopeDataDevice`, in the contract library, implements it over
-synthesised signals. Each head registers both in `Program.Main` and the finder
-prefers whichever opens:
+synthesised signals. Each desktop head registers both in `Program.Main` and the
+finder prefers whichever opens (the Android head registers only the simulator):
 
 ```csharp
 ScopeDeviceFinder.Register(new Ps2000ScopeDataDevice());
@@ -631,7 +684,7 @@ are usable. And the `ps2000` wave-type ordinals differ from `ps2000a`: here DC i
 ### What this application does not show
 
 It is a focused application, so come to it for the device layer, the chart and
-the six-head layout, and go elsewhere for the rest. It has:
+the multi-head layout, and go elsewhere for the rest. It has:
 
 - No registered services. The registration lambda in `App.xaml.cs` is a comment,
   and the device implementations are registered with a static finder rather than

@@ -3,7 +3,7 @@ using System.IO;
 
 namespace GoddessTempleDiscovery.Helpers;
 
-/// <summary>Small helpers for the native "Save as" dialog (the same rules as InannaRosette's).</summary>
+/// <summary>Small helpers for the native "Save as" dialog (the same rules as InannaOctaquetra's).</summary>
 public static class FileDialogHelper
 {
     /// <summary>

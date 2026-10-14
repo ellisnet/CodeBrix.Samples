@@ -124,7 +124,7 @@ in the repository that uses `async Task Main` with `await host.RunAsync()`),
 `WebcamPainter/src/WebcamPainter.LinuxX11/Program.cs`,
 `WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.LinuxX11/Program.cs`,
 `CodeBrixVideoTool/src/CodeBrixVideoTool.LinuxX11/Program.cs`,
-`InannaRosette/src/InannaRosette.LinuxX11/Program.cs` and the three sibling heads
+`InannaOctaquetra/src/InannaOctaquetra.LinuxX11/Program.cs` and the three sibling heads
 (four of the family's six, identical apart from the one `Use…()` call, each
 calling `App.InitializeLogging()` before the host is built and each carrying
 `[STAThread]` on `Main`, including the Linux and macOS ones)
@@ -246,7 +246,7 @@ constructor:
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/App.xaml.cs`,
 `WebcamPainter/src/WebcamPainter.UI/App.xaml.cs`,
 `WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/App.xaml.cs`,
-`InannaRosette/src/InannaRosette.UI/App.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml.cs`
 (default text font family, the resolver plus `services.AddReading()`,
 `SetIsDesignMode(false)`, the launch size and the requested theme, all before
 `InitializeComponent()` - which is what runs the view model's constructor,
@@ -324,7 +324,7 @@ void OnNavigationFailed(object sender, NavigationFailedEventArgs e)
 `JustBetweenUs/JustBetweenUs.WinUI/App.xaml.cs` (the native WinUI 3 head keeps
 the same override almost verbatim, with the stock template code it replaces left
 in the file as a comment),
-`InannaRosette/src/InannaRosette.UI/App.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml.cs`
 (`OnLaunched` titles the window, pins the presenter's minimum size, puts a
 `Frame` in it and navigates, with a `NavigationFailed` handler that throws rather
 than leaving a blank window)
@@ -443,7 +443,7 @@ applied after it exists.
 `CodeBrix.Samples.Gpl3/Fresco.Brix/src/Fresco.Brix.UI/App.xaml.cs` (in the
 CodeBrix.Samples.Gpl3 repository: the same block with 1280 by 840, and one extra
 sentence in the comment saying that a size the user left behind still wins),
-`InannaRosette/src/InannaRosette.UI/App.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml.cs`
 (`ApplicationView.PreferredLaunchViewSize` set unconditionally on every launch,
 with a comment explaining that the platform remembers it in its own settings file
 and that writing it every time keeps that file in step with the source rather
@@ -537,7 +537,7 @@ works normally afterwards.
 `CodeBrix.Samples.Gpl3/Fresco.Brix/src/Fresco.Brix.UI/App.xaml.cs` (in the
 CodeBrix.Samples.Gpl3 repository: the same block with 900 by 620, placed after
 the window is also stored in a static property the page reads),
-`InannaRosette/src/InannaRosette.UI/App.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml.cs`
 (the presenter's minimum pinned in `OnLaunched` before `Activate()`, with both
 numbers justified in a comment by what the layout does below them - the header
 buttons begin to wrap and the diagonal station labels collide with the cards)
@@ -720,7 +720,7 @@ public static class RegisterServices
 `CodeBrixVideoTool/src/CodeBrixVideoTool.UI/App.xaml.cs` (two `AddSingleton`
 calls straight in the callback, which is the smaller form when there is no
 library boundary to respect),
-`InannaRosette/src/libs/InannaRosette.Reading/RegisterServices.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/RegisterServices.cs`
 (`AddReading()` registers two of the three with
 `TryAddSingleton<TInterface, TImplementation>` and the third through a factory
 lambda, because that one's only constructor parameter is optional and the
@@ -810,7 +810,7 @@ Skia projects define:
 `PolyHavenBrowser/src/PolyHavenBrowser.UI/App.xaml.cs`,
 `WebcamPainter/src/WebcamPainter.UI/App.xaml.cs`,
 `WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/App.xaml.cs`,
-`InannaRosette/src/InannaRosette.UI/App.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml.cs`
 (the whole body of `InitializeLogging()` inside `#if DEBUG`, with filters that
 quiet the platform's own categories down to warnings, and a comment saying it is
 called from each head's `Main` before the host is built)
@@ -893,7 +893,7 @@ in the fallback list as well as the two script faces),
 `PolyHavenBrowser/src/PolyHavenBrowser.UI/App.xaml`,
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/App.xaml`,
 `WikipediaPublisher/CodeBrixPlatform/WikipediaPublisher.UI/App.xaml`,
-`InannaRosette/src/InannaRosette.UI/App.xaml.cs` and `App.xaml`
+`InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml.cs` and `App.xaml`
 (the default-font half only - no fallback families - with the regular and bold
 faces also published as `FontFamily` resources, which every text style and every
 hand-built `TextBlock` in the drawn scene names)

@@ -13,4 +13,27 @@ not reproduced here.
 The JustBetweenUs application is based on, and was inspired by, a code sample 
 provided by Paul Ainsworth.
 
+------------------------------------------------------------------------
+Android head  (CodeBrixPlatform/JustBetweenUs.Android)
+------------------------------------------------------------------------
+The Android head contains no third-party files of its own. Its build brings
+in, as NuGet packages, the following third-party code that ends up inside the
+Android application package:
+
+  - Material Components for Android and the AndroidX libraries (Google), in
+    their .NET bindings (Xamarin.Google.Android.Material, Xamarin.AndroidX.*),
+    licensed under the Apache License, Version 2.0. They arrive through the
+    CodeBrix.Android package, which draws every control with them.
+
+  - The Android native builds of SkiaSharp and HarfBuzzSharp
+    (SkiaSharp.NativeAssets.Android, HarfBuzzSharp.NativeAssets.Android),
+    licensed under the MIT License, with the Skia (BSD 3-Clause) and HarfBuzz
+    (Old MIT) libraries they bundle. They arrive through
+    CodeBrix.Android.SkiaSharp.Views and CodeBrix.Android.Svg, and draw the
+    SVG icons and the Lottie star on the device.
+
+Each of those packages carries its own license and notices, and the
+CodeBrix.Android packages ship their own THIRD-PARTY-NOTICES.txt; they are
+not reproduced here.
+
 No further third-party attribution notices apply to this sample.

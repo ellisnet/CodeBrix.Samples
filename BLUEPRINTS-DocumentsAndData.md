@@ -161,7 +161,7 @@ ProcessedText = await _encryptSvc.AES_EncryptToBase64(EncryptionKey.Trim(), Ente
 `NotionDocumentCreator/src/libs/NotionDocumentCreator.CreateDocument/`,
 `PdfSideBySide/src/libs/PdfSideBySide.PdfRender/`,
 `PolyHavenBrowser/src/libs/PolyHavenBrowser.PolyHavenApiClient/`,
-`InannaRosette/src/libs/InannaRosette.Reading/`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/`
 (the deck, the spread, the prose, the JSON and the printable report behind
 `IReadingInterpreter`, `IReadingSerializer` and `IPdfReportBuilder`, in a library
 with no CodeBrix.Platform reference and no XAML anywhere in it)
@@ -2362,7 +2362,7 @@ internal static class BookFonts
 `WikipediaPublisher/WikipediaPublisher.RenderArticle/Internal/BookFonts.cs`
 
 **Also shown by.**
-`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfFonts.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfFonts.cs`
 (two family aliases built from eight embedded faces and registered once per face
 name under a double-checked lock, so the call is safe from both the report's
 constructor and its `Build()`; the quieter family deliberately points its "Bold"
@@ -3399,7 +3399,7 @@ public void Compose(XGraphics gfx)
 `PolyHavenBrowser/src/libs/PolyHavenBrowser.CreateDocument/Models/MarketingSheetRequest.cs`
 
 **Also shown by.**
-`InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs` and
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/PdfReportBuilder.cs` and
 `Services/Pdf/`
 (a multi-page report drawn straight onto `XGraphics` - cover, full-page spread
 diagram, one section per station, an appendix of lore - over a page-flow cursor,
@@ -4280,7 +4280,7 @@ pick it up with no further work.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Data/EmblemArt.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Data/EmblemArt.cs
 /// <summary>
 /// One drawable layer of an emblem. <see cref="PathData"/> is SVG path mini-language
 /// (absolute commands only) understood by WinUI <c>Path.Data</c> and <c>SKPath.ParseSvgPathData</c>.
@@ -4318,7 +4318,7 @@ so that the caller can scale it to whatever size a card currently happens to
 be.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml.cs
     /// <summary>
     /// Render a stack of emblem layers authored in a 0..<paramref name="box"/> coordinate box
     /// into a fixed-size Canvas, ready for a Viewbox. Filled layers take <paramref name="fill"/>
@@ -4354,7 +4354,7 @@ The document renderer takes the identical list and the rectangle it should
 fill, and resolves each layer's color from the same three inputs.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfOrnaments.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfOrnaments.cs
     /// <summary>
     /// Draws a stack of <see cref="EmblemLayer"/>s into <paramref name="box"/>.
     /// Layers marked as accents take <paramref name="accent"/>; other filled layers take
@@ -4410,10 +4410,10 @@ fill, and resolves each layer's color from the same three inputs.
 ```
 
 **Where to look.**
-`InannaRosette/src/libs/InannaRosette.Reading/Data/EmblemArt.cs`
-`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs` and
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Data/EmblemArt.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml.cs` and
 `Controls/Ornament.cs`
-`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfOrnaments.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfOrnaments.cs`
 
 **Sharp edges.**
 - Stroke widths are authored in design-box units, not in output units, so each
@@ -4444,7 +4444,7 @@ resolution.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/SvgPathToPdf.cs
     /// <summary>
     /// Builds a path from <paramref name="pathData"/>, scaling the square design box
     /// <c>0..designBox</c> so that it fits centred inside <paramref name="destination"/>.
@@ -4473,7 +4473,7 @@ becomes a line-to, which is the one place the grammar changes the command under
 you.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/SvgPathToPdf.cs
         while (true)
         {
             scanner.SkipSeparators();
@@ -4508,7 +4508,7 @@ and an elliptical arc is converted by the endpoint-to-center parameterization
 of the specification and emitted as pieces of ninety degrees or less.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/SvgPathToPdf.cs
     private static void EmitQuadratic(ISink sink, double x0, double y0, double qx, double qy, double x, double y)
     {
         // Exact degree elevation from quadratic to cubic.
@@ -4530,7 +4530,7 @@ is explicit about what separates one number from the next and about the two
 arc flags, which the grammar allows to be written with nothing between them.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/SvgPathToPdf.cs
     /// <summary>
     /// Tokenises the path string. Numbers may be separated by whitespace, commas, or nothing at
     /// all where a sign or a second decimal point unambiguously begins the next number.
@@ -4566,9 +4566,9 @@ arc flags, which the grammar allows to be written with nothing between them.
 ```
 
 **Where to look.**
-`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs`
-`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfOrnaments.cs`
-`InannaRosette/src/InannaRosette.UI/Controls/CardView.xaml.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/SvgPathToPdf.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfOrnaments.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Controls/CardView.xaml.cs`
 
 **Sharp edges.**
 - Numbers may run together where a sign or a second decimal point makes the
@@ -4770,7 +4770,7 @@ hand placement for a flowing document model.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPageFlow.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfPageFlow.cs
     public PdfPageFlow(PdfDocument document, PageSize pageSize, string headerText)
     {
         _document = document;
@@ -4789,7 +4789,7 @@ The cursor is one settable number and everything else is derived from it,
 so a caller can ask how much room is left before it decides what to draw.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPageFlow.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfPageFlow.cs
     public double ContentLeft => MarginLeft;
     public double ContentRight => PageWidth - MarginRight;
     public double ContentWidth => PageWidth - MarginLeft - MarginRight;
@@ -4814,7 +4814,7 @@ ground, the running header with its rule and closing star, and the centered
 folio. The cover opts out.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPageFlow.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfPageFlow.cs
     /// <summary>
     /// Closes the current page and starts a new one. Decorated pages get the parchment ground,
     /// the running header and the centred page number; the cover does not.
@@ -4860,7 +4860,7 @@ folio. The cover opts out.
 The whole report is then a sequence of section methods over one flow.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/PdfReportBuilder.cs
         using var flow = new PdfPageFlow(document, _options.UseLetter ? PageSize.Letter : PageSize.A4, header)
         {
             MarginLeft = 62,
@@ -4879,8 +4879,8 @@ The whole report is then a sequence of section methods over one flow.
 ```
 
 **Where to look.**
-`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPageFlow.cs`
-`InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfPageFlow.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/PdfReportBuilder.cs`
 (`DrawFlowedParagraph` breaks one paragraph across pages line by line, leaving
 at least two lines behind and carrying at least three forward)
 
@@ -4912,7 +4912,7 @@ committing to it.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfText.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfText.cs
     /// <summary>Width of <paramref name="text"/> when drawn with the given letter spacing.</summary>
     public static double MeasureTracked(XGraphics gfx, string text, XFont font, double tracking)
     {
@@ -4955,7 +4955,7 @@ Justification is a second pass over the wrapped lines: measure the words,
 share the slack between the gaps, and leave the real last line alone.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfText.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfText.cs
     /// <summary>
     /// Draws a justified paragraph with the last line left aligned - which the built-in
     /// <c>XTextFormatter</c>'s Justify mode does not do. Returns the height consumed.
@@ -5004,7 +5004,7 @@ Fitting is a bounded shrink loop rather than a solve, which is both simpler
 and safe against a string that can never fit.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfText.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfText.cs
     /// <summary>
     /// Draws a single line, shrinking the point size until it fits <paramref name="width"/>.
     /// Returns the font actually used.
@@ -5028,7 +5028,7 @@ first few lines of prose together by measuring that block first and asking the
 flow for the room.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/PdfReportBuilder.cs
             var firstParagraph = paragraphs.Count > 0 ? paragraphs[0] : string.Empty;
 
             // Keep the kicker, heading, keyword line and the first two lines of prose together.
@@ -5041,9 +5041,9 @@ flow for the room.
 ```
 
 **Where to look.**
-`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfText.cs`
-`InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs`
-`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPageFlow.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfText.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/PdfReportBuilder.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfPageFlow.cs`
 (the running header and the folio are both tracked text)
 
 **Sharp edges.**
@@ -5074,7 +5074,7 @@ on a solid brush and on a pen, and ignores it on a gradient stop.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPalette.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfPalette.cs
     /// <summary>Same colour with an explicit alpha (0..1). Safe for solid brushes and pens.</summary>
     public static XColor Alpha(this XColor color, double alpha)
     {
@@ -5100,16 +5100,18 @@ Every stop is therefore written as a blend that is already opaque: the
 tint mixed into the ground it will sit on, at the strength the stop wanted.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs
-        // A radial dusk behind the star. Gradient stops ignore alpha, so every stop is opaque.
-        var dusk = new XShadingBrush(starCenter, 0, starCenter, bandHeight * 0.95,
-        [
-            new XGradientStop(0.00, PdfPalette.Lapis.Over(PdfPalette.Night2, 0.55)),
-            new XGradientStop(0.38, PdfPalette.Lapis.Over(PdfPalette.Night, 0.28)),
-            new XGradientStop(0.78, PdfPalette.Night),
-            new XGradientStop(1.00, PdfPalette.Kohl),
-        ]);
-        gfx.DrawRectangle(dusk, new XRect(0, 0, pw, bandHeight));
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/PdfReportBuilder.cs
+            // A small medallion of the card's emblem in the gutter.
+            var accent = PdfPalette.Parse(card.AccentColor, PdfPalette.Gold);
+            var secondary = PdfPalette.Parse(card.SecondaryColor, PdfPalette.Lapis);
+            var discCenter = new XPoint(flow.ContentLeft + 16, top + 15);
+            const double discR = 15;
+            var disc = new XShadingBrush(discCenter, 0, discCenter, discR,
+            [
+                new XGradientStop(0.0, secondary.Over(PdfPalette.Night, 0.9)),
+                new XGradientStop(0.6, secondary.Over(PdfPalette.Night, 0.5)),
+                new XGradientStop(1.0, PdfPalette.Night),
+            ]);
 ```
 
 A related refusal in the same layer: the rounded-rectangle call does not
@@ -5118,7 +5120,7 @@ shape, then paint the gradient through a rounded-rectangle clip with the plain
 rectangle call, which does honor it.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfCardPainter.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfCardPainter.cs
         // Body: Night2 with a soft lapis glow falling from the top edge.
         // DrawRoundedRectangle does not honour a shading brush, so lay a solid ground first and
         // paint the gradient through a rounded-rectangle clip, which DrawRectangle does honour.
@@ -5141,9 +5143,9 @@ rectangle call, which does honor it.
 ```
 
 **Where to look.**
-`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfPalette.cs`
-`InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/PdfCardPainter.cs`
-`InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfPalette.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/PdfCardPainter.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/PdfReportBuilder.cs`
 
 **Sharp edges.**
 - The two helpers are not interchangeable and the difference is invisible at
@@ -5178,11 +5180,11 @@ into its own table, telling the page about each card as it arrives.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingSerializer.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/ReadingSerializer.cs
 /// <summary>
-/// Saves and loads a <see cref="RosetteReading"/> as JSON. Only the identifying data is stored
+/// Saves and loads a <see cref="OctaquetraReading"/> as JSON. Only the identifying data is stored
 /// (card ids, station indexes, orientation, querent, question, timestamp); the card text
-/// and the spread text are rehydrated from <see cref="DeckData"/> and <see cref="RosetteSpread"/>.
+/// and the spread text are rehydrated from <see cref="DeckData"/> and <see cref="OctaquetraSpread"/>.
 /// </summary>
 public sealed class ReadingSerializer : IReadingSerializer
 {
@@ -5205,10 +5207,10 @@ public sealed class ReadingSerializer : IReadingSerializer
         /// <summary>Who the reading is for; may be empty.</summary>
         public string Querent { get; init; } = "";
 
-        /// <summary>The question put to the rosette; may be empty.</summary>
+        /// <summary>The question put to the Octaquetra; may be empty.</summary>
         public string Question { get; init; } = "";
 
-        /// <summary>The cards on the rosette, ordered by station.</summary>
+        /// <summary>The cards on the Octaquetra, ordered by station.</summary>
         public List<PlacementDocument> Placements { get; init; } = [];
     }
 
@@ -5240,10 +5242,10 @@ document at all and a document whose version is missing or is not the current
 one; the version is checked before anything else is read.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingSerializer.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/ReadingSerializer.cs
     //Every document this application has ever written carries a version, so one without it was
-    //  not saved by InannaRosette. Version 1 is the only format there has been: an older number
-    //  names no real format, and a newer one was written by a later InannaRosette whose changes
+    //  not saved by InannaOctaquetra. Version 1 is the only format there has been: an older number
+    //  names no real format, and a newer one was written by a later InannaOctaquetra whose changes
     //  this one cannot know, so both are refused rather than half-read.
     private static void CheckVersion(JsonElement root)
     {
@@ -5262,7 +5264,7 @@ one; the version is checked before anything else is read.
         if (version > CurrentVersion)
         {
             throw new FormatException(
-                $"This reading was saved in format version {version} by a newer InannaRosette; "
+                $"This reading was saved in format version {version} by a newer InannaOctaquetra; "
                 + $"this one reads format version {CurrentVersion}.");
         }
 
@@ -5276,10 +5278,10 @@ one; the version is checked before anything else is read.
 ```
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingSerializer.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/ReadingSerializer.cs
         if (doc is null) throw new FormatException("The text is not a valid reading document.");
 
-        var reading = new RosetteReading
+        var reading = new OctaquetraReading
         {
             Created = doc.Created == default ? DateTime.Now : doc.Created,
             Querent = doc.Querent,
@@ -5288,7 +5290,7 @@ one; the version is checked before anything else is read.
 
         foreach (var p in doc.Placements.OrderBy(p => p.Position))
         {
-            var position = RosetteSpread.At(p.Position);
+            var position = OctaquetraSpread.At(p.Position);
             var card = DeckData.ById(p.CardId);
             if (position is null || card is null) continue;
             if (reading.At(p.Position) is not null) continue;
@@ -5302,10 +5304,10 @@ one; the version is checked before anything else is read.
 The view model's side is where a loaded reading becomes a table again.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs
     //Lays a reading that was read back from a file: the table starts empty and each placement
     //  arrives already on its station, so the page places it rather than dealing it to the tray
-    private void ApplyReading(RosetteReading reading)
+    private void ApplyReading(OctaquetraReading reading)
     {
         GatherToDeck();
 
@@ -5342,10 +5344,10 @@ The view model's side is where a loaded reading becomes a table again.
 ```
 
 **Where to look.**
-`InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingSerializer.cs`
-`InannaRosette/src/libs/InannaRosette.Reading/Data/DeckData.cs` and
-`Data/RosetteSpread.cs`
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/ReadingSerializer.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Data/DeckData.cs` and
+`Data/OctaquetraSpread.cs`
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs`
 
 **Sharp edges.**
 - The card identifier is a dense one-based index into the deck, so the deck's
@@ -5383,9 +5385,9 @@ source. The view model runs it on a worker and marshals the result back.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingInterpreter.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/ReadingInterpreter.cs
     /// <inheritdoc />
-    public ReadingInterpretation Interpret(RosetteReading reading)
+    public ReadingInterpretation Interpret(OctaquetraReading reading)
     {
         ArgumentNullException.ThrowIfNull(reading);
 
@@ -5413,7 +5415,7 @@ The seed is a hash of the placements themselves, so turning one card over
 changes every sentence the seed reaches.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingInterpreter.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/ReadingInterpreter.cs
     private static int SeedFor(IReadOnlyList<PlacedCard> placed)
     {
         unchecked
@@ -5435,7 +5437,7 @@ one seed with its own salt, so two slots choose independently rather than in
 lockstep.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/InterpretationTemplates.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/InterpretationTemplates.cs
 /// <summary>
 /// The sentence stock the <see cref="ReadingInterpreter"/> draws on. Every slot offers
 /// several variants, chosen by a seed derived from the cards themselves, so that two
@@ -5465,9 +5467,9 @@ internal static class InterpretationTemplates
 ```
 
 **Where to look.**
-`InannaRosette/src/libs/InannaRosette.Reading/Services/ReadingInterpreter.cs`
-`InannaRosette/src/libs/InannaRosette.Reading/Services/InterpretationTemplates.cs`
-`InannaRosette/src/libs/InannaRosette.Reading/InternalsVisibleTo.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/ReadingInterpreter.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/InterpretationTemplates.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/InternalsVisibleTo.cs`
 
 **Sharp edges.**
 - The seed comes from the data and nothing else. Seed it from a clock, a
@@ -5498,7 +5500,7 @@ assembled list comes out empty or throws with nothing obviously wrong.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Data/DeckData.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Data/DeckData.cs
 public static class DeckData
 {
     /// <summary>Terse list builder so the card literals below stay readable.</summary>
@@ -5523,9 +5525,9 @@ are arithmetic on an index are written as arithmetic, not as a lookup table
 somebody can get out of step with the titles.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Models/Spread.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Models/Spread.cs
 /// <summary>
-/// One of the nine stations of the Rosette spread: the heart (index 0) and eight petals
+/// One of the nine stations of the Octaquetra spread: the heart (index 0) and eight petals
 /// (index 1..8, starting at the top and proceeding clockwise, 45 degrees apart).
 /// </summary>
 public sealed record SpreadPosition(
@@ -5539,7 +5541,7 @@ public sealed record SpreadPosition(
     /// <summary>True for the Heart at the middle of the flower, false for the eight petals.</summary>
     public bool IsCenter => Index == 0;
 
-    /// <summary>The petal directly opposite this one on the rosette (petals only), or null for the center.</summary>
+    /// <summary>The petal directly opposite this one on the Octaquetra (petals only), or null for the center.</summary>
     public int? OppositeIndex => Index == 0 ? null : ((Index - 1 + 4) % 8) + 1;
 }
 ```
@@ -5549,8 +5551,8 @@ generator, the report and the tests - it is exposed once, from the data, rather
 than rebuilt at each call site.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Data/RosetteSpread.cs
-    /// <summary>The four opposite petal pairs of the rosette: (1,5), (2,6), (3,7), (4,8).</summary>
+// From CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Data/OctaquetraSpread.cs
+    /// <summary>The four opposite petal pairs of the Octaquetra: (1,5), (2,6), (3,7), (4,8).</summary>
     public static IReadOnlyList<(SpreadPosition A, SpreadPosition B)> Axes { get; } =
     [
         (_positions[1], _positions[5]),
@@ -5561,9 +5563,9 @@ than rebuilt at each call site.
 ```
 
 **Where to look.**
-`InannaRosette/src/libs/InannaRosette.Reading/Data/DeckData.cs`
-`InannaRosette/src/libs/InannaRosette.Reading/Models/Spread.cs`
-`InannaRosette/src/libs/InannaRosette.Reading/Data/RosetteSpread.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Data/DeckData.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Models/Spread.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Data/OctaquetraSpread.cs`
 
 **Sharp edges.**
 - Static field initializers run in textual order. A list assembled in a field

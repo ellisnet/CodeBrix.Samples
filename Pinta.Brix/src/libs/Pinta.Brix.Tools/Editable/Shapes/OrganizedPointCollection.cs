@@ -119,7 +119,7 @@ public sealed class OrganizedPointCollection
 	/// <param name="closestShapeIndex">The index of the shape with the closest point.</param>
 	/// <param name="closestPointIndex">The index of the closest point (in the closest shape).</param>
 	/// <param name="closestPoint">The position of the closest point.</param>
-	/// <param name="closestDistance">The closest point's distance away from currentPoint.</param>
+	/// <param name="closestDistanceSquared">The square of the closest point's distance away from currentPoint.</param>
 	public static void FindClosestPoint (
 		IReadOnlyList<ShapeEngine> SEL,
 		PointD currentPoint,

@@ -1,4 +1,4 @@
-//Copied from CodeBrix.Samples/InannaRosette/src/libs/InannaRosette.Reading/Services/Pdf/SvgPathToPdf.cs (the same
+//Copied from CodeBrix.Samples/InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/Pdf/SvgPathToPdf.cs (the same
 //  repository, Apache License 2.0), with its header; only the usings and the namespace differ.
 using System;
 using System.Globalization;

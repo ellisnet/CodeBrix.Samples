@@ -1,0 +1,35 @@
+# Line endings: LF, everywhere, on every platform.
+#
+# This repository is developed on Linux and Windows. Without this file a Windows
+# checkout (core.autocrlf=true) rewrites every text file to CRLF, and fixtures
+# compared byte for byte, embedded resources and scripts all change under it.
+# The committed blobs are LF; these rules only stop a checkout from changing them.
+* text=auto eol=lf
+
+# Never touched. A media clip, a font, an image or a zip with newline
+# translation applied to it is silently corrupt, so these are declared rather
+# than left to git's heuristic.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.ttf   binary
+*.otf   binary
+*.woff  binary
+*.woff2 binary
+*.pdf   binary
+*.zip   binary
+*.cbv   binary
+*.cbvf  binary
+*.mkv   binary
+*.webm  binary
+*.mp4   binary
+*.wav   binary
+*.ogg   binary
+*.opus  binary
+*.flac  binary
+*.glb   binary
+*.so    binary
+*.dll   binary
+*.dylib binary

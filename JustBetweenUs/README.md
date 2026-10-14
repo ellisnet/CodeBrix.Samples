@@ -13,16 +13,17 @@ on. The encryption is real, but this is a demonstration, not a security-audited
 product. The application is adapted from a sample provided by Paul Ainsworth.
 
 This folder is the reference for the "one view model, many heads" shape. A
-single `MainViewModel.cs` is compiled into nine separate application heads: the
-six CodeBrix.Platform Skia desktop heads, plus a native WinUI 3 head, a native
-WPF head and a .NET MAUI head that also runs on phones and tablets. It is the
-only application in the repository that also runs on mobile, and the one to read
-when you want to see how far one view model, one service library and one set of
-image assets can be pushed across completely different UI stacks.
+single `MainViewModel.cs` is compiled into ten separate application heads: the
+six CodeBrix.Platform Skia desktop heads and a CodeBrix.Platform Android head,
+plus a native WinUI 3 head, a native WPF head and a .NET MAUI head that also runs
+on phones and tablets. It is the only application in the repository with two
+mobile heads side by side, and the one to read when you want to see how far one
+view model, one service library and one set of image assets can be pushed across
+completely different UI stacks.
 
 ## What this sample shows a CodeBrix.Platform developer
 
-- Compiling one `SimpleViewModel` into nine heads across four UI stacks by
+- Compiling one `SimpleViewModel` into ten heads across four UI stacks by
   linking the same source file into each project: [Run one view model on Skia heads and on native WinUI 3 WPF and MAUI heads](../BLUEPRINTS-AppStructureAndStartup.md#run-one-view-model-on-skia-heads-and-on-native-winui-3-wpf-and-maui-heads).
 - Six almost identical `Program.cs` files, each selecting exactly one platform
   backend and running the same shared `App`: [Start each head from a Program Main and pick the platform backend](../BLUEPRINTS-AppStructureAndStartup.md#start-each-head-from-a-program-main-and-pick-the-platform-backend).
@@ -110,8 +111,8 @@ per operating system, each containing only the projects that can build there.
 
 | Solution | Open on | Contains |
 | --- | --- | --- |
-| `JustBetweenUs.Windows.slnx` | Windows | Everything: all six Skia heads including WinWpfSkia, the shared UI shared-project, Core, the WinUI 3 head, the WPF head, the MAUI head, the encryption library and its test project |
-| `JustBetweenUs.Linux.slnx` | Linux | The Skia heads except WinWpfSkia, the shared UI shared-project, Core, the encryption library and its test project. No native heads |
+| `JustBetweenUs.Windows.slnx` | Windows | Everything: all six Skia heads including WinWpfSkia, the Android head, the shared UI shared-project, Core, the WinUI 3 head, the WPF head, the MAUI head, the encryption library and its test project |
+| `JustBetweenUs.Linux.slnx` | Linux | The Skia heads except WinWpfSkia, the Android head, the shared UI shared-project, Core, the encryption library and its test project. No native heads |
 | `JustBetweenUs.MacOS.slnx` | macOS | The same set as the Linux solution, plus the MAUI head |
 
 Only WinWpfSkia is excluded from the non-Windows solutions. Win32Skia targets
@@ -129,6 +130,20 @@ The CodeBrix.Platform Skia heads, all under `CodeBrixPlatform/`:
 | `JustBetweenUs.LinuxFrameBuffer` | Linux framebuffer, no display server |
 | `JustBetweenUs.MacOS` | macOS |
 
+The CodeBrix.Platform Android head, also under `CodeBrixPlatform/`:
+
+| Project | Platform |
+| --- | --- |
+| `JustBetweenUs.Android` | Android phones, tablets and Android laptops |
+
+It targets `net10.0-android36.1`, builds on any of the three operating systems,
+and runs on Android 13 (API level 33) and later. It imports the same shared UI
+project and references the same Core project as the six Skia heads, and installs
+beside the MAUI head on the same device, because the two have different Android
+package names. The page was laid out for a desktop window: on a tablet or an Android
+laptop it fits as it is, while on a phone held upright the top row is wider than the
+screen and the algorithm picker and the key box are cut off at the edges.
+
 The native (non-Skia) heads:
 
 | Project | Platform |
@@ -139,8 +154,13 @@ The native (non-Skia) heads:
 
 Prerequisites:
 
-- The .NET 10 SDK. Every project targets `net10.0` or a `net10.0-*` platform
-  framework.
+- The .NET 10 SDK with the `android` workload (`dotnet workload install android`).
+  Every project targets `net10.0` or a `net10.0-*` platform framework. The
+  workload is needed for every build of the CodeBrix.Platform projects, a
+  desktop-only build and the test runs included, because the Core project also
+  builds for Android.
+- For the Android head, which every solution includes, the Android SDK; to run
+  it, an Android device or emulator reachable with `adb`.
 - No accounts, tokens, network access, downloaded data or special hardware. The
   default key is embedded in the encryption library and every image asset is in
   this folder.
@@ -171,6 +191,24 @@ Run one head from the command line, for example the X11 head:
 dotnet run --project JustBetweenUs/CodeBrixPlatform/JustBetweenUs.LinuxX11/JustBetweenUs.LinuxX11.csproj
 ```
 
+Build the Android head, and install it on a device or emulator. The install target
+needs the device's runtime identifier on the command line - `android-arm64` for most
+phones and tablets, `android-x64` for an emulator or an x86-64 Android laptop - and
+it works per project, not on a solution. Add `-p:AdbTarget="-s <serial>"` when more
+than one device is attached:
+
+```text
+dotnet build JustBetweenUs/CodeBrixPlatform/JustBetweenUs.Android/JustBetweenUs.Android.csproj -c Release
+dotnet build JustBetweenUs/CodeBrixPlatform/JustBetweenUs.Android/JustBetweenUs.Android.csproj -c Debug -t:Install -p:RuntimeIdentifier=android-x64
+dotnet build JustBetweenUs/CodeBrixPlatform/JustBetweenUs.Android/JustBetweenUs.Android.csproj -c Release -t:Install -p:RuntimeIdentifier=android-arm64
+```
+
+A Release build is trimmed and produces an installable `.apk` under
+`CodeBrixPlatform/JustBetweenUs.Android/bin/Release/net10.0-android36.1/`. A Debug
+build installs with fast deployment, so install it with the `Install` target rather
+than copying its `.apk` to the device. The Android package name is
+`com.codebrix.samples.justbetweenus`.
+
 Tests live in `tests/JustBetweenUs.Encryption.Tests` and cover the encryption
 service only: that it resolves from the container, that the embedded default key
 is read, that Triple DES encrypts to and decrypts from a known Base64 string,
@@ -197,8 +235,8 @@ test class uses unconditionally exist only inside that conditional in
 
 ```text
 JustBetweenUs/
-  JustBetweenUs.Windows.slnx          All nine heads plus the library and tests; open on Windows
-  JustBetweenUs.Linux.slnx            Skia heads except WinWpfSkia, library and tests; open on Linux
+  JustBetweenUs.Windows.slnx          All ten heads plus the library and tests; open on Windows
+  JustBetweenUs.Linux.slnx            Skia heads except WinWpfSkia, the Android head, library and tests; open on Linux
   JustBetweenUs.MacOS.slnx            The Linux set plus the MAUI head; open on macOS
   global.json                         Selects the Microsoft.Testing.Platform test runner
   README.md                           This file
@@ -214,6 +252,8 @@ JustBetweenUs/
     JustBetweenUs.LinuxWayland/       Head: Program.cs plus one runtime package; no X11 fallback
     JustBetweenUs.LinuxFrameBuffer/   Head: Program.cs plus one runtime package; enables the software keyboard
     JustBetweenUs.MacOS/              Head: Program.cs plus one runtime package
+    JustBetweenUs.Android/            Head: the Android application and activity, the manifest, one
+                                        runtime package
   JustBetweenUs.WinUI/                Native WinUI 3 head: its own App.xaml(.cs), Views/MainPage.xaml(.cs),
                                         Assets/, app.manifest and Package.appxmanifest
   JustBetweenUs.Wpf/                  Native WPF head: its own App.xaml(.cs), Views/MainWindow.xaml(.cs)
@@ -244,9 +284,19 @@ by Core (for the Skia heads) and directly by the WinUI, WPF and MAUI heads;
 `EmbeddedResourceHelper.cs` is linked only into the encryption library, and
 `SimpleTestFixture.cs` only into the test project. The XAML in
 `JustBetweenUs.UI` is shared through an imported `.projitems`, so each Skia head
-compiles its own copy of `App` and `MainPage`. The files in `Shared/Assets` are
+and the Android head compile their own copy of `App` and `MainPage`. The files in `Shared/Assets` are
 linked as embedded resources into Core and, with explicit logical names, into the
 WinUI head; the WPF and MAUI heads use none of them.
+
+Core builds for two target frameworks. The `net10.0` build references the
+CodeBrix.Platform packages and add-ins and serves the six Skia heads; the
+`net10.0-android36.1` build references their CodeBrix.Android counterparts and
+serves the Android head. The choice is made by a target-framework condition on each
+package group in the project file, so the linked source, the controls and the
+embedded assets are the same for both. `JustBetweenUs.Encryption` references no UI
+framework, so it stays `net10.0` and the Android head uses it as it is. The Android
+head adds no code of its own beyond its application and activity classes;
+`App.xaml`, `MainPage.xaml`, the custom controls and the view model run unchanged.
 
 ## CodeBrix libraries and add-ins used
 
@@ -265,6 +315,7 @@ WinUI head; the WPF and MAUI heads use none of them.
 | CodeBrix.Platform.WinUI.Lottie | Supplies `AnimatedVisualPlayer` and `LottieVisualSource` for native WinUI | `JustBetweenUs.WinUI/Views/MainPage.xaml` |
 | CodeBrix.Platform.WPF | The Simple MVVM toolkit for WPF | `JustBetweenUs.Wpf/App.xaml.cs`, `JustBetweenUs.Wpf/JustBetweenUs.Wpf.csproj` |
 | CodeBrix.Platform.Mobile | The Simple MVVM toolkit for .NET MAUI | `Mobile/App.xaml.cs`, `Mobile/JustBetweenUs.Mobile.csproj` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the Graphics2DSK, Lottie, Svg and SkiaSharp Views add-ins; the Android head and the Android build of Core reference these instead of the CodeBrix.Platform packages | `CodeBrixPlatform/JustBetweenUs.Android/JustBetweenUs.Android.csproj`, `CodeBrixPlatform/JustBetweenUs.Core/JustBetweenUs.Core.csproj` |
 | CodeBrix.Cryptography | The Twofish engine, the SHA-3 digest, the PKCS#5 v2 parameter generator, PKCS#7 padding and the buffered block cipher behind the Twofish methods | `JustBetweenUs.Encryption/Services/EncryptionService.cs` |
 | SilverAssertions | The fluent `Should()` assertions in the test project | `tests/JustBetweenUs.Encryption.Tests/Services/EncryptionServiceTests.cs` |
 
@@ -282,7 +333,7 @@ Third-party libraries:
 
 ## Worth studying in this application
 
-### One view model, nine heads
+### One view model, ten heads
 
 `Shared/ViewModels/MainViewModel.cs` is the whole application. It holds the three
 bound text properties (`EncryptionKey`, `EnteredText`, `ProcessedText`), the
@@ -290,12 +341,13 @@ algorithm selection, four `SimpleCommand` instances, the two bridge interfaces t
 heads satisfy, the dialog calls and the `Dispose` override. It derives from
 `SimpleViewModel` and references nothing but the Simple toolkit and
 `IEncryptionService`. Every head pulls it in as a linked `<Compile>` item and
-compiles its own copy: Core does it once on behalf of the six Skia heads, and the
-WinUI, WPF and MAUI heads each do it themselves.
+compiles its own copy: Core does it once on behalf of the six Skia heads and the
+Android head, and the WinUI, WPF and MAUI heads each do it themselves.
 
 The one framework-specific concession in the file is a `[Bindable]` attribute
 guarded by `#if HAS_CODEBRIX`, a symbol Core and all six Skia head csproj files
-define. That single symbol is the complete list of places where a head can drift in
+define (for its Android build, Core gets the same symbol from the CodeBrix.Android
+package). That single symbol is the complete list of places where a head can drift in
 the shared source, which is the point: keep them countable. The WinUI head csproj
 also defines `HAS_WINUI` so head-specific code has a symbol to hang on, and nothing
 in the shared source needs it: every head runs the same startup path.

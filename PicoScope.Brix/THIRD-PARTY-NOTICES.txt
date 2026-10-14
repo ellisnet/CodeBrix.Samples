@@ -60,6 +60,29 @@ machine at run time and loads it from there, so nothing proprietary is
 redistributed here and no driver version is pinned.
 
 ------------------------------------------------------------------------
+Android head  (src/PicoScope.Brix.Android)
+------------------------------------------------------------------------
+The Android head contains no third-party files of its own and does not load
+the Pico driver (it runs the simulated device only). Its build brings in, as
+NuGet packages, the following third-party code that ends up inside the
+Android application package:
+
+  - Material Components for Android and the AndroidX libraries (Google), in
+    their .NET bindings (Xamarin.Google.Android.Material, Xamarin.AndroidX.*),
+    licensed under the Apache License, Version 2.0. They arrive through the
+    CodeBrix.Android package, which draws every control with them.
+
+  - SkiaSharp and HarfBuzzSharp (Microsoft), licensed under the MIT License,
+    with their Android native libraries: Skia (Google, BSD 3-Clause License)
+    and HarfBuzz (the "Old MIT" license). They arrive through
+    CodeBrix.Android.PlotterView, by way of the CodeBrix.Android SkiaSharp.Views
+    and TextLayout add-ins, and draw the chart and its text on the device.
+
+Each of those packages carries its own license and notices, and the
+CodeBrix.Android packages ship their own THIRD-PARTY-NOTICES.txt; they are
+not reproduced here.
+
+------------------------------------------------------------------------
 Measurements (captured at run time)
 ------------------------------------------------------------------------
 The application displays signals captured from an oscilloscope attached to

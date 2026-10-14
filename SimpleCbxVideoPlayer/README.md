@@ -1,6 +1,7 @@
 # SimpleCbxVideoPlayer
 
-SimpleCbxVideoPlayer is a one-page video player that grades the picture while it plays. The window holds
+SimpleCbxVideoPlayer is a one-page video player, for the desktop and Android, that grades the picture
+while it plays. The window holds
 two drop-downs along the top - which clip to play, and which render path to compose it on - a black picture
 area, a lookup-table panel down the right-hand side, a transport strip with Play, Pause, Stop, a scrub bar
 and a clock, and a status line along the bottom. The clips and the color lookup tables are carried by the
@@ -136,9 +137,10 @@ folder and read from beside the executable.
 ## Building, running and testing
 
 There is one solution, `SimpleCbxVideoPlayer.slnx`, and it holds everything: the shared UI project, the
-Core project, all six heads, the playback library under a `Libraries` solution folder and the test projects
-under a `Tests` solution folder. Its header comment describes it as everything that builds with the plain
-.NET SDK on Linux, macOS and Windows, which holds here because every head is a Skia head.
+Core project, the six desktop heads and the Android head, the playback library under a `Libraries` solution
+folder and the test projects under a `Tests` solution folder. Its header comment describes it as everything
+that builds with the .NET SDK and its android workload on Linux, macOS and Windows, which holds here because
+every desktop head is a Skia head and the Android head needs nothing beyond that workload and the Android SDK.
 
 | Head project | Platform |
 | --- | --- |
@@ -148,14 +150,21 @@ under a `Tests` solution folder. Its header comment describes it as everything t
 | `src/SimpleCbxVideoPlayer.MacOS` | macOS |
 | `src/SimpleCbxVideoPlayer.Win32Skia` | Windows, Win32 window |
 | `src/SimpleCbxVideoPlayer.WinWpfSkia` | Windows, Skia hosted in a WPF window |
+| `src/SimpleCbxVideoPlayer.Android` | Android phones, tablets and Android laptops |
 
-Every head targets `net10.0` except WinWpfSkia, which targets `net10.0-windows` and sets
+Every desktop head targets `net10.0` except WinWpfSkia, which targets `net10.0-windows` and sets
 `EnableWindowsTargeting` so the solution still restores and builds from Linux or macOS; it can only run on
-Windows.
+Windows. The Android head targets `net10.0-android36.1`, builds on any of the three operating systems, and
+runs on Android 13 (API level 33) and later. `SimpleCbxVideoPlayer.Core` and the playback library build for
+both target frameworks, so a single change to either reaches every head.
 
 Prerequisites:
 
-- The .NET 10 SDK. No workload is needed.
+- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). The workload is needed
+  for every build of this application, a desktop-only build and the test runs included, because the Core
+  project and the playback library also build for Android.
+- For the Android head, which a build of the whole solution includes, the Android SDK; to run it, an
+  Android device or emulator reachable with `adb`.
 - All CodeBrix packages come from NuGet. No CodeBrix library is referenced as a source project, so this
   folder builds on its own.
 - A graphics device for the color grade. The picture plays either way, but the lookup tables are applied
@@ -164,7 +173,8 @@ Prerequisites:
 - A sound device for the soundtrack. Every clip carries one; the transport works without one, and the
   scripted mode can switch the soundtrack off entirely.
 - Nothing to download and nothing to supply. The clips and the lookup tables are carried in
-  `src/SimpleCbxVideoPlayer.Core/Assets/` and copied to each head's output folder by the build.
+  `src/SimpleCbxVideoPlayer.Core/Assets/` and copied to each desktop head's output folder by the build; the
+  Android head packs the same folder into its application package instead.
 
 Build and run one head from this folder:
 
@@ -180,6 +190,23 @@ dotnet run --project src/SimpleCbxVideoPlayer.WinWpfSkia
 
 The frame-buffer head wants a text console rather than a desktop session. Console logging is compiled in
 only for Debug builds, so a Release run is silent.
+
+Build the Android head, and install it on a device or emulator. The install target needs the device's
+runtime identifier on the command line - `android-arm64` for most phones and tablets, `android-x64` for an
+emulator or an x86-64 Android laptop - and it works per project, not on the solution. Add
+`-p:AdbTarget="-s <serial>"` when more than one device is attached:
+
+```text
+dotnet build src/SimpleCbxVideoPlayer.Android/SimpleCbxVideoPlayer.Android.csproj -c Release
+dotnet build src/SimpleCbxVideoPlayer.Android/SimpleCbxVideoPlayer.Android.csproj -c Debug -t:Install -p:RuntimeIdentifier=android-x64
+dotnet build src/SimpleCbxVideoPlayer.Android/SimpleCbxVideoPlayer.Android.csproj -c Release -t:Install -p:RuntimeIdentifier=android-arm64
+```
+
+A Release build is trimmed and produces an installable `.apk` under
+`src/SimpleCbxVideoPlayer.Android/bin/Release/net10.0-android36.1/`; it is large, because it carries the
+whole clip corpus. A Debug build installs with fast deployment, so install it with the `Install` target
+rather than copying its `.apk` to the device. The Android package name is
+`com.codebrix.samples.simplecbxvideoplayer`. The Android head logs to logcat rather than to a console.
 
 The application also has a scripted mode that opens the real window on the real head, plays a chosen clip,
 captures one composed frame, optionally bakes and re-applies the grade, prints a line per step and leaves
@@ -231,6 +258,8 @@ SimpleCbxVideoPlayer/
     SimpleCbxVideoPlayer.MacOS/         Head: Program.cs plus a csproj with one runtime package
     SimpleCbxVideoPlayer.Win32Skia/     Head: Program.cs plus a csproj with one runtime package
     SimpleCbxVideoPlayer.WinWpfSkia/    Same, plus net10.0-windows and a software render surface
+    SimpleCbxVideoPlayer.Android/       Head: the Android application and activity, the manifest, one runtime
+                                        package, and the corpus packed as Android assets
     libs/
       SimpleCbxVideoPlayer.SkiaVideo/   The seam: the only project that names the video packages
         SkiaVideoRuntime.cs             Registers the AV1 and Opus decoders, once per process
@@ -254,6 +283,16 @@ the platform, font and canvas packages, and owns the `Assets` folder; everything
 transitively through it. The library references nothing in the application and names every video package
 itself, which is what makes it the seam.
 
+Core and `SimpleCbxVideoPlayer.SkiaVideo` build for two target frameworks. The `net10.0` build of Core
+references the CodeBrix.Platform packages and serves the desktop heads; the `net10.0-android36.1` build
+references their CodeBrix.Android counterparts and serves the Android head. The playback library names the
+same video and codec packages for both, and differs only in the sound device: its `net10.0` build references
+CodeBrix.Audio, whose native backends play on Linux, macOS and Windows, and its Android build references
+CodeBrix.Audio.Android, which `MainApplication` in the Android head initialises at start-up. The choice is
+made by a target-framework condition on each package group in the project files, so the source files are the
+same for both. The Android head adds no code of its own beyond its application and activity classes;
+`App.xaml`, `MainPage.xaml` and the view model run unchanged.
+
 ## CodeBrix libraries and add-ins used
 
 | Library or add-in | What it does in this application | Where |
@@ -267,6 +306,9 @@ itself, which is what makes it the seam.
 | CodeBrix.VideoPlayback.Skia | The presenter: it takes decoded frames, applies the composed effect chain on the graphics device or converts on the processor, and blits the result into whatever Skia canvas the application owns | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs` |
 | CodeBrix.VideoPlayback.Dav1d | The AV1 decoder, registered once at start-up. Nothing in this family is discovered by reflection, so without this registration nothing in the corpus plays | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SkiaVideoRuntime.cs` |
 | CodeBrix.Audio.Opus | The Opus decoder, registered in the same call. The Matroska and WebM clips carry Opus soundtracks; the bespoke-container clips carry Vorbis, which needs no extra package | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SkiaVideoRuntime.cs` |
+| CodeBrix.Audio | The sound device on the desktop heads: the native audio backends for Linux, macOS and Windows behind the device-neutral audio core the playback packages use | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SimpleCbxVideoPlayer.SkiaVideo.csproj` |
+| CodeBrix.Audio.Android | The same sound device on the Android head, initialised once in the head's `MainApplication` | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SimpleCbxVideoPlayer.SkiaVideo.csproj`, `src/SimpleCbxVideoPlayer.Android/MainApplication.cs` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the SkiaSharp.Views and Graphics3DGL add-ins; the Android head and the Android build of Core reference these instead of the CodeBrix.Platform packages | `src/SimpleCbxVideoPlayer.Android/SimpleCbxVideoPlayer.Android.csproj`, `src/SimpleCbxVideoPlayer.Core/SimpleCbxVideoPlayer.Core.csproj` |
 | SilverAssertions | The assertion style in the test projects | `tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/`, `tests/SimpleCbxVideoPlayer.PlayTests/` |
 
 Third-party libraries:
@@ -398,6 +440,13 @@ Core csproj copies them to the output folder with one `None` item, and `SampleAs
 every head's executable and beside the test binary. An application that has lost its `Assets` folder finds
 nothing, which is why the status line says so rather than the drop-downs silently being empty.
 
+An Android application has no folder beside its executable for a build to copy into, so the Android head
+packs the same `Assets` folder into its application package as Android assets, and `MainApplication` copies
+it out to `AppContext.BaseDirectory` the first time an installed build starts. `SampleAssets` then finds it
+exactly as on the desktop, and nothing in the shared code knows the difference. A marker file names the
+installed build the copy came from, so an update copies again and an ordinary start copies nothing. Read
+`src/SimpleCbxVideoPlayer.Android/MainApplication.cs`.
+
 What is offered is decided by a rule, not a list. `VideoCorpus` reads every sub-folder of the clip corpus
 except the ones it names, and offers every file whose extension this family can open, so a folder added
 tomorrow appears in the drop-down without a line of code changing. `LutCatalog` reads the generated tables
@@ -486,7 +535,8 @@ and MIT files from six independent open-source projects plus a set generated by 
 them. The verbatim license text of every upstream project sits in `Assets/LUTs/LICENSES/`, and the
 corpus's own `README.txt` and `MANIFEST.txt` record, table by table, where each file came from and how its
 license was checked. The notices file also states that code dependencies arrive as NuGet packages carrying
-their own licenses and notices, so those are not reproduced there. Note that the CodeBrix packages this
+their own licenses and notices, so those are not reproduced there; it does name the Android libraries the
+Android head's package brings in. Note that the CodeBrix packages this
 application uses are not all under the same license; the family's package-name suffix records each one's
 license, so check the suffix in each csproj before shipping a derivative.
 

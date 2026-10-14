@@ -1,8 +1,8 @@
 <Solution>
   <!-- JustBetweenUs.Linux.slnx
-       The Linux solution: the Skia heads except WinWpfSkia, the shared UI
-       shared-project, Core, the encryption library and its tests. No native
-       heads. JustBetweenUs.MacOS.slnx adds the MAUI head; JustBetweenUs.Windows.slnx
+       The Linux solution: the Skia heads except WinWpfSkia, the Android head,
+       the shared UI shared-project, Core, the encryption library and its tests.
+       No native heads. JustBetweenUs.MacOS.slnx adds the MAUI head; JustBetweenUs.Windows.slnx
        holds everything. -->
   <Configurations>
     <Platform Name="Any CPU" />
@@ -19,6 +19,7 @@
     <Project Path="CodeBrixPlatform/JustBetweenUs.MacOS/JustBetweenUs.MacOS.csproj" />
     <Project Path="CodeBrixPlatform/JustBetweenUs.UI/JustBetweenUs.UI.shproj" />
     <Project Path="CodeBrixPlatform/JustBetweenUs.Win32Skia/JustBetweenUs.Win32Skia.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.Android/JustBetweenUs.Android.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".gitignore" />

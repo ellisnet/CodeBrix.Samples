@@ -250,8 +250,8 @@ The page's side of the contract is a plain binding, with
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`,
 `WikipediaPublisher/Shared/ViewModels/MainViewModel.cs`,
 `CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/ViewModels/ConversionViewModel.cs`,
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
-(ten commands behind `??=` fields, and three counts plus one `IsBusy` from which
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs`
+(every command behind a `??=` field, and three counts plus one `IsBusy` from which
 every button's enablement and every caption in the application is derived)
 
 **Sharp edges.**
@@ -660,7 +660,7 @@ public class MainViewModel : SimpleViewModel
 `JustBetweenUs/Shared/ViewModels/MainViewModel.cs` and
 `WikipediaPublisher/Shared/ViewModels/MainViewModel.cs` (both wrap the whole body
 in `if (!IsDesignMode(true)) { ... }` instead of returning early),
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs`
 (the guard as the first line, with every service field initialized to a concrete
 library instance above it so design mode - which returns before the container is
 ever asked - still has working objects behind every property)
@@ -928,7 +928,7 @@ _session.DrawingChanged += (_, _) => InvokeOnMainThread(() => HasDrawing = _sess
 `WikipediaPublisher/Shared/ViewModels/MainViewModel.cs`,
 `WebcamPainter/src/WebcamPainter.Core/ViewModels/MainViewModel.cs`,
 `PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`,
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs`
 (the prose and the PDF both composed under `Task.Run` and everything that follows
 written back inside a single `InvokeOnMainThread`, including the `IsBusy = false`
 on each failure path)
@@ -1810,8 +1810,8 @@ public override void Dispose()
 `NotionDocumentCreator/src/NotionDocumentCreator.Core/ViewModels/MainViewModel.cs`,
 `PainDiagram/Shared/ViewModels/MainViewModel.cs`,
 `WikipediaPublisher/Shared/ViewModels/MainViewModel.cs`,
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
-(`Dispose()` disposes and nulls ten commands and then nulls all eleven delegates
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs`
+(`Dispose()` disposes and nulls every command and then nulls every delegate
 of the three bridges, with a comment saying why: every one of them captures the
 page and would otherwise keep it alive through the view model)
 
@@ -2324,7 +2324,7 @@ private void SetViewerMode(ViewerMode mode, string hint, bool activateViewer = t
 `PdfSideBySide/src/PdfSideBySide.Core/ViewModels/DocumentPaneViewModel.cs`,
 `PolyHavenBrowser/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`,
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`,
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs`
 (`DeckPanelVisibility` and `InterpretationVisibility` as the two halves of one
 bool, plus a `StaleVisibility` badge with a rule of its own, in an application
 that has no value converter anywhere)
@@ -2756,7 +2756,7 @@ public string StatusText
 **Also shown by.**
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`
 (`StatusText = $"Could not load the ... sample: {ex.Message}"`),
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs`
 (a missing picker, a file that will not write and an interpretation that throws
 all end in `SetStatus(...)` or a styled dialog, with the caught exception going to
 the logger rather than to the person)
@@ -6214,7 +6214,7 @@ is about what that method does; this is about who calls it.
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.UI/Views/MainPage.xaml.cs`
 
 **Also shown by.**
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs`
 (the constructor subscribes `Unloaded` to a named `OnPageUnloaded()` method rather
 than to a lambda, because the page has teardown of its own to do first - closing
 the detail panel, ending a drag, stopping an animation and dropping its one
@@ -6445,7 +6445,7 @@ holds the very same instances and reads them freely but cannot change one.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs
 //A fresh Deck is already shuffled; the cards that have left it live in _cards, and
 //  _stations is the same set again, indexed by the station each one was laid on.
 private Deck _deck = new();
@@ -6468,7 +6468,7 @@ to forget: a card arriving on an occupied position, and a card arriving from
 another position rather than from the tray.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs
 public void PlaceOnStation(ReadingCard? card, int station)
 {
     if (card == null || station < 0 || station >= StationCount || !_cards.Contains(card)) { return; }
@@ -6508,7 +6508,7 @@ appeared, moved, was turned over or went away, and one of them carries a boolean
 asking for a particular animation.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/Services/IReadingTableBridge.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/Services/IReadingTableBridge.cs
 public interface IReadingTableBridge
 {
     /// <summary>
@@ -6537,7 +6537,7 @@ The page's side of a drop is four lines, and it asks the model object where it i
 rather than being told a position in the call.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs
 /// <summary>A card is now on a station, or back in the tray.</summary>
 private void ShowCardMoved(ReadingCard model, bool animate)
 {
@@ -6566,11 +6566,11 @@ computed `InTray => Station < 0`. The page reads all three and writes none of
 them.
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs` (the regions
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs` (the regions
 "What is on the table" and "Head-capability bridges")
-`InannaRosette/src/InannaRosette.Core/ViewModels/ReadingCard.cs` and
-`src/InannaRosette.Core/Services/IReadingTableBridge.cs`
-`InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml.cs` (`ShowCardAdded`,
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/ReadingCard.cs` and
+`src/InannaOctaquetra.Core/Services/IReadingTableBridge.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml.cs` (`ShowCardAdded`,
 `ShowCardMoved`, `ShowCardFlipped`, `ShowTableCleared`)
 
 **Sharp edges.**
@@ -6613,7 +6613,7 @@ from the model, and every command and every model transaction ends by calling it
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs
 /// <summary>How many cards are still in the stack.</summary>
 [AffectsCommands(nameof(DrawCommand), nameof(AutoLayCommand))]
 [AffectsProperties(nameof(DeckCountText), nameof(CanDraw), nameof(CanAutoLay))]
@@ -6658,7 +6658,7 @@ four values, which is what makes the rules readable side by side instead of
 scattered through ten `CanXxx()` bodies:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs
 /// <summary>True when there is a card left to draw and nothing is in flight.</summary>
 public bool CanDraw => !IsBusy && DeckRemaining > 0;
 
@@ -6668,7 +6668,7 @@ public bool CanAutoLay => !IsBusy && FilledStations < StationCount && DeckRemain
 /// <summary>True when there is anything on the table or in the tray to clear.</summary>
 public bool CanClear => !IsBusy && (FilledStations > 0 || TrayCount > 0);
 
-/// <summary>True once at least one card is laid; a partial rosette still reads.</summary>
+/// <summary>True once at least one card is laid; a partial Octaquetra still reads.</summary>
 public bool CanInterpret => !IsBusy && FilledStations >= 1;
 
 /// <summary>True once there is an interpretation the report can be built from.</summary>
@@ -6692,7 +6692,7 @@ rule the application can show are the same expression. One method is the only
 thing that writes the counts:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs
 //The three counts every button and caption is gated on, recomputed from the one source of
 //  truth after anything moves
 private void RefreshCounts(bool refreshGuidance = true)
@@ -6704,7 +6704,7 @@ private void RefreshCounts(bool refreshGuidance = true)
     if (refreshGuidance) { RefreshGuidance(); }
 }
 
-//The deck, the tray and the rosette are three parts of one pack: a card is in exactly one of
+//The deck, the tray and the Octaquetra are three parts of one pack: a card is in exactly one of
 //  them, always, and the three counts add up to the forty. Anything else means a card has
 //  been lost or copied, which is worth saying the moment it happens rather than when it turns
 //  up twice in the same reading. Debug builds only; the check costs nothing in Release.
@@ -6719,7 +6719,7 @@ private void AssertWholePack()
 ```
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs` (the regions
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs` (the regions
 "Bindable properties", "Computed properties" and "The status line")
 
 **Sharp edges.**
@@ -6760,7 +6760,7 @@ sentence survives.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs
 /// <summary>Sets the status line explicitly, because an action just happened.</summary>
 /// <param name="text">The line to show.</param>
 public void SetStatus(string text) => StatusText = text;
@@ -6778,7 +6778,7 @@ public void RefreshGuidance()
 
     if (FilledStations >= StationCount)
     {
-        StatusText = "All nine stations are filled. Press Interpret to read the rosette.";
+        StatusText = "All nine stations are filled. Press Interpret to read the Octaquetra.";
     }
     else if (FilledStations > 0)
     {
@@ -6788,11 +6788,11 @@ public void RefreshGuidance()
     }
     else if (TrayCount > 0)
     {
-        StatusText = "Drag a card from the tray onto a petal of the rosette. Double-click a laid card to reverse it.";
+        StatusText = "Drag a card from the tray onto a petal of the Octaquetra. Double-click a laid card to reverse it.";
     }
     else if (DeckRemaining <= 0)
     {
-        StatusText = "The deck is empty. Press Clear to send every card back under it.";
+        StatusText = DeckEmpty;
     }
     else
     {
@@ -6806,7 +6806,7 @@ can even be computed, as it is here: the same method both returns a card and
 announces it, and only the announcing path holds the line.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs
 public void ReturnToTray(ReadingCard? card, bool announce)
 {
     // ... validation, and vacating whatever station the card was on
@@ -6821,7 +6821,7 @@ public void ReturnToTray(ReadingCard? card, bool announce)
 ```
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs` (the region
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs` (the region
 "The status line", and the `refreshGuidance:` arguments through "What is on the
 table" and the command bodies)
 
@@ -6861,7 +6861,7 @@ designer gets a live object behind every bound property.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs
 //The library's default implementations stand in until the container's registrations
 //  replace them in the constructor, so design mode - which returns before that - still has
 //  working objects behind every property and nothing has to null-check them.
@@ -6887,7 +6887,7 @@ public MainViewModel()
 
     //Nothing is registered for this in the application itself, so the shuffled deck above
     //  stands; an alternate host can register a factory to deal the cards in a known order
-    _deck = GetService<IDeckFactory>()?.Create() ?? _deck;
+    _deck = GetService<IDeckFactory>(returnNullForUnregistered: true)?.Create() ?? _deck;
 
     RefreshCounts();
     RefreshGuidance();
@@ -6901,7 +6901,7 @@ the view model from `<Page.DataContext>`, `GetService<T>()` has somewhere to ask
 and the guard falls through.
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/App.xaml.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml.cs
 public App() : this(null) { }
 
 // Alternate hosts may replace services before any view models are constructed.
@@ -6930,16 +6930,16 @@ public App(Action<IServiceCollection> configureServices)
 ```
 
 ```xml
-<!-- From CodeBrix.Samples/InannaRosette/src/InannaRosette.UI/Views/MainPage.xaml -->
+<!-- From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.UI/Views/MainPage.xaml -->
     <Page.DataContext>
         <vm:MainViewModel />
     </Page.DataContext>
 ```
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs`
-`InannaRosette/src/InannaRosette.UI/App.xaml.cs` and
-`src/InannaRosette.UI/Views/MainPage.xaml`
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs`
+`InannaOctaquetra/src/InannaOctaquetra.UI/App.xaml.cs` and
+`src/InannaOctaquetra.UI/Views/MainPage.xaml`
 
 **Sharp edges.**
 - The default instance has to be a real implementation, not a stub that throws. A
@@ -6976,7 +6976,7 @@ in a bound property so the "open it" command can enable itself.
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs
 private async Task DoCreatePdf()
 {
     var interpretation = Interpretation;
@@ -7048,7 +7048,7 @@ site. Handing the finished file to the operating system is a separate command, a
 the one place in the application that asks the host to open anything:
 
 ```csharp
-// From CodeBrix.Samples/InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs
 //One place in the whole application asks the host to open a file. A refusal is a status
 //  line, never an exception that reaches the user.
 private async Task DoOpenSavedReport()
@@ -7077,9 +7077,9 @@ private async Task DoOpenSavedReport()
 ```
 
 **Where to look.**
-`InannaRosette/src/InannaRosette.Core/ViewModels/MainViewModel.cs` (`DoCreatePdf`,
+`InannaOctaquetra/src/InannaOctaquetra.Core/ViewModels/MainViewModel.cs` (`DoCreatePdf`,
 `DoSaveReading`, `DoOpenSavedReport`)
-`InannaRosette/src/libs/InannaRosette.Reading/Services/PdfReportBuilder.cs`
+`InannaOctaquetra/src/libs/InannaOctaquetra.Reading/Services/PdfReportBuilder.cs`
 (`SuggestedFileName` beside `Build`)
 
 **Sharp edges.**

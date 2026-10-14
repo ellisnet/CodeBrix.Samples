@@ -4,6 +4,7 @@ using CodeBrixVideoTool.Processing.Operations;
 using CodeBrixVideoTool.Processing.Probing;
 using CodeBrixVideoTool.Processing.Tools;
 using CodeBrix.Platform.Simple;
+using CodeBrix.VideoProcessing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
@@ -35,6 +36,10 @@ public partial class App : Application
         //Turn on AV1 video and Opus audio, once. Every one of the four formats this application
         //writes carries AV1, so nothing plays at all without the first of these.
         PlaybackCodecs.RegisterOnce();
+
+        //Make the ffmpeg engine the process-wide video processor, once. CodeBrix.VideoPlayback.Authoring
+        //decodes every conversion source through the registered engine and refuses when there is none.
+        CodeBrixVideoProcessing.Register();
 
         SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
         {

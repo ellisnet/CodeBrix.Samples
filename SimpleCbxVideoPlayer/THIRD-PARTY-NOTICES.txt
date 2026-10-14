@@ -106,6 +106,31 @@ computed from that arithmetic alone. The script needs only the Python 3
 standard library; it imports, downloads and installs nothing.
 
 ------------------------------------------------------------------------
+Android head  (src/SimpleCbxVideoPlayer.Android)
+------------------------------------------------------------------------
+The Android head contains no third-party files of its own. It packs the
+video corpus and the color lookup tables described above into the Android
+application package unchanged, under the same terms. Its build brings in, as
+NuGet packages, the following third-party code that ends up inside the
+Android application package:
+
+  - Material Components for Android and the AndroidX libraries (Google), in
+    their .NET bindings (Xamarin.Google.Android.Material, Xamarin.AndroidX.*),
+    licensed under the Apache License, Version 2.0. They arrive through the
+    CodeBrix.Android package, which draws every control with them.
+
+  - Oboe (Google, Apache License, Version 2.0), miniaudio (Public Domain or
+    MIT No Attribution, at the recipient's choice) and stb_vorbis (MIT or
+    Public Domain, at the recipient's choice), built into one native library
+    inside CodeBrix.Audio.Android, the sound device of the Android head.
+
+Each of those packages carries its own license and notices, and the
+CodeBrix.Android and CodeBrix.Audio.Android packages ship their own
+THIRD-PARTY-NOTICES.txt; they are not reproduced here. The AV1 decoder's
+Android native libraries arrive in the same decoder package the desktop heads
+use (see the top of this file).
+
+------------------------------------------------------------------------
 Fonts
 ------------------------------------------------------------------------
 The Roboto family this application uses as its default text font, and the Noto

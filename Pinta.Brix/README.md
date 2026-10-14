@@ -146,12 +146,12 @@ coverage drawn from CodeBrix libraries and add-ins.
 ## Building, running and testing
 
 There is one solution, `Pinta.Brix.slnx`. It holds the shared UI project,
-`Pinta.Brix.Core`, all six heads, a `Libraries` folder with the six libraries
+`Pinta.Brix.Core`, all seven heads (six desktop heads and an Android head), a `Libraries` folder with the six libraries
 under `src/libs`, and a `Tests` folder with the six library test projects under
 `tests/libs` and the PlayTests project under `tests`. Its own comment describes it as everything that builds with the
 plain .NET SDK, so it opens and builds on Linux, macOS and Windows alike.
 
-The six heads:
+The seven heads:
 
 | Head project | Platform |
 | --- | --- |
@@ -161,11 +161,18 @@ The six heads:
 | `src/Pinta.Brix.MacOS` | macOS |
 | `src/Pinta.Brix.Win32Skia` | Windows, native Win32 window |
 | `src/Pinta.Brix.WinWpfSkia` | Windows, Skia rendering hosted in a WPF window |
+| `src/Pinta.Brix.Android` | Android phones, tablets and Android laptops |
 
-Prerequisites are short. The .NET 10 SDK is the only requirement; every project
-targets `net10.0` except the WinWpfSkia head, which targets `net10.0-windows`
-and already sets `EnableWindowsTargeting`, so it restores and builds from Linux
-and macOS too. No workloads are used. There are no accounts, tokens, downloads,
+Prerequisites are short. The .NET 10 SDK with the `android` workload
+(`dotnet workload install android`) is the requirement. The desktop heads target
+`net10.0`, except the WinWpfSkia head, which targets `net10.0-windows` and
+already sets `EnableWindowsTargeting`, so it restores and builds from Linux and
+macOS too. The Android head targets `net10.0-android36.1` and runs on Android 13
+(API level 33) and later. `Pinta.Brix.Core` and all six libraries build for both
+`net10.0` and `net10.0-android36.1`, so the workload is needed for every build of
+this application, a desktop-only build and the test runs included. A build of the
+whole solution includes the Android head, so it also needs the Android SDK; to run
+that head, an Android device or emulator reachable with `adb`. There are no accounts, tokens, downloads,
 hardware requirements or data files the user has to supply: the application
 opens with a blank white document already created, through the same code path as
 File > New, so it is usable with no input at all. The settings store is created
@@ -178,6 +185,25 @@ dotnet run --project src/Pinta.Brix.LinuxX11
 dotnet run --project src/Pinta.Brix.MacOS
 dotnet run --project src/Pinta.Brix.Win32Skia
 ```
+
+Build the Android head, and install it on a device or emulator. The install target needs
+the device's runtime identifier on the command line - `android-arm64` for most phones and
+tablets, `android-x64` for an emulator or an x86-64 Android laptop - and it works per
+project, not on the solution. Add `-p:AdbTarget="-s <serial>"` when more than one device is
+attached:
+
+```text
+dotnet build src/Pinta.Brix.Android/Pinta.Brix.Android.csproj -c Release
+dotnet build src/Pinta.Brix.Android/Pinta.Brix.Android.csproj -c Debug -t:Install -p:RuntimeIdentifier=android-x64
+dotnet build src/Pinta.Brix.Android/Pinta.Brix.Android.csproj -c Release -t:Install -p:RuntimeIdentifier=android-arm64
+```
+
+A Release build is trimmed and produces an installable `.apk` under
+`src/Pinta.Brix.Android/bin/Release/net10.0-android36.1/`. A Debug build installs with
+fast deployment, so install it with the `Install` target rather than copying its `.apk`
+to the device. The Android package name is `com.codebrix.samples.pintabrix`. On Android
+the settings store lives inside the application's private files folder, the open and
+save pickers are the system document pickers, and the application fills the screen.
 
 `global.json` in this folder carries nothing but the test runner selection: it
 sets the `Microsoft.Testing.Platform` runner. Every test project is built as an
@@ -201,7 +227,7 @@ There is one test project per library, plus the application's PlayTests:
 | `tests/libs/Pinta.Brix.Settings.Tests` | The store the settings facade wraps: fresh creation, auto-backup naming and pruning, corruption recovery, import and export |
 | `tests/libs/Pinta.Brix.Controls.Tests` | The accelerator string parser and the command accelerator table that dispatches every keyboard shortcut |
 | `tests/libs/Pinta.Brix.Tools.Tests` | A placeholder; the tools' own ported tests land as the tools port progresses |
-| `tests/Pinta.Brix.PlayTests` | The running application through CodeBrix.Platform.PlayTest: drawing, undo and the history pad, layers, open/save/close prompts, adjustments and effect dialogs, the clipboard, selections, image dialogs, zoom, the palette, tool shortcut keys, layout, orientation and theme |
+| `tests/Pinta.Brix.PlayTests` | The running application through CodeBrix.Platform.PlayTest: drawing (touch-style strokes included), undo and the history pad, layers, open/save/close prompts, adjustments and effect dialogs, the clipboard, selections, image dialogs, zoom, the palette, tool shortcut keys, layout, orientation and theme |
 
 The tests run headless: no GPU, no network, no display. On Linux the test
 projects that touch pixels pull in the SkiaSharp native library explicitly, and
@@ -215,7 +241,7 @@ the user's real settings.
 ## How the projects and folders are organized
 
 ```text
-Pinta.Brix.slnx                      One solution: shared UI, Core, six heads, six libraries, their test projects, PlayTests
+Pinta.Brix.slnx                      One solution: shared UI, Core, seven heads, six libraries, their test projects, PlayTests
 global.json                          Selects the Microsoft.Testing.Platform test runner
 THIRD-PARTY-NOTICES.txt              Upstream provenance, icon-set attribution and the naming policy
 license-pdn.txt                      Upstream-of-upstream license text, copied verbatim
@@ -233,6 +259,7 @@ src/Pinta.Brix.LinuxFrameBuffer/     LinuxFrameBuffer head
 src/Pinta.Brix.MacOS/                MacOS head
 src/Pinta.Brix.Win32Skia/            Win32Skia head
 src/Pinta.Brix.WinWpfSkia/           WinWpfSkia head (net10.0-windows; selects a software render surface)
+src/Pinta.Brix.Android/              Android head: the Android application and activity, the manifest, one runtime package
 src/libs/Pinta.Brix.Settings/        Facade over the AppSettings add-in: the single settings store and a log forwarder
 src/libs/Pinta.Brix.Engine/          Headless engine: PintaCore, managers, documents, layers, history, drawing facade
 src/libs/Pinta.Brix.Engine/Drawing/  Immediate-mode drawing facade (Context, ImageSurface, Path, Pattern) over SkiaSharp
@@ -267,18 +294,29 @@ reference `Pinta.Brix.Engine`; `Pinta.Brix.Engine` references
 only one that compiles XAML-facing types, which is why it is also the only one
 that has to keep its own `RootNamespace`.
 
+`Pinta.Brix.Core` and the six libraries build for two target frameworks. The `net10.0`
+build references the CodeBrix.Platform packages and serves the desktop heads; the
+`net10.0-android36.1` build references their CodeBrix.Android counterparts and serves the
+Android head. The choice is made by a target-framework condition on each package group in
+the project files, so the source files are the same for both. `Pinta.Brix.Effects`,
+`Pinta.Brix.Tools` and `Pinta.Brix.FileFormats` reference no platform package of their
+own; they build for Android because they reference `Pinta.Brix.Engine`, which does. The
+Android head adds no code of its own beyond its application and activity classes;
+`App.xaml`, `MainPage.xaml` and every code-behind partial run unchanged.
+
 ## CodeBrix libraries and add-ins used
 
 | Library or add-in | What it does in this application | Where |
 | --- | --- | --- |
 | CodeBrix.Platform | The XAML application framework: `Application`, `Window`, `Page`, `TabView`, `MenuBar`, `ContentDialog`, `Popup`, pointer and key events, `DispatcherQueue`, pickers, clipboard, and the Simple MVVM toolkit (`SimpleViewModel`, `SimpleServiceResolver`) | `src/Pinta.Brix.Core`, `src/libs/Pinta.Brix.Controls`, all of `src/Pinta.Brix.UI` |
-| The CodeBrix.Platform runtime for the head | One head runtime package per head project, and exactly one; every other package comes from `Pinta.Brix.Core` | the six head projects in `src/` |
+| The CodeBrix.Platform runtime for the head | One head runtime package per head project, and exactly one; every other package comes from `Pinta.Brix.Core` | the six desktop head projects in `src/` |
 | CodeBrix.Platform.SkiaSharp.Views | Supplies `SKXamlCanvas`, the base class for the document canvas, the palette widget, the histogram widget and the gradient widget | `src/libs/Pinta.Brix.Controls` |
 | CodeBrix.Platform.AppSettings add-in | The whole settings backend: one portable store with startup auto-backup, pruning, corruption recovery and import/export. The only persistence dependency in the application | `src/libs/Pinta.Brix.Settings` |
 | CodeBrix.Platform.TextLayout add-in | Lays out, measures, hit-tests and outlines all re-editable text for the text tool | `src/libs/Pinta.Brix.Engine/Classes/Re-editable/Text/TextLayout.cs` |
 | CodeBrix.Platform.Fonts.OpenSans | The application's default font, set both as an `App.xaml` resource and as the platform's default text font family | `src/Pinta.Brix.UI/App.xaml`, `src/Pinta.Brix.UI/App.xaml.cs`, `src/Pinta.Brix.Core` |
 | CodeBrix.PolygonTools | Boolean polygon clipping for selections: union, difference, intersection, exclusion and simplification | `src/libs/Pinta.Brix.Engine/Classes/DocumentSelection.cs`, `Classes/SelectionModeHandler.cs`, `src/libs/Pinta.Brix.Tools/Tools/LassoSelectTool.cs` |
 | CodeBrix.Imaging | Encoders and decoders for the formats SkiaSharp cannot write or read: BMP and GIF export, TIFF both ways | `src/libs/Pinta.Brix.FileFormats/CodeBrixImagingFormat.cs` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the SkiaSharp.Views, AppSettings and TextLayout add-ins; the Android head and the Android builds of Core and the libraries reference these instead of the CodeBrix.Platform packages | `src/Pinta.Brix.Android`, `src/Pinta.Brix.Core`, `src/libs/Pinta.Brix.Controls`, `src/libs/Pinta.Brix.Engine`, `src/libs/Pinta.Brix.Settings` |
 | CodeBrix.SkiaSvg | Renders the scalable SVG icons in the embedded icon set to pixel surfaces at the requested size | `src/libs/Pinta.Brix.Controls/SkiaResourceService.cs` |
 
 Third-party libraries:
@@ -361,7 +399,12 @@ CodeBrix.Platform reports Command as the Windows modifier, so on macOS that
 modifier maps to MetaMask and everywhere else to SuperMask. Pointer capture on press
 and release on the way out is what keeps a drag alive when it leaves the element,
 and on release the pressed-button flags are already cleared, so the released
-button has to be recovered from the update kind.
+button has to be recovered from the update kind. The canvas sets
+`ManipulationMode` to `All`, which keeps a touch drag from being taken over by the
+scroll viewer's panning, so a finger stroke reaches the tools even where the canvas
+can scroll. Touch and pen input also send no hover moves between strokes, so the
+brush-style tools start each stroke from the pressed point rather than from where
+the previous stroke ended.
 
 Read `PintaCanvas.cs` for the event handlers and `InputMapper.cs` for the
 mapping, then any tool in `src/libs/Pinta.Brix.Tools/Tools/` to see what the

@@ -1,7 +1,7 @@
 # GitHubIssueFinder
 
-GitHubIssueFinder is a desktop application for finding the issues and pull requests
-nobody has picked up. The user types a GitHub user or organization into the owner box
+GitHubIssueFinder is a desktop and Android application for finding the issues and pull
+requests nobody has picked up. The user types a GitHub user or organization into the owner box
 and the application lists every open issue and pull request across that owner's public
 repositories that has no assignee, grouped by repository, newest activity first. Typing
 a login into the assignee box instead turns the same list into everything that one
@@ -81,8 +81,8 @@ follows the operating system until the user overrides it.
 ## Building, running and testing
 
 There is one solution, `GitHubIssueFinder.slnx`, and it opens on Linux, macOS and
-Windows. It contains the shared UI project, the Core project, the four head projects, a
-`Libraries` solution folder for the two `src/libs` projects and a `Tests` solution folder
+Windows. It contains the shared UI project, the Core project, the four desktop head projects
+and the Android head project, a `Libraries` solution folder for the two `src/libs` projects and a `Tests` solution folder
 for their test projects.
 
 | Head project | Platform |
@@ -91,15 +91,24 @@ for their test projects.
 | `src/GitHubIssueFinder.LinuxWayland` | Linux, Wayland compositor |
 | `src/GitHubIssueFinder.MacOS` | macOS |
 | `src/GitHubIssueFinder.Win32Skia` | Windows, native Win32 window |
+| `src/GitHubIssueFinder.Android` | Android phones, tablets and Android laptops |
 
-All four target `net10.0` and all four build on any of the three operating systems; each
-runs only on the platform it is named for.
+The four desktop heads target `net10.0` and all four build on any of the three operating
+systems; each runs only on the platform it is named for. The Android head targets
+`net10.0-android36.1`, builds on any of the three operating systems as well, and runs on
+Android 13 (API level 33) and later. `GitHubIssueFinder.Core` and the Settings library build
+for both target frameworks, so a single change to either reaches every head.
 
 Prerequisites:
 
-- The .NET 10 SDK. No workloads.
-- A session appropriate to the head: an X11 display, a Wayland compositor, macOS, or
-  Windows.
+- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). The
+  workload is needed for every build of this application, a desktop-only build and the
+  test runs included, because the Core project and the Settings library also build for
+  Android.
+- For the Android head, which a build of the whole solution includes, the Android SDK; to
+  run it, an Android device or emulator reachable with `adb`.
+- A session appropriate to the head: an X11 display, a Wayland compositor, macOS,
+  Windows, or an Android device.
 - Network access to GitHub. Nothing else: there is no account, no token and no
   configuration file to fill in. The application reads public data as an anonymous
   caller.
@@ -118,6 +127,23 @@ dotnet run --project src/GitHubIssueFinder.LinuxWayland/GitHubIssueFinder.LinuxW
 dotnet run --project src/GitHubIssueFinder.MacOS/GitHubIssueFinder.MacOS.csproj
 dotnet run --project src/GitHubIssueFinder.Win32Skia/GitHubIssueFinder.Win32Skia.csproj
 ```
+
+Build the Android head, and install it on a device or emulator. The install target needs
+the device's runtime identifier on the command line - `android-arm64` for most phones and
+tablets, `android-x64` for an emulator or an x86-64 Android laptop - and it works per
+project, not on the solution. Add `-p:AdbTarget="-s <serial>"` when more than one device is
+attached:
+
+```text
+dotnet build src/GitHubIssueFinder.Android/GitHubIssueFinder.Android.csproj -c Release
+dotnet build src/GitHubIssueFinder.Android/GitHubIssueFinder.Android.csproj -c Debug -t:Install -p:RuntimeIdentifier=android-x64
+dotnet build src/GitHubIssueFinder.Android/GitHubIssueFinder.Android.csproj -c Release -t:Install -p:RuntimeIdentifier=android-arm64
+```
+
+A Release build is trimmed and produces an installable `.apk` under
+`src/GitHubIssueFinder.Android/bin/Release/net10.0-android36.1/`. A Debug build installs
+with fast deployment, so install it with the `Install` target rather than copying its
+`.apk` to the device. The Android package name is `com.codebrix.samples.githubissuefinder`.
 
 `global.json` in this folder contains nothing but a test-runner selection - it sets the
 runner to `Microsoft.Testing.Platform`. Both test projects are self-executing binaries
@@ -150,8 +176,10 @@ They spend a few calls of the anonymous allowance when they run.
 The owner, the assignee, the closed-items switch and the chosen color scheme are written
 to a per-user settings store the moment they change or a search starts. The store is a
 single file in the CodeBrix per-application configuration folder - on Linux
-`~/.config/CodeBrix/GitHubIssueFinder/settings/settings.sqlite`, and the equivalent
-per-user application-data location on Windows and macOS. Deleting that folder resets the
+`~/.config/CodeBrix/GitHubIssueFinder/settings/settings.sqlite`, the equivalent
+per-user application-data location on Windows and macOS, and on Android
+`CodeBrix/GitHubIssueFinder/settings/settings.sqlite` inside the application's private
+files folder. Deleting that folder resets the
 application to its defaults, which are an empty owner, an empty assignee, closed items
 excluded, and the "System default" color scheme.
 
@@ -172,6 +200,7 @@ GitHubIssueFinder/
     GitHubIssueFinder.LinuxWayland/       Head: Program.cs plus one runtime package
     GitHubIssueFinder.MacOS/              Head: Program.cs plus one runtime package
     GitHubIssueFinder.Win32Skia/          Head: Program.cs plus one runtime package
+    GitHubIssueFinder.Android/            Head: the Android application and activity, the manifest, one runtime package
     libs/
       GitHubIssueFinder.GitHub/           The whole GitHub conversation; no UI types at all
         Models/                           The public shapes: request, item, label, page, progress, snapshot
@@ -199,6 +228,15 @@ platform. The two libraries reference neither Core nor each other:
 framework, and `GitHubIssueFinder.Settings` only wraps the settings add-in. Each test
 project references only the one library it mirrors.
 
+Core and `GitHubIssueFinder.Settings` build for two target frameworks. The `net10.0` build
+references the CodeBrix.Platform packages and serves the desktop heads; the
+`net10.0-android36.1` build references their CodeBrix.Android counterparts and serves the
+Android head. The choice is made by a target-framework condition on each package group in
+the project file, so the source files are the same for both. `GitHubIssueFinder.GitHub`
+holds no UI types and references no CodeBrix package, so it stays `net10.0` and the Android
+head uses it as it is. The Android head adds no code of its own beyond its application and
+activity classes; `App.xaml`, `MainPage.xaml` and every view model run unchanged.
+
 ## CodeBrix libraries and add-ins used
 
 | Library or add-in | What it does in this application | Where |
@@ -208,6 +246,7 @@ project references only the one library it mirrors.
 | CodeBrix.Platform Roboto font package | Supplies Roboto as the default text font, with the Noto Sans faces as fallbacks | `src/GitHubIssueFinder.UI/App.xaml.cs` |
 | CodeBrix.Platform.FlexPanel add-in | The header bar that wraps its scheme picker under the identity block on a narrow window, the search row that wraps the same way, and the label pills that flow after a row title | `src/GitHubIssueFinder.UI/Views/MainPage.xaml` |
 | CodeBrix.Platform.AppSettings add-in | The whole settings store - typed get and set, startup auto-backup and pruning, corruption recovery - wrapped by this application's own facade | `src/libs/GitHubIssueFinder.Settings/SettingsService.cs` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the FlexPanel and AppSettings add-ins; the Android head and the Android builds of Core and the Settings library reference these instead of the CodeBrix.Platform packages | `src/GitHubIssueFinder.Android/GitHubIssueFinder.Android.csproj`, `src/GitHubIssueFinder.Core/GitHubIssueFinder.Core.csproj`, `src/libs/GitHubIssueFinder.Settings/GitHubIssueFinder.Settings.csproj` |
 
 Third-party libraries:
 
@@ -444,7 +483,9 @@ and [Make live tests opt in and keep them out of the default run](../BLUEPRINTS-
 
 ## Known limits
 
-- **The window opens at 1180 by 800 and cannot be dragged smaller than 760 by 520.**
+- **The window opens at 1180 by 800 and cannot be dragged smaller than 760 by 520.** On
+  Android the application fills the screen instead, and the header and search rows wrap
+  to fit a phone held upright.
 - **Public data only.** The application signs in to nothing, so it sees public
   repositories and gets the anonymous allowance. There is no place to put a token.
 - **A thousand results per repository.** GitHub serves at most the first thousand results

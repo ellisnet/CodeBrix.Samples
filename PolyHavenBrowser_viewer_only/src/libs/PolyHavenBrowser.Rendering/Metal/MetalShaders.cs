@@ -8,7 +8,7 @@ namespace PolyHavenBrowser.Rendering;
 /// build or run time: the string below is the whole shader artifact.
 /// <para>
 /// The shading intentionally mirrors <see cref="GlModelSceneRenderer"/> and
-/// <see cref="VulkanShaders"/>: 0.25 ambient + 0.75 diffuse (N·L, double-sided via <c>abs</c>
+/// <c>VulkanShaders</c>: 0.25 ambient + 0.75 diffuse (N·L, double-sided via <c>abs</c>
 /// when flagged) modulated by the material base color and an optional base-color texture.
 /// Per-draw values arrive in one 112-byte <c>Uniforms</c> block (mvp, baseColorFactor,
 /// lightDirection, flags) bound at buffer index 3 in both stages; the base-color texture and its

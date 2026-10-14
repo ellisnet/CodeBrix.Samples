@@ -38,11 +38,11 @@
          matches the one CodeBrix.Platform.TextLayout depends on. -->
     <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.301" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
     <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="xunit.v3" Version="4.0.1" />
+    <PackageReference Include="xunit.v3" Version="4.0.2" />
   </ItemGroup>
 
 </Project>

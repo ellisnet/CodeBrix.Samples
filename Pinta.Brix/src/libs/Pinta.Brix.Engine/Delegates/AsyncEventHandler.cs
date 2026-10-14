@@ -23,7 +23,7 @@ public static class AsyncEventHandler<TSender, TArgs>
 	/// 
 	/// <remarks>
 	/// For use as an event handler, consider looking into
-	/// <see cref="AsyncEventHandlerExtensions.InvokeSequential{TSender, TArgs, TResult}(Returning{TResult}, TSender, TArgs)"/>,
+	/// <see cref="AsyncEventHandlerExtensions.InvokeSequential{TSender, TArgs, TResult}(AsyncEventHandler{TSender, TArgs}.Returning{TResult}, TSender, TArgs)"/>,
 	/// </remarks>
 	public delegate Task<TResult> Returning<TResult> (TSender sender, TArgs args);
 
@@ -38,7 +38,7 @@ public static class AsyncEventHandler<TSender, TArgs>
 	/// 
 	/// <remarks>
 	/// For use as an event handler, consider looking into
-	/// <see cref="AsyncEventHandlerExtensions.InvokeSequential{TSender, TArgs}(Simple, TSender, TArgs)"/>,
+	/// <see cref="AsyncEventHandlerExtensions.InvokeSequential{TSender, TArgs}(AsyncEventHandler{TSender, TArgs}.Simple, TSender, TArgs)"/>,
 	/// </remarks>
 	public delegate Task Simple (TSender sender, TArgs args);
 }

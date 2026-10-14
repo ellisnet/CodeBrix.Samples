@@ -9,6 +9,9 @@ public sealed class SeatRecord
     /// <summary>The id of the chosen team profile, or empty.</summary>
     public string TeamProfileId { get; set; } = string.Empty;
 
+    /// <summary>For a team of its own name, the id of the team profile whose emblem (and colour) it carries, or empty.</summary>
+    public string EmblemProfileId { get; set; } = string.Empty;
+
     /// <summary>True for a computer seat.</summary>
     public bool IsComputer { get; set; }
 

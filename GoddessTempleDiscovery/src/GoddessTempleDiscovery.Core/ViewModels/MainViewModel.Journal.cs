@@ -216,6 +216,66 @@ public partial class MainViewModel
         }
     }
 
+    /// <summary>The human teams' headlines (and the season front pages) close by themselves.</summary>
+    [AffectsProperties(nameof(HumanHeadlinesText))]
+    public bool HumanHeadlinesAutoDismiss
+    {
+        get;
+        set
+        {
+            SetProperty(ref field, value);
+            Store(() => SettingsService.HumanHeadlinesAutoDismiss = value);
+        }
+    }
+
+    /// <summary>The seconds a human team's headline stays open before it closes by itself.</summary>
+    public double HumanHeadlinesSeconds
+    {
+        get;
+        set
+        {
+            var seconds = ClampHeadlineSeconds(value);
+            SetDouble(ref field, seconds, nameof(HumanHeadlinesSeconds), nameof(HumanHeadlinesText));
+            Store(() => SettingsService.HumanHeadlinesSeconds = (int)seconds);
+        }
+    } = SettingsService.DefaultHumanHeadlineSeconds;
+
+    /// <summary>"After 30 seconds", or "Until closed".</summary>
+    public string HumanHeadlinesText => HeadlineText(HumanHeadlinesAutoDismiss, HumanHeadlinesSeconds);
+
+    /// <summary>The computer teams' headlines close by themselves.</summary>
+    [AffectsProperties(nameof(ComputerHeadlinesText))]
+    public bool ComputerHeadlinesAutoDismiss
+    {
+        get;
+        set
+        {
+            SetProperty(ref field, value);
+            Store(() => SettingsService.ComputerHeadlinesAutoDismiss = value);
+        }
+    }
+
+    /// <summary>The seconds a computer team's headline stays open before it closes by itself.</summary>
+    public double ComputerHeadlinesSeconds
+    {
+        get;
+        set
+        {
+            var seconds = ClampHeadlineSeconds(value);
+            SetDouble(ref field, seconds, nameof(ComputerHeadlinesSeconds), nameof(ComputerHeadlinesText));
+            Store(() => SettingsService.ComputerHeadlinesSeconds = (int)seconds);
+        }
+    } = SettingsService.DefaultComputerHeadlineSeconds;
+
+    /// <summary>"After 10 seconds", or "Until closed".</summary>
+    public string ComputerHeadlinesText => HeadlineText(ComputerHeadlinesAutoDismiss, ComputerHeadlinesSeconds);
+
+    /// <summary>The shortest time a headline can be given.</summary>
+    public double MinHeadlineSeconds => SettingsService.MinHeadlineSeconds;
+
+    /// <summary>The longest time a headline can be given.</summary>
+    public double MaxHeadlineSeconds => SettingsService.MaxHeadlineSeconds;
+
     /// <summary>The animation speed choices.</summary>
     public IReadOnlyList<string> SpeedOptions { get; } = new[] { "0.5×", "1×", "1.5×", "2×", "3×" };
 
@@ -239,9 +299,28 @@ public partial class MainViewModel
         SoundEnabled = SettingsService.SoundEnabled;
         ReducedMotion = SettingsService.ReducedMotion;
         RevealComputerDiscoveries = SettingsService.RevealComputerDiscoveries;
+        HumanHeadlinesAutoDismiss = SettingsService.HumanHeadlinesAutoDismiss;
+        HumanHeadlinesSeconds = SettingsService.HumanHeadlinesSeconds;
+        ComputerHeadlinesAutoDismiss = SettingsService.ComputerHeadlinesAutoDismiss;
+        ComputerHeadlinesSeconds = SettingsService.ComputerHeadlinesSeconds;
         var speed = SettingsService.AnimationSpeed;
         SelectedSpeed = SpeedOptions.OrderBy(o => Math.Abs(double.Parse(o.TrimEnd('×'), CultureInfo.InvariantCulture) - speed)).First();
         _loadingSettings = false;
+    }
+
+    private static double ClampHeadlineSeconds(double value) =>
+        Math.Clamp(Math.Round(double.IsFinite(value) ? value : SettingsService.MinHeadlineSeconds),
+            SettingsService.MinHeadlineSeconds, SettingsService.MaxHeadlineSeconds);
+
+    private static string HeadlineText(bool autoDismiss, double seconds)
+    {
+        if (!autoDismiss)
+        {
+            return "Stays open until closed";
+        }
+
+        var whole = (int)seconds;
+        return string.Format(CultureInfo.InvariantCulture, "Closes by itself after {0} second{1}", whole, whole == 1 ? string.Empty : "s");
     }
 
     private void Store(Action write)

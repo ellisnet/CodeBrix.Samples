@@ -8,6 +8,7 @@
   <Project Path="src/GitHubIssueFinder.LinuxWayland/GitHubIssueFinder.LinuxWayland.csproj" />
   <Project Path="src/GitHubIssueFinder.MacOS/GitHubIssueFinder.MacOS.csproj" />
   <Project Path="src/GitHubIssueFinder.Win32Skia/GitHubIssueFinder.Win32Skia.csproj" />
+  <Project Path="src/GitHubIssueFinder.Android/GitHubIssueFinder.Android.csproj" />
   <Folder Name="/Libraries/">
     <Project Path="src/libs/GitHubIssueFinder.GitHub/GitHubIssueFinder.GitHub.csproj" />
     <Project Path="src/libs/GitHubIssueFinder.Settings/GitHubIssueFinder.Settings.csproj" />

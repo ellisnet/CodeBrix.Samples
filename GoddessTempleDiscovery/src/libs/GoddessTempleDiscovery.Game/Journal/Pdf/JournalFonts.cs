@@ -5,7 +5,7 @@ using GoddessTempleDiscovery.Assets;
 namespace GoddessTempleDiscovery.Game.Journal.Pdf;
 
 /// <summary>
-/// Registers the Assets library's embedded faces with the CodeBrix.PdfDocuments font system, the InannaRosette way:
+/// Registers the Assets library's embedded faces with the CodeBrix.PdfDocuments font system, the InannaOctaquetra way:
 /// Merriweather under one family alias (its Bold-Italic face maps to Bold, which the set does not carry) and Noto
 /// Sans Cuneiform under another. Whatever a page uses is embedded in the PDF as a subset.
 /// </summary>

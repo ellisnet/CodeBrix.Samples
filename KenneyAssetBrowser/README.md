@@ -1,6 +1,6 @@
 # KenneyAssetBrowser
 
-KenneyAssetBrowser is a desktop browser for downloaded kenney.nl game-asset packs.
+KenneyAssetBrowser is a desktop and Android browser for downloaded kenney.nl game-asset packs.
 The user points it at a folder of asset-pack `.zip` files; the application reads each
 zip without extracting it, works out the pack's identity from the `License.txt` inside,
 and shows the packs as cards in a sidebar. Selecting a pack fills a grid with everything
@@ -147,8 +147,8 @@ user choices through the CodeBrix.Platform.AppSettings add-in behind a one-file 
 
 There is one solution, `KenneyAssetBrowser.slnx`, and its own comment says it holds
 "everything that builds with the plain .NET SDK on Linux, macOS and Windows" - so it opens
-on any of the three. It contains the shared UI project, the Core project, all six head
-projects, a `Libraries` solution folder for the three `src/libs` projects, and a `Tests`
+on any of the three. It contains the shared UI project, the Core project, the six desktop
+head projects and the Android head project, a `Libraries` solution folder for the three `src/libs` projects, and a `Tests`
 solution folder for their test projects. There is no second, operating-system-restricted
 solution.
 
@@ -160,19 +160,31 @@ solution.
 | `src/KenneyAssetBrowser.MacOS` | macOS |
 | `src/KenneyAssetBrowser.Win32Skia` | Windows, native Win32 window |
 | `src/KenneyAssetBrowser.WinWpfSkia` | Windows, Skia rendering hosted in a WPF window |
+| `src/KenneyAssetBrowser.Android` | Android phones, tablets and Android laptops |
 
-All six are Skia heads; there are no native (WinUI 3, WPF, .NET MAUI) heads. Five target
-`net10.0`. `KenneyAssetBrowser.WinWpfSkia` targets `net10.0-windows` and sets
-`EnableWindowsTargeting`, so the solution still restores and builds on Linux and macOS.
+The six desktop heads are Skia heads; there are no native (WinUI 3, WPF, .NET MAUI) heads.
+Five of them target `net10.0`. `KenneyAssetBrowser.WinWpfSkia` targets `net10.0-windows` and
+sets `EnableWindowsTargeting`, so the solution still restores and builds on Linux and macOS.
+The Android head targets `net10.0-android36.1`, builds on any of the three operating systems
+as well, and runs on Android 13 (API level 33) and later. `KenneyAssetBrowser.Core`, the
+Settings library and the Rendering library build for both target frameworks, so a single
+change to any of them reaches every head.
 
 Prerequisites:
 
-- The .NET 10 SDK. No workloads.
+- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). The
+  workload is needed for every build of this application, a desktop-only build and the
+  test runs included, because the Core project and two of the libraries also build for
+  Android.
+- For the Android head, which a build of the whole solution includes, the Android SDK; to
+  run it, an Android device or emulator reachable with `adb`.
 - A session appropriate to the head: an X11 display for LinuxX11, a Wayland compositor for
   LinuxWayland, a Linux virtual console with framebuffer and input access for
-  LinuxFrameBuffer, macOS for MacOS, Windows for the two Windows heads.
+  LinuxFrameBuffer, macOS for MacOS, Windows for the two Windows heads, an Android device for
+  the Android head.
 - A working OpenGL context for the 3D preview. `GlModelSceneRenderer` states that it runs
-  against desktop OpenGL 3.3 and OpenGL ES 3.0 contexts, which is what the heads supply.
+  against desktop OpenGL 3.3 and OpenGL ES 3.0 contexts, which is what the heads supply; the
+  Android head supplies OpenGL ES 3.0.
   Where initialization fails, the application says so in a dialog and everything else keeps
   working.
 - No accounts, tokens or network access. Nothing is downloaded at run time.
@@ -182,13 +194,34 @@ Prerequisites:
   under `AssetsFolderKey` and reused on every later run, and the folder button in the header
   raises the same command to change it. `AssetFolderCatalog.LoadFrom` then enumerates the
   `*.zip` files directly inside that folder (it does not recurse). Pointing the picker at
-  this folder's own `sample_asset_bundles` gives you a working catalog immediately.
+  this folder's own `sample_asset_bundles` gives you a working catalog immediately. On
+  Android, copy a few of those zips into a folder of their own on the device (for example
+  with `adb push` into a new folder under `Download`; Android does not let an application
+  pick the `Download` folder itself) and pick that folder; the application reads it for the
+  session and asks for it again on the next launch.
 
 Run one head from the command line, from this application folder:
 
 ```text
 dotnet run --project src/KenneyAssetBrowser.LinuxX11/KenneyAssetBrowser.LinuxX11.csproj
 ```
+
+Build the Android head, and install it on a device or emulator. The install target needs
+the device's runtime identifier on the command line - `android-arm64` for most phones and
+tablets, `android-x64` for an emulator or an x86-64 Android laptop - and it works per
+project, not on the solution. Add `-p:AdbTarget="-s <serial>"` when more than one device is
+attached:
+
+```text
+dotnet build src/KenneyAssetBrowser.Android/KenneyAssetBrowser.Android.csproj -c Release
+dotnet build src/KenneyAssetBrowser.Android/KenneyAssetBrowser.Android.csproj -c Debug -t:Install -p:RuntimeIdentifier=android-x64
+dotnet build src/KenneyAssetBrowser.Android/KenneyAssetBrowser.Android.csproj -c Release -t:Install -p:RuntimeIdentifier=android-arm64
+```
+
+A Release build is trimmed and produces an installable `.apk` under
+`src/KenneyAssetBrowser.Android/bin/Release/net10.0-android36.1/`. A Debug build installs
+with fast deployment, so install it with the `Install` target rather than copying its
+`.apk` to the device. The Android package name is `com.codebrix.samples.kenneyassetbrowser`.
 
 `global.json` in this folder contains nothing but a test-runner selection - it sets the
 runner to `Microsoft.Testing.Platform`. Every test project is an `Exe` with
@@ -228,6 +261,7 @@ KenneyAssetBrowser/
     KenneyAssetBrowser.MacOS/             Head: Program.cs plus one runtime package
     KenneyAssetBrowser.Win32Skia/         Head: Program.cs plus one runtime package
     KenneyAssetBrowser.WinWpfSkia/        Head: net10.0-windows, asks for a software render surface
+    KenneyAssetBrowser.Android/           Head: the Android application and activity, the manifest, one runtime package
     libs/
       KenneyAssetBrowser.AssetRead/       Zip reading and Kenney pack parsing; no UI types at all
         Models/                           AssetBundle, AssetEntry, AssetKind, ModelAsset, SpriteAtlas, SpriteRegion
@@ -258,6 +292,17 @@ neither Core nor each other: `KenneyAssetBrowser.AssetRead` knows nothing about 
 canvas control, and `KenneyAssetBrowser.Settings` only wraps the settings add-in. Each test
 project references only the one library it mirrors.
 
+Core, `KenneyAssetBrowser.Settings` and `KenneyAssetBrowser.Rendering` build for two target
+frameworks. The `net10.0` build references the CodeBrix.Platform packages and serves the
+desktop heads; the `net10.0-android36.1` build references their CodeBrix.Android
+counterparts and serves the Android head. The choice is made by a target-framework condition
+on each package group in the project file, so the source files are the same for both;
+Imaging, glTF, SkiaSharp, SkiaSvg and the font package are shared by both builds.
+`KenneyAssetBrowser.AssetRead` holds no UI types and references no CodeBrix.Platform
+package, so it stays `net10.0` and the Android head uses it as it is. The Android head adds
+no code of its own beyond its application and activity classes; `App.xaml`, `MainPage.xaml`
+and every view model run unchanged.
+
 ## CodeBrix libraries and add-ins used
 
 | Library or add-in | What it does in this application | Where |
@@ -275,6 +320,7 @@ project references only the one library it mirrors.
 | CodeBrix.Imaging | Decodes PNG, JPEG, WebP and the rest into RGBA, both as a bitmap for display and as raw bytes for a GPU texture upload | `src/libs/KenneyAssetBrowser.Rendering/Images/LdrImageDecoder.cs` |
 | CodeBrix.SkiaSvg | Rasterizes a pack's SVG art for the viewer and for grid thumbnails | `src/libs/KenneyAssetBrowser.Rendering/Images/SvgImageDecoder.cs` |
 | CodeBrix.Sqlite | Not referenced by the application directly; it arrives with the AppSettings add-in and its store type is named by the settings tests | `tests/libs/KenneyAssetBrowser.Settings.Tests/SettingsStoreTests.cs` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the FlexPanel, SkiaSharp views, Graphics3DGL, AudioPlayer and AppSettings add-ins; the Android head and the Android builds of Core and the Settings and Rendering libraries reference these instead of the CodeBrix.Platform packages. The AudioPlayer form plays through CodeBrix.Audio.Android, which it starts itself | `src/KenneyAssetBrowser.Android/KenneyAssetBrowser.Android.csproj`, `src/KenneyAssetBrowser.Core/KenneyAssetBrowser.Core.csproj`, `src/libs/KenneyAssetBrowser.Settings/KenneyAssetBrowser.Settings.csproj`, `src/libs/KenneyAssetBrowser.Rendering/KenneyAssetBrowser.Rendering.csproj` |
 
 Third-party libraries:
 

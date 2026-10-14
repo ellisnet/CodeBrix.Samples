@@ -1092,7 +1092,7 @@ public abstract class BaseEditEngine
 	/// Do not call. Use DrawActiveShape.
 	/// </summary>
 	/// <param name="engine"></param>
-	/// <param name="dirty"></param>
+	/// <param name="createHistoryItem"></param>
 	/// <param name="shiftKey"></param>
 	private RectangleD DrawFinalized (ShapeEngine engine, bool createHistoryItem, bool shiftKey)
 	{
@@ -1133,7 +1133,6 @@ public abstract class BaseEditEngine
 	/// Do not call. Use DrawActiveShape.
 	/// </summary>
 	/// <param name="engine"></param>
-	/// <param name="dirty"></param>
 	/// <param name="drawHoverSelection"></param>
 	/// <param name="shiftKey"></param>
 	private RectangleD DrawUnfinalized (ShapeEngine engine, bool drawHoverSelection, bool shiftKey, bool ctrl_key)
@@ -1576,7 +1575,7 @@ public abstract class BaseEditEngine
 	/// <summary>
 	/// Gets the corresponding tool to the given shape type and then returns that tool.
 	/// </summary>
-	/// <param name="ShapeType">The shape type to find the corresponding tool to.</param>
+	/// <param name="shapeType">The shape type to find the corresponding tool to.</param>
 	/// <returns>The corresponding tool to the given shape type.</returns>
 	public static ShapeTool? GetCorrespondingTool (ShapeTypes shapeType)
 	{

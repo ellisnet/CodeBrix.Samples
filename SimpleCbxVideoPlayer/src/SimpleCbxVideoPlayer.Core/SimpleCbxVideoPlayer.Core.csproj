@@ -1,16 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
 
     <!-- Match the namespace used by the app code -->
     <RootNamespace>SimpleCbxVideoPlayer</RootNamespace>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.281.314" />
     <PackageReference Include="CodeBrix.Platform.Fonts.Roboto.OflLicenseForever" Version="1.0.248.1219" />
+  </ItemGroup>
+
+  <!-- The desktop heads: CodeBrix.Platform and its add-ins -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.281.314" />
     <!-- SKXamlCanvas - the CPU Skia drawing surface hosted in CodeBrix.Platform XAML -->
     <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.153.1" />
     <!--
@@ -21,12 +29,21 @@
     <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.281.314" />
   </ItemGroup>
 
+  <!-- The Android head: the CodeBrix.Android twins of the same packages (SkiaGLCanvasElement runs on EGL/OpenGL ES there) -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.281.1188" />
+    <PackageReference Include="CodeBrix.Android.SkiaSharp.Views.ApacheLicenseForever" Version="1.0.281.1188" />
+    <PackageReference Include="CodeBrix.Android.Graphics3DGL.ApacheLicenseForever" Version="1.0.281.1188" />
+  </ItemGroup>
+
   <!--
     The video corpus and the colour lookup tables the application plays and grades with. They are DATA:
     nothing here is compiled, and every head that references this project gets its own copy beside its
-    executable, which is where SampleAssets looks for them.
+    executable, which is where SampleAssets looks for them. An Android application has no folder beside its
+    executable to copy into, so the Android head packs this same folder into its APK instead and copies it
+    out on first start (see SimpleCbxVideoPlayer.Android).
   -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <None Include="Assets\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

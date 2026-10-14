@@ -13,8 +13,9 @@ namespace GoddessTempleDiscovery.Game.Settings;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Defaults: sound on, reduced motion off, animation speed 1.0, reveal computer discoveries on, two turns per
-/// season, Standard difficulty, no last setup.
+/// Defaults: sound on, reduced motion off, animation speed 1.0, reveal computer discoveries on, the human teams'
+/// headlines closing by themselves after 30 seconds and the computer teams' after 10, two turns per season, Standard
+/// difficulty, no last setup.
 /// </para>
 /// <para>
 /// The store is process-global: call <see cref="Initialize()"/> once at start-up (tests pass their own folder and
@@ -41,6 +42,18 @@ public static class SettingsService
     /// <summary>Key: whether the inspector opens for the computer teams' discoveries.</summary>
     public const string RevealComputerDiscoveriesKey = KeyPrefix + "RevealComputerDiscoveries";
 
+    /// <summary>Key: whether the headlines of the human teams (and the season front pages) close by themselves.</summary>
+    public const string HumanHeadlinesAutoDismissKey = KeyPrefix + "HumanHeadlinesAutoDismiss";
+
+    /// <summary>Key: the seconds a human team's headline stays open when it closes by itself.</summary>
+    public const string HumanHeadlinesSecondsKey = KeyPrefix + "HumanHeadlinesSeconds";
+
+    /// <summary>Key: whether the headlines of the computer teams close by themselves.</summary>
+    public const string ComputerHeadlinesAutoDismissKey = KeyPrefix + "ComputerHeadlinesAutoDismiss";
+
+    /// <summary>Key: the seconds a computer team's headline stays open when it closes by itself.</summary>
+    public const string ComputerHeadlinesSecondsKey = KeyPrefix + "ComputerHeadlinesSeconds";
+
     /// <summary>Key: the default turns per team per season.</summary>
     public const string TurnsPerSeasonKey = KeyPrefix + "TurnsPerSeason";
 
@@ -59,6 +72,18 @@ public static class SettingsService
     /// <summary>The default animation speed.</summary>
     public const double DefaultAnimationSpeed = 1.0;
 
+    /// <summary>The shortest time a headline stays open when it closes by itself.</summary>
+    public const int MinHeadlineSeconds = 1;
+
+    /// <summary>The longest time a headline stays open when it closes by itself.</summary>
+    public const int MaxHeadlineSeconds = 120;
+
+    /// <summary>The default time a human team's headline stays open.</summary>
+    public const int DefaultHumanHeadlineSeconds = 30;
+
+    /// <summary>The default time a computer team's headline stays open.</summary>
+    public const int DefaultComputerHeadlineSeconds = 10;
+
     /// <summary>The default turns per season.</summary>
     public const int DefaultTurnsPerSeason = 2;
 
@@ -66,6 +91,10 @@ public static class SettingsService
     private static AppSettingProperty<bool> _reducedMotion;
     private static AppSettingProperty<double> _animationSpeed;
     private static AppSettingProperty<bool> _revealComputerDiscoveries;
+    private static AppSettingProperty<bool> _humanHeadlinesAutoDismiss;
+    private static AppSettingProperty<int> _humanHeadlinesSeconds;
+    private static AppSettingProperty<bool> _computerHeadlinesAutoDismiss;
+    private static AppSettingProperty<int> _computerHeadlinesSeconds;
     private static AppSettingProperty<int> _turnsPerSeason;
     private static AppSettingProperty<string> _difficulty;
     private static AppSettingProperty<string> _lastSeats;
@@ -108,6 +137,34 @@ public static class SettingsService
     {
         get => Require(_revealComputerDiscoveries).Value;
         set => Store(_revealComputerDiscoveries, value);
+    }
+
+    /// <summary>Whether the human teams' headlines and the season front pages close by themselves (default true).</summary>
+    public static bool HumanHeadlinesAutoDismiss
+    {
+        get => Require(_humanHeadlinesAutoDismiss).Value;
+        set => Store(_humanHeadlinesAutoDismiss, value);
+    }
+
+    /// <summary>The seconds a human team's headline stays open when it closes by itself (1 to 120; default 30).</summary>
+    public static int HumanHeadlinesSeconds
+    {
+        get => ClampHeadlineSeconds(Require(_humanHeadlinesSeconds).Value);
+        set => Store(_humanHeadlinesSeconds, ClampHeadlineSeconds(value));
+    }
+
+    /// <summary>Whether the computer teams' headlines close by themselves (default true).</summary>
+    public static bool ComputerHeadlinesAutoDismiss
+    {
+        get => Require(_computerHeadlinesAutoDismiss).Value;
+        set => Store(_computerHeadlinesAutoDismiss, value);
+    }
+
+    /// <summary>The seconds a computer team's headline stays open when it closes by itself (1 to 120; default 10).</summary>
+    public static int ComputerHeadlinesSeconds
+    {
+        get => ClampHeadlineSeconds(Require(_computerHeadlinesSeconds).Value);
+        set => Store(_computerHeadlinesSeconds, ClampHeadlineSeconds(value));
     }
 
     /// <summary>The default turns per team per season (1 to 3; default 2).</summary>
@@ -156,6 +213,10 @@ public static class SettingsService
         _reducedMotion = null;
         _animationSpeed = null;
         _revealComputerDiscoveries = null;
+        _humanHeadlinesAutoDismiss = null;
+        _humanHeadlinesSeconds = null;
+        _computerHeadlinesAutoDismiss = null;
+        _computerHeadlinesSeconds = null;
         _turnsPerSeason = null;
         _difficulty = null;
         _lastSeats = null;
@@ -212,6 +273,10 @@ public static class SettingsService
         _reducedMotion = AppSettingsService.Wrap(ReducedMotionKey, false);
         _animationSpeed = AppSettingsService.Wrap(AnimationSpeedKey, DefaultAnimationSpeed);
         _revealComputerDiscoveries = AppSettingsService.Wrap(RevealComputerDiscoveriesKey, true);
+        _humanHeadlinesAutoDismiss = AppSettingsService.Wrap(HumanHeadlinesAutoDismissKey, true);
+        _humanHeadlinesSeconds = AppSettingsService.Wrap(HumanHeadlinesSecondsKey, DefaultHumanHeadlineSeconds);
+        _computerHeadlinesAutoDismiss = AppSettingsService.Wrap(ComputerHeadlinesAutoDismissKey, true);
+        _computerHeadlinesSeconds = AppSettingsService.Wrap(ComputerHeadlinesSecondsKey, DefaultComputerHeadlineSeconds);
         _turnsPerSeason = AppSettingsService.Wrap(TurnsPerSeasonKey, DefaultTurnsPerSeason);
         _difficulty = AppSettingsService.Wrap(DifficultyKey, nameof(Difficulty.Standard));
         _lastSeats = AppSettingsService.Wrap(LastSeatsKey, string.Empty);
@@ -232,6 +297,8 @@ public static class SettingsService
 
         return property ?? throw new InvalidOperationException("SettingsService.Initialize has not run.");
     }
+
+    private static int ClampHeadlineSeconds(int value) => Math.Clamp(value, MinHeadlineSeconds, MaxHeadlineSeconds);
 
     private static double ClampSpeed(double value) =>
         double.IsNaN(value) ? DefaultAnimationSpeed : Math.Clamp(value, MinAnimationSpeed, MaxAnimationSpeed);

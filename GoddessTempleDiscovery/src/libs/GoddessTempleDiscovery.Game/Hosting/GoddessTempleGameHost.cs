@@ -43,9 +43,12 @@ namespace GoddessTempleDiscovery.Game.Hosting;
 /// <remarks>
 /// <para>
 /// Rendering: the view model sets the tier before creating the host (GPU unless <c>GODDESSTEMPLE_USE_CPU=1</c>) and
-/// pins the render resolution to 1280 x 800; the table widens with the window as the add-on's demo does (never
-/// narrower than 1280). One <see cref="DrawListDrawing"/> draws the published HUD list; the table draws into the same
-/// list first, so the z-order is the order of the calls.
+/// pins the render resolution to 1280 x 800 to start with; the table widens with the window as the add-on's demo does
+/// (never narrower than 1280). Everything is laid out and drawn in those 800-high table units, but the render
+/// resolution follows the canvas's real pixels (its size times the display's scale, so a big or Retina display gets a
+/// sharp table), and the view's zoom scales the table units up to it. One <see cref="DrawListDrawing"/> on the scene's
+/// pixel layer draws the published HUD list; the table draws into the same list first, so the z-order is the order of
+/// the calls.
 /// </para>
 /// <para>
 /// Threads: everything that touches the table, the session or the engine runs on the engine thread. The page's
@@ -61,14 +64,21 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
     /// <summary>The render height the canvas is pinned to.</summary>
     public const int RenderHeight = 800;
 
+    /// <summary>The widest table, in table units (a window more than four times as wide as high shows no more).</summary>
+    public const int MaxTableWidth = RenderWidth * 4;
+
+    /// <summary>The largest scale from table units to rendered pixels (a 4K display filled edge to edge needs 2.7).</summary>
+    public const double MaxRenderScale = 3;
+
+    /// <summary>The smallest scale from table units to rendered pixels.</summary>
+    public const double MinRenderScale = 0.5;
+
     /// <summary>The environment variable that switches the game to the CPU render tier when set to 1.</summary>
     public const string CpuTierVariable = "GODDESSTEMPLE_USE_CPU";
 
     /// <summary>The pause between two computer actions at animation speed 1.</summary>
     public const double ComputerPauseSeconds = 0.8;
 
-    /// <summary>The seconds an inspector opened for a computer team (or a season) stays open by itself.</summary>
-    public const double InspectorAutoCloseSeconds = 6;
 
     private const string ActionRoll = "Roll";
     private const string ActionClose = "Close";
@@ -103,12 +113,19 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
     private TableSession _session;
     private Random _brainRandom = new Random();
     private int _tableWidth = RenderWidth;
+    private int _pixelHeight = RenderHeight;
+    private float _zoom = 1f;
+    private volatile float _displayScale = 1f;
+    private Microsoft.UI.Xaml.XamlRoot _trackedRoot;
+    private SceneLayer _layer;
     private double _idleSeconds;
     private bool _inspectorOpen;
     private double _inspectorSeconds;
     private double _inspectorLimit;
     private bool _gameEndHandled;
     private bool _revealComputer = true;
+    private double _humanAutoClose = SettingsService.DefaultHumanHeadlineSeconds;
+    private double _computerAutoClose = SettingsService.DefaultComputerHeadlineSeconds;
     private int _tierLogged;
     private bool _rustleLoaded;
     private string _armedButton;
@@ -131,6 +148,11 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
         _inspector = inspector;
         _bridge = bridge;
         _ui = uiDispatch ?? (action => action());
+        if (renderSurface != null)
+        {
+            TrackDisplayScale(renderSurface);
+            renderSurface.Loaded += (_, _) => TrackDisplayScale(renderSurface);
+        }
     }
 
     /// <summary>True when the autoplay switch is on (<see cref="AutoPlay"/>).</summary>
@@ -204,6 +226,12 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
     /// <summary>The page closed the inspector (any thread); a waiting computer turn goes on.</summary>
     public void NotifyInspectorClosed() => Post(() => _inspectorOpen = false);
 
+    /// <summary>
+    /// The page's report that the person chose to keep reading the open headline (any thread): it no longer closes by
+    /// itself, so the computer teams wait for it however long it stays open.
+    /// </summary>
+    public void NotifyInspectorKept() => Post(() => _inspectorLimit = 0);
+
     /// <summary>Reads the stored settings and applies them to the table (any thread).</summary>
     public void ApplySettings()
     {
@@ -211,6 +239,8 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
         var reduced = SettingsService.ReducedMotion;
         var speed = (float)SettingsService.AnimationSpeed;
         var reveal = SettingsService.RevealComputerDiscoveries;
+        var humanClose = SettingsService.HumanHeadlinesAutoDismiss ? SettingsService.HumanHeadlinesSeconds : 0;
+        var computerClose = SettingsService.ComputerHeadlinesAutoDismiss ? SettingsService.ComputerHeadlinesSeconds : 0;
         Post(() =>
         {
             if (_table == null)
@@ -222,6 +252,8 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
             _table.ReducedMotion = reduced;
             _table.AnimationSpeed = speed;
             _revealComputer = reveal;
+            _humanAutoClose = humanClose;
+            _computerAutoClose = computerClose;
         });
     }
 
@@ -267,7 +299,7 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
     protected override Scene CreateInitialScene()
     {
         var scene = new Scene();
-        scene.AddPixelLayer(RenderWidth, RenderHeight);
+        _layer = scene.AddPixelLayer(MaxTableWidth, RenderHeight);
         return scene;
     }
 
@@ -281,7 +313,7 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
     protected override void CreateDirectDrawings()
     {
         var host = RenderSurface.Host;
-        _drawing = new DrawListDrawing(host, host.ViewManager.Views[0], new Rectangle(0, 0, RenderWidth, RenderHeight), _hud, "goddesstemple-table")
+        _drawing = new DrawListDrawing(host, _layer, new Rectangle(0, 0, RenderWidth, RenderHeight), _hud, "goddesstemple-table")
         {
             ZOrder = 100,
         };
@@ -393,6 +425,8 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
 
     // ------------------------------------------------------------------ preparation and new games
 
+    //The table is laid out in table units, 800 high and as wide as the window's shape asks; it is rendered at the
+    //  canvas's real pixel height (layout size times the display scale), the view zoomed so the 800 units fill it
     private void Resize()
     {
         var canvas = RenderSurface;
@@ -401,21 +435,51 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
             return;
         }
 
-        var width = Math.Max(RenderWidth, (int)Math.Round(RenderHeight * canvas.ActualWidth / canvas.ActualHeight));
-        if (width == _tableWidth)
+        var width = Math.Clamp((int)Math.Round(RenderHeight * canvas.ActualWidth / canvas.ActualHeight), RenderWidth, MaxTableWidth);
+        var scale = Math.Clamp(canvas.ActualHeight * _displayScale / RenderHeight, MinRenderScale, MaxRenderScale);
+        var pixelHeight = (int)Math.Round(RenderHeight * scale);
+        if (width == _tableWidth && pixelHeight == _pixelHeight)
         {
             return;
         }
 
+        var relayout = width != _tableWidth;
         _tableWidth = width;
+        _pixelHeight = pixelHeight;
+        _zoom = pixelHeight / (float)RenderHeight;
         _table.CancelDrag();
-        canvas.SetRenderResolution(width, RenderHeight);
+        canvas.SetRenderResolution((int)Math.Round(width * _zoom), pixelHeight);
+        var view = RenderSurface.Host.ViewManager.Views[0];
+        view.Viewport.SnapZoom(_zoom);
+        view.Camera.SnapTo(PointF.Empty);
         if (_drawing != null)
         {
-            _drawing.ScreenBounds = new Rectangle(0, 0, width, RenderHeight);
+            _drawing.WorldBounds = new Rectangle(0, 0, width, RenderHeight);
         }
 
-        _session?.Relayout(width);
+        GameLog.Write($"render resolution {(int)Math.Round(width * _zoom)}x{pixelHeight} (table {width}x{RenderHeight}, zoom {_zoom:0.###})");
+        if (relayout)
+        {
+            _session?.Relayout(width);
+        }
+    }
+
+    //The display scale (2 on a Retina display, 1.25 on a scaled Windows desktop) comes from the canvas's XamlRoot, on
+    //  the UI thread, now and whenever it changes (the window moved to another display); the engine thread reads it
+    private void TrackDisplayScale(GameSurfaceCanvas canvas)
+    {
+        var root = canvas.XamlRoot;
+        if (root == null)
+        {
+            return;
+        }
+
+        _displayScale = (float)Math.Max(1, root.RasterizationScale);
+        if (!ReferenceEquals(root, _trackedRoot))
+        {
+            _trackedRoot = root;
+            root.Changed += (sender, _) => _displayScale = (float)Math.Max(1, sender.RasterizationScale);
+        }
     }
 
     //The faces are composed on a worker; the add-on rasterizes each one as it is registered, so they are registered
@@ -649,7 +713,8 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
                 var count = state.SeasonCount;
                 _ui(() => _bridge?.SeasonChanged(started.Season, index, count));
                 var seasonSeed = state.Seed;
-                ShowCard(() => CardViews.For(started.Season, _faces, AutoCloseFor(false), seasonSeed), AutoCloseFor(false));
+                var seasonClose = AutoCloseFor(true);
+                ShowCard(() => CardViews.For(started.Season, _faces, seasonClose, seasonSeed), seasonClose);
                 break;
             case TurnStarted:
                 _controls.Reset();
@@ -673,7 +738,7 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
                 if (favored || _revealComputer)
                 {
                     var year = state.Season?.Year ?? string.Empty;
-                    var close = AutoCloseFor(false);
+                    var close = AutoCloseFor(favored);
                     ShowCard(() => CardViews.For(favor.Card, _faces, year, favor.TeamName, close), close);
                 }
 
@@ -691,9 +756,11 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
         }
     }
 
-    //A person's own discovery stays open until they close it; everything else closes itself (sooner in autoplay)
-    private double AutoCloseFor(bool humanOwnFind) =>
-        humanOwnFind ? 0 : _autoPlay ? AutoPlay.InspectorHoldSeconds : InspectorAutoCloseSeconds;
+    //The settings say whether a headline closes by itself and when: one pair for the human teams' headlines (the
+    //  season front pages count as theirs), one for the computer teams'; 0 keeps it open until closed. Autoplay
+    //  always closes them, quickly
+    private double AutoCloseFor(bool human) =>
+        _autoPlay ? AutoPlay.InspectorHoldSeconds : human ? _humanAutoClose : _computerAutoClose;
 
     private void ShowCard(Func<CardView> build, double autoClose)
     {
@@ -796,7 +863,8 @@ public sealed class GoddessTempleGameHost : CodeBrixGameHost
     {
         while (_mouse.TryDequeue(out var e))
         {
-            var point = new Vector2(e.CurrentPosition.X, e.CurrentPosition.Y);
+            //The mouse reports rendered pixels; the table and the HUD work in table units
+            var point = new Vector2(e.CurrentPosition.X / _zoom, e.CurrentPosition.Y / _zoom);
             _frame.PointerX = point.X;
             _frame.PointerY = point.Y;
             HoverSlot(point);

@@ -106,4 +106,38 @@ public sealed class ToolTests(AppFixture fixture) : PintaTest(fixture)
         IsBlack(await PixelAsync(10, 10)).Should().BeTrue();
         IsBlack(await PixelAsync(790, 590)).Should().BeTrue();
     }
+
+    // Touch and pen input reach the tools with no hover moves before or between strokes:
+    // a press, moves with the button down, a release. Sent straight to the tool manager,
+    // because the desktop pointer is always a mouse that hovers on its way to the canvas.
+    private Task<bool> TouchStrokeAsync(int fromX, int fromY, int toX, int toY) => EvaluateAsync(() =>
+    {
+        ToolMouseEventArgs At(int x, int y, ModifierType state) => new()
+        {
+            State = state,
+            MouseButton = Engine.MouseButton.Left,
+            PointDouble = new PointD(x + 0.5, y + 0.5),
+        };
+        PintaCore.Tools.DoMouseDown(ActiveDocument, At(fromX, fromY, ModifierType.Button1Mask));
+        for (int step = 1; step <= 10; step++)
+            PintaCore.Tools.DoMouseMove(ActiveDocument, At(fromX + (toX - fromX) * step / 10, fromY + (toY - fromY) * step / 10, ModifierType.Button1Mask));
+        PintaCore.Tools.DoMouseUp(ActiveDocument, At(toX, toY, ModifierType.None));
+        return true;
+    });
+
+    [Theory]
+    [InlineData("Paintbrush")]
+    [InlineData("Eraser")]
+    public async Task Touch_strokes_start_where_the_finger_lands(string tool)
+    {
+        await SelectToolAsync(tool);
+        await TouchStrokeAsync(100, 100, 200, 100);
+        await TouchStrokeAsync(100, 300, 200, 300);
+        await Expect(HistoryRows).ToHaveCountAsync(3);
+        IsWhite(await PixelAsync(150, 100)).Should().BeFalse();
+        IsWhite(await PixelAsync(150, 300)).Should().BeFalse();
+        // Nothing joins the image origin to the first stroke, or the first stroke's end to the second's start.
+        IsWhite(await PixelAsync(50, 50)).Should().BeTrue();
+        IsWhite(await PixelAsync(150, 200)).Should().BeTrue();
+    }
 }

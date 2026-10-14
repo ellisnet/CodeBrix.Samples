@@ -20,6 +20,7 @@
     <Project Path="CodeBrixPlatform/PainDiagram.LinuxWayland/PainDiagram.LinuxWayland.csproj" />
     <Project Path="CodeBrixPlatform/PainDiagram.LinuxFrameBuffer/PainDiagram.LinuxFrameBuffer.csproj" />
     <Project Path="CodeBrixPlatform/PainDiagram.MacOS/PainDiagram.MacOS.csproj" />
+    <Project Path="CodeBrixPlatform/PainDiagram.Android/PainDiagram.Android.csproj" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="CodeBrixPlatform/tests/PainDiagram.PlayTests/PainDiagram.PlayTests.csproj" />

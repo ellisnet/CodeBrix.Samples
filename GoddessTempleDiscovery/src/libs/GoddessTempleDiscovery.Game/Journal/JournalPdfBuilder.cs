@@ -32,7 +32,7 @@ public sealed record JournalPdfInput(IReadOnlyList<JournalEntry> Entries, IReadO
 public sealed record JournalPdf(byte[] Bytes, int PageCount, IReadOnlyList<string> DrawnText);
 
 /// <summary>
-/// The Field Journal as a PDF, hand-placed on <see cref="XGraphics"/> in the InannaRosette manner: the bound run of
+/// The Field Journal as a PDF, hand-placed on <see cref="XGraphics"/> in the InannaOctaquetra manner: the bound run of
 /// the game's editions of the Warka Herald. A cover; then, in the order they were read, a front page for each
 /// season and an EXTRA! page for each discovery (masthead, headline, columns, the art framed as a photograph, the
 /// WHERE IT IS NOW and THE RECORD boxes), with the tablets, favors, specialists and reports set as the Learned

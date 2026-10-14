@@ -29,7 +29,12 @@ public static class TextureImageLoader
         switch (NormalizeExtension(fileExtension))
         {
             case "exr":
+#if HAS_CODEBRIX_ANDROID
+                //The OpenEXR decoder (TinyEXR.NET) is not built for Android.
+                throw new NotSupportedException("OpenEXR images are not supported on Android.");
+#else
                 return NormalizeToBitmap(ExrDecoder.Decode(data));
+#endif
             case "hdr":
                 return ToneMapper.ToBitmap(RadianceHdrDecoder.Decode(data));
             default:
@@ -48,7 +53,11 @@ public static class TextureImageLoader
 
         return NormalizeExtension(fileExtension) switch
         {
+#if HAS_CODEBRIX_ANDROID
+            "exr" => throw new NotSupportedException("OpenEXR images are not supported on Android."),
+#else
             "exr" => ExrDecoder.Decode(data),
+#endif
             "hdr" => RadianceHdrDecoder.Decode(data),
             var other => throw new NotSupportedException(
                 $"'{other}' is not a float-image format; use {nameof(LoadForDisplay)} for LDR formats."),

@@ -102,6 +102,10 @@ public sealed class FreeformShapeTool : BaseBrushTool
 		surface_modified = false;
 		undo_surface = document.Layers.CurrentUserLayer.Surface.Clone ();
 		path = null;
+		//A stroke starts at the pressed point. Touch and pen input send no hover
+		//moves between strokes, so the previous stroke's last point is cleared here
+		//(otherwise the new stroke is joined to where the last one ended).
+		last_point = null;
 
 		document.Layers.ToolLayer.Clear ();
 		document.Layers.ToolLayer.Hidden = false;

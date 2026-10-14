@@ -25,7 +25,7 @@
 // THE SOFTWARE.
 using System;
 
-/// Replacements for Cairo / GDK rectangles that GtkSharp provided in the GTK3 build.
+// Replacements for Cairo / GDK rectangles that GtkSharp provided in the GTK3 build.
 //was previously: namespace Pinta.Core;
 namespace Pinta.Brix.Engine;
 
@@ -187,7 +187,7 @@ public readonly record struct RectangleI (
 			bottom - top + 1);
 
 	/// <summary>
-	/// Creates a rectangle with positive width & height from the provided points.
+	/// Creates a rectangle with positive width and height from the provided points.
 	/// Note that the second point will be the bottom right corner of the rectangle,
 	/// and the pixel is not inside the rectangle itself.
 	/// </summary>

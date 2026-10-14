@@ -438,6 +438,17 @@ for WebM, Matroska and Mode 1, Mode 2 carrying Vorbis, which the playback core
 decodes itself. See
 [Turn on extra media codecs once at startup](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-extra-media-codecs-once-at-startup).
 
+
+### The video-processing engine the application registers
+
+`App`'s constructor also calls `CodeBrixVideoProcessing.Register()`, right after the
+decoders. The authoring library that writes every `.cbv` decodes its source through
+whichever video-processing engine the process has registered, and refuses with a
+message naming that call when there is none; on the desktop the engine is the FFmpeg
+one. The call is idempotent and does not look for the executables, so a machine
+without FFmpeg still starts and still gets the missing-FFmpeg dialog on the first
+Open. The processing tests' media fixture makes the same call before it imports.
+
 ### One page, one data context, two child view models
 
 `MainViewModel` is the data context and owns the one thing the two halves share:

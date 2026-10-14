@@ -41,6 +41,7 @@ public sealed partial class ApplicationTests
         await Create.ClickAsync();
         await Expect(Page.GetByText("1/2  Reserving fixture ports", new() { Exact = true })).ToBeVisibleAsync();
         await Expect(Create).ToBeDisabledAsync();
+        await Expect(InstanceName).ToBeDisabledAsync();
         Fixture.Topologies.Calls.Should().Equal("CreateAsync A1 playtest-cache");
         Fixture.Topologies.CreateGate.SetResult();
         await Expect(Page.GetByText("playtest-cache", new() { Exact = true })).ToBeVisibleAsync();
@@ -70,9 +71,11 @@ public sealed partial class ApplicationTests
         await OpenCreateFormAsync("playtest-cancel");
         await Create.ClickAsync();
         await Expect(Page.GetByText("1/2  Reserving fixture ports", new() { Exact = true })).ToBeVisibleAsync();
+        await Expect(InstanceName).ToBeDisabledAsync();
         await Button("Cancel").ClickAsync();
         await Expect(Page.GetByText("Cancelled.", new() { Exact = true })).ToBeVisibleAsync();
         await Expect(Create).ToBeEnabledAsync();
+        await Expect(InstanceName).ToBeEnabledAsync();
         (await Page.EvaluateAsync(() => Fixture.Model.CurrentSection)).Should().Be(SectionKey.CreateInstance);
         Fixture.Topologies.Instances.Should().BeEmpty();
     }

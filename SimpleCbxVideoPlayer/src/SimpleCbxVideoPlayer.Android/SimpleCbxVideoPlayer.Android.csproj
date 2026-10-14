@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.1</TargetFramework>
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+
+    <!-- The Android package name and the name under the launcher icon -->
+    <ApplicationId>com.codebrix.samples.simplecbxvideoplayer</ApplicationId>
+    <ApplicationTitle>SimpleCbxVideoPlayer</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+  </PropertyGroup>
+
+  <!-- Release builds are trimmed; an .apk can be installed directly (the default, .aab, is for app stores) -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+  </PropertyGroup>
+
+  <!-- Tell MSBuild to treat .xaml files as CodeBrix.Platform XAML pages -->
+  <ItemGroup>
+    <Page Include="**\*.xaml" Exclude="bin\**\*.xaml;obj\**\*.xaml" />
+    <None Remove="**\*.xaml" />
+  </ItemGroup>
+
+  <!-- Shared UI files (App.xaml + Views) -->
+  <Import Project="..\SimpleCbxVideoPlayer.UI\SimpleCbxVideoPlayer.UI.projitems" Label="Shared" />
+  <ItemGroup>
+    <ProjectReference Include="..\SimpleCbxVideoPlayer.Core\SimpleCbxVideoPlayer.Core.csproj" />
+  </ItemGroup>
+
+  <!--
+    The clip corpus and the colour lookup tables. The desktop heads find them beside their executable, where
+    the Core project copies them; an APK has no such folder, so they are packed as Android assets under
+    SampleCorpus/ and MainApplication copies them out to the same place (AppContext.BaseDirectory/Assets)
+    on first start.
+  -->
+  <ItemGroup>
+    <AndroidAsset Include="..\SimpleCbxVideoPlayer.Core\Assets\**\*" Link="SampleCorpus\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- EXACTLY ONE platform head package; all other packages come from SimpleCbxVideoPlayer.Core -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.281.1188" />
+  </ItemGroup>
+</Project>

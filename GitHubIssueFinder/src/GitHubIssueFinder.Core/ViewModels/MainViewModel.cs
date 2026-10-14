@@ -117,7 +117,7 @@ public class MainViewModel : SimpleViewModel, IManageColorScheme
         }
 
         //Null unless an alternate host registered one; the platform launcher is used then.
-        _urlOpener = GetService<IUrlOpener>();
+        _urlOpener = GetService<IUrlOpener>(returnNullForUnregistered: true);
 
         Groups = new ObservableCollection<RepositoryGroupViewModel>();
         StatusBrush = new SolidColorBrush();

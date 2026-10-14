@@ -1,0 +1,18 @@
+using InannaOctaquetra.Reading.Models;
+
+namespace InannaOctaquetra.Reading.Services;
+
+/// <summary>Saves a reading to JSON and loads one back. Pure; no UI, no file system.</summary>
+public interface IReadingSerializer
+{
+    /// <summary>Writes a reading as indented JSON.</summary>
+    string ToJson(OctaquetraReading reading);
+
+    /// <summary>
+    /// Reads a reading back from JSON. The document must carry the current format version;
+    /// unknown card ids or station indexes are skipped.
+    /// </summary>
+    /// <exception cref="FormatException">The text is not a reading document, carries no
+    /// version, or carries a version this reader does not understand.</exception>
+    OctaquetraReading FromJson(string json);
+}

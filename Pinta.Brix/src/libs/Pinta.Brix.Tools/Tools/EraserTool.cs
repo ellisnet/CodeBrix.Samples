@@ -97,6 +97,17 @@ public sealed class EraserTool : BaseBrushTool
 		tb.Append (TypeComboBox);
 	}
 
+	protected override void OnMouseDown (Document document, ToolMouseEventArgs e)
+	{
+		//A stroke starts at the pressed point. Touch and pen input send no hover
+		//moves between strokes, so the previous stroke's last point is cleared here
+		//(otherwise the new stroke is joined to where the last one ended).
+		if (mouse_button == MouseButton.None)
+			last_point = null;
+
+		base.OnMouseDown (document, e);
+	}
+
 	protected override void OnMouseMove (Document document, ToolMouseEventArgs e)
 	{
 		PointI newPoint = e.Point;

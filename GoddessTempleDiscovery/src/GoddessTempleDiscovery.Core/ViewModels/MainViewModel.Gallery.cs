@@ -57,10 +57,12 @@ public partial class MainViewModel
 
     private const string AllCategories = "everything";
     private const int ThumbnailSize = 150;
+    private const int LargeSize = 1200;
 
     private readonly Dictionary<string, BitmapImage> _thumbnails = new Dictionary<string, BitmapImage>(StringComparer.Ordinal);
     private IReadOnlyList<ArtInfo> _art;
     private int _galleryPage;
+    private int _galleryLargeIndex;
 
     #region | The gallery of the game's art |
 
@@ -142,6 +144,15 @@ public partial class MainViewModel
     /// <summary>Its sources line.</summary>
     public string GalleryLargeSources { get => field; private set => SetProperty(ref field, value ?? string.Empty); } = string.Empty;
 
+    /// <summary>"Picture 5 of 263", its place among the pictures of the chosen category.</summary>
+    public string GalleryLargePositionText { get => field; private set => SetProperty(ref field, value ?? string.Empty); } = string.Empty;
+
+    /// <summary>Shows the previous picture of the chosen category large (from the first, the last).</summary>
+    public SimpleCommand PreviousGalleryLargeCommand => field ??= new SimpleCommand(() => StepLarge(-1));
+
+    /// <summary>Shows the next picture of the chosen category large (from the last, the first).</summary>
+    public SimpleCommand NextGalleryLargeCommand => field ??= new SimpleCommand(() => StepLarge(1));
+
     /// <summary>The art's license line.</summary>
     public string GalleryLicense => ArtCatalog.LicenseText;
 
@@ -155,6 +166,12 @@ public partial class MainViewModel
         {
             case Windows.System.VirtualKey.Escape:
                 return CloseTopmost();
+            case Windows.System.VirtualKey.Left or Windows.System.VirtualKey.PageUp when IsGalleryOpen && IsGalleryLargeOpen:
+                StepLarge(-1);
+                return true;
+            case Windows.System.VirtualKey.Right or Windows.System.VirtualKey.PageDown when IsGalleryOpen && IsGalleryLargeOpen:
+                StepLarge(1);
+                return true;
             case Windows.System.VirtualKey.Left or Windows.System.VirtualKey.PageUp when IsGalleryOpen && !IsGalleryLargeOpen:
                 PageGallery(-1);
                 return true;
@@ -266,20 +283,65 @@ public partial class MainViewModel
             return;
         }
 
-        GalleryLargeTitle = item.Info.Title;
-        GalleryLargeKey = item.Key + " · " + item.Category;
-        GalleryLargeSubject = item.Info.Subject;
-        GalleryLargeSources = item.Info.Sources;
-        GalleryLargeImage = item.Image;
+        var filtered = GalleryFiltered();
+        var index = -1;
+        for (var i = 0; i < filtered.Count; i++)
+        {
+            if (string.Equals(filtered[i].Key, item.Key, StringComparison.Ordinal))
+            {
+                index = i;
+                break;
+            }
+        }
+
+        ShowLarge(item.Info, item.Image, Math.Max(0, index), filtered.Count);
+    }
+
+    //Previous and Next walk the whole chosen category, wrapping at either end, and keep the gallery's page on the
+    //  picture shown, so Back to the Gallery returns to the page that holds it
+    private void StepLarge(int delta)
+    {
+        if (!IsGalleryLargeOpen)
+        {
+            return;
+        }
+
+        var filtered = GalleryFiltered();
+        if (filtered.Count == 0)
+        {
+            return;
+        }
+
+        var index = ((_galleryLargeIndex + delta) % filtered.Count + filtered.Count) % filtered.Count;
+        var info = filtered[index];
+        var page = index / GalleryPageSize;
+        if (page != _galleryPage)
+        {
+            _galleryPage = page;
+            ShowGalleryPage();
+        }
+
+        ShowLarge(info, _thumbnails.TryGetValue(info.Key, out var thumbnail) ? thumbnail : null, index, filtered.Count);
+    }
+
+    private void ShowLarge(ArtInfo info, BitmapImage placeholder, int index, int count)
+    {
+        _galleryLargeIndex = index;
+        GalleryLargeTitle = info.Title;
+        GalleryLargeKey = info.Key + " · " + info.Category;
+        GalleryLargeSubject = info.Subject;
+        GalleryLargeSources = info.Sources;
+        GalleryLargePositionText = string.Format(CultureInfo.InvariantCulture, "Picture {0} of {1}", index + 1, count);
+        GalleryLargeImage = placeholder;
         IsGalleryLargeOpen = true;
-        _ = LoadLargeAsync(item.Key);
+        _ = LoadLargeAsync(info.Key);
     }
 
     private async Task LoadLargeAsync(string key)
     {
         try
         {
-            var bytes = await Task.Run(() => SvgRaster.RenderArtPng(key, 700));
+            var bytes = await Task.Run(() => SvgRaster.RenderArtPng(key, LargeSize));
             var image = await ImageFromAsync(bytes);
             if (IsGalleryLargeOpen && GalleryLargeKey.StartsWith(key + " ", StringComparison.Ordinal))
             {

@@ -33,6 +33,10 @@ public class SettingsServiceTests
         SettingsService.ReducedMotion.Should().BeFalse();
         SettingsService.AnimationSpeed.Should().Be(1.0);
         SettingsService.RevealComputerDiscoveries.Should().BeTrue();
+        SettingsService.HumanHeadlinesAutoDismiss.Should().BeTrue();
+        SettingsService.HumanHeadlinesSeconds.Should().Be(30);
+        SettingsService.ComputerHeadlinesAutoDismiss.Should().BeTrue();
+        SettingsService.ComputerHeadlinesSeconds.Should().Be(10);
         SettingsService.TurnsPerSeason.Should().Be(2);
         SettingsService.Difficulty.Should().Be(Difficulty.Standard);
         SettingsService.LastSeatsJson.Should().BeEmpty();
@@ -50,6 +54,10 @@ public class SettingsServiceTests
         SettingsService.ReducedMotion = true;
         SettingsService.AnimationSpeed = 2.5;
         SettingsService.RevealComputerDiscoveries = false;
+        SettingsService.HumanHeadlinesAutoDismiss = false;
+        SettingsService.HumanHeadlinesSeconds = 75;
+        SettingsService.ComputerHeadlinesAutoDismiss = false;
+        SettingsService.ComputerHeadlinesSeconds = 4;
         SettingsService.TurnsPerSeason = 3;
         SettingsService.Difficulty = Difficulty.Hard;
         SettingsService.SaveLastSeats(new[]
@@ -64,6 +72,10 @@ public class SettingsServiceTests
         SettingsService.ReducedMotion.Should().BeTrue();
         SettingsService.AnimationSpeed.Should().Be(2.5);
         SettingsService.RevealComputerDiscoveries.Should().BeFalse();
+        SettingsService.HumanHeadlinesAutoDismiss.Should().BeFalse();
+        SettingsService.HumanHeadlinesSeconds.Should().Be(75);
+        SettingsService.ComputerHeadlinesAutoDismiss.Should().BeFalse();
+        SettingsService.ComputerHeadlinesSeconds.Should().Be(4);
         SettingsService.TurnsPerSeason.Should().Be(3);
         SettingsService.Difficulty.Should().Be(Difficulty.Hard);
         var seats = SettingsService.LoadLastSeats();
@@ -83,10 +95,14 @@ public class SettingsServiceTests
         //Act
         SettingsService.AnimationSpeed = 99;
         SettingsService.TurnsPerSeason = 9;
+        SettingsService.HumanHeadlinesSeconds = 500;
+        SettingsService.ComputerHeadlinesSeconds = 0;
 
         //Assert
         SettingsService.AnimationSpeed.Should().Be(SettingsService.MaxAnimationSpeed);
         SettingsService.TurnsPerSeason.Should().Be(GameRules.MaxTurnsPerSeason);
+        SettingsService.HumanHeadlinesSeconds.Should().Be(120);
+        SettingsService.ComputerHeadlinesSeconds.Should().Be(1);
     }
 
     [Fact]
