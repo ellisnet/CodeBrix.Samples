@@ -23,7 +23,7 @@
          renderer (GlModelSceneRenderer) draws with. The app codes to Graphics3DGL and never
          references CodeBrix.Platform.OpenGL directly (hard rule). This library hosts no XAML
          control, so it keeps its own default RootNamespace (PolyHavenBrowser.Rendering)-->
-    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.281.314" />
+    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.291.1177" />
 
     <PackageReference Include="Silk.NET.Vulkan" Version="2.23.0" />
     <PackageReference Include="TinyEXR.NET" Version="1.2.0" />

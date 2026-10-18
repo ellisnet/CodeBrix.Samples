@@ -15,7 +15,7 @@
     <PackageReference Include="CodeBrix.Platform.GameEngine.MitLicenseForever" Version="1.0.281.62" />
     <PackageReference Include="CodeBrix.Platform.GameEngine.CardsAndDice.MitLicenseForever" Version="1.0.281.72" />
     <!-- Every persisted value (settings, the last setup) goes through Settings/SettingsService over this add-in. -->
-    <PackageReference Include="CodeBrix.Platform.AppSettings.ApacheLicenseForever" Version="1.0.281.314" />
+    <PackageReference Include="CodeBrix.Platform.AppSettings.ApacheLicenseForever" Version="1.0.291.1177" />
     <!-- The Field Journal is a hand-placed document drawn straight onto XGraphics, card art as vector. -->
     <PackageReference Include="CodeBrix.PdfDocuments.MitLicenseForever" Version="1.0.285.692" />
   </ItemGroup>

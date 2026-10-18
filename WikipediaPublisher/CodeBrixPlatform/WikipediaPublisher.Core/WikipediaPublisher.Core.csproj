@@ -32,18 +32,18 @@
 
   <!-- The desktop heads: CodeBrix.Platform and its add-ins -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.281.314" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.291.1177" />
 
     <!-- WebView add-in: gives the Linux Skia heads an embedded WebView2 (WPE WebKit,
          offscreen). Referenced once here in Core; every Skia head inherits it transitively.
          The Windows, Skia-on-WPF and macOS runtimes already have WebView2 built in, so the
          add-in is inert there. The Linux heads need the system WPE WebKit engine at run time:
          sudo apt install libwpewebkit-2.0-1 libwpebackend-fdo-1.0-1 libwpe-1.0-1 -->
-    <PackageReference Include="CodeBrix.Platform.WebView.ApacheLicenseForever" Version="1.0.281.314" />
+    <PackageReference Include="CodeBrix.Platform.WebView.ApacheLicenseForever" Version="1.0.291.1177" />
 
     <!-- FlexPanel - a flexbox-style layout control for CodeBrix.Platform XAML; lays out
          the bottom bar so its two control groups wrap onto two rows in portrait. -->
-    <PackageReference Include="CodeBrix.Platform.FlexPanel.ApacheLicenseForever" Version="1.0.281.314" />
+    <PackageReference Include="CodeBrix.Platform.FlexPanel.ApacheLicenseForever" Version="1.0.291.1177" />
   </ItemGroup>
 
   <!-- The Android head: the CodeBrix.Android twins of the same packages (the WebView twin

@@ -34,8 +34,8 @@
        transitively, the CodeBrix.Platform.OpenGL `GL` type the shader renderer draws with.
        The app codes to Graphics3DGL and never references CodeBrix.Platform.OpenGL directly. -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
-    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.281.314" />
-    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.281.314" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.291.1177" />
+    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.291.1177" />
   </ItemGroup>
 
   <!-- The Android head: the CodeBrix.Android twins of the same two packages (GLCanvasElement
