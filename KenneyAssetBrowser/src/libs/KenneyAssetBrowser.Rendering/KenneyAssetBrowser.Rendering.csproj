@@ -41,7 +41,7 @@
   <!-- The Android head: the CodeBrix.Android twins of the same two packages (GLCanvasElement
        renders on an OpenGL ES 3.0 context there, which GlModelSceneRenderer already handles) -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.281.1188" />
-    <PackageReference Include="CodeBrix.Android.Graphics3DGL.ApacheLicenseForever" Version="1.0.281.1188" />
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
+    <PackageReference Include="CodeBrix.Android.Graphics3DGL.ApacheLicenseForever" Version="1.0.292.307" />
   </ItemGroup>
 </Project>

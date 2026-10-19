@@ -30,6 +30,6 @@
 
   <!-- EXACTLY ONE platform head package; all other packages come from WikipediaPublisher.Core -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.281.1188" />
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
   </ItemGroup>
 </Project>

@@ -29,7 +29,7 @@
 
   <!-- The Android head: the CodeBrix.Android twin of the same package -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.281.1188" />
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
   </ItemGroup>
 
   <ItemGroup>

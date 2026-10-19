@@ -32,6 +32,6 @@
   <!-- The Android head: the CodeBrix.Android twin of the TextLayout add-in,
        lock-stepped with the CodeBrix.Android version the head references -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <PackageReference Include="CodeBrix.Android.TextLayout.ApacheLicenseForever" Version="1.0.281.1188" />
+    <PackageReference Include="CodeBrix.Android.TextLayout.ApacheLicenseForever" Version="1.0.292.307" />
   </ItemGroup>
 </Project>
