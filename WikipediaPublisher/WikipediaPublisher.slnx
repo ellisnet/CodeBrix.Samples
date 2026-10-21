@@ -13,7 +13,6 @@
     <Project Path="CodeBrixPlatform/WikipediaPublisher.LinuxWayland/WikipediaPublisher.LinuxWayland.csproj" />
     <Project Path="CodeBrixPlatform/WikipediaPublisher.LinuxFrameBuffer/WikipediaPublisher.LinuxFrameBuffer.csproj" />
     <Project Path="CodeBrixPlatform/WikipediaPublisher.MacOS/WikipediaPublisher.MacOS.csproj" />
-    <Project Path="CodeBrixPlatform/WikipediaPublisher.Android/WikipediaPublisher.Android.csproj" />
   </Folder>
   <Project Path="WikipediaPublisher.RenderArticle/WikipediaPublisher.RenderArticle.csproj" />
   <Folder Name="/Tests/">

@@ -10,7 +10,6 @@
   <Project Path="src/Pinta.Brix.MacOS/Pinta.Brix.MacOS.csproj" />
   <Project Path="src/Pinta.Brix.Win32Skia/Pinta.Brix.Win32Skia.csproj" />
   <Project Path="src/Pinta.Brix.WinWpfSkia/Pinta.Brix.WinWpfSkia.csproj" />
-  <Project Path="src/Pinta.Brix.Android/Pinta.Brix.Android.csproj" />
   <Folder Name="/Libraries/">
     <Project Path="src/libs/Pinta.Brix.Settings/Pinta.Brix.Settings.csproj" />
     <Project Path="src/libs/Pinta.Brix.Engine/Pinta.Brix.Engine.csproj" />

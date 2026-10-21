@@ -1,14 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj.android/**;bin.android/**</DefaultItemExcludes>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,7 +15,7 @@
   </ItemGroup>
 
   <!-- The desktop heads -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+  <ItemGroup>
     <!-- Graphics3DGL supplies, transitively, the CodeBrix.Platform.OpenGL `GL` type the shader
          renderer (GlModelSceneRenderer) draws with. The app codes to Graphics3DGL and never
          references CodeBrix.Platform.OpenGL directly (hard rule). This library hosts no XAML
@@ -29,12 +26,4 @@
     <PackageReference Include="TinyEXR.NET" Version="1.2.0" />
   </ItemGroup>
 
-  <!-- The Android head: the CodeBrix.Android twin of Graphics3DGL (the same GL type, on OpenGL ES).
-       The Vulkan renderer (Silk.NET.Vulkan) and the OpenEXR decoder (TinyEXR.NET) are not built
-       for Android; the head allow-list in VulkanPlatformSupport.cs stays, so the app reports
-       Vulkan as not available there. -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <PackageReference Include="CodeBrix.Android.Graphics3DGL.ApacheLicenseForever" Version="1.0.292.307" />
-    <Compile Remove="Vulkan\VulkanSceneRenderer.cs;Vulkan\VulkanShaders.cs;Images\ExrDecoder.cs" />
-  </ItemGroup>
 </Project>

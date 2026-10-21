@@ -80,10 +80,14 @@ follows the operating system until the user overrides it.
 
 ## Building, running and testing
 
-There is one solution, `GitHubIssueFinder.slnx`, and it opens on Linux, macOS and
-Windows. It contains the shared UI project, the Core project, the four desktop head projects
-and the Android head project, a `Libraries` solution folder for the two `src/libs` projects and a `Tests` solution folder
-for their test projects.
+There are two solutions, and both open on Linux, macOS and Windows. Open
+`GitHubIssueFinder.slnx` if you only have the .NET 10 SDK; open
+`GitHubIssueFinder.WithAndroid.slnx` to also get the Android head.
+
+| Solution | What it holds |
+| --- | --- |
+| `GitHubIssueFinder.slnx` | The shared UI project, the Core project, the four desktop head projects, a `Libraries` solution folder for the two `src/libs` projects and a `Tests` solution folder for their test projects and the PlayTests UI suite |
+| `GitHubIssueFinder.WithAndroid.slnx` | Everything in `GitHubIssueFinder.slnx`, plus the Android head and the `.Android` twins of the Core and Settings projects; it needs the .NET Android workload and the Android SDK |
 
 | Head project | Platform |
 | --- | --- |
@@ -96,24 +100,25 @@ for their test projects.
 The four desktop heads target `net10.0` and all four build on any of the three operating
 systems; each runs only on the platform it is named for. The Android head targets
 `net10.0-android36.1`, builds on any of the three operating systems as well, and runs on
-Android 13 (API level 33) and later. `GitHubIssueFinder.Core` and the Settings library build
-for both target frameworks, so a single change to either reaches every head.
+Android 13 (API level 33) and later. `GitHubIssueFinder.Core` and the Settings library each
+have a `.Android.csproj` twin beside their project file that compiles the same source files
+for the Android head, so a single change to either reaches every head.
 
 Prerequisites:
 
-- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). The
-  workload is needed for every build of this application, a desktop-only build and the
-  test runs included, because the Core project and the Settings library also build for
-  Android.
-- For the Android head, which a build of the whole solution includes, the Android SDK; to
-  run it, an Android device or emulator reachable with `adb`.
+- The .NET 10 SDK. It is all that `GitHubIssueFinder.slnx`, the desktop heads and the test
+  runs need.
+- For the Android head and `GitHubIssueFinder.WithAndroid.slnx`, the `android` workload
+  (`dotnet workload install android`) and the Android SDK; to run it, an Android device or
+  emulator reachable with `adb`.
 - A session appropriate to the head: an X11 display, a Wayland compositor, macOS,
   Windows, or an Android device.
 - Network access to GitHub. Nothing else: there is no account, no token and no
   configuration file to fill in. The application reads public data as an anonymous
   caller.
 
-Build everything from this application folder:
+Build the desktop heads, the libraries and the tests from this application folder (build
+`GitHubIssueFinder.WithAndroid.slnx` instead to include the Android head):
 
 ```text
 dotnet build GitHubIssueFinder.slnx
@@ -146,9 +151,9 @@ with fast deployment, so install it with the `Install` target rather than copyin
 `.apk` to the device. The Android package name is `com.codebrix.samples.githubissuefinder`.
 
 `global.json` in this folder contains nothing but a test-runner selection - it sets the
-runner to `Microsoft.Testing.Platform`. Both test projects are self-executing binaries
+runner to `Microsoft.Testing.Platform`. Every test project is a self-executing binary
 built as `Exe`, so a plain `dotnet test` on the solution can report that no tests were
-found. Build the solution and run each test binary directly instead:
+found. Build the solution and run each library test binary directly instead:
 
 ```text
 dotnet build GitHubIssueFinder.slnx
@@ -156,7 +161,7 @@ dotnet build GitHubIssueFinder.slnx
 ./tests/libs/GitHubIssueFinder.Settings.Tests/bin/Debug/net10.0/GitHubIssueFinder.Settings.Tests
 ```
 
-The tests need nothing but a filesystem: no display, no network. Every HTTP call in them
+The library tests need nothing but a filesystem: no display, no network. Every HTTP call in them
 is answered by a stub handler from saved GitHub responses that live beside the test
 binary, and every wait runs on a fake clock.
 
@@ -170,6 +175,18 @@ GITHUBISSUEFINDER_RUN_LIVE_TESTS=1 ./tests/libs/GitHubIssueFinder.GitHub.Tests/b
 Those cases search one small owner, make loose assertions, and exist to prove that the
 query strings, the request headers and the response parsing still match the live service.
 They spend a few calls of the anonymous allowance when they run.
+
+`tests/GitHubIssueFinder.PlayTests` drives the real page and view model through the
+CodeBrix.Platform PlayTest head, headless by default: owner and assignee entry, grouped and
+streamed results, progress and quota pills, empty, error and rate-limit states, retry,
+Cancel and the keyboard shortcuts, opening rows through a recording `IUrlOpener`, settings
+restored on a new page, the schemes, and portrait layout. A scripted
+`IGitHubIssueSearchService` stands in for GitHub, so it makes no requests. It runs through
+`dotnet test`; its README covers the visible preview and the orientation and theme options:
+
+```text
+dotnet test --project tests/GitHubIssueFinder.PlayTests/GitHubIssueFinder.PlayTests.csproj -c Release
+```
 
 ### Where the remembered settings live
 
@@ -187,7 +204,8 @@ excluded, and the "System default" color scheme.
 
 ```text
 GitHubIssueFinder/
-  GitHubIssueFinder.slnx                  The one solution; opens on Linux, macOS and Windows
+  GitHubIssueFinder.slnx                  Everything but Android; needs only the .NET 10 SDK
+  GitHubIssueFinder.WithAndroid.slnx      The same plus the Android head and the .Android twins
   global.json                             Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt                 Attribution record for this application
   src/
@@ -196,6 +214,8 @@ GitHubIssueFinder/
       Helpers/                            HostHelper, the generic-host provider, and the IUrlOpener seam
       Theming/                            The scheme table, the role list, the brush map, the glyphs
       ViewModels/                         MainViewModel, the group, row, label and picker view models
+      GitHubIssueFinder.Core.csproj       The net10.0 build for the desktop heads
+      GitHubIssueFinder.Core.Android.csproj  The Android twin: same sources, own obj.android/ and bin.android/
     GitHubIssueFinder.LinuxX11/           Head: Program.cs plus one runtime package
     GitHubIssueFinder.LinuxWayland/       Head: Program.cs plus one runtime package
     GitHubIssueFinder.MacOS/              Head: Program.cs plus one runtime package
@@ -209,12 +229,14 @@ GitHubIssueFinder/
         Helpers/                          LabelColorMath and RelativeTime, both pure
         DependencyInjection/              The AddGitHubIssueSearch() registration extension
       GitHubIssueFinder.Settings/         SettingsService and LoggingService facades over the settings add-in
+        GitHubIssueFinder.Settings.Android.csproj  The Android twin of the Settings project
   tests/
     libs/
       GitHubIssueFinder.GitHub.Tests/     Mirrors the GitHub library
         Fixtures/                         Saved GitHub responses, copied beside the binary
         TestDoubles/                      Stub handler, fake clock, recording progress, fixture loader
       GitHubIssueFinder.Settings.Tests/   Mirrors the Settings library; drives the store in a throwaway folder
+    GitHubIssueFinder.PlayTests/          PlayTest UI suite of the real page over a scripted search service
 ```
 
 Dependencies point one way. Each head project references `GitHubIssueFinder.Core` by
@@ -225,16 +247,21 @@ their own. Core project-references both `src/libs` libraries and carries every p
 that is not a head runtime; each head adds exactly one runtime package for its own
 platform. The two libraries reference neither Core nor each other:
 `GitHubIssueFinder.GitHub` knows nothing about UI and takes one package beyond the
-framework, and `GitHubIssueFinder.Settings` only wraps the settings add-in. Each test
-project references only the one library it mirrors.
+framework, and `GitHubIssueFinder.Settings` only wraps the settings add-in. Each library test
+project references only the one library it mirrors; the PlayTests project references Core and
+imports the shared UI the way a head does.
 
-Core and `GitHubIssueFinder.Settings` build for two target frameworks. The `net10.0` build
-references the CodeBrix.Platform packages and serves the desktop heads; the
-`net10.0-android36.1` build references their CodeBrix.Android counterparts and serves the
-Android head. The choice is made by a target-framework condition on each package group in
-the project file, so the source files are the same for both. `GitHubIssueFinder.GitHub`
-holds no UI types and references no CodeBrix package, so it stays `net10.0` and the Android
-head uses it as it is. The Android head adds no code of its own beyond its application and
+Core and `GitHubIssueFinder.Settings` each come as two project files in the same folder.
+`X.csproj` targets `net10.0`, references the CodeBrix.Platform packages and serves the
+desktop heads and the tests; its twin `X.Android.csproj` targets `net10.0-android36.1`,
+references their CodeBrix.Android counterparts and serves the Android head. The twin
+compiles the same source files under the same assembly name and root namespace, and builds
+into its own `obj.android/` and `bin.android/` folders. The Android head references
+`GitHubIssueFinder.Core.Android.csproj`, which references
+`GitHubIssueFinder.Settings.Android.csproj`. Because each of those folders holds two project
+files, a bare `dotnet build` there is ambiguous: build a solution, or name the project file.
+`GitHubIssueFinder.GitHub` holds no UI types and references no CodeBrix package, so it has a
+single `net10.0` project and the Android build uses it as it is. The Android head adds no code of its own beyond its application and
 activity classes; `App.xaml`, `MainPage.xaml` and every view model run unchanged.
 
 ## CodeBrix libraries and add-ins used
@@ -246,7 +273,8 @@ activity classes; `App.xaml`, `MainPage.xaml` and every view model run unchanged
 | CodeBrix.Platform Roboto font package | Supplies Roboto as the default text font, with the Noto Sans faces as fallbacks | `src/GitHubIssueFinder.UI/App.xaml.cs` |
 | CodeBrix.Platform.FlexPanel add-in | The header bar that wraps its scheme picker under the identity block on a narrow window, the search row that wraps the same way, and the label pills that flow after a row title | `src/GitHubIssueFinder.UI/Views/MainPage.xaml` |
 | CodeBrix.Platform.AppSettings add-in | The whole settings store - typed get and set, startup auto-backup and pruning, corruption recovery - wrapped by this application's own facade | `src/libs/GitHubIssueFinder.Settings/SettingsService.cs` |
-| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the FlexPanel and AppSettings add-ins; the Android head and the Android builds of Core and the Settings library reference these instead of the CodeBrix.Platform packages | `src/GitHubIssueFinder.Android/GitHubIssueFinder.Android.csproj`, `src/GitHubIssueFinder.Core/GitHubIssueFinder.Core.csproj`, `src/libs/GitHubIssueFinder.Settings/GitHubIssueFinder.Settings.csproj` |
+| CodeBrix.Platform.PlayTest | The test head the PlayTests drive the real page through | `tests/GitHubIssueFinder.PlayTests/`, through `PlayTestSupport/CodeBrix.Sample.PlayTests.props` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the FlexPanel and AppSettings add-ins; the Android head and the `.Android` twins of Core and the Settings library reference these instead of the CodeBrix.Platform packages | `src/GitHubIssueFinder.Android/GitHubIssueFinder.Android.csproj`, `src/GitHubIssueFinder.Core/GitHubIssueFinder.Core.Android.csproj`, `src/libs/GitHubIssueFinder.Settings/GitHubIssueFinder.Settings.Android.csproj` |
 
 Third-party libraries:
 
@@ -254,7 +282,7 @@ Third-party libraries:
 | --- | --- | --- |
 | Microsoft.Extensions.DependencyInjection.Abstractions | The one dependency of the GitHub library beyond the framework: the abstractions its `AddGitHubIssueSearch` extension is written against | `src/libs/GitHubIssueFinder.GitHub/GitHubIssueFinder.GitHub.csproj` |
 | Microsoft.Extensions.Hosting and Logging.Console | The generic host that backs `SimpleServiceResolver`, and the Debug-only console logger factory | `src/GitHubIssueFinder.Core/Helpers/HostHelper.cs`, `src/GitHubIssueFinder.UI/App.xaml.cs` |
-| xUnit v3, Microsoft.NET.Test.Sdk, SilverAssertions | The test stack both test projects use | the two `tests/libs/*/*.csproj` |
+| xUnit v3, Microsoft.NET.Test.Sdk, SilverAssertions | The test stack every test project uses | `tests/libs/*/*.csproj`, `tests/GitHubIssueFinder.PlayTests/GitHubIssueFinder.PlayTests.csproj` (xUnit v3 and Microsoft.NET.Test.Sdk through `PlayTestSupport/CodeBrix.Sample.PlayTests.props`) |
 
 Everything else the application needs is in the framework: `HttpClient` over a
 `SocketsHttpHandler`, `System.Text.Json` with a source-generated context, `TimeProvider`,

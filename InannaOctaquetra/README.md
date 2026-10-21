@@ -212,17 +212,18 @@ that a card may do.
 
 ## Building, running and testing
 
-There is one solution, `InannaOctaquetra.slnx`, and it holds every project in the folder. Its
-own header comment says it contains "everything that builds with the plain .NET SDK on
-Linux, macOS and Windows": it opens on any of the three, and it builds there once the .NET
-SDK has the `android` workload and the Android SDK beside it, because the solution also holds
-the Android head and Core builds for Android as well (see Prerequisites). It files the
-reading library under a `Libraries` solution folder and the test project under a `Tests`
-solution folder.
+There are two solutions, and both open on Linux, macOS and Windows. Open
+`InannaOctaquetra.slnx` if you only have the .NET 10 SDK; its own header comment says it
+contains "everything that builds with the plain .NET SDK on Linux, macOS and Windows". Open
+`InannaOctaquetra.WithAndroid.slnx` to also get the Android head; it needs the .NET SDK's
+`android` workload and the Android SDK beside it (see Prerequisites). Each files the reading
+library under a `Libraries` solution folder and the test projects under a `Tests` solution
+folder.
 
 | Solution | Open it on | Contains |
 | --- | --- | --- |
-| `InannaOctaquetra.slnx` | Linux, macOS, Windows | The shared UI project, `InannaOctaquetra.Core`, the four desktop heads and the Android head, `InannaOctaquetra.Reading` under `Libraries`, and `InannaOctaquetra.Reading.Tests` and `InannaOctaquetra.PlayTests` under `Tests` |
+| `InannaOctaquetra.slnx` | Linux, macOS, Windows | The shared UI project, `InannaOctaquetra.Core`, the four desktop heads, `InannaOctaquetra.Reading` under `Libraries`, and `InannaOctaquetra.Reading.Tests` and `InannaOctaquetra.PlayTests` under `Tests` |
+| `InannaOctaquetra.WithAndroid.slnx` | Linux, macOS, Windows | Everything in `InannaOctaquetra.slnx`, plus the Android head and `InannaOctaquetra.Core.Android`, the Android twin of the Core project |
 
 ### The heads
 
@@ -240,15 +241,18 @@ at 1440 x 900 and refuses to be dragged below 1180 x 760 (on a small Mac, both a
 the display), which is not what a framebuffer
 device is for, and nothing here needs the WPF-hosted surface. Every desktop head targets
 plain `net10.0`, so no project file in the folder sets `EnableWindowsTargeting` or names
-`net10.0-windows`, and the whole solution restores and builds on any of the three operating
+`net10.0-windows`, and both solutions restore and build on any of the three operating
 systems.
 
 The Android head targets `net10.0-android36.1`, builds on any of the three operating systems
 as well, and runs on Android 13 (API level 33) and later. It is not a `Program.cs`: it is the
 Android application and launcher activity classes, a manifest and one runtime package, and it
 imports the same shared UI project as the desktop heads, so `App.xaml`, `MainPage.xaml`,
-`CardView` and every view model run unchanged. `InannaOctaquetra.Core` builds for both target
-frameworks; `InannaOctaquetra.Reading` stays `net10.0`, and the Android head uses it as it is.
+`CardView` and every view model run unchanged. It references
+`InannaOctaquetra.Core.Android.csproj`, the Android twin that sits beside
+`InannaOctaquetra.Core.csproj` and compiles the same source files;
+`InannaOctaquetra.Reading` has a single `net10.0` project, and the Android build uses it as
+it is.
 
 Each head is a `Program.cs` and a csproj, identical apart from the one `Use…()` call that
 names the backend. Every head sets `Nullable` and `ImplicitUsings` to `disable`: the shared
@@ -258,13 +262,12 @@ each head and into the PlayTests project, so all of them build those files the s
 
 ### Prerequisites
 
-- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). The
-  workload is needed for every build of this application, a desktop-only build and the test
-  runs included, because `InannaOctaquetra.Core` also builds for Android. All CodeBrix code
-  arrives from NuGet; no CodeBrix library is referenced as a source project, so this folder
-  builds on its own.
-- For the Android head, which a build of the whole solution includes, the Android SDK; to
-  run it, an Android device or emulator reachable with `adb`.
+- The .NET 10 SDK. It is all that `InannaOctaquetra.slnx`, the desktop heads and the test
+  runs need. All CodeBrix code arrives from NuGet; no CodeBrix library is referenced as a
+  source project, so this folder builds on its own.
+- For the Android head and `InannaOctaquetra.WithAndroid.slnx`, the `android` workload
+  (`dotnet workload install android`) and the Android SDK; to run it, an Android device or
+  emulator reachable with `adb`.
 - Nothing else. No accounts, tokens, native runtimes, downloads or data files.
   The deck, the spread, the emblem art, the velvet and the engraved band, and the report's
   fonts all travel inside the assemblies.
@@ -398,7 +401,8 @@ binary fixture.
 
 ```text
 InannaOctaquetra/
-  InannaOctaquetra.slnx                  The one solution; opens on Linux, macOS and Windows
+  InannaOctaquetra.slnx                  Everything but Android; needs only the .NET 10 SDK
+  InannaOctaquetra.WithAndroid.slnx      The same plus the Android head and Core's Android twin
   global.json                         Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt             Third-party content bundled with, or used by, the application
   Packaging/                          The artwork and the tools that make the pictures; not in the solution
@@ -424,6 +428,7 @@ InannaOctaquetra/
       Controls/Ornament.cs            Palette tokens, tracked capitals and the procedural geometry helpers
     InannaOctaquetra.Core/               View models; carries every non-head package reference
       InannaOctaquetra.Core.csproj       RootNamespace InannaOctaquetra; platform, font, hosting, logging packages
+      InannaOctaquetra.Core.Android.csproj  The Android twin: same sources, own obj.android/ and bin.android/
       Helpers/HostHelper.cs           The IHostBuilderProvider handed to SimpleServiceResolver
       Helpers/FileDialogHelper.cs     Percent-decoding and placeholder removal for picker paths
       Helpers/SnapshotPng.cs          Writes the snapshot hook's PNG files with CodeBrix.Imaging
@@ -497,14 +502,17 @@ own control namespace is declared as `xmlns:controls="using:InannaOctaquetra.Con
 `using:` form, because `CardView` lives in the head assembly alongside the page, while the
 two types that live in other assemblies take the `clr-namespace:…;assembly=…` form.
 
-`InannaOctaquetra.Core` builds for two target frameworks. The `net10.0` build references the
-CodeBrix.Platform package and serves the desktop heads; the `net10.0-android36.1` build
-references its CodeBrix.Android counterpart and serves the Android head. The choice is made
-by a target-framework condition on each package group in the project file, so the source
-files are the same for both. The Merriweather font package and the hosting and logging
-packages are shared by both builds. `InannaOctaquetra.Reading` holds no UI types and references
-no CodeBrix.Platform package, so it stays `net10.0`; the report, its embedded fonts and the
-reading text are built by the same library on every head.
+`InannaOctaquetra.Core` comes as two project files in the same folder.
+`InannaOctaquetra.Core.csproj` targets `net10.0`, references the CodeBrix.Platform package
+and serves the desktop heads and the PlayTests; its twin `InannaOctaquetra.Core.Android.csproj`
+targets `net10.0-android36.1`, references its CodeBrix.Android counterpart and serves the
+Android head. The twin compiles the same source files under the same assembly name and root
+namespace, and builds into its own `obj.android/` and `bin.android/` folders. The Merriweather
+font package, CodeBrix.Imaging and the hosting and logging packages are referenced by both.
+Because that folder holds two project files, a bare `dotnet build` there is ambiguous: build
+a solution, or name the project file. `InannaOctaquetra.Reading` holds no UI types and
+references no CodeBrix.Platform package, so it has a single `net10.0` project; the report,
+its embedded fonts and the reading text are built by the same library on every head.
 
 ## CodeBrix libraries and add-ins used
 
@@ -515,7 +523,7 @@ reading text are built by the same library on every head.
 | CodeBrix.Platform.Fonts.Merriweather | Supplies Merriweather as the application-wide default text font and as two `FontFamily` resources (`MerriweatherFont`, `MerriweatherBoldFont`) addressed through `ms-appx:///` URIs, which every text style and every hand-built `TextBlock` in the scene uses | `src/InannaOctaquetra.Core/InannaOctaquetra.Core.csproj`, `src/InannaOctaquetra.UI/App.xaml`, `src/InannaOctaquetra.UI/App.xaml.cs`, `src/InannaOctaquetra.UI/Controls/CardView.xaml.cs` |
 | CodeBrix.PdfDocuments | The entire report: `PdfDocument`, `PdfPage` and `XGraphics` for the pages and the drawing, `XGraphicsPath` for the emblem art, `XImage` for the velvet bands, `XFont`, `XSolidBrush`, `XPen` and the gradient brushes for type and ornament, and `EmbeddedFontResolver`, `EmbeddedResourceFontFace` and `MetaFontResolver` for the embedded faces | everything under `src/libs/InannaOctaquetra.Reading/Services/Pdf/`, and `src/libs/InannaOctaquetra.Reading/Services/PdfReportBuilder.cs` |
 | CodeBrix.Imaging | Writes the snapshot hook's PNG files from the pixels `RenderTargetBitmap` captures, resampling a Retina capture down to the logical size | `src/InannaOctaquetra.Core/Helpers/SnapshotPng.cs` |
-| CodeBrix.Android | The Android implementation of the same framework; the Android head and the Android build of `InannaOctaquetra.Core` reference it instead of the CodeBrix.Platform package | `src/InannaOctaquetra.Android/InannaOctaquetra.Android.csproj`, `src/InannaOctaquetra.Core/InannaOctaquetra.Core.csproj` |
+| CodeBrix.Android | The Android implementation of the same framework; the Android head and `InannaOctaquetra.Core.Android`, the Android twin of the Core project, reference it instead of the CodeBrix.Platform package | `src/InannaOctaquetra.Android/InannaOctaquetra.Android.csproj`, `src/InannaOctaquetra.Core/InannaOctaquetra.Core.Android.csproj` |
 | SilverAssertions | The `Should()` assertion style used throughout the tests | all files under `tests/libs/InannaOctaquetra.Reading.Tests/` and `tests/InannaOctaquetra.PlayTests/` |
 
 Third-party libraries:

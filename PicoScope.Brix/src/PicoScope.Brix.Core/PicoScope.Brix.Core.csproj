@@ -1,13 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj.android/**;bin.android/**</DefaultItemExcludes>
 
     <!-- Match the namespace used by the app code -->
     <RootNamespace>PicoScope.Brix</RootNamespace>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,16 +16,9 @@
   <!-- The desktop heads: CodeBrix.Platform and its add-ins. The chart control
        brings the CodeBrix.Plotter engine in with it, so nothing in this sample
        references the Plotter package directly. -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+  <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.291.1177" />
     <PackageReference Include="CodeBrix.Platform.PlotterView.ApacheLicenseForever" Version="1.0.291.1177" />
-  </ItemGroup>
-
-  <!-- The Android head: the CodeBrix.Android twins of the same packages. The
-       chart control's twin brings the same Plotter engine. -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
-    <PackageReference Include="CodeBrix.Android.PlotterView.ApacheLicenseForever" Version="1.0.292.307" />
   </ItemGroup>
 
   <!-- The device-agnostic scope contract. The real device (PicoScope.Brix.ScopeData.Ps2000)

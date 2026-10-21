@@ -1,0 +1,40 @@
+<Project>
+  <!-- Its own obj/bin folders: this project sits beside Pinta.Brix.Engine.csproj, which builds the same sources -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj.android\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin.android\</BaseOutputPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.1</TargetFramework>
+    <AssemblyName>Pinta.Brix.Engine</AssemblyName>
+    <RootNamespace>Pinta.Brix.Engine</RootNamespace>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+    <!-- Ported-from-Pinta code keeps upstream nullable annotations
+         (same approach as other vendored/ported CodeBrix code) -->
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Every persisted setting, option and remembered value goes through the
+         settings store; only Pinta.Brix.Settings references the SQLite package. -->
+    <ProjectReference Include="..\Pinta.Brix.Settings\Pinta.Brix.Settings.Android.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="4.153.1" />
+    <PackageReference Include="CodeBrix.PolygonTools.MitLicenseForever" Version="1.0.252.1257" />
+  </ItemGroup>
+
+  <!-- The Android head: the CodeBrix.Android twin of the TextLayout add-in,
+       lock-stepped with the CodeBrix.Android version the head references -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Android.TextLayout.ApacheLicenseForever" Version="1.0.292.307" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

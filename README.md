@@ -19,9 +19,10 @@ the same view model without the CodeBrix.Platform UI stack, and JustBetweenUs
 adds a .NET MAUI head, while BrixInvaders, CodeBrixVideoTool, GitHubIssueFinder,
 GoddessTempleDiscovery and InannaOctaquetra each build four of the six. Most
 applications also carry an Android head, `<App>.Android`, built on the
-CodeBrix.Android packages: the same shared XAML and the same Core library,
-whose project targets both the desktop and the Android framework and picks the
-CodeBrix.Platform packages or their CodeBrix.Android twins by target. Each
+CodeBrix.Android packages: the same shared XAML and the same Core sources,
+compiled for Android by a twin project, `<App>.Core.Android.csproj`, that sits
+beside `<App>.Core.csproj` and references the CodeBrix.Android twins of the
+desktop's CodeBrix.Platform packages. Each
 application's README says whether it has one and what, if anything, differs on
 a phone or tablet; the applications built on the game engine, a camera, a
 Tcl/Tk canvas or the video authoring library have none, because those
@@ -88,21 +89,27 @@ time happens off the UI thread and marshals its results back.
 ## Building and testing
 
 The .NET 10 SDK is the only universal prerequisite. Open the solution in the
-application's folder: most applications have a single `.slnx` there. The
-exceptions are JustBetweenUs, which has three OS-specific `.slnx` files
+application's folder: `<App>.slnx` holds everything that builds with the plain
+.NET 10 SDK, and needs nothing else. An application with an Android head also
+has `<App>.WithAndroid.slnx`, which is `<App>.slnx` plus the Android head and
+the `.Android` twin projects of Core and its libraries; open it if you also
+want the Android head, which needs the android workload and the Android SDK.
+JustBetweenUs also has three OS-specific `.slnx` files
 (`JustBetweenUs.Windows.slnx`, `JustBetweenUs.Linux.slnx`,
-`JustBetweenUs.MacOS.slnx`), and PainDiagram and
-WikipediaPublisher, which each have a cross-platform `.slnx` plus a
-`.Windows.slnx` that adds the native heads.
+`JustBetweenUs.MacOS.slnx`), and PainDiagram and WikipediaPublisher each have a
+`.Windows.slnx` that adds the native heads; these platform-specific solutions
+include the Android head too. Because a folder that holds a `.Android.csproj`
+twin holds two projects, build there by naming the solution or the project
+rather than running a bare `dotnet build`.
 
 Windows-targeting heads compile elsewhere but run only on Windows: they target
 `net10.0-windows` and set `EnableWindowsTargeting`, so a solution containing
 them still restores and builds on Linux and macOS.
 
 Some applications need more than the SDK, and their own READMEs say exactly
-what. In summary: the android workload and the Android SDK for every
-application with an Android head (its Core targets Android too, so even a
-desktop-only build of that application restores the Android framework); the
+what. In summary: the android workload and the Android SDK for the
+`.WithAndroid.slnx` and platform-specific solutions and for building an Android
+head; the
 .NET MAUI workloads (JustBetweenUs); the WPE WebKit system
 packages for the Linux WebView (WikipediaPublisher); a webcam (WebcamPainter,
 PalmVisualizer, WebcamViewer); network access for the applications that download content; a

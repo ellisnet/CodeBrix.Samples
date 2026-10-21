@@ -1,23 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj.android/**;bin.android/**</DefaultItemExcludes>
 
     <!-- Match the namespace used by the app code -->
     <RootNamespace>PainDiagram</RootNamespace>
 
     <!-- HAS_CODEBRIXPLATFORM selects the SKXamlCanvas base for the shared DrawingCanvas
-         (both target frameworks) -->
+         (defined in both PainDiagram.Core.csproj and PainDiagram.Core.Android.csproj) -->
     <DefineConstants>$(DefineConstants);HAS_CODEBRIXPLATFORM</DefineConstants>
   </PropertyGroup>
 
   <!-- CodeBrix.Platform needs this define for its internal conditional compilation
        (the CodeBrix.Android package defines it for the Android build) -->
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+  <PropertyGroup>
     <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,17 +42,11 @@
   </ItemGroup>
 
   <!-- The desktop heads: CodeBrix.Platform and its add-ins -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+  <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.291.1177" />
 
     <!-- SKXamlCanvas - the SkiaSharp drawing surface hosted in CodeBrix.Platform XAML -->
     <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.153.1" />
-  </ItemGroup>
-
-  <!-- The Android head: the CodeBrix.Android twins of the same packages -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
-    <PackageReference Include="CodeBrix.Android.SkiaSharp.Views.ApacheLicenseForever" Version="1.0.292.307" />
   </ItemGroup>
 
   <ItemGroup>

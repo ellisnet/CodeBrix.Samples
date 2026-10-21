@@ -1,14 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj.android/**;bin.android/**</DefaultItemExcludes>
     <Nullable>enable</Nullable>
     <!-- Library referencing CodeBrix.Platform keeps its OWN RootNamespace
          (heads fail CS0433 on GlobalStaticResources otherwise) -->
     <RootNamespace>Pinta.Brix.Controls</RootNamespace>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,15 +15,9 @@
   </ItemGroup>
 
   <!-- The desktop heads: CodeBrix.Platform and its SkiaSharp.Views add-in -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+  <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.291.1177" />
     <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.153.1" />
-  </ItemGroup>
-
-  <!-- The Android head: the CodeBrix.Android twins of the same packages -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
-    <PackageReference Include="CodeBrix.Android.SkiaSharp.Views.ApacheLicenseForever" Version="1.0.292.307" />
   </ItemGroup>
 
   <!-- The application icon set carried over from upstream (see

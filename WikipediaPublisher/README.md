@@ -70,7 +70,7 @@ the embedded-WebView bridge running on all nine heads, the Android head included
 - The shared source files are linked into each head one at a time, with a symbol per UI stack deciding what they compile to: [Link shared source files into each head and select the stack with a symbol](../BLUEPRINTS-ProjectLayoutAndPackaging.md#link-shared-source-files-into-each-head-and-select-the-stack-with-a-symbol).
 - The WinWpfSkia head sets `EnableWindowsTargeting` so a Windows-targeting head still compiles on Linux and macOS inside the cross-platform solution: [Let a Windows-targeting head build inside a cross-platform solution](../BLUEPRINTS-ProjectLayoutAndPackaging.md#let-a-windows-targeting-head-build-inside-a-cross-platform-solution).
 - `WikipediaPublisher.Windows.slnx` restricts its solution platforms to x86, x64 and ARM64 to match what the WinUI head declares: [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS-ProjectLayoutAndPackaging.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
-- Two solutions exist because the native heads need Windows-host-only build tooling, and both files carry a comment saying so: [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere).
+- A separate Windows solution exists because the native heads need Windows-host-only build tooling, and both it and the cross-platform solution carry a comment saying so: [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere).
 
 ## Building, running and testing
 
@@ -78,10 +78,15 @@ the embedded-WebView bridge running on all nine heads, the Android head included
 
 | Solution | Open on | Contains |
 | --- | --- | --- |
-| `WikipediaPublisher.slnx` | Linux, macOS, Windows | The shared UI shared project, the Core library, the six CodeBrix.Platform (Skia) heads, the Android head, the RenderArticle library and the test project |
-| `WikipediaPublisher.Windows.slnx` | Windows | Everything above, plus the native WinUI 3 and WPF heads; it also restricts the solution platforms to x86, x64 and ARM64, and puts RenderArticle under a `/Libraries/` solution folder |
+| `WikipediaPublisher.slnx` | Linux, macOS, Windows | The shared UI shared project, the Core library, the six CodeBrix.Platform (Skia) heads, the RenderArticle library, its test project and the PlayTests UI suite (in a `Tests` solution folder); needs only the .NET 10 SDK |
+| `WikipediaPublisher.WithAndroid.slnx` | Linux, macOS, Windows | Everything in `WikipediaPublisher.slnx`, plus the Android head and `WikipediaPublisher.Core.Android`, the Android twin of Core; needs the .NET Android workload and the Android SDK |
+| `WikipediaPublisher.Windows.slnx` | Windows | Everything in `WikipediaPublisher.WithAndroid.slnx`, plus the native WinUI 3 and WPF heads; it also restricts the solution platforms to x86, x64 and ARM64, and puts RenderArticle under a `/Libraries/` solution folder |
 
-Both files carry a comment explaining the split: the native heads require Windows-host-only
+Open `WikipediaPublisher.slnx` if you only have the .NET 10 SDK; open
+`WikipediaPublisher.WithAndroid.slnx` to also get the Android head.
+
+`WikipediaPublisher.slnx` and `WikipediaPublisher.Windows.slnx` both carry a comment
+explaining the split: the native heads require Windows-host-only
 build tooling (the Windows App SDK XAML compiler and the WPF targets), so they are kept out
 of the cross-platform solution rather than given a compile-only workaround.
 
@@ -115,19 +120,19 @@ Nine heads in total. All nine embed a WebView and all nine bind the same `MainVi
 
 ### Prerequisites
 
-- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). The
-  workload is needed for every build of this application, a desktop-only build and the
-  test runs included, because the Core project also builds for Android. The projects
-  target net10.0, with three exceptions: the WinWpfSkia head targets `net10.0-windows` and
-  sets `EnableWindowsTargeting`, so it compiles on Linux and macOS but only runs on
-  Windows; Core targets both `net10.0` and `net10.0-android36.1`; and the Android head
-  targets `net10.0-android36.1`.
-- For the Android head, which a build of either solution includes, the Android SDK; to run
-  it, an Android device or emulator reachable with `adb`.
+- The .NET 10 SDK. That is all the Skia heads, the libraries and the test runs need. The
+  projects target net10.0, with three exceptions: the WinWpfSkia head targets
+  `net10.0-windows` and sets `EnableWindowsTargeting`, so it compiles on Linux and macOS
+  but only runs on Windows; and the Android head and `WikipediaPublisher.Core.Android`
+  target `net10.0-android36.1`.
+- For the Android head (`WikipediaPublisher.WithAndroid.slnx`,
+  `WikipediaPublisher.Windows.slnx`, or the head project built on its own), the `android`
+  workload (`dotnet workload install android`) and the Android SDK; to run it, an Android
+  device or emulator reachable with `adb`.
 - Network access at run time. Nothing is bundled: the application fetches article HTML,
   downloads the article's images, and queries the Wikimedia image-metadata API.
-- On the Linux Skia heads, the system WPE WebKit engine, which the WebView add-in needs at
-  run time. The Core csproj comment gives the install line:
+- On the Linux Skia heads, and for the PlayTests on Linux, the system WPE WebKit engine,
+  which the WebView add-in needs at run time. The Core csproj comment gives the install line:
   `sudo apt install libwpewebkit-2.0-1 libwpebackend-fdo-1.0-1 libwpe-1.0-1`. It is a
   run-time dependency only, so the build succeeds on a machine that cannot run the WebView.
 - The LinuxWayland head needs a running Wayland compositor. Its csproj comment states that
@@ -167,9 +172,14 @@ copying its `.apk` to the device. The Android package name is
 
 ### Tests
 
-There is one test project, `Tests/WikipediaPublisher.RenderArticle.Tests`, covering the
-pipeline library with xUnit v3 and SilverAssertions. `global.json` at the application root
-selects the Microsoft.Testing.Platform runner:
+Each test project is xUnit v3 with SilverAssertions:
+
+| Test project | Covers |
+| --- | --- |
+| `Tests/WikipediaPublisher.RenderArticle.Tests` | The pipeline library: the parser over an embedded article fixture, the service and its registration, the page sizes, and live fetch-and-render tests against the real Wikipedia and Wikimedia endpoints |
+| `tests/WikipediaPublisher.PlayTests` | The real page and view model driven through CodeBrix.Platform.PlayTest, with the WebView add-in showing local HTML from a loopback HTTP fixture: browser pixels and input, search, publish enablement, the save picker and its errors, page sizes, overwrite confirmation, the busy state and status, theme and portrait layout. The render service is replaced by a recording fake, so these tests do not validate PDF rendering; see its README |
+
+`global.json` at the application root selects the Microsoft.Testing.Platform runner:
 
 ```text
 {
@@ -180,7 +190,7 @@ selects the Microsoft.Testing.Platform runner:
 ```
 
 With that runner selected, a plain `dotnet test` can report that it discovered no tests.
-Build the test project and run the executable the build produces instead:
+Build the RenderArticle test project and run the executable the build produces instead:
 
 ```text
 dotnet build Tests/WikipediaPublisher.RenderArticle.Tests/WikipediaPublisher.RenderArticle.Tests.csproj
@@ -193,18 +203,29 @@ the end-to-end ones download every image in an article and their comments warn t
 are slow. Every awaited call in a test passes `TestContext.Current.CancellationToken`,
 which is both what the analyzer requires and what makes a hung network test cancellable.
 
+The PlayTests project runs through `dotnet test` instead, headless by default; its README
+covers the visible preview, the orientation and theme options, and the browser engine each
+operating system needs (WPE WebKit on Linux, the Edge WebView2 runtime on Windows):
+
+```text
+dotnet test --project tests/WikipediaPublisher.PlayTests/WikipediaPublisher.PlayTests.csproj -c Release
+```
+
 ## How the projects and folders are organized
 
 ```text
 WikipediaPublisher/
   WikipediaPublisher.slnx                     Cross-platform solution (all operating systems)
-  WikipediaPublisher.Windows.slnx             Windows solution; adds the WinUI 3 and WPF heads
+  WikipediaPublisher.WithAndroid.slnx         The same solution plus the Android head and Core's Android twin
+  WikipediaPublisher.Windows.slnx             Windows solution; adds the WinUI 3 and WPF heads as well
   global.json                                 Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt                     Bundled-font and run-time-content attribution
 
   CodeBrixPlatform/                           The six Skia heads, the Android head and what they share
     WikipediaPublisher.UI/                    Shared XAML UI as a .shproj (App.xaml, Views/MainPage.xaml)
     WikipediaPublisher.Core/                  Shared application library; carries every platform package
+      WikipediaPublisher.Core.csproj          The desktop build (net10.0), obj/ and bin/
+      WikipediaPublisher.Core.Android.csproj  The Android twin (net10.0-android36.1), obj.android/ and bin.android/
     WikipediaPublisher.Win32Skia/             Head: Windows Win32 backend
     WikipediaPublisher.WinWpfSkia/            Head: Skia-on-WPF backend for Windows
     WikipediaPublisher.LinuxX11/              Head: Linux X11 backend
@@ -236,6 +257,8 @@ WikipediaPublisher/
 
   Tests/
     WikipediaPublisher.RenderArticle.Tests/   xUnit v3 and SilverAssertions; embedded HTML fixture
+  tests/
+    WikipediaPublisher.PlayTests/             PlayTest UI suite of the real page over a loopback HTTP fixture
   SampleOutput/                               Example generated PDFs
 ```
 
@@ -245,14 +268,17 @@ CodeBrix.Imaging, and exposes `IArticleRenderService`. `WikipediaPublisher.Core`
 project-references RenderArticle and carries every CodeBrix.Platform package; each of the
 six Skia heads project-references Core and adds exactly one runtime package of its own.
 
-Core builds for two target frameworks. The `net10.0` build references the CodeBrix.Platform
-packages (the framework and the WebView and FlexPanel add-ins) and serves the desktop heads;
-the `net10.0-android36.1` build references their CodeBrix.Android counterparts and serves
-the Android head, which project-references Core, imports the shared UI and adds one runtime
-package, as the Skia heads do. The choice is made by a target-framework condition on each
-package group in the Core project file, so the source files are the same for both. The
-`HAS_CODEBRIX` and `HAS_CODEBRIX_WINUI` symbols that Core defines for its desktop build are
-defined by the CodeBrix.Android package for the Android build. `WikipediaPublisher.RenderArticle`
+Core comes as two project files in one folder. `WikipediaPublisher.Core.csproj` targets
+`net10.0`, references the CodeBrix.Platform packages (the framework and the WebView and
+FlexPanel add-ins) and serves the desktop heads; its twin `WikipediaPublisher.Core.Android.csproj`
+targets `net10.0-android36.1`, references their CodeBrix.Android counterparts and serves the
+Android head, which project-references `WikipediaPublisher.Core.Android`, imports the shared
+UI and adds one runtime package, as the Skia heads do. The twin compiles the same source
+files under the same assembly name and root namespace, and keeps its build output in
+`obj.android/` and `bin.android/`. Because that folder holds two project files, a bare
+`dotnet build` there is ambiguous; build a solution or name the project file. The
+`HAS_CODEBRIX` and `HAS_CODEBRIX_WINUI` symbols that `WikipediaPublisher.Core.csproj`
+defines are defined by the CodeBrix.Android package for the Android twin. `WikipediaPublisher.RenderArticle`
 holds no UI types and references no CodeBrix.Platform package, so it stays `net10.0` and the
 Android head uses it as it is: the whole PDF pipeline runs on the device exactly as on the
 desktop. The Android head adds no code of its own beyond its application and activity
@@ -266,8 +292,8 @@ the view model and the two helpers out of `Shared/` with
 `WikipediaPublisher` (not `WikipediaPublisher.Core`) so the linked view model's namespace
 still matches. The two native heads project-reference RenderArticle directly and file-link
 what they need from `Shared/`: both link the view model, the host helper and the
-file-dialog helper, the last of those because the view model itself calls into it. The test
-project file-links `SimpleTestFixture.cs` and `EmbeddedResourceHelper.cs` the same way.
+file-dialog helper, the last of those because the view model itself calls into it. The
+RenderArticle test project file-links `SimpleTestFixture.cs` and `EmbeddedResourceHelper.cs` the same way.
 
 ## CodeBrix libraries and add-ins used
 
@@ -275,9 +301,9 @@ project file-links `SimpleTestFixture.cs` and `EmbeddedResourceHelper.cs` the sa
 | --- | --- | --- |
 | CodeBrix.Platform | The XAML UI framework and the Simple MVVM toolkit (`SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`, the dialog helpers, `IXamlRootGetter`), `FeatureConfiguration.Font`, the logging adapter, and the `FileSavePicker` the Skia heads open | `CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.Core.csproj`, `CodeBrixPlatform/WikipediaPublisher.UI/App.xaml.cs`, `Shared/ViewModels/MainViewModel.cs` |
 | The CodeBrix.Platform runtime for each backend | One runtime package per head (Win32, Skia-on-WPF, X11, Wayland, framebuffer, macOS); the head's `Program.cs` selects it through the host builder | the six head csprojs under `CodeBrixPlatform/` and their `Program.cs` files |
-| CodeBrix.Platform.WebView add-in | Gives the Linux Skia heads an embedded WebView backed by WPE WebKit, offscreen. Referenced once in Core so every Skia head inherits it, and inert on the Windows, Skia-on-WPF and macOS runtimes, which already have one | `CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.Core.csproj`, `CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml` |
+| CodeBrix.Platform.WebView add-in | Gives the Linux Skia heads an embedded WebView backed by WPE WebKit, offscreen. Referenced once in Core so every Skia head inherits it, and inert on the Windows, Skia-on-WPF and macOS runtimes, which already have one. The PlayTests project references it directly as well, so the embedded browser runs on the PlayTest head | `CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.Core.csproj`, `CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml`, `tests/WikipediaPublisher.PlayTests/WikipediaPublisher.PlayTests.csproj` |
 | CodeBrix.Platform.FlexPanel add-in | The flexbox-style layout panel that lays out the bottom bar so the save-target group and the page-size/Publish group wrap onto two rows when the window is too narrow for both | `CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.Core.csproj`, `CodeBrixPlatform/WikipediaPublisher.UI/Views/MainPage.xaml` |
-| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the WebView add-in (pages are shown in the device's system WebView) and the FlexPanel add-in; the Android head and the Android build of Core reference these instead of the CodeBrix.Platform packages | `CodeBrixPlatform/WikipediaPublisher.Android/WikipediaPublisher.Android.csproj`, `CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.Core.csproj` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the WebView add-in (pages are shown in the device's system WebView) and the FlexPanel add-in; the Android head and the Android twin of Core reference these instead of the CodeBrix.Platform packages | `CodeBrixPlatform/WikipediaPublisher.Android/WikipediaPublisher.Android.csproj`, `CodeBrixPlatform/WikipediaPublisher.Core/WikipediaPublisher.Core.Android.csproj` |
 | CodeBrix.Platform.Fonts.OpenSans | The bundled application font, set as the default text font and exposed as a `FontFamily` resource | `CodeBrixPlatform/WikipediaPublisher.UI/App.xaml`, `CodeBrixPlatform/WikipediaPublisher.UI/App.xaml.cs` |
 | CodeBrix.Platform.WinUI | Brings the Simple toolkit to the native WinUI 3 head so it can bind the shared view model | `WikipediaPublisher.WinUI/WikipediaPublisher.WinUI.csproj` |
 | CodeBrix.Platform.WPF | Brings the Simple toolkit to the native WPF head so it can bind the shared view model | `WikipediaPublisher.Wpf/WikipediaPublisher.Wpf.csproj` |
@@ -285,7 +311,8 @@ project file-links `SimpleTestFixture.cs` and `EmbeddedResourceHelper.cs` the sa
 | CodeBrix.Imaging | Loads, resizes and re-encodes downloaded images for print (`Image.Load`, format detection, `Mutate`/`Resize`, the PNG and JPEG encoders), and supplies the PDF layer's imaging back-end through `ImagingImageSource<Rgba32>` | `WikipediaPublisher.RenderArticle/Internal/ImagePipeline.cs`, `WikipediaPublisher.RenderArticle/Internal/BookFonts.cs` |
 | CodeBrix.PdfDocCreate | The document object model the book is composed with: `Document`, `Section`, styles, `PageSetup`, headers and footers, hyperlinks and bookmarks, `AddPageRefField()`, tables and images | `WikipediaPublisher.RenderArticle/Internal/BookComposer.cs`, `WikipediaPublisher.RenderArticle/Internal/BookTheme.cs`, `WikipediaPublisher.RenderArticle/Services/ArticleRenderService.cs` |
 | CodeBrix.PdfDocuments | Arrives with CodeBrix.PdfDocCreate rather than being referenced directly; supplies `PdfDocumentRenderer`, `ImageSource`, and the font system (`EmbeddedFontResolver`, `EmbeddedResourceFontFace`, `MetaFontResolver`) | `WikipediaPublisher.RenderArticle/Internal/BookFonts.cs`, `WikipediaPublisher.RenderArticle/Services/ArticleRenderService.cs` |
-| SilverAssertions | The assertion style throughout the test project | `Tests/WikipediaPublisher.RenderArticle.Tests/` |
+| CodeBrix.Platform.PlayTest | The test head the PlayTests drive the real page through | `tests/WikipediaPublisher.PlayTests/`, through `PlayTestSupport/CodeBrix.Sample.PlayTests.props` |
+| SilverAssertions | The assertion style throughout the test projects | `Tests/WikipediaPublisher.RenderArticle.Tests/`, `tests/WikipediaPublisher.PlayTests/` |
 
 Third-party libraries:
 
@@ -295,7 +322,7 @@ Third-party libraries:
 | Microsoft.Extensions.Logging (console and abstractions) | The Debug-only console logger factory wired into the platform's ambient logger, and the `ILogger<ArticleRenderService>` the library takes with a null-logger default | `CodeBrixPlatform/WikipediaPublisher.UI/App.xaml.cs`, `WikipediaPublisher.RenderArticle/Services/ArticleRenderService.cs` |
 | Microsoft Edge WebView2 (WPF control) | The embedded browser on the native WPF head | `WikipediaPublisher.Wpf/Views/MainWindow.xaml` |
 | Windows App SDK and the Windows SDK build tools | The native WinUI 3 head's framework, including its built-in WebView | `WikipediaPublisher.WinUI/WikipediaPublisher.WinUI.csproj` |
-| xUnit v3 and the .NET test SDK | The test framework | `Tests/WikipediaPublisher.RenderArticle.Tests/WikipediaPublisher.RenderArticle.Tests.csproj` |
+| xUnit v3 and the .NET test SDK | The test framework | `Tests/WikipediaPublisher.RenderArticle.Tests/WikipediaPublisher.RenderArticle.Tests.csproj`, and for the PlayTests `PlayTestSupport/CodeBrix.Sample.PlayTests.props` |
 
 ## Worth studying in this application
 
@@ -360,7 +387,7 @@ they are different platforms doing the same two jobs, and the differences betwee
 exactly the platform-specific parts the interfaces exist to absorb.
 
 One sharp edge is the compilation symbol. `HAS_CODEBRIX` and `HAS_CODEBRIX_WINUI` are
-defined by Core and by every Skia head csproj (and, for the Android build, by the
+defined by Core and by every Skia head csproj (and, for Core's Android twin, by the
 CodeBrix.Android package), but not by the two native head projects, and
 the view model uses `#if HAS_CODEBRIX` to apply the `[Bindable]` attribute only where the
 platform supplies it. Link view-model source into a native head and you have to check which
@@ -690,7 +717,7 @@ See [Declare a Skia page and bind with the platform Binding markup extension](..
 [Run a command when the user presses Enter in a text box](../BLUEPRINTS-ViewsAndControls.md#run-a-command-when-the-user-presses-enter-in-a-text-box)
 and [Bind a picker to enum values with or without friendly labels](../BLUEPRINTS-MVVM.md#bind-a-picker-to-enum-values-with-or-without-friendly-labels).
 
-### Head plumbing, and the two solution files
+### Head plumbing, and the Windows solution file
 
 Four of the six Skia heads are the generated `Program.cs` unchanged apart from the backend
 call. The other two are worth reading for what they had to add:
@@ -707,8 +734,9 @@ call. The other two are worth reading for what they had to add:
   application with a machine-specific value in it: `RestrictToFolder` is a hard-coded home
   directory, and it should be a configured value in an application of your own.
 
-The application also ships two solution files, because two of its heads cannot be built
-anywhere but Windows. Rather than hide that, both `.slnx` files open with a comment saying
+The application also ships a separate Windows solution file, because two of its heads cannot
+be built anywhere but Windows. Rather than hide that, `WikipediaPublisher.slnx` and
+`WikipediaPublisher.Windows.slnx` both open with a comment saying
 which is which and why. Three project-level details make the arrangement work, and each is
 worth knowing:
 
@@ -735,7 +763,7 @@ and [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINT
 
 ### Testing a pipeline that talks to the internet
 
-The test project covers a library whose whole job is to talk to a public website, and it
+The RenderArticle test project covers a library whose whole job is to talk to a public website, and it
 does so without making every run slow. `Internal/ArticleParserTests.cs` parses an article
 fixture embedded in the test assembly and asserts on the title, the short description, the
 lead image, block counts by kind, stop-section exclusion, citation-marker stripping, image

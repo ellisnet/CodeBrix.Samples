@@ -1,0 +1,40 @@
+<Project>
+  <!-- Its own obj/bin folders: this project sits beside SimpleCbxVideoPlayer.SkiaVideo.csproj, which builds the same sources -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj.android\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin.android\</BaseOutputPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.1</TargetFramework>
+    <AssemblyName>SimpleCbxVideoPlayer.SkiaVideo</AssemblyName>
+    <RootNamespace>SimpleCbxVideoPlayer.SkiaVideo</RootNamespace>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.VideoPlayback.MitLicenseForever" Version="1.0.285.833" />
+    <PackageReference Include="CodeBrix.VideoPlayback.Skia.MitLicenseForever" Version="1.0.285.833" />
+  </ItemGroup>
+
+  <!--
+    The AV1 decoder and the Opus audio decoder, both registered once in SkiaVideoRuntime.Initialize().
+    Without the first, "av01" has no decoder and nothing plays; without the second, the Opus soundtrack
+    every Matroska and WebM file in the corpus carries has none either.
+  -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.VideoPlayback.Dav1d.BsdLicenseForever" Version="1.0.271.1206" />
+    <PackageReference Include="CodeBrix.Audio.Opus.BsdLicenseForever" Version="1.0.284.1151" />
+  </ItemGroup>
+
+  <!-- The sound device: the Android head gets CodeBrix.Audio's Android backend, initialised in its MainApplication -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Audio.Android.ApacheLicenseForever" Version="1.0.283.1398" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

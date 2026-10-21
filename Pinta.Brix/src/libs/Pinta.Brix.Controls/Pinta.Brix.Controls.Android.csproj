@@ -1,0 +1,42 @@
+<Project>
+  <!-- Its own obj/bin folders: this project sits beside Pinta.Brix.Controls.csproj, which builds the same sources -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj.android\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin.android\</BaseOutputPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.1</TargetFramework>
+    <AssemblyName>Pinta.Brix.Controls</AssemblyName>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+    <Nullable>enable</Nullable>
+    <!-- Library referencing CodeBrix.Platform keeps its OWN RootNamespace
+         (heads fail CS0433 on GlobalStaticResources otherwise) -->
+    <RootNamespace>Pinta.Brix.Controls</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pinta.Brix.Engine\Pinta.Brix.Engine.Android.csproj" />
+    <ProjectReference Include="..\Pinta.Brix.Tools\Pinta.Brix.Tools.Android.csproj" />
+    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.284.1048" />
+  </ItemGroup>
+
+  <!-- The Android head: the CodeBrix.Android twins of the same packages -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
+    <PackageReference Include="CodeBrix.Android.SkiaSharp.Views.ApacheLicenseForever" Version="1.0.292.307" />
+  </ItemGroup>
+
+  <!-- The application icon set carried over from upstream (see
+       THIRD-PARTY-NOTICES.txt at the repo root for attribution) -->
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\icons\**\*.png" />
+    <EmbeddedResource Include="Assets\icons\**\*.svg" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

@@ -1,21 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+    <TargetFramework>net10.0</TargetFramework>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj.android/**;bin.android/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <!-- The settings machinery (store, typed properties, change events, backup/
        import/export) is provided by the CodeBrix.Platform.AppSettings add-in;
        this library is the thin KenneyAssetBrowser-named facade over it. -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+  <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.AppSettings.ApacheLicenseForever" Version="1.0.291.1177" />
   </ItemGroup>
 
-  <!-- The Android head gets the same AppSettings API from its CodeBrix.Android twin -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <PackageReference Include="CodeBrix.Android.AppSettings.ApacheLicenseForever" Version="1.0.292.307" />
-  </ItemGroup>
 </Project>

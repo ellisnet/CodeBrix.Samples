@@ -85,8 +85,8 @@ completely different UI stacks.
   character riding in on a paste cannot break decryption: [Guard Base64 input against invisible clipboard characters](../BLUEPRINTS-DocumentsAndData.md#guard-base64-input-against-invisible-clipboard-characters).
 - Setting the Core library's `RootNamespace` to the application namespace so the
   linked source, the XAML and the embedded resource names all agree: [Set the Core library root namespace to the application namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#set-the-core-library-root-namespace-to-the-application-namespace).
-- Shipping one solution per operating system so every solution opens and builds
-  everything it contains: [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere).
+- Shipping a plain solution, an Android solution and one solution per operating
+  system so every solution opens and builds everything it contains: [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere).
 - Declaring the architectures a WinUI head supports and mapping `Any CPU` onto a
   real one in the solution: [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS-ProjectLayoutAndPackaging.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
 - Switching the WinWpfSkia head to the software render surface between `Build()`
@@ -106,18 +106,29 @@ completely different UI stacks.
 
 ## Building, running and testing
 
-There is no plain `JustBetweenUs.slnx`. Three solutions sit beside this file, one
-per operating system, each containing only the projects that can build there.
+Two cross-platform solutions and three per-operating-system solutions sit beside
+this file, each containing only the projects that can build there.
 
 | Solution | Open on | Contains |
 | --- | --- | --- |
-| `JustBetweenUs.Windows.slnx` | Windows | Everything: all six Skia heads including WinWpfSkia, the Android head, the shared UI shared-project, Core, the WinUI 3 head, the WPF head, the MAUI head, the encryption library and its test project |
-| `JustBetweenUs.Linux.slnx` | Linux | The Skia heads except WinWpfSkia, the Android head, the shared UI shared-project, Core, the encryption library and its test project. No native heads |
+| `JustBetweenUs.slnx` | Linux, macOS, Windows | All six Skia heads including WinWpfSkia, the shared UI shared-project, Core, the encryption library, its test project and the PlayTests. No Android head and no native heads |
+| `JustBetweenUs.WithAndroid.slnx` | Linux, macOS, Windows | Everything in `JustBetweenUs.slnx`, plus the Android head and `JustBetweenUs.Core.Android` |
+| `JustBetweenUs.Windows.slnx` | Windows | Everything: all six Skia heads including WinWpfSkia, the Android head, the shared UI shared-project, Core and `JustBetweenUs.Core.Android`, the WinUI 3 head, the WPF head, the MAUI head, the encryption library, its test project and the PlayTests |
+| `JustBetweenUs.Linux.slnx` | Linux | The Skia heads except WinWpfSkia, the Android head, the shared UI shared-project, Core and `JustBetweenUs.Core.Android`, the encryption library, its test project and the PlayTests. No native heads |
 | `JustBetweenUs.MacOS.slnx` | macOS | The same set as the Linux solution, plus the MAUI head |
 
-Only WinWpfSkia is excluded from the non-Windows solutions. Win32Skia targets
-plain `net10.0`, so it restores and builds anywhere even though it only runs on
-Windows; WinWpfSkia targets `net10.0-windows` and therefore cannot.
+Open `JustBetweenUs.slnx` if you only have the .NET 10 SDK; open
+`JustBetweenUs.WithAndroid.slnx` to also get the Android head. The Windows, Linux
+and macOS solutions include the Android head and `JustBetweenUs.Core.Android` too,
+so they need the Android workload as well. WinWpfSkia targets `net10.0-windows` and
+sets `EnableWindowsTargeting`, so it builds inside the two cross-platform solutions
+on any host, though it only runs on Windows; the Linux and macOS solutions leave it
+out. Win32Skia targets plain `net10.0`, so it restores and builds anywhere even
+though it only runs on Windows.
+
+`CodeBrixPlatform/JustBetweenUs.Core/` holds both `JustBetweenUs.Core.csproj` and
+its Android twin `JustBetweenUs.Core.Android.csproj`, so a bare `dotnet build` in
+that folder is ambiguous: build a solution, or name the project file.
 
 The CodeBrix.Platform Skia heads, all under `CodeBrixPlatform/`:
 
@@ -138,7 +149,8 @@ The CodeBrix.Platform Android head, also under `CodeBrixPlatform/`:
 
 It targets `net10.0-android36.1`, builds on any of the three operating systems,
 and runs on Android 13 (API level 33) and later. It imports the same shared UI
-project and references the same Core project as the six Skia heads, and installs
+project as the six Skia heads and references `JustBetweenUs.Core.Android`, the
+`net10.0-android36.1` twin of the Core project they reference, and installs
 beside the MAUI head on the same device, because the two have different Android
 package names. The page was laid out for a desktop window: on a tablet or an Android
 laptop it fits as it is, while on a phone held upright the top row is wider than the
@@ -154,13 +166,11 @@ The native (non-Skia) heads:
 
 Prerequisites:
 
-- The .NET 10 SDK with the `android` workload (`dotnet workload install android`).
-  Every project targets `net10.0` or a `net10.0-*` platform framework. The
-  workload is needed for every build of the CodeBrix.Platform projects, a
-  desktop-only build and the test runs included, because the Core project also
-  builds for Android.
-- For the Android head, which every solution includes, the Android SDK; to run
-  it, an Android device or emulator reachable with `adb`.
+- The .NET 10 SDK. Every project targets `net10.0` or a `net10.0-*` platform
+  framework. `JustBetweenUs.slnx` and the test runs need nothing more.
+- For the Android head, which every solution except `JustBetweenUs.slnx`
+  includes, the `android` workload (`dotnet workload install android`) and the
+  Android SDK; to run it, an Android device or emulator reachable with `adb`.
 - No accounts, tokens, network access, downloaded data or special hardware. The
   default key is embedded in the encryption library and every image asset is in
   this folder.
@@ -209,7 +219,10 @@ build installs with fast deployment, so install it with the `Install` target rat
 than copying its `.apk` to the device. The Android package name is
 `com.codebrix.samples.justbetweenus`.
 
-Tests live in `tests/JustBetweenUs.Encryption.Tests` and cover the encryption
+`CodeBrixPlatform/tests/JustBetweenUs.PlayTests` drives the real page through the
+CodeBrix.Platform PlayTest head; its own `README.md` has the commands.
+
+The unit tests live in `tests/JustBetweenUs.Encryption.Tests` and cover the encryption
 service only: that it resolves from the container, that the embedded default key
 is read, that Triple DES encrypts to and decrypts from a known Base64 string,
 that AES and Twofish round-trip, that AES decrypts a known Base64 string, and a
@@ -235,6 +248,8 @@ test class uses unconditionally exist only inside that conditional in
 
 ```text
 JustBetweenUs/
+  JustBetweenUs.slnx                  All six Skia heads, library and tests; needs only the .NET 10 SDK
+  JustBetweenUs.WithAndroid.slnx      The above plus the Android head and JustBetweenUs.Core.Android
   JustBetweenUs.Windows.slnx          All ten heads plus the library and tests; open on Windows
   JustBetweenUs.Linux.slnx            Skia heads except WinWpfSkia, the Android head, library and tests; open on Linux
   JustBetweenUs.MacOS.slnx            The Linux set plus the MAUI head; open on macOS
@@ -245,6 +260,10 @@ JustBetweenUs/
     JustBetweenUs.UI/                 Shared project (.shproj/.projitems): App.xaml(.cs), Views/MainPage.xaml(.cs)
     JustBetweenUs.Core/               Class library: all platform packages, the linked shared source,
                                         the embedded assets, and Controls/
+      JustBetweenUs.Core.csproj       net10.0 build, CodeBrix.Platform packages, for the Skia heads
+      JustBetweenUs.Core.Android.csproj
+                                      net10.0-android36.1 twin, CodeBrix.Android packages, for the
+                                        Android head; builds into obj.android/ and bin.android/
     JustBetweenUs.Win32Skia/          Head: Program.cs plus one runtime package
     JustBetweenUs.WinWpfSkia/         Head: Program.cs plus one runtime package; forces software rendering
     JustBetweenUs.LinuxX11/           Head: Program.cs plus one runtime package; carries the ARM64 and
@@ -254,6 +273,7 @@ JustBetweenUs/
     JustBetweenUs.MacOS/              Head: Program.cs plus one runtime package
     JustBetweenUs.Android/            Head: the Android application and activity, the manifest, one
                                         runtime package
+    tests/JustBetweenUs.PlayTests/    PlayTest UI suite for the CodeBrix.Platform page
   JustBetweenUs.WinUI/                Native WinUI 3 head: its own App.xaml(.cs), Views/MainPage.xaml(.cs),
                                         Assets/, app.manifest and Package.appxmanifest
   JustBetweenUs.Wpf/                  Native WPF head: its own App.xaml(.cs), Views/MainWindow.xaml(.cs)
@@ -277,23 +297,25 @@ encryption ends up on it, the six Skia heads transitively through Core and the
 WinUI, WPF and MAUI heads by a direct project reference. Above that,
 `JustBetweenUs.Core` carries all the platform package references for the Skia
 heads and holds the two custom controls, and each of the six Skia heads
-project-references Core and adds exactly one runtime package. Nothing references
+project-references Core and adds exactly one runtime package; the Android head does
+the same with `JustBetweenUs.Core.Android`. Nothing references
 `Shared/` as a project, because it is not one. `MainViewModel.cs`,
 `EncryptionMode.cs` and `HostHelper.cs` are pulled in as linked `<Compile>` items
-by Core (for the Skia heads) and directly by the WinUI, WPF and MAUI heads;
+by Core and its Android twin (for the Skia and Android heads) and directly by the WinUI, WPF and MAUI heads;
 `EmbeddedResourceHelper.cs` is linked only into the encryption library, and
 `SimpleTestFixture.cs` only into the test project. The XAML in
 `JustBetweenUs.UI` is shared through an imported `.projitems`, so each Skia head
 and the Android head compile their own copy of `App` and `MainPage`. The files in `Shared/Assets` are
-linked as embedded resources into Core and, with explicit logical names, into the
-WinUI head; the WPF and MAUI heads use none of them.
+linked as embedded resources into Core and its Android twin and, with explicit
+logical names, into the WinUI head; the WPF and MAUI heads use none of them.
 
-Core builds for two target frameworks. The `net10.0` build references the
-CodeBrix.Platform packages and add-ins and serves the six Skia heads; the
-`net10.0-android36.1` build references their CodeBrix.Android counterparts and
-serves the Android head. The choice is made by a target-framework condition on each
-package group in the project file, so the linked source, the controls and the
-embedded assets are the same for both. `JustBetweenUs.Encryption` references no UI
+Core is two project files in one folder. `JustBetweenUs.Core.csproj` targets
+`net10.0`, references the CodeBrix.Platform packages and add-ins and serves the six
+Skia heads and the PlayTests; `JustBetweenUs.Core.Android.csproj` targets
+`net10.0-android36.1`, references their CodeBrix.Android counterparts and serves the
+Android head. The twin compiles the same linked source and controls, embeds the same
+assets, keeps the same assembly name and root namespace, and uses its own
+`obj.android/` and `bin.android/` folders so the two builds never share output. `JustBetweenUs.Encryption` references no UI
 framework, so it stays `net10.0` and the Android head uses it as it is. The Android
 head adds no code of its own beyond its application and activity classes;
 `App.xaml`, `MainPage.xaml`, the custom controls and the view model run unchanged.
@@ -315,7 +337,7 @@ head adds no code of its own beyond its application and activity classes;
 | CodeBrix.Platform.WinUI.Lottie | Supplies `AnimatedVisualPlayer` and `LottieVisualSource` for native WinUI | `JustBetweenUs.WinUI/Views/MainPage.xaml` |
 | CodeBrix.Platform.WPF | The Simple MVVM toolkit for WPF | `JustBetweenUs.Wpf/App.xaml.cs`, `JustBetweenUs.Wpf/JustBetweenUs.Wpf.csproj` |
 | CodeBrix.Platform.Mobile | The Simple MVVM toolkit for .NET MAUI | `Mobile/App.xaml.cs`, `Mobile/JustBetweenUs.Mobile.csproj` |
-| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the Graphics2DSK, Lottie, Svg and SkiaSharp Views add-ins; the Android head and the Android build of Core reference these instead of the CodeBrix.Platform packages | `CodeBrixPlatform/JustBetweenUs.Android/JustBetweenUs.Android.csproj`, `CodeBrixPlatform/JustBetweenUs.Core/JustBetweenUs.Core.csproj` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the Graphics2DSK, Lottie, Svg and SkiaSharp Views add-ins; the Android head and `JustBetweenUs.Core.Android` reference these instead of the CodeBrix.Platform packages | `CodeBrixPlatform/JustBetweenUs.Android/JustBetweenUs.Android.csproj`, `CodeBrixPlatform/JustBetweenUs.Core/JustBetweenUs.Core.Android.csproj` |
 | CodeBrix.Cryptography | The Twofish engine, the SHA-3 digest, the PKCS#5 v2 parameter generator, PKCS#7 padding and the buffered block cipher behind the Twofish methods | `JustBetweenUs.Encryption/Services/EncryptionService.cs` |
 | SilverAssertions | The fluent `Should()` assertions in the test project | `tests/JustBetweenUs.Encryption.Tests/Services/EncryptionServiceTests.cs` |
 
@@ -341,12 +363,13 @@ algorithm selection, four `SimpleCommand` instances, the two bridge interfaces t
 heads satisfy, the dialog calls and the `Dispose` override. It derives from
 `SimpleViewModel` and references nothing but the Simple toolkit and
 `IEncryptionService`. Every head pulls it in as a linked `<Compile>` item and
-compiles its own copy: Core does it once on behalf of the six Skia heads and the
-Android head, and the WinUI, WPF and MAUI heads each do it themselves.
+compiles its own copy: Core does it once on behalf of the six Skia heads, its
+Android twin on behalf of the Android head, and the WinUI, WPF and MAUI heads each
+do it themselves.
 
 The one framework-specific concession in the file is a `[Bindable]` attribute
 guarded by `#if HAS_CODEBRIX`, a symbol Core and all six Skia head csproj files
-define (for its Android build, Core gets the same symbol from the CodeBrix.Android
+define (the Android twin of Core gets the same symbol from the CodeBrix.Android
 package). That single symbol is the complete list of places where a head can drift in
 the shared source, which is the point: keep them countable. The WinUI head csproj
 also defines `HAS_WINUI` so head-specific code has a symbol to hang on, and nothing
@@ -361,7 +384,8 @@ and [Write bound properties and commands the family way](../BLUEPRINTS-MVVM.md#w
 ### Six heads, one Core library, one runtime package each
 
 `CodeBrixPlatform/JustBetweenUs.Core/JustBetweenUs.Core.csproj` is the only project
-in the Skia half of the application with a list of packages. It carries the
+in the Skia half of the application with a list of packages, and its Android twin
+beside it carries the CodeBrix.Android form of the same list. It carries the
 framework, the add-ins, the font, the SVG engine and the Lottie engine, links the
 shared view models, embeds the assets, holds `Controls/`, and project-references
 the encryption library. Each of the six head csproj files beside it does four
@@ -383,8 +407,8 @@ and [Start each head from a Program Main and pick the platform backend](../BLUEP
 `.projitems` that list `App.xaml`, `Views/MainPage.xaml` and their code-behind.
 Each Skia head imports the `.projitems` with `Label="Shared"`, so the same markup
 compiles into six different assemblies with six sets of generated partial classes.
-The shared project produces no assembly of its own, but all three solutions list
-it so it appears in the tree.
+The shared project produces no assembly of its own, but every solution lists it so
+it appears in the tree.
 
 The interesting part is what is not shared. The Skia page binds with the
 platform's `{d:Binding ...}` markup extension and maps its default XML namespace
@@ -741,14 +765,14 @@ sitting. See
 [Enable a picker and the software keyboard on the Linux framebuffer head](../BLUEPRINTS-AppStructureAndStartup.md#enable-a-picker-and-the-software-keyboard-on-the-linux-framebuffer-head)
 and [Turn on console logging only in Debug builds](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-console-logging-only-in-debug-builds).
 
-### Three solutions, and the WinUI head's architectures
+### The solutions, and the WinUI head's architectures
 
-The three `.slnx` files exist because some heads only build on one operating system.
-Each contains only what can build there, and all three share the same project files
-and the same "Solution Items" and "Shared Assets" folders, the latter surfacing
-`Shared/Assets` so the icons and the animation can be opened from the solution tree.
-All three declare the same platform names, and every project except the WinUI head
-maps all of them to `Any CPU`.
+The `.slnx` files exist because some heads only build on one operating system, and
+the Android head only builds with the Android workload installed. Each contains only
+what can build there, and all of them share the same project files and a "Shared
+Assets" folder under "Solution Items", surfacing `Shared/Assets` so the assets can
+be opened from the solution tree. All of them declare the same platform names, and
+every project except the WinUI head maps all of them to `Any CPU`.
 
 The WinUI head is the exception in several ways worth knowing before you add one to
 your own solution. It declares `x86;x64;ARM64` with matching runtime identifiers, it
@@ -760,7 +784,7 @@ Windows App SDK package has been restored, and its `launchSettings.json` offers 
 packaged and an unpackaged profile.
 
 Read `JustBetweenUs.WinUI/JustBetweenUs.WinUI.csproj`, then the configuration block
-of `JustBetweenUs.Windows.slnx`, then compare the three solutions' project lists. See
+of `JustBetweenUs.Windows.slnx`, then compare the solutions' project lists. See
 [Ship a separate solution where some heads cannot build everywhere](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-separate-solution-where-some-heads-cannot-build-everywhere)
 and [Restrict the solution platforms to what a WinUI head declares](../BLUEPRINTS-ProjectLayoutAndPackaging.md#restrict-the-solution-platforms-to-what-a-winui-head-declares).
 

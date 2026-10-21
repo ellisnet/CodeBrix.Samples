@@ -145,11 +145,16 @@ coverage drawn from CodeBrix libraries and add-ins.
 
 ## Building, running and testing
 
-There is one solution, `Pinta.Brix.slnx`. It holds the shared UI project,
-`Pinta.Brix.Core`, all seven heads (six desktop heads and an Android head), a `Libraries` folder with the six libraries
-under `src/libs`, and a `Tests` folder with the six library test projects under
-`tests/libs` and the PlayTests project under `tests`. Its own comment describes it as everything that builds with the
-plain .NET SDK, so it opens and builds on Linux, macOS and Windows alike.
+There are two solutions, and both open and build on Linux, macOS and Windows
+alike:
+
+| Solution | Holds | Needs |
+| --- | --- | --- |
+| `Pinta.Brix.slnx` | The shared UI project, `Pinta.Brix.Core`, the six desktop heads, a `Libraries` folder with the six libraries under `src/libs`, and a `Tests` folder with the six library test projects under `tests/libs` and the PlayTests project under `tests` | The plain .NET 10 SDK |
+| `Pinta.Brix.WithAndroid.slnx` | Everything in `Pinta.Brix.slnx`, plus the Android head and the `.Android.csproj` twin of Core and of each library | The .NET Android workload and the Android SDK as well |
+
+Open `Pinta.Brix.slnx` if you only have the .NET 10 SDK; open
+`Pinta.Brix.WithAndroid.slnx` to also get the Android head.
 
 The seven heads:
 
@@ -163,16 +168,14 @@ The seven heads:
 | `src/Pinta.Brix.WinWpfSkia` | Windows, Skia rendering hosted in a WPF window |
 | `src/Pinta.Brix.Android` | Android phones, tablets and Android laptops |
 
-Prerequisites are short. The .NET 10 SDK with the `android` workload
-(`dotnet workload install android`) is the requirement. The desktop heads target
+Prerequisites are short. The .NET 10 SDK is the requirement, and it alone builds
+`Pinta.Brix.slnx`, every desktop head and every test project. The desktop heads target
 `net10.0`, except the WinWpfSkia head, which targets `net10.0-windows` and
 already sets `EnableWindowsTargeting`, so it restores and builds from Linux and
 macOS too. The Android head targets `net10.0-android36.1` and runs on Android 13
-(API level 33) and later. `Pinta.Brix.Core` and all six libraries build for both
-`net10.0` and `net10.0-android36.1`, so the workload is needed for every build of
-this application, a desktop-only build and the test runs included. A build of the
-whole solution includes the Android head, so it also needs the Android SDK; to run
-that head, an Android device or emulator reachable with `adb`. There are no accounts, tokens, downloads,
+(API level 33) and later. `Pinta.Brix.WithAndroid.slnx` and the Android head also
+need the `android` workload (`dotnet workload install android`) and the Android
+SDK; to run that head, an Android device or emulator reachable with `adb`. There are no accounts, tokens, downloads,
 hardware requirements or data files the user has to supply: the application
 opens with a blank white document already created, through the same code path as
 File > New, so it is usable with no input at all. The settings store is created
@@ -241,7 +244,8 @@ the user's real settings.
 ## How the projects and folders are organized
 
 ```text
-Pinta.Brix.slnx                      One solution: shared UI, Core, seven heads, six libraries, their test projects, PlayTests
+Pinta.Brix.slnx                      Shared UI, Core, the six desktop heads, six libraries, their test projects, PlayTests
+Pinta.Brix.WithAndroid.slnx          The same plus the Android head and every .Android.csproj twin; needs the android workload
 global.json                          Selects the Microsoft.Testing.Platform test runner
 THIRD-PARTY-NOTICES.txt              Upstream provenance, icon-set attribution and the naming policy
 license-pdn.txt                      Upstream-of-upstream license text, copied verbatim
@@ -249,6 +253,8 @@ src/Pinta.Brix.UI/                   Shared items project (.shproj + .projitems)
 src/Pinta.Brix.UI/Views/             MainPage.xaml plus its code-behind partials (Menus, Actions, Dialogs, Palette)
 src/Pinta.Brix.UI/Dialogs/           Hand-built dialogs: Alignment, Curves, Levels, Posterize
 src/Pinta.Brix.Core/                 The library every head references; carries the platform and font packages
+src/Pinta.Brix.Core/Pinta.Brix.Core.csproj          net10.0 build of Core, for the desktop heads and the tests
+src/Pinta.Brix.Core/Pinta.Brix.Core.Android.csproj  Android twin: same sources, own obj.android/ and bin.android/
 src/Pinta.Brix.Core/ViewModels/      MainViewModel: the status bar readouts, the zoom control and the close prompt
 src/Pinta.Brix.Core/Services/        IShellCloseService, registered by RegisterServices.cs, asked by the window close
 src/Pinta.Brix.Core/Bridges/         IShellCloseBridge, the save-prompt loop the page hands the view model
@@ -260,6 +266,7 @@ src/Pinta.Brix.MacOS/                MacOS head
 src/Pinta.Brix.Win32Skia/            Win32Skia head
 src/Pinta.Brix.WinWpfSkia/           WinWpfSkia head (net10.0-windows; selects a software render surface)
 src/Pinta.Brix.Android/              Android head: the Android application and activity, the manifest, one runtime package
+src/libs/Pinta.Brix.*/*.csproj       Each library's net10.0 project, beside its .Android.csproj twin (own obj.android/ and bin.android/)
 src/libs/Pinta.Brix.Settings/        Facade over the AppSettings add-in: the single settings store and a log forwarder
 src/libs/Pinta.Brix.Engine/          Headless engine: PintaCore, managers, documents, layers, history, drawing facade
 src/libs/Pinta.Brix.Engine/Drawing/  Immediate-mode drawing facade (Context, ImageSurface, Path, Pattern) over SkiaSharp
@@ -280,8 +287,9 @@ Dependency direction runs one way. Each head project imports
 `MainPage.xaml` and every code-behind partial are file-linked and compiled into
 each head rather than referenced; a shared items project does not glob, so every
 new page and partial has to be listed in the `.projitems` by hand. Each head also
-project-references `Pinta.Brix.Core` and adds exactly one platform head runtime
-package, and nothing else: every other package arrives through Core.
+project-references `Pinta.Brix.Core` - a desktop head `Pinta.Brix.Core.csproj`, the
+Android head `Pinta.Brix.Core.Android.csproj` - and adds exactly one platform head
+runtime package, and nothing else: every other package arrives through Core.
 
 `Pinta.Brix.Core` project-references `Pinta.Brix.Engine`, `Pinta.Brix.Effects`,
 `Pinta.Brix.Tools`, `Pinta.Brix.FileFormats` and `Pinta.Brix.Controls`, and
@@ -294,13 +302,17 @@ reference `Pinta.Brix.Engine`; `Pinta.Brix.Engine` references
 only one that compiles XAML-facing types, which is why it is also the only one
 that has to keep its own `RootNamespace`.
 
-`Pinta.Brix.Core` and the six libraries build for two target frameworks. The `net10.0`
-build references the CodeBrix.Platform packages and serves the desktop heads; the
-`net10.0-android36.1` build references their CodeBrix.Android counterparts and serves the
-Android head. The choice is made by a target-framework condition on each package group in
-the project files, so the source files are the same for both. `Pinta.Brix.Effects`,
+`Pinta.Brix.Core` and each of the six libraries have two project files side by side
+in their folder. `X.csproj` targets `net10.0`, references the CodeBrix.Platform
+packages and serves the desktop heads and the tests; `X.Android.csproj` targets
+`net10.0-android36.1`, references their CodeBrix.Android counterparts and serves the
+Android head. The twin compiles the same source files under the same assembly name and
+root namespace, references the `.Android.csproj` twins of the projects `X` references,
+and keeps its build output in its own `obj.android/` and `bin.android/` folders. Because
+each of those folders holds two project files, a bare `dotnet build` there is
+ambiguous: build a solution, or name the project file. `Pinta.Brix.Effects`,
 `Pinta.Brix.Tools` and `Pinta.Brix.FileFormats` reference no platform package of their
-own; they build for Android because they reference `Pinta.Brix.Engine`, which does. The
+own; they have Android twins because they reference `Pinta.Brix.Engine`, which does. The
 Android head adds no code of its own beyond its application and activity classes;
 `App.xaml`, `MainPage.xaml` and every code-behind partial run unchanged.
 
@@ -316,7 +328,7 @@ Android head adds no code of its own beyond its application and activity classes
 | CodeBrix.Platform.Fonts.OpenSans | The application's default font, set both as an `App.xaml` resource and as the platform's default text font family | `src/Pinta.Brix.UI/App.xaml`, `src/Pinta.Brix.UI/App.xaml.cs`, `src/Pinta.Brix.Core` |
 | CodeBrix.PolygonTools | Boolean polygon clipping for selections: union, difference, intersection, exclusion and simplification | `src/libs/Pinta.Brix.Engine/Classes/DocumentSelection.cs`, `Classes/SelectionModeHandler.cs`, `src/libs/Pinta.Brix.Tools/Tools/LassoSelectTool.cs` |
 | CodeBrix.Imaging | Encoders and decoders for the formats SkiaSharp cannot write or read: BMP and GIF export, TIFF both ways | `src/libs/Pinta.Brix.FileFormats/CodeBrixImagingFormat.cs` |
-| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the SkiaSharp.Views, AppSettings and TextLayout add-ins; the Android head and the Android builds of Core and the libraries reference these instead of the CodeBrix.Platform packages | `src/Pinta.Brix.Android`, `src/Pinta.Brix.Core`, `src/libs/Pinta.Brix.Controls`, `src/libs/Pinta.Brix.Engine`, `src/libs/Pinta.Brix.Settings` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the SkiaSharp.Views, AppSettings and TextLayout add-ins; the Android head and the `.Android.csproj` twins of Core and the libraries reference these instead of the CodeBrix.Platform packages | `src/Pinta.Brix.Android`, `src/Pinta.Brix.Core`, `src/libs/Pinta.Brix.Controls`, `src/libs/Pinta.Brix.Engine`, `src/libs/Pinta.Brix.Settings` |
 | CodeBrix.SkiaSvg | Renders the scalable SVG icons in the embedded icon set to pixel surfaces at the requested size | `src/libs/Pinta.Brix.Controls/SkiaResourceService.cs` |
 
 Third-party libraries:

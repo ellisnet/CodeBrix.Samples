@@ -3,7 +3,7 @@
     <!--
       The WPF-hosted head must target net10.0-windows (the runtime package flows a
       Microsoft.WindowsDesktop.App.WPF FrameworkReference). Do NOT set <UseWPF> here -
-      that would make the WPF build targets grab the CodeBrix.Platform (Uno-style) XAML
+      that would make the WPF build targets grab the CodeBrix.Platform XAML
       Page items. EnableWindowsTargeting lets this head compile inside the cross-platform
       solution on Linux and macOS build hosts.
     -->
@@ -15,7 +15,7 @@
     <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI</DefineConstants>
   </PropertyGroup>
 
-  <!-- Tell MSBuild to treat .xaml files as CodeBrix.Platform (Uno-style) XAML pages -->
+  <!-- Tell MSBuild to treat .xaml files as CodeBrix.Platform XAML pages -->
   <ItemGroup>
     <Page Include="**\*.xaml" Exclude="bin\**\*.xaml;obj\**\*.xaml" />
     <None Remove="**\*.xaml" />

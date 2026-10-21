@@ -120,14 +120,15 @@ gracefully when a head has no file dialog or the host has no ffmpeg.
 
 ## Building, running and testing
 
-There is one solution, and it opens everywhere.
+There are two solutions, and both open on Linux, macOS or Windows.
 
-| Solution | Contains | Open on |
+| Solution | Contains | Needs |
 | --- | --- | --- |
-| `NotionDocumentCreator/NotionDocumentCreator.slnx` | The shared UI project, the Core library, the six desktop heads and the Android head, a `Libraries/` folder holding `NotionDocumentCreator.CreateDocument`, and a `Tests/` folder holding its test projects | Linux, macOS or Windows |
+| `NotionDocumentCreator/NotionDocumentCreator.slnx` | The shared UI project, the Core library, the six desktop heads, a `Libraries/` folder holding `NotionDocumentCreator.CreateDocument`, and a `Tests/` folder holding its test projects | The plain .NET 10 SDK |
+| `NotionDocumentCreator/NotionDocumentCreator.WithAndroid.slnx` | Everything in `NotionDocumentCreator.slnx`, plus the Android head and `NotionDocumentCreator.Core.Android.csproj` | The .NET 10 SDK with the `android` workload, and the Android SDK |
 
-Its own comment describes it as a CodeBrix.Platform application with everything
-that builds with the plain .NET SDK on Linux, macOS and Windows. Besides the six
+Open `NotionDocumentCreator.slnx` if you only have the .NET 10 SDK; open
+`NotionDocumentCreator.WithAndroid.slnx` to also get the Android head. Besides the six
 Skia desktop heads there is an Android head built on CodeBrix.Android. There are no
 other native heads here: no WinUI 3, WPF or .NET MAUI project.
 
@@ -144,19 +145,20 @@ other native heads here: no WinUI 3, WPF or .NET MAUI project.
 The six desktop heads target `net10.0` (WinWpfSkia `net10.0-windows`). The Android head
 targets `net10.0-android36.1`, builds on Linux, macOS and Windows, and runs on Android 13
 (API level 33) and later. It has no `Program.cs`; its entry points are `MainApplication`
-and `MainActivity`. `NotionDocumentCreator.Core` builds for both target frameworks, so a
-single change to it reaches every head.
+and `MainActivity`. `NotionDocumentCreator.Core` has an Android twin,
+`NotionDocumentCreator.Core.Android.csproj`, beside it that compiles the same source
+files, so a single change to Core reaches every head.
 
 ### Prerequisites
 
-- The .NET 10 SDK with the `android` workload (`dotnet workload install android`).
-  The workload is needed for every build of this application, a desktop-only build
-  and the test runs included, because the Core project also builds for Android.
-  The WinWpfSkia head targets `net10.0-windows` and sets `EnableWindowsTargeting`,
-  so the whole solution still restores and builds on Linux and macOS even though
-  that head only runs on Windows.
-- For the Android head, which a build of the whole solution includes, the Android
-  SDK; to run it, an Android device or emulator reachable with `adb`.
+- The .NET 10 SDK. `NotionDocumentCreator.slnx`, the desktop heads and the test
+  runs need nothing more. The WinWpfSkia head targets `net10.0-windows` and sets
+  `EnableWindowsTargeting`, so the whole solution still restores and builds on Linux
+  and macOS even though that head only runs on Windows.
+- For the Android head (built on its own or through
+  `NotionDocumentCreator.WithAndroid.slnx`), the `android` workload
+  (`dotnet workload install android`) and the Android SDK; to run it, an Android
+  device or emulator reachable with `adb`.
 - **A Notion integration token that you supply at run time.** Nothing ships with
   one and nothing stores one. You create an integration in your own Notion
   account, copy its token, and paste it into the `PasswordBox` in the header bar
@@ -232,7 +234,8 @@ prove the whole pipeline against a real workspace.
 
 ```text
 NotionDocumentCreator/
-  NotionDocumentCreator.slnx            The one solution: heads, Core, Libraries/, Tests/
+  NotionDocumentCreator.slnx            The desktop solution: UI, Core, desktop heads, Libraries/, Tests/
+  NotionDocumentCreator.WithAndroid.slnx  The same plus the Android head and Core.Android
   global.json                           Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt               Bundled fonts, run-time FFmpeg use, Notion content
   README.md                             This file
@@ -241,6 +244,9 @@ NotionDocumentCreator/
                                             and Views/MainPage.xaml(.cs), compiled into every head
     NotionDocumentCreator.Core/             The class library every head references; it carries all
                                             the shared packages and the application's view models
+      NotionDocumentCreator.Core.csproj     net10.0, CodeBrix.Platform packages; the desktop heads
+      NotionDocumentCreator.Core.Android.csproj  The Android twin: same sources, net10.0-android36.1,
+                                            CodeBrix.Android packages, obj.android/ and bin.android/
       Helpers/                              HostHelper (the host-builder provider),
                                             FileDialogHelper (picker path cleanup) and
                                             BackgroundWork (start and observe, for callers
@@ -276,8 +282,9 @@ NotionDocumentCreator/
       NotionDocumentCreator.CreateDocument.Tests/  Mirrors src/libs one for one
 ```
 
-The dependency direction runs strictly one way and never doubles back. Each head
-project references `NotionDocumentCreator.Core` and *file-links* the shared UI by
+The dependency direction runs strictly one way and never doubles back. Each desktop head
+project references `NotionDocumentCreator.Core.csproj`, the Android head
+`NotionDocumentCreator.Core.Android.csproj`, and each *file-links* the shared UI by
 importing `NotionDocumentCreator.UI.projitems` as MSBuild shared items, so
 `App.xaml`, `MainPage.xaml` and their code-behind are compiled into every head
 rather than shipped as a separate assembly. Core project-references
@@ -290,11 +297,14 @@ references no UI and no platform package at all, only the Notion, PDF, imaging a
 video-processing libraries plus hosting abstractions, which is why the test project
 can reference it directly and run headless.
 
-Core builds for two target frameworks. The `net10.0` build references the
-CodeBrix.Platform packages and serves the desktop heads; the `net10.0-android36.1`
-build references their CodeBrix.Android counterparts and serves the Android head. The
-choice is made by a target-framework condition on each package group in the project
-file, so the source files are the same for both. `NotionDocumentCreator.CreateDocument`
+Core is two project files in one folder. `NotionDocumentCreator.Core.csproj` targets
+`net10.0`, references the CodeBrix.Platform packages and serves the desktop heads.
+`NotionDocumentCreator.Core.Android.csproj` targets `net10.0-android36.1`, references
+their CodeBrix.Android counterparts and serves the Android head. It compiles the same
+source files under the same assembly name and root namespace, and keeps its build
+output in its own `obj.android/` and `bin.android/` folders. Because the folder holds
+two project files, build it through a solution or by naming the project file.
+`NotionDocumentCreator.CreateDocument`
 references no UI and no CodeBrix.Platform package, so it stays `net10.0` and the Android
 head uses it as it is. The Android head adds no code of its own beyond its application
 and activity classes; `App.xaml`, `MainPage.xaml` and both view models run unchanged.
@@ -311,7 +321,7 @@ and activity classes; `App.xaml`, `MainPage.xaml` and both view models run uncha
 | CodeBrix.PdfDocCreate (which brings CodeBrix.PdfDocuments with it) | The document object model the book is built in (documents, sections, paragraphs, formatted text, hyperlinks, tables, units, styles, headers and footers, bookmarks and page-reference fields), the renderer that turns it into a saved PDF, and the font system used to register the embedded faces | `src/libs/NotionDocumentCreator.CreateDocument/Internal/BookComposer.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Internal/BookStyles.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Internal/BookTheme.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Internal/BlockRenderer.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Internal/RichTextWriter.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Internal/BookFonts.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Services/NotionDocumentService.cs` |
 | CodeBrix.Imaging | Decodes and normalizes every downloaded image for print, and supplies the imaging back-end the PDF image pipeline needs before any picture can be placed | `src/libs/NotionDocumentCreator.CreateDocument/Internal/ImagePipeline.cs`, `src/libs/NotionDocumentCreator.CreateDocument/Internal/BookFonts.cs` |
 | CodeBrix.VideoProcessing | Probes media durations and grabs a video poster frame by invoking the host's ffprobe and ffmpeg | `src/libs/NotionDocumentCreator.CreateDocument/Internal/VideoPosterExtractor.cs` |
-| CodeBrix.Android | The Android implementation of the same framework, with the Android form of the FlexPanel add-in; the Android head and the Android build of Core reference these instead of the CodeBrix.Platform packages | `src/NotionDocumentCreator.Android/NotionDocumentCreator.Android.csproj`, `src/NotionDocumentCreator.Core/NotionDocumentCreator.Core.csproj` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android form of the FlexPanel add-in; the Android head and the Android twin of Core reference these instead of the CodeBrix.Platform packages | `src/NotionDocumentCreator.Android/NotionDocumentCreator.Android.csproj`, `src/NotionDocumentCreator.Core/NotionDocumentCreator.Core.Android.csproj` |
 
 Third-party libraries:
 

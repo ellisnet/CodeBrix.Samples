@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj.android/**;bin.android/**</DefaultItemExcludes>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -12,10 +13,6 @@
          "KenneyAssetBrowser") so the per-head generated GlobalStaticResources class does not
          collide across assemblies (CS0433). -->
     <RootNamespace>KenneyAssetBrowser.Rendering</RootNamespace>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,15 +30,9 @@
        GLCanvasElement subclass is built on. Graphics3DGL supplies GLCanvasElement itself and,
        transitively, the CodeBrix.Platform.OpenGL `GL` type the shader renderer draws with.
        The app codes to Graphics3DGL and never references CodeBrix.Platform.OpenGL directly. -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+  <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.291.1177" />
     <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.291.1177" />
   </ItemGroup>
 
-  <!-- The Android head: the CodeBrix.Android twins of the same two packages (GLCanvasElement
-       renders on an OpenGL ES 3.0 context there, which GlModelSceneRenderer already handles) -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
-    <PackageReference Include="CodeBrix.Android.Graphics3DGL.ApacheLicenseForever" Version="1.0.292.307" />
-  </ItemGroup>
 </Project>

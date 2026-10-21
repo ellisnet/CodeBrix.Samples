@@ -25,7 +25,7 @@
   <!-- Shared UI files (App.xaml + Views) -->
   <Import Project="..\PicoScope.Brix.UI\PicoScope.Brix.UI.projitems" Label="Shared" />
   <ItemGroup>
-    <ProjectReference Include="..\PicoScope.Brix.Core\PicoScope.Brix.Core.csproj" />
+    <ProjectReference Include="..\PicoScope.Brix.Core\PicoScope.Brix.Core.Android.csproj" />
   </ItemGroup>
 
   <!-- EXACTLY ONE platform head package; all other packages come from PicoScope.Brix.Core -->

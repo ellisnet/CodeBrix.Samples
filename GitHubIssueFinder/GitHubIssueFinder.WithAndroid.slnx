@@ -1,0 +1,24 @@
+<Solution>
+  <!-- GitHubIssueFinder.WithAndroid.slnx
+       The Android solution: everything in GitHubIssueFinder.slnx PLUS the Android head and the
+       .Android twins of its library projects, which need the .NET Android workload.
+       Open GitHubIssueFinder.slnx instead if you only have the plain .NET SDK. -->
+  <Project Path="src/GitHubIssueFinder.UI/GitHubIssueFinder.UI.shproj" />
+  <Project Path="src/GitHubIssueFinder.Core/GitHubIssueFinder.Core.csproj" />
+  <Project Path="src/GitHubIssueFinder.Core/GitHubIssueFinder.Core.Android.csproj" />
+  <Project Path="src/GitHubIssueFinder.LinuxX11/GitHubIssueFinder.LinuxX11.csproj" />
+  <Project Path="src/GitHubIssueFinder.LinuxWayland/GitHubIssueFinder.LinuxWayland.csproj" />
+  <Project Path="src/GitHubIssueFinder.MacOS/GitHubIssueFinder.MacOS.csproj" />
+  <Project Path="src/GitHubIssueFinder.Win32Skia/GitHubIssueFinder.Win32Skia.csproj" />
+  <Project Path="src/GitHubIssueFinder.Android/GitHubIssueFinder.Android.csproj" />
+  <Folder Name="/Libraries/">
+    <Project Path="src/libs/GitHubIssueFinder.GitHub/GitHubIssueFinder.GitHub.csproj" />
+    <Project Path="src/libs/GitHubIssueFinder.Settings/GitHubIssueFinder.Settings.csproj" />
+    <Project Path="src/libs/GitHubIssueFinder.Settings/GitHubIssueFinder.Settings.Android.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/GitHubIssueFinder.PlayTests/GitHubIssueFinder.PlayTests.csproj" />
+    <Project Path="tests/libs/GitHubIssueFinder.GitHub.Tests/GitHubIssueFinder.GitHub.Tests.csproj" />
+    <Project Path="tests/libs/GitHubIssueFinder.Settings.Tests/GitHubIssueFinder.Settings.Tests.csproj" />
+  </Folder>
+</Solution>

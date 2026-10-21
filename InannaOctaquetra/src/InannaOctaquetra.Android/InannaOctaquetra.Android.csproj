@@ -31,7 +31,7 @@
   <!-- Shared UI files (App.xaml + Views + Controls) -->
   <Import Project="..\InannaOctaquetra.UI\InannaOctaquetra.UI.projitems" Label="Shared" />
   <ItemGroup>
-    <ProjectReference Include="..\InannaOctaquetra.Core\InannaOctaquetra.Core.csproj" />
+    <ProjectReference Include="..\InannaOctaquetra.Core\InannaOctaquetra.Core.Android.csproj" />
   </ItemGroup>
 
   <!-- EXACTLY ONE platform head package; all other packages come from InannaOctaquetra.Core -->

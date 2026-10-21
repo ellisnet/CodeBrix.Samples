@@ -136,11 +136,16 @@ folder and read from beside the executable.
 
 ## Building, running and testing
 
-There is one solution, `SimpleCbxVideoPlayer.slnx`, and it holds everything: the shared UI project, the
-Core project, the six desktop heads and the Android head, the playback library under a `Libraries` solution
-folder and the test projects under a `Tests` solution folder. Its header comment describes it as everything
-that builds with the .NET SDK and its android workload on Linux, macOS and Windows, which holds here because
-every desktop head is a Skia head and the Android head needs nothing beyond that workload and the Android SDK.
+There are two solutions, and both open on Linux, macOS and Windows, because every desktop head is a Skia
+head and the Android head needs nothing beyond the android workload and the Android SDK:
+
+| Solution | Holds | Needs |
+| --- | --- | --- |
+| `SimpleCbxVideoPlayer.slnx` | The shared UI project, the Core project, the six desktop heads, the playback library under a `Libraries` solution folder and the test projects under a `Tests` solution folder | The plain .NET 10 SDK |
+| `SimpleCbxVideoPlayer.WithAndroid.slnx` | Everything in `SimpleCbxVideoPlayer.slnx`, plus the Android head and the `.Android.csproj` twins of Core and the playback library | The .NET Android workload and the Android SDK as well |
+
+Open `SimpleCbxVideoPlayer.slnx` if you only have the .NET 10 SDK; open
+`SimpleCbxVideoPlayer.WithAndroid.slnx` to also get the Android head.
 
 | Head project | Platform |
 | --- | --- |
@@ -155,16 +160,17 @@ every desktop head is a Skia head and the Android head needs nothing beyond that
 Every desktop head targets `net10.0` except WinWpfSkia, which targets `net10.0-windows` and sets
 `EnableWindowsTargeting` so the solution still restores and builds from Linux or macOS; it can only run on
 Windows. The Android head targets `net10.0-android36.1`, builds on any of the three operating systems, and
-runs on Android 13 (API level 33) and later. `SimpleCbxVideoPlayer.Core` and the playback library build for
-both target frameworks, so a single change to either reaches every head.
+runs on Android 13 (API level 33) and later. `SimpleCbxVideoPlayer.Core` and the playback library each have
+two project files in one folder that compile the same sources, so a single change to either reaches every
+head.
 
 Prerequisites:
 
-- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). The workload is needed
-  for every build of this application, a desktop-only build and the test runs included, because the Core
-  project and the playback library also build for Android.
-- For the Android head, which a build of the whole solution includes, the Android SDK; to run it, an
-  Android device or emulator reachable with `adb`.
+- The .NET 10 SDK. That alone builds `SimpleCbxVideoPlayer.slnx`, every desktop head and every test
+  project.
+- For `SimpleCbxVideoPlayer.WithAndroid.slnx` and the Android head only, the `android` workload
+  (`dotnet workload install android`) and the Android SDK; to run the Android head, an Android device or
+  emulator reachable with `adb`.
 - All CodeBrix packages come from NuGet. No CodeBrix library is referenced as a source project, so this
   folder builds on its own.
 - A graphics device for the color grade. The picture plays either way, but the lookup tables are applied
@@ -235,7 +241,8 @@ What the test projects need:
 
 ```text
 SimpleCbxVideoPlayer/
-  SimpleCbxVideoPlayer.slnx             The one solution: UI, Core, six heads, the library, the test projects
+  SimpleCbxVideoPlayer.slnx             UI, Core, the six desktop heads, the library, the test projects
+  SimpleCbxVideoPlayer.WithAndroid.slnx The same plus the Android head and both .Android.csproj twins; needs the android workload
   THIRD-PARTY-NOTICES.txt               The bundled clips and lookup tables, and the licenses they carry
   src/
     SimpleCbxVideoPlayer.UI/            Shared items project (.shproj + .projitems): the XAML every head compiles
@@ -244,6 +251,8 @@ SimpleCbxVideoPlayer/
       Views/MainPage.xaml               The whole UI: two drop-downs, the canvases, the lookup-table panel, the transport
       Views/MainPage.xaml.cs            Code-behind: builds the GPU canvas, settles the surface, shows the save dialog
     SimpleCbxVideoPlayer.Core/          The library every head references; carries the shared packages
+      SimpleCbxVideoPlayer.Core.csproj  net10.0, for the desktop heads and the PlayTests
+      SimpleCbxVideoPlayer.Core.Android.csproj  The Android twin: same sources, own obj.android/ and bin.android/
       Helpers/HostHelper.cs             The host-builder provider SimpleServiceResolver builds its container from
       InternalsVisibleTo.cs             Lets the PlayTests read the view model's player
       ViewModels/MainViewModel.cs       All application logic: corpus, transport, render path, chain, bake, scripted run
@@ -261,7 +270,9 @@ SimpleCbxVideoPlayer/
     SimpleCbxVideoPlayer.Android/       Head: the Android application and activity, the manifest, one runtime
                                         package, and the corpus packed as Android assets
     libs/
-      SimpleCbxVideoPlayer.SkiaVideo/   The seam: the only project that names the video packages
+      SimpleCbxVideoPlayer.SkiaVideo/   The seam: the only library that names the video packages
+        SimpleCbxVideoPlayer.SkiaVideo.csproj  net10.0, for Core and the library's tests
+        SimpleCbxVideoPlayer.SkiaVideo.Android.csproj  The Android twin: same sources, own obj.android/ and bin.android/
         SkiaVideoRuntime.cs             Registers the AV1 and Opus decoders, once per process
         VideoPlaybackController.cs      Open, play, pause, stop, seek, draw, take a context, apply a chain, bake it
         Assets/                         SampleAssets, the clip corpus scan, the lookup-table catalog
@@ -274,8 +285,9 @@ SimpleCbxVideoPlayer/
       SimpleCbxVideoPlayer.SkiaVideo.Tests/   Mirrors src/libs/SimpleCbxVideoPlayer.SkiaVideo
 ```
 
-Dependency direction is strictly one way. Each head project references `SimpleCbxVideoPlayer.Core` and
-file-links the shared UI through an `Import` of `SimpleCbxVideoPlayer.UI.projitems`, so `App.xaml`,
+Dependency direction is strictly one way. Each head project references `SimpleCbxVideoPlayer.Core` - a
+desktop head `SimpleCbxVideoPlayer.Core.csproj`, the Android head `SimpleCbxVideoPlayer.Core.Android.csproj` -
+and file-links the shared UI through an `Import` of `SimpleCbxVideoPlayer.UI.projitems`, so `App.xaml`,
 `App.xaml.cs`, `MainPage.xaml` and `MainPage.xaml.cs` are compiled into every head rather than into a
 library. That is why each head csproj repeats the `<Page Include="**\*.xaml" />` plus
 `<None Remove="**\*.xaml" />` pair. `SimpleCbxVideoPlayer.Core` project-references the one library, carries
@@ -283,14 +295,18 @@ the platform, font and canvas packages, and owns the `Assets` folder; everything
 transitively through it. The library references nothing in the application and names every video package
 itself, which is what makes it the seam.
 
-Core and `SimpleCbxVideoPlayer.SkiaVideo` build for two target frameworks. The `net10.0` build of Core
-references the CodeBrix.Platform packages and serves the desktop heads; the `net10.0-android36.1` build
-references their CodeBrix.Android counterparts and serves the Android head. The playback library names the
-same video and codec packages for both, and differs only in the sound device: its `net10.0` build references
-CodeBrix.Audio, whose native backends play on Linux, macOS and Windows, and its Android build references
-CodeBrix.Audio.Android, which `MainApplication` in the Android head initialises at start-up. The choice is
-made by a target-framework condition on each package group in the project files, so the source files are the
-same for both. The Android head adds no code of its own beyond its application and activity classes;
+Core and `SimpleCbxVideoPlayer.SkiaVideo` each have two project files side by side in their folder: `X.csproj`
+targets `net10.0` and serves the desktop heads and the tests, and `X.Android.csproj` targets
+`net10.0-android36.1` and serves the Android head. The Android twin compiles the same source files under the
+same assembly name and root namespace, and keeps its build output in its own `obj.android/` and
+`bin.android/` folders. `SimpleCbxVideoPlayer.Core.csproj` references the CodeBrix.Platform packages and
+`SimpleCbxVideoPlayer.Core.Android.csproj` their CodeBrix.Android counterparts, together with the library's
+Android twin. The two playback library projects name the same video and codec packages, and differ only in
+the sound device: `SimpleCbxVideoPlayer.SkiaVideo.csproj` references CodeBrix.Audio, whose native backends
+play on Linux, macOS and Windows, and `SimpleCbxVideoPlayer.SkiaVideo.Android.csproj` references
+CodeBrix.Audio.Android, which `MainApplication` in the Android head initialises at start-up. Because each of
+those folders holds two project files, a bare `dotnet build` there is ambiguous: build a solution, or name the
+project file. The Android head adds no code of its own beyond its application and activity classes;
 `App.xaml`, `MainPage.xaml` and the view model run unchanged.
 
 ## CodeBrix libraries and add-ins used
@@ -307,8 +323,8 @@ same for both. The Android head adds no code of its own beyond its application a
 | CodeBrix.VideoPlayback.Dav1d | The AV1 decoder, registered once at start-up. Nothing in this family is discovered by reflection, so without this registration nothing in the corpus plays | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SkiaVideoRuntime.cs` |
 | CodeBrix.Audio.Opus | The Opus decoder, registered in the same call. The Matroska and WebM clips carry Opus soundtracks; the bespoke-container clips carry Vorbis, which needs no extra package | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SkiaVideoRuntime.cs` |
 | CodeBrix.Audio | The sound device on the desktop heads: the native audio backends for Linux, macOS and Windows behind the device-neutral audio core the playback packages use | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SimpleCbxVideoPlayer.SkiaVideo.csproj` |
-| CodeBrix.Audio.Android | The same sound device on the Android head, initialised once in the head's `MainApplication` | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SimpleCbxVideoPlayer.SkiaVideo.csproj`, `src/SimpleCbxVideoPlayer.Android/MainApplication.cs` |
-| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the SkiaSharp.Views and Graphics3DGL add-ins; the Android head and the Android build of Core reference these instead of the CodeBrix.Platform packages | `src/SimpleCbxVideoPlayer.Android/SimpleCbxVideoPlayer.Android.csproj`, `src/SimpleCbxVideoPlayer.Core/SimpleCbxVideoPlayer.Core.csproj` |
+| CodeBrix.Audio.Android | The same sound device on the Android head, initialised once in the head's `MainApplication` | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SimpleCbxVideoPlayer.SkiaVideo.Android.csproj`, `src/SimpleCbxVideoPlayer.Android/MainApplication.cs` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the SkiaSharp.Views and Graphics3DGL add-ins; the Android head and `SimpleCbxVideoPlayer.Core.Android.csproj` reference these instead of the CodeBrix.Platform packages | `src/SimpleCbxVideoPlayer.Android/SimpleCbxVideoPlayer.Android.csproj`, `src/SimpleCbxVideoPlayer.Core/SimpleCbxVideoPlayer.Core.Android.csproj` |
 | SilverAssertions | The assertion style in the test projects | `tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/`, `tests/SimpleCbxVideoPlayer.PlayTests/` |
 
 Third-party libraries:
@@ -324,7 +340,7 @@ Third-party libraries:
 
 ### One library is the seam, and the application never names a video type
 
-`SimpleCbxVideoPlayer.SkiaVideo` is the only project in the solution that references the playback packages,
+`SimpleCbxVideoPlayer.SkiaVideo` is the only library in the solution that references the playback packages,
 and the view model talks to exactly one class in it: `VideoPlaybackController`. That class exposes open,
 play, pause, stop, seek, "draw into this canvas", "here is a graphics context" and "apply this chain of
 tables", plus a handful of events, and everything below it - demultiplexers, decoders, presenters,

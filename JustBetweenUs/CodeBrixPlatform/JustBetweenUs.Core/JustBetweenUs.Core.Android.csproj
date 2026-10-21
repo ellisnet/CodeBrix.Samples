@@ -1,0 +1,69 @@
+﻿<Project>
+  <!-- Its own obj/bin folders: this project sits beside JustBetweenUs.Core.csproj, which builds the same sources -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj.android\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin.android\</BaseOutputPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.1</TargetFramework>
+    <AssemblyName>JustBetweenUs.Core</AssemblyName>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+
+    <!-- Match the namespace used by the app code -->
+    <RootNamespace>JustBetweenUs</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Shared\Helpers\HostHelper.cs" Link="Helpers\HostHelper.cs" />
+    <Compile Include="..\..\Shared\ViewModels\EncryptionMode.cs" Link="ViewModels\EncryptionMode.cs" />
+    <Compile Include="..\..\Shared\ViewModels\MainViewModel.cs" Link="ViewModels\MainViewModel.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\Shared\Assets\star_icon.json" Link="Assets\star_icon.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
+
+    <!-- Lottie/Skottie animation support -->
+    <PackageReference Include="SkiaSharp.Skottie" Version="4.153.1" />
+
+    <!-- Bundled Open Sans font -->
+    <PackageReference Include="CodeBrix.Platform.Fonts.OpenSans.ApacheLicenseForever" Version="1.0.248.1181" />
+
+    <!-- SVG rendering support for SvgImageSource on Skia targets -->
+    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.291.924" />
+  </ItemGroup>
+
+  <!-- The Android head: the CodeBrix.Android twins of the same packages -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
+    <PackageReference Include="CodeBrix.Android.Graphics2DSK.ApacheLicenseForever" Version="1.0.292.307" />
+    <PackageReference Include="CodeBrix.Android.Lottie.ApacheLicenseForever" Version="1.0.292.307" />
+    <PackageReference Include="CodeBrix.Android.SkiaSharp.Views.ApacheLicenseForever" Version="1.0.292.307" />
+    <PackageReference Include="CodeBrix.Android.Svg.ApacheLicenseForever" Version="1.0.292.307" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Assets\" />
+    <Folder Include="ViewModels\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\Shared\Assets\clipboard.svg" Link="Assets\clipboard.svg" />
+    <EmbeddedResource Include="..\..\Shared\Assets\padlock-icon.svg" Link="Assets\padlock-icon.svg" />
+    <EmbeddedResource Include="..\..\Shared\Assets\unlocked-icon.svg" Link="Assets\unlocked-icon.svg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\JustBetweenUs.Encryption\JustBetweenUs.Encryption.csproj" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

@@ -1,0 +1,28 @@
+<Project>
+  <!-- Its own obj/bin folders: this project sits beside Pinta.Brix.FileFormats.csproj, which builds the same sources -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj.android\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin.android\</BaseOutputPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.1</TargetFramework>
+    <AssemblyName>Pinta.Brix.FileFormats</AssemblyName>
+    <RootNamespace>Pinta.Brix.FileFormats</RootNamespace>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- Builds for Android too because it references Pinta.Brix.Engine, which does -->
+  <PropertyGroup>
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pinta.Brix.Engine\Pinta.Brix.Engine.Android.csproj" />
+    <!-- Codec coverage beyond SkiaSharp's encoders (BMP/GIF/TIFF/...) -->
+    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.285.619" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

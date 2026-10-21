@@ -8,7 +8,6 @@
   <Project Path="src/InannaOctaquetra.LinuxWayland/InannaOctaquetra.LinuxWayland.csproj" />
   <Project Path="src/InannaOctaquetra.MacOS/InannaOctaquetra.MacOS.csproj" />
   <Project Path="src/InannaOctaquetra.Win32Skia/InannaOctaquetra.Win32Skia.csproj" />
-  <Project Path="src/InannaOctaquetra.Android/InannaOctaquetra.Android.csproj" />
   <Folder Name="/Libraries/">
     <Project Path="src/libs/InannaOctaquetra.Reading/InannaOctaquetra.Reading.csproj" />
   </Folder>

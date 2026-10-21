@@ -1,0 +1,28 @@
+<Solution>
+  <!-- PolyHavenBrowser.WithAndroid.slnx
+       The Android solution: everything in PolyHavenBrowser.slnx PLUS the Android head and the
+       .Android twins of its library projects, which need the .NET Android workload.
+       Open PolyHavenBrowser.slnx instead if you only have the plain .NET SDK. -->
+  <Project Path="src/PolyHavenBrowser.UI/PolyHavenBrowser.UI.shproj" />
+  <Project Path="src/PolyHavenBrowser.Core/PolyHavenBrowser.Core.csproj" />
+  <Project Path="src/PolyHavenBrowser.Core/PolyHavenBrowser.Core.Android.csproj" />
+  <Project Path="src/PolyHavenBrowser.LinuxX11/PolyHavenBrowser.LinuxX11.csproj" />
+  <Project Path="src/PolyHavenBrowser.LinuxWayland/PolyHavenBrowser.LinuxWayland.csproj" />
+  <Project Path="src/PolyHavenBrowser.LinuxFrameBuffer/PolyHavenBrowser.LinuxFrameBuffer.csproj" />
+  <Project Path="src/PolyHavenBrowser.MacOS/PolyHavenBrowser.MacOS.csproj" />
+  <Project Path="src/PolyHavenBrowser.Win32Skia/PolyHavenBrowser.Win32Skia.csproj" />
+  <Project Path="src/PolyHavenBrowser.WinWpfSkia/PolyHavenBrowser.WinWpfSkia.csproj" />
+  <Project Path="src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj" />
+  <Folder Name="/Libraries/">
+    <Project Path="src/libs/PolyHavenBrowser.CreateDocument/PolyHavenBrowser.CreateDocument.csproj" />
+    <Project Path="src/libs/PolyHavenBrowser.PolyHavenApiClient/PolyHavenBrowser.PolyHavenApiClient.csproj" />
+    <Project Path="src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.csproj" />
+    <Project Path="src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.Android.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/PolyHavenBrowser.PlayTests/PolyHavenBrowser.PlayTests.csproj" />
+    <Project Path="tests/libs/PolyHavenBrowser.CreateDocument.Tests/PolyHavenBrowser.CreateDocument.Tests.csproj" />
+    <Project Path="tests/libs/PolyHavenBrowser.PolyHavenApiClient.Tests/PolyHavenBrowser.PolyHavenApiClient.Tests.csproj" />
+    <Project Path="tests/libs/PolyHavenBrowser.Rendering.Tests/PolyHavenBrowser.Rendering.Tests.csproj" />
+  </Folder>
+</Solution>

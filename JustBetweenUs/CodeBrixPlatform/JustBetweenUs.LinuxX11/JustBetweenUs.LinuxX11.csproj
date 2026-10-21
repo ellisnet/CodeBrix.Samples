@@ -7,11 +7,11 @@
     Pi - there is currently a bug in the SkiaSharp functionality - as of 3/15/2026 -
     see more notes in the Program.cs file.-->
     
-    <!-- Uno needs this define for its internal conditional compilation -->
+    <!-- CodeBrix.Platform needs this define for its internal conditional compilation -->
     <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI</DefineConstants>
   </PropertyGroup>
 
-  <!-- Tell MSBuild to treat .xaml files as Uno XAML pages -->
+  <!-- Tell MSBuild to treat .xaml files as CodeBrix.Platform XAML pages -->
   <ItemGroup>
     <Page Include="**\*.xaml" Exclude="bin\**\*.xaml;obj\**\*.xaml" />
     <None Remove="**\*.xaml" />

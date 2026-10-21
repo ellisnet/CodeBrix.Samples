@@ -1,0 +1,23 @@
+<Solution>
+  <!-- PdfSideBySide.WithAndroid.slnx
+       The Android solution: everything in PdfSideBySide.slnx PLUS the Android head and the
+       .Android twins of its library projects, which need the .NET Android workload.
+       Open PdfSideBySide.slnx instead if you only have the plain .NET SDK. -->
+  <Project Path="src/PdfSideBySide.UI/PdfSideBySide.UI.shproj" />
+  <Project Path="src/PdfSideBySide.Core/PdfSideBySide.Core.csproj" />
+  <Project Path="src/PdfSideBySide.Core/PdfSideBySide.Core.Android.csproj" />
+  <Project Path="src/PdfSideBySide.LinuxX11/PdfSideBySide.LinuxX11.csproj" />
+  <Project Path="src/PdfSideBySide.LinuxWayland/PdfSideBySide.LinuxWayland.csproj" />
+  <Project Path="src/PdfSideBySide.LinuxFrameBuffer/PdfSideBySide.LinuxFrameBuffer.csproj" />
+  <Project Path="src/PdfSideBySide.MacOS/PdfSideBySide.MacOS.csproj" />
+  <Project Path="src/PdfSideBySide.Win32Skia/PdfSideBySide.Win32Skia.csproj" />
+  <Project Path="src/PdfSideBySide.WinWpfSkia/PdfSideBySide.WinWpfSkia.csproj" />
+  <Project Path="src/PdfSideBySide.Android/PdfSideBySide.Android.csproj" />
+  <Folder Name="/Libraries/">
+    <Project Path="src/libs/PdfSideBySide.PdfRender/PdfSideBySide.PdfRender.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/libs/PdfSideBySide.PdfRender.Tests/PdfSideBySide.PdfRender.Tests.csproj" />
+    <Project Path="tests/PdfSideBySide.PlayTests/PdfSideBySide.PlayTests.csproj" />
+  </Folder>
+</Solution>

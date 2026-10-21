@@ -111,11 +111,16 @@ number it alone knows: how big each viewer is.
 
 ## Building, running and testing
 
-There is one solution, `PdfSideBySide.slnx`, and it holds every project in the folder, the Android
-head included. Its own
-header comment says it contains "everything that builds with the plain .NET SDK on Linux, macOS and
-Windows", and that is accurate: it opens on any of the three. It files the domain library under a
-`Libraries` solution folder and the test projects under a `Tests` solution folder.
+There are two solutions, and both open on Linux, macOS and Windows. Each files the domain library
+under a `Libraries` solution folder and the test projects under a `Tests` solution folder.
+
+| Solution | What it holds | Needs |
+| --- | --- | --- |
+| `PdfSideBySide.slnx` | The shared UI project, the Core library, the six desktop heads, the domain library and the tests | The plain .NET 10 SDK |
+| `PdfSideBySide.WithAndroid.slnx` | Everything in `PdfSideBySide.slnx`, plus the Android head and `PdfSideBySide.Core.Android.csproj` | The .NET 10 SDK with the `android` workload, and the Android SDK |
+
+Open `PdfSideBySide.slnx` if you only have the .NET 10 SDK; open `PdfSideBySide.WithAndroid.slnx` to
+also get the Android head.
 
 The heads:
 
@@ -129,16 +134,15 @@ The heads:
 | `PdfSideBySide.WinWpfSkia` | Windows, Skia hosted in a WPF window (`net10.0-windows`) |
 | `PdfSideBySide.Android` | Android phones, tablets and Android laptops (`net10.0-android36.1`, Android 13 / API level 33 and later) |
 
-Prerequisites are light. Building needs the .NET 10 SDK with the `android` workload
-(`dotnet workload install android`); the workload is needed for every build of this application, a
-desktop-only build and the test runs included, because `PdfSideBySide.Core` also builds for Android.
-A build of the whole solution includes the Android head, so it needs the Android SDK as well; running
-that head needs an Android device or emulator reachable with `adb`. There are no accounts, no tokens
+Prerequisites are light. `PdfSideBySide.slnx`, the desktop heads and the test runs need only the
+.NET 10 SDK. The Android head, built on its own or through `PdfSideBySide.WithAndroid.slnx`, also
+needs the `android` workload (`dotnet workload install android`) and the Android SDK; running that
+head needs an Android device or emulator reachable with `adb`. There are no accounts, no tokens
 and nothing downloaded at run time. The desktop heads and the libraries target `net10.0`, except the
 WinWpfSkia head, which targets `net10.0-windows` and sets `EnableWindowsTargeting` so the whole
 solution still restores on Linux and macOS even though that head cannot run there. The Android head
-targets `net10.0-android36.1`, and `PdfSideBySide.Core` builds for both `net10.0` and
-`net10.0-android36.1`. The PDF engine is PDFium, and its native libraries arrive inside the
+targets `net10.0-android36.1`, and so does `PdfSideBySide.Core.Android.csproj`, the Android twin of
+`PdfSideBySide.Core`. The PDF engine is PDFium, and its native libraries arrive inside the
 CodeBrix.PdfRasterizer package for every runtime identifier the application can run on, so there is
 no system PDF library to install and no per-head native fan-out to arrange; the Android package
 receives the `android-arm64` and `android-x64` PDFium libraries the same way. The Linux desktop heads
@@ -201,7 +205,8 @@ test binary with `CopyToOutputDirectory="PreserveNewest"`.
 
 ```text
 PdfSideBySide/
-  PdfSideBySide.slnx                  The one solution; opens on Linux, macOS and Windows
+  PdfSideBySide.slnx                  The desktop solution; plain .NET 10 SDK; opens on Linux, macOS and Windows
+  PdfSideBySide.WithAndroid.slnx      The same plus the Android head and Core.Android; needs the android workload
   global.json                         Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt             Third-party content bundled with or used by the application
   src/
@@ -209,6 +214,8 @@ PdfSideBySide/
       App.xaml, App.xaml.cs           Bootstrap: fonts, service resolver, design mode, Debug logging
       Views/MainPage.xaml(.cs)        The single page: two panes and the middle control column
     PdfSideBySide.Core/               View models; carries every non-head package reference
+      PdfSideBySide.Core.csproj       net10.0; CodeBrix.Platform; referenced by the desktop heads and tests
+      PdfSideBySide.Core.Android.csproj   The Android twin: same sources, net10.0-android36.1, CodeBrix.Android, obj.android/ and bin.android/
       Helpers/HostHelper.cs           The IHostBuilderProvider handed to SimpleServiceResolver
       Services/IPdfFileBridge.cs      The file dialog the page fills in for the view model
       Services/IStartupArguments.cs   Optional replacement for the process command line (PlayTests)
@@ -252,8 +259,9 @@ Dependencies run one way. `PdfSideBySide.PdfRender` is the bottom of the stack: 
 CodeBrix.PdfRasterizer library, plus the dependency-injection abstractions its one-line
 registration extension is written against, and knows nothing about XAML, CodeBrix.Platform or view
 models. `PdfSideBySide.Core` project-references it and adds the CodeBrix.Platform, font and
-generic-host packages; that is the only place a non-head package is declared. Each of the six heads
-project-references `PdfSideBySide.Core`, adds exactly one CodeBrix.Platform runtime package for its
+generic-host packages; that is the only place a non-head package is declared. Each of the six desktop heads
+project-references `PdfSideBySide.Core.csproj` (the Android head references
+`PdfSideBySide.Core.Android.csproj` instead), adds exactly one CodeBrix.Platform runtime package for its
 own backend, and **file-links** the shared UI by importing
 `..\PdfSideBySide.UI\PdfSideBySide.UI.projitems`. The `.shproj` produces no assembly of its own:
 `App.xaml`, `MainPage.xaml` and their code-behind are compiled into each head, which is why each
@@ -261,11 +269,13 @@ head's `Program` can see `App` without a using directive (they share the namespa
 `PdfSideBySide`). The library test project project-references the render library only, so the domain tests
 never load a UI package.
 
-`PdfSideBySide.Core` builds for two target frameworks. The `net10.0` build references the
-CodeBrix.Platform package and serves the desktop heads; the `net10.0-android36.1` build references
-its CodeBrix.Android counterpart and serves the Android head. The choice is made by a
-target-framework condition on each package group in the project file, so the source files are the
-same for both. `PdfSideBySide.PdfRender` holds no UI types and references no CodeBrix.Platform
+`PdfSideBySide.Core` is two project files in one folder. `PdfSideBySide.Core.csproj` targets
+`net10.0`, references the CodeBrix.Platform package and serves the desktop heads.
+`PdfSideBySide.Core.Android.csproj` targets `net10.0-android36.1`, references its CodeBrix.Android
+counterpart and serves the Android head. It compiles the same source files under the same assembly
+name and root namespace, and keeps its build output in its own `obj.android/` and `bin.android/`
+folders. Because the folder holds two project files, build it through a solution or by naming the
+project file. `PdfSideBySide.PdfRender` holds no UI types and references no CodeBrix.Platform
 package, so it stays `net10.0` and the Android head uses it as it is. The Android head adds no code
 of its own beyond its application and activity classes; `App.xaml`, `MainPage.xaml` and both view
 models run unchanged.
@@ -281,7 +291,7 @@ inside an assembly called `PdfSideBySide.Core`. `MainPage.xaml` therefore has to
 | --- | --- | --- |
 | CodeBrix.Platform | The whole UI: `Application`, `Window`, `Frame`, `Page`, every control in `MainPage.xaml`, and the "Simple" toolkit — `SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`, `[AffectsAllCommands]`, `IXamlRootGetter`, the inherited `ShowInfo` and `ShowError` helpers, and the ambient logger factory the view model writes to. It also supplies the `Windows.Storage.Pickers` file picker the page shows | `src/PdfSideBySide.Core/PdfSideBySide.Core.csproj`, `src/PdfSideBySide.UI/App.xaml.cs`, both view models, `src/PdfSideBySide.UI/Views/MainPage.xaml(.cs)` |
 | CodeBrix.Platform runtime for each head | One rendering backend per head — X11, Wayland, framebuffer, macOS, Win32 and WPF — each selected by its own `Use…()` call on the host builder | the six `src/PdfSideBySide.<Head>/PdfSideBySide.<Head>.csproj` files and their `Program.cs` |
-| CodeBrix.Android | The Android implementation of the same framework; the Android head and the Android build of the Core library reference it instead of the CodeBrix.Platform package, and its document picker serves the browse buttons on Android | `src/PdfSideBySide.Android/PdfSideBySide.Android.csproj`, `src/PdfSideBySide.Core/PdfSideBySide.Core.csproj` |
+| CodeBrix.Android | The Android implementation of the same framework; the Android head and the Android twin of the Core library reference it instead of the CodeBrix.Platform package, and its document picker serves the browse buttons on Android | `src/PdfSideBySide.Android/PdfSideBySide.Android.csproj`, `src/PdfSideBySide.Core/PdfSideBySide.Core.Android.csproj` |
 | CodeBrix.Platform.Fonts.Roboto | Supplies Roboto as the application-wide default text font, the `RobotoFont` XAML resource, and the Armenian and Georgian Noto Sans faces registered as fallbacks | `src/PdfSideBySide.UI/App.xaml`, `src/PdfSideBySide.UI/App.xaml.cs`, `src/PdfSideBySide.Core/PdfSideBySide.Core.csproj` |
 | CodeBrix.PdfRasterizer | The PDF engine: `GetPageCount()` when a document is opened, and `RasterizeToImage()` to turn one page at a chosen resolution into an image. Bundles its own PDFium natives per runtime identifier | `src/libs/PdfSideBySide.PdfRender/Documents/PdfPageDocument.cs`, `src/libs/PdfSideBySide.PdfRender/Rendering/PageRenderer.cs`, `src/libs/PdfSideBySide.PdfRender/PdfSideBySide.PdfRender.csproj` |
 | CodeBrix.Imaging | PNG-encodes the rasterized page and reports its pixel size. Arrives transitively through CodeBrix.PdfRasterizer — the csproj never names it | `src/libs/PdfSideBySide.PdfRender/Rendering/PageRenderer.cs` |

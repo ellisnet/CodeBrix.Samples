@@ -25,7 +25,7 @@
   <!-- Shared UI files (App.xaml + Views) -->
   <Import Project="..\KenneyAssetBrowser.UI\KenneyAssetBrowser.UI.projitems" Label="Shared" />
   <ItemGroup>
-    <ProjectReference Include="..\KenneyAssetBrowser.Core\KenneyAssetBrowser.Core.csproj" />
+    <ProjectReference Include="..\KenneyAssetBrowser.Core\KenneyAssetBrowser.Core.Android.csproj" />
   </ItemGroup>
 
   <!-- EXACTLY ONE platform head package; all other packages come from KenneyAssetBrowser.Core -->

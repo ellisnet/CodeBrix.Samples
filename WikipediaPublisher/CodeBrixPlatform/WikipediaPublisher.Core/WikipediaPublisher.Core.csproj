@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj.android/**;bin.android/**</DefaultItemExcludes>
 
     <!-- Match the namespace used by the app code -->
     <RootNamespace>WikipediaPublisher</RootNamespace>
@@ -8,12 +9,8 @@
 
   <!-- CodeBrix.Platform needs this define for its internal conditional compilation
        (the CodeBrix.Android package defines it for the Android build) -->
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+  <PropertyGroup>
     <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,7 +28,7 @@
   </ItemGroup>
 
   <!-- The desktop heads: CodeBrix.Platform and its add-ins -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+  <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.291.1177" />
 
     <!-- WebView add-in: gives the Linux Skia heads an embedded WebView2 (WPE WebKit,
@@ -44,14 +41,6 @@
     <!-- FlexPanel - a flexbox-style layout control for CodeBrix.Platform XAML; lays out
          the bottom bar so its two control groups wrap onto two rows in portrait. -->
     <PackageReference Include="CodeBrix.Platform.FlexPanel.ApacheLicenseForever" Version="1.0.291.1177" />
-  </ItemGroup>
-
-  <!-- The Android head: the CodeBrix.Android twins of the same packages (the WebView twin
-       shows pages in the device's system WebView) -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
-    <PackageReference Include="CodeBrix.Android.WebView.ApacheLicenseForever" Version="1.0.292.307" />
-    <PackageReference Include="CodeBrix.Android.FlexPanel.ApacheLicenseForever" Version="1.0.292.307" />
   </ItemGroup>
 
   <ItemGroup>

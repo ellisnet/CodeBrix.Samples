@@ -14,6 +14,7 @@
   <Folder Name="/CodeBrixPlatform/">
     <Project Path="CodeBrixPlatform/PainDiagram.UI/PainDiagram.UI.shproj" />
     <Project Path="CodeBrixPlatform/PainDiagram.Core/PainDiagram.Core.csproj" />
+    <Project Path="CodeBrixPlatform/PainDiagram.Core/PainDiagram.Core.Android.csproj" />
     <Project Path="CodeBrixPlatform/PainDiagram.Win32Skia/PainDiagram.Win32Skia.csproj" />
     <Project Path="CodeBrixPlatform/PainDiagram.WinWpfSkia/PainDiagram.WinWpfSkia.csproj" />
     <Project Path="CodeBrixPlatform/PainDiagram.LinuxX11/PainDiagram.LinuxX11.csproj" />

@@ -27,7 +27,7 @@ this repository with its own README.)
 
 - Put hardware-accelerated 3D in an ordinary page by subclassing the `GLCanvasElement` that the CodeBrix.Platform.Graphics3DGL library supplies, and binding a model to it: [Host an OpenGL scene in XAML with a GLCanvasElement subclass](../BLUEPRINTS-GraphicsAndRendering.md#host-an-opengl-scene-in-xaml-with-a-glcanvaselement-subclass).
 - Keep the drawing itself behind an interface that names no framework types, so it is testable headlessly and reusable off-screen: [Keep the GL renderer framework-free behind an interface](../BLUEPRINTS-GraphicsAndRendering.md#keep-the-gl-renderer-framework-free-behind-an-interface).
-- Reference only the higher-level graphics library and let the OpenGL binding arrive transitively, a rule this application spells out in both csproj files that touch GL: [Code to the higher-level graphics package and let the binding arrive transitively](../BLUEPRINTS-ProjectLayoutAndPackaging.md#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively).
+- Reference only the higher-level graphics library and let the OpenGL binding arrive transitively, a rule this application spells out in the two desktop csproj files that touch GL: [Code to the higher-level graphics package and let the binding arrive transitively](../BLUEPRINTS-ProjectLayoutAndPackaging.md#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively).
 - Give a library that hosts a XAML `FrameworkElement` its own `RootNamespace`, so the per-head generated resources class does not collide across assemblies: [Give a library that references CodeBrix Platform its own root namespace](../BLUEPRINTS-ProjectLayoutAndPackaging.md#give-a-library-that-references-codebrix-platform-its-own-root-namespace).
 - Turn pointer drag and wheel into orbit-camera motion inside the element, with pointer capture that survives leaving it: [Forward pointer input from a canvas into a model](../BLUEPRINTS-ViewsAndControls.md#forward-pointer-input-from-a-canvas-into-a-model).
 - Re-frame the camera on every newly bound model so each one appears well composed at a consistent angle: [Frame the camera automatically on each newly bound model](../BLUEPRINTS-GraphicsAndRendering.md#frame-the-camera-automatically-on-each-newly-bound-model).
@@ -85,11 +85,14 @@ this repository with its own README.)
 ## Building, running and testing
 
 PolyHavenBrowser is a pure CodeBrix.Platform application: it has no native WinUI 3, WPF or
-.NET MAUI head, so there is one solution and no separate Windows-only solution file.
+.NET MAUI head, so there is no separate Windows-only solution file. Open
+`PolyHavenBrowser.slnx` if you only have the .NET 10 SDK; open
+`PolyHavenBrowser.WithAndroid.slnx` to also get the Android head.
 
 | Solution | Open on | Contains |
 | --- | --- | --- |
-| `PolyHavenBrowser/PolyHavenBrowser.slnx` | Linux, macOS, Windows | The shared UI project, `PolyHavenBrowser.Core`, all six desktop heads and the Android head, the three libraries (in a `Libraries/` solution folder) and their three test projects (in a `Tests/` solution folder) |
+| `PolyHavenBrowser/PolyHavenBrowser.slnx` | Linux, macOS, Windows | The shared UI project, `PolyHavenBrowser.Core`, all six desktop heads, the three libraries (in a `Libraries/` solution folder), their test projects and the PlayTests UI suite (in a `Tests/` solution folder); needs only the .NET 10 SDK |
+| `PolyHavenBrowser/PolyHavenBrowser.WithAndroid.slnx` | Linux, macOS, Windows | Everything in `PolyHavenBrowser.slnx`, plus the Android head and the `.Android` twins of `PolyHavenBrowser.Core` and `PolyHavenBrowser.Rendering`; needs the .NET Android workload and the Android SDK |
 
 The seven heads:
 
@@ -109,17 +112,15 @@ exactly one CodeBrix.Platform Skia runtime package and takes everything else fro
 `PolyHavenBrowser.Core`. The Android head targets `net10.0-android36.1`, builds on any of
 the three operating systems as well, and runs on Android 13 (API level 33) and later; it
 adds exactly one package too, the CodeBrix.Android framework package. `PolyHavenBrowser.Core`
-and `PolyHavenBrowser.Rendering` build for both target frameworks, so a single change to
-either reaches every head.
+and `PolyHavenBrowser.Rendering` each have a `.Android.csproj` twin in the same folder that
+compiles the same source files, so a single change to either reaches every head.
 
 **Prerequisites**
 
-- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). The
-  workload is needed for every build of this application, a desktop-only build and the
-  test runs included, because `PolyHavenBrowser.Core` and `PolyHavenBrowser.Rendering`
-  also build for Android.
-- For the Android head, which a build of the whole solution includes, the Android SDK; to
-  run it, an Android device or emulator reachable with `adb`.
+- The .NET 10 SDK. That is all the desktop heads, the libraries and the test runs need.
+- For the Android head (`PolyHavenBrowser.WithAndroid.slnx`, or the head project built on
+  its own), the `android` workload (`dotnet workload install android`) and the Android SDK;
+  to run it, an Android device or emulator reachable with `adb`.
 - A working OpenGL stack for the 3D preview and for the Document button's product shots.
   The preview degrades gracefully: when the canvas reports that its GL initialization
   failed, the page raises a dialog explaining why the pane is empty, and on Windows it adds
@@ -162,14 +163,16 @@ copying its `.apk` to the device. The Android package name is
 
 **Tests**
 
-There is one test project per library, under `PolyHavenBrowser/tests/libs`. All three are
-xUnit v3 with SilverAssertions; two of them also use CodeBrix.TestMocks.
+There is one test project per library, under `PolyHavenBrowser/tests/libs`, plus a PlayTests
+UI suite under `PolyHavenBrowser/tests`. All of them are xUnit v3 with SilverAssertions; two
+of the library test projects also use CodeBrix.TestMocks.
 
 | Test project | Covers |
 | --- | --- |
 | `PolyHavenBrowser.PolyHavenApiClient.Tests` | Offline unit tests over a stub message handler (request URLs, JSON parsing, file-tree traversal, thumbnail URL building, download progress and MD5 verification, error mapping, factory and handler lifetime), mocked-interface tests, and a `Live/` folder of real-network tests sharing one fixture |
 | `PolyHavenBrowser.Rendering.Tests` | Pure-CPU tests of the glTF loader, the orbit camera, the image decoder and the shot-scene builder; mocked `IModelLoader` and `IModelSceneRenderer` flows; and real-GL tests that create a headless context and read pixels back |
 | `PolyHavenBrowser.CreateDocument.Tests` | The one-sheet PDF end to end (page size, document title, minimal and broken-image requests, thumbnail aspect handling, long-description overflow), plus the accent sampler and the copy builders |
+| `PolyHavenBrowser.PlayTests` | The real page and view models driven through CodeBrix.Platform.PlayTest over an offline HTTP fixture: the catalog, thumbnails and load failures, search, sort orders, lazy scrolling, the folder picker, model downloads with progress, errors and retry, the Model View, the real one-sheet PDF save, the fixed dark palette and portrait layout. The OpenGL 3D preview is launched as unavailable, so it is not rendered; see its README |
 
 `PolyHavenBrowser/global.json` selects the Microsoft.Testing.Platform runner:
 
@@ -190,6 +193,13 @@ dotnet build PolyHavenBrowser/PolyHavenBrowser.slnx -c Release
 PolyHavenBrowser/tests/libs/PolyHavenBrowser.Rendering.Tests/bin/Release/net10.0/PolyHavenBrowser.Rendering.Tests
 ```
 
+The PlayTests project runs through `dotnet test` instead, headless by default; its README
+covers the visible preview and the orientation and theme options:
+
+```text
+dotnet test --project PolyHavenBrowser/tests/PolyHavenBrowser.PlayTests/PolyHavenBrowser.PlayTests.csproj -c Release
+```
+
 Two categories need something extra:
 
 - GL tests carry `[Trait("Category", "RequiresGL")]` and call `Assert.SkipWhen(...)` when no
@@ -205,7 +215,8 @@ because a test project has no platform head to supply them.
 
 ```text
 PolyHavenBrowser/
-  PolyHavenBrowser.slnx                One cross-platform solution, with Libraries/ and Tests/ folders
+  PolyHavenBrowser.slnx                The cross-platform solution, with Libraries/ and Tests/ folders
+  PolyHavenBrowser.WithAndroid.slnx    The same solution plus the Android head and the .Android twins
   global.json                          Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt              Third-party attribution notices
   README.md                            This file
@@ -214,6 +225,8 @@ PolyHavenBrowser/
       App.xaml / App.xaml.cs           Fonts, container setup, design-mode flag, logging, first navigation
       Views/MainPage.xaml(.cs)         Browsing View, Model View, the 3D preview element, layout plumbing
     PolyHavenBrowser.Core/             The application library every head references
+      PolyHavenBrowser.Core.csproj     The desktop build (net10.0), obj/ and bin/
+      PolyHavenBrowser.Core.Android.csproj  The Android twin (net10.0-android36.1), obj.android/ and bin.android/
       ViewModels/                      MainViewModel and ModelFact, ModelCellCollection, ModelCellViewModel,
                                        ICatalogGridBridge and IModelViewBridge (what the page owes the view model)
       Services/                        ModelCatalogService, ModelDownloadService, ModelDescriptionBuilder
@@ -232,6 +245,8 @@ PolyHavenBrowser/
       PolyHavenBrowser.PolyHavenApiClient/  Typed REST client for the Poly Haven API; no UI dependency
         Models/ Exceptions/ Serialization/  Response types, typed errors, the source-generated JSON context
       PolyHavenBrowser.Rendering/           glTF loading, the GL renderer, the XAML preview element
+        PolyHavenBrowser.Rendering.csproj   The desktop build (net10.0), obj/ and bin/
+        PolyHavenBrowser.Rendering.Android.csproj  The Android twin, obj.android/ and bin.android/
         GL/                                 ModelSceneGlCanvas, IModelSceneRenderer, GlModelSceneRenderer
         Models/                             GltfModelLoader and IModelLoader, LoadedModel and its parts
         Cameras/                            OrbitCamera: orbit, zoom, and the framing policy
@@ -245,6 +260,7 @@ PolyHavenBrowser/
       PolyHavenBrowser.PolyHavenApiClient.Tests/   Unit/, Mocked/, Live/, TestDoubles/, TestData/
       PolyHavenBrowser.Rendering.Tests/            Unit/, Mocked/, Gl/, TestDoubles/, TestData/
       PolyHavenBrowser.CreateDocument.Tests/       The one-sheet, the accent sampler, the copy builders
+    PolyHavenBrowser.PlayTests/                    PlayTest UI suite of the real page over an offline HTTP fixture
 ```
 
 The dependency direction is strictly one way. Each head `ProjectReference`s
@@ -258,14 +274,19 @@ nothing about each other and nothing about the view models;
 `PolyHavenBrowser.PolyHavenApiClient` has no UI dependency at all. Only
 `PolyHavenBrowser.Rendering` references CodeBrix.Platform, because it hosts the XAML preview
 element. Each library carries an `InternalsVisibleTo.cs` naming its own `.Tests` assembly,
-and each test project references only the one library it covers.
+and each library test project references only the one library it covers; the PlayTests
+project references `PolyHavenBrowser.Core` and imports the shared UI the way a head does.
 
-`PolyHavenBrowser.Core` and `PolyHavenBrowser.Rendering` build for two target frameworks.
-The `net10.0` build references the CodeBrix.Platform packages (the framework,
-Graphics3DGL and, in Core, FlexPanel) and serves the desktop heads; the
-`net10.0-android36.1` build references their CodeBrix.Android counterparts and serves the
-Android head. The choice is made by a target-framework condition on each package group in
-the project file, so the source files are the same for both. `PolyHavenBrowser.CreateDocument`
+`PolyHavenBrowser.Core` and `PolyHavenBrowser.Rendering` each come as two project files in
+one folder. `X.csproj` targets `net10.0`, references the CodeBrix.Platform packages (the
+framework, Graphics3DGL and, in Core, FlexPanel) and serves the desktop heads and the tests;
+its twin `X.Android.csproj` targets `net10.0-android36.1`, references their CodeBrix.Android
+counterparts and serves the Android head, which references `PolyHavenBrowser.Core.Android`,
+which in turn references `PolyHavenBrowser.Rendering.Android`. The twin compiles the same
+source files under the same assembly name and root namespace, and keeps its build output in
+`obj.android/` and `bin.android/`. Because each of those folders holds two project files, a
+bare `dotnet build` there is ambiguous; build a solution or name the project file.
+`PolyHavenBrowser.CreateDocument`
 and `PolyHavenBrowser.PolyHavenApiClient` hold no UI types and reference no CodeBrix.Platform
 package, so they stay `net10.0` and the Android head uses them as they are. The Android head
 adds no code of its own beyond its application and activity classes; `App.xaml`,
@@ -277,7 +298,7 @@ adds no code of its own beyond its application and activity classes; `App.xaml`,
 | --- | --- | --- |
 | CodeBrix.Platform | The XAML framework and the Simple MVVM toolkit: `SimpleViewModel`, `SimpleCommand`, `SimpleServiceResolver`, `SimpleOsInfo`, the `CreateDialog`/`ShowError`/`ShowInfo` dialog helpers and `IXamlRootGetter` | `PolyHavenBrowser.Core`, `PolyHavenBrowser.Rendering`; used throughout `src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs` and `src/PolyHavenBrowser.UI/App.xaml.cs` |
 | CodeBrix.Platform Skia runtime for each head | One runtime package per head project, and nothing else | the six desktop `src/PolyHavenBrowser.<Head>/*.csproj` |
-| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the Graphics3DGL and FlexPanel add-ins; the Android head and the Android builds of Core and the Rendering library reference these instead of the CodeBrix.Platform packages | `src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj`, `src/PolyHavenBrowser.Core/PolyHavenBrowser.Core.csproj`, `src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.csproj` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the Graphics3DGL and FlexPanel add-ins; the Android head and the `.Android` twins of Core and the Rendering library reference these instead of the CodeBrix.Platform packages | `src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj`, `src/PolyHavenBrowser.Core/PolyHavenBrowser.Core.Android.csproj`, `src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.Android.csproj` |
 | CodeBrix.Platform.Graphics3DGL | Supplies `GLCanvasElement` (the element the preview subclasses, with its cross-platform GL context, off-screen framebuffer and read-back), `GLInitializationState`, and `OffscreenGLContext` for the document's product shots; the OpenGL binding the shaders draw with arrives only transitively through it | `src/libs/PolyHavenBrowser.Rendering/GL/ModelSceneGlCanvas.cs`, `.../GL/GlModelSceneRenderer.cs`, `src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs` |
 | CodeBrix.Platform.FlexPanel add-in | The Browsing View's wrapping header toolbar, and the Model View's info-pane and viewer split whose main axis flips between landscape and portrait | `src/PolyHavenBrowser.UI/Views/MainPage.xaml`, `.../MainPage.xaml.cs` |
 | CodeBrix.Platform.Fonts.Roboto | The application's default text font and its script fallbacks, set in the `App` constructor | `src/PolyHavenBrowser.UI/App.xaml.cs`, `src/PolyHavenBrowser.UI/App.xaml` |
@@ -285,7 +306,8 @@ adds no code of its own beyond its application and activity classes; `App.xaml`,
 | CodeBrix.Imaging | Decodes downloaded base-color and backdrop textures to RGBA for GPU upload, and backs the PDF image pipeline and the accent-color sampler | `src/libs/PolyHavenBrowser.Rendering/Images/LdrImageDecoder.cs`, `src/libs/PolyHavenBrowser.CreateDocument/Internal/AccentColorSampler.cs`, `.../Internal/SheetFonts.cs` |
 | CodeBrix.PdfDocuments | Draws the marketing one-sheet directly on a PDF page, and registers the embedded fonts through its meta font resolver | `src/libs/PolyHavenBrowser.CreateDocument/Services/MarketingSheetCreator.cs`, `.../Internal/SheetComposer.cs`, `.../Internal/SheetFonts.cs` |
 | CodeBrix.TestMocks | The mocking library used by the API-client and rendering test projects, in place of a third-party mocking package | `tests/libs/PolyHavenBrowser.Rendering.Tests/Mocked/`, `tests/libs/PolyHavenBrowser.PolyHavenApiClient.Tests/Mocked/` |
-| SilverAssertions | The assertion library in all three test projects | the three `tests/libs/*/*.Tests.csproj` |
+| CodeBrix.Platform.PlayTest | The test head the PlayTests drive the real page through, with its OpenGL companion package referenced but launched as unavailable | `tests/PolyHavenBrowser.PlayTests/PolyHavenBrowser.PlayTests.csproj` (the base package through `PlayTestSupport/CodeBrix.Sample.PlayTests.props`) |
+| SilverAssertions | The assertion library in every test project | `tests/libs/*/*.Tests.csproj`, `tests/PolyHavenBrowser.PlayTests/PolyHavenBrowser.PlayTests.csproj` |
 
 Third-party libraries:
 
@@ -294,7 +316,7 @@ Third-party libraries:
 | SkiaSharp | Flips, downscales and PNG-encodes the off-screen product shots, and provides the `SKBitmap` form of the image decoder | `src/libs/PolyHavenBrowser.Rendering/Shots/ModelShotRenderer.cs`, `.../Images/LdrImageDecoder.cs` |
 | Microsoft.Extensions.Http | The named, pooled client behind the Poly Haven client factory | `src/libs/PolyHavenBrowser.PolyHavenApiClient/PolyHavenServiceCollectionExtensions.cs` |
 | Microsoft.Extensions.Hosting and Logging.Console | The generic host `SimpleServiceResolver` builds its container from, and the Debug-only console logger | `src/PolyHavenBrowser.Core/Helpers/HostHelper.cs`, `src/PolyHavenBrowser.UI/App.xaml.cs` |
-| xUnit v3, Microsoft.NET.Test.Sdk, SkiaSharp Linux native assets | Test infrastructure | the three `tests/libs/*/*.Tests.csproj` |
+| xUnit v3, Microsoft.NET.Test.Sdk, SkiaSharp Linux native assets | Test infrastructure; the PlayTests project takes xUnit v3 and Microsoft.NET.Test.Sdk from the shared `PlayTestSupport/CodeBrix.Sample.PlayTests.props` | `tests/libs/*/*.Tests.csproj`, `tests/PolyHavenBrowser.PlayTests/PolyHavenBrowser.PlayTests.csproj` |
 
 ## Worth studying in this application
 

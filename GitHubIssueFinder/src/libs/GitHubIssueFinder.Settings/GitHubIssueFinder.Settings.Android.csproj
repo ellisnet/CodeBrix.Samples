@@ -1,0 +1,26 @@
+<Project>
+  <!-- Its own obj/bin folders: this project sits beside GitHubIssueFinder.Settings.csproj, which builds the same sources -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj.android\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin.android\</BaseOutputPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.1</TargetFramework>
+    <AssemblyName>GitHubIssueFinder.Settings</AssemblyName>
+    <RootNamespace>GitHubIssueFinder.Settings</RootNamespace>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <!-- The Android head gets the same AppSettings API from its CodeBrix.Android twin -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Android.AppSettings.ApacheLicenseForever" Version="1.0.292.307" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

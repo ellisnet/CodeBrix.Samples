@@ -1,10 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+    <TargetFramework>net10.0</TargetFramework>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj.android/**;bin.android/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,14 +21,11 @@
 
   <!--
     The sound device. The playback packages use the device-neutral audio core and leave the output backend
-    to the application: the desktop heads get CodeBrix.Audio's native backends (Linux, macOS, Windows) ...
+    to the application: the desktop heads get CodeBrix.Audio's native backends (Linux, macOS, Windows);
+    the Android head gets CodeBrix.Audio's Android backend from SimpleCbxVideoPlayer.SkiaVideo.Android.csproj.
   -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+  <ItemGroup>
     <PackageReference Include="CodeBrix.Audio.MitLicenseForever" Version="1.0.283.1382" />
   </ItemGroup>
 
-  <!-- ... and the Android head gets CodeBrix.Audio's Android backend, initialised in its MainApplication -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <PackageReference Include="CodeBrix.Audio.Android.ApacheLicenseForever" Version="1.0.283.1398" />
-  </ItemGroup>
 </Project>

@@ -1,0 +1,42 @@
+<Project>
+  <!-- Its own obj/bin folders: this project sits beside PolyHavenBrowser.Rendering.csproj, which builds the same sources -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj.android\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin.android\</BaseOutputPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.1</TargetFramework>
+    <AssemblyName>PolyHavenBrowser.Rendering</AssemblyName>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- This library now hosts the 3D preview control itself (ModelSceneGlCanvas, a
+         Graphics3DGL GLCanvasElement subclass), so it references CodeBrix.Platform and its
+         WinUI-compat XAML surface. Keep this library's OWN RootNamespace (not the app's
+         "PolyHavenBrowser") so the per-head generated GlobalStaticResources class does not
+         collide across assemblies (CS0433). -->
+    <RootNamespace>PolyHavenBrowser.Rendering</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.285.619" />
+    <PackageReference Include="CodeBrix.Graphics3D.Gltf2.MitLicenseForever" Version="1.0.261.293" />
+    <PackageReference Include="SkiaSharp" Version="4.153.1" />
+  </ItemGroup>
+
+  <!-- The Android head gets the same FrameworkElement surface and GLCanvasElement from the CodeBrix.Android twins -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
+    <PackageReference Include="CodeBrix.Android.Graphics3DGL.ApacheLicenseForever" Version="1.0.292.307" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

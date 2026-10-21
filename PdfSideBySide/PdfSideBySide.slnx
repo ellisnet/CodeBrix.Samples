@@ -10,7 +10,6 @@
   <Project Path="src/PdfSideBySide.MacOS/PdfSideBySide.MacOS.csproj" />
   <Project Path="src/PdfSideBySide.Win32Skia/PdfSideBySide.Win32Skia.csproj" />
   <Project Path="src/PdfSideBySide.WinWpfSkia/PdfSideBySide.WinWpfSkia.csproj" />
-  <Project Path="src/PdfSideBySide.Android/PdfSideBySide.Android.csproj" />
   <Folder Name="/Libraries/">
     <Project Path="src/libs/PdfSideBySide.PdfRender/PdfSideBySide.PdfRender.csproj" />
   </Folder>

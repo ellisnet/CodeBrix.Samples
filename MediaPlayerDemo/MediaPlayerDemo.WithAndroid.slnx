@@ -1,0 +1,19 @@
+<Solution>
+  <!-- MediaPlayerDemo.WithAndroid.slnx
+       The Android solution: everything in MediaPlayerDemo.slnx PLUS the Android head and the
+       .Android twins of its library projects, which need the .NET Android workload.
+       Open MediaPlayerDemo.slnx instead if you only have the plain .NET SDK. -->
+  <Project Path="src/MediaPlayerDemo.UI/MediaPlayerDemo.UI.shproj" />
+  <Project Path="src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj" />
+  <Project Path="src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.Android.csproj" />
+  <Project Path="src/MediaPlayerDemo.LinuxX11/MediaPlayerDemo.LinuxX11.csproj" />
+  <Project Path="src/MediaPlayerDemo.LinuxWayland/MediaPlayerDemo.LinuxWayland.csproj" />
+  <Project Path="src/MediaPlayerDemo.LinuxFrameBuffer/MediaPlayerDemo.LinuxFrameBuffer.csproj" />
+  <Project Path="src/MediaPlayerDemo.MacOS/MediaPlayerDemo.MacOS.csproj" />
+  <Project Path="src/MediaPlayerDemo.Win32Skia/MediaPlayerDemo.Win32Skia.csproj" />
+  <Project Path="src/MediaPlayerDemo.WinWpfSkia/MediaPlayerDemo.WinWpfSkia.csproj" />
+  <Project Path="src/MediaPlayerDemo.Android/MediaPlayerDemo.Android.csproj" />
+  <Folder Name="/Tests/">
+    <Project Path="tests/MediaPlayerDemo.PlayTests/MediaPlayerDemo.PlayTests.csproj" />
+  </Folder>
+</Solution>

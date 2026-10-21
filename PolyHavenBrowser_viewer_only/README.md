@@ -163,11 +163,17 @@ whole Poly Haven library instead of three curated samples.
 
 ## Building, running and testing
 
-There is one solution, `PolyHavenBrowser.slnx`, and it opens on Linux, macOS and Windows. It
-holds the shared UI project, the Core library, all six desktop heads and the Android head, and, under the solution folders
-`Libraries/` and `Tests/`, the two side libraries, their test projects and the PlayTests UI suite. This is a pure
-CodeBrix.Platform application: there are no native WinUI 3, WPF or .NET MAUI heads, so there is
-no second Windows-only solution.
+There are two solutions, and both open on Linux, macOS and Windows. Open `PolyHavenBrowser.slnx`
+if you only have the .NET 10 SDK; open `PolyHavenBrowser.WithAndroid.slnx` to also get the Android
+head.
+
+| Solution | Contains |
+| --- | --- |
+| `PolyHavenBrowser.slnx` | The shared UI project, the Core library, all six desktop heads, and, under the solution folders `Libraries/` and `Tests/`, the two side libraries, their test projects and the PlayTests UI suite; needs only the .NET 10 SDK |
+| `PolyHavenBrowser.WithAndroid.slnx` | Everything in `PolyHavenBrowser.slnx`, plus the Android head and the `.Android` twins of `PolyHavenBrowser.Core` and `PolyHavenBrowser.Rendering`; needs the .NET Android workload and the Android SDK |
+
+This is a pure CodeBrix.Platform application: there are no native WinUI 3, WPF or .NET MAUI heads,
+so there is no separate Windows-only solution.
 
 | Head project | Platform / windowing |
 | --- | --- |
@@ -181,17 +187,16 @@ no second Windows-only solution.
 
 The desktop heads target `net10.0`. The Android head targets `net10.0-android36.1`, builds on any
 of the three operating systems, and runs on Android 13 (API level 33) and later.
-`PolyHavenBrowser.Core` and `PolyHavenBrowser.Rendering` build for both target frameworks, so a
-single change to either reaches every head.
+`PolyHavenBrowser.Core` and `PolyHavenBrowser.Rendering` each have a `.Android.csproj` twin in the
+same folder that compiles the same source files, so a single change to either reaches every head.
 
 Prerequisites:
 
-- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). The workload is
-  needed for every build of this application, a desktop-only build and the test runs included,
-  because the Core library and the rendering library also build for Android. The WinWpfSkia head
-  targets `net10.0-windows` and sets `EnableWindowsTargeting`, so the whole solution still restores
-  and builds on Linux and macOS.
-- For the Android head, which a build of the whole solution includes, the Android SDK; to run it,
+- The .NET 10 SDK. That is all the desktop heads, the libraries and the test runs need. The
+  WinWpfSkia head targets `net10.0-windows` and sets `EnableWindowsTargeting`, so the whole
+  solution still restores and builds on Linux and macOS.
+- For the Android head (`PolyHavenBrowser.WithAndroid.slnx`, or the head project built on its
+  own), the `android` workload (`dotnet workload install android`) and the Android SDK; to run it,
   an Android device or emulator reachable with `adb`.
 - No accounts or API tokens. The Poly Haven API is public; the client sends a
   User-Agent that identifies the application, which Poly Haven asks consumers to do, and it is
@@ -269,7 +274,8 @@ exclusion filter `Category!=LiveApi`.
 
 ```text
 PolyHavenBrowser_viewer_only/
-  PolyHavenBrowser.slnx                    The one cross-platform solution
+  PolyHavenBrowser.slnx                    The cross-platform solution; needs only the .NET 10 SDK
+  PolyHavenBrowser.WithAndroid.slnx        The same solution plus the Android head and the .Android twins
   global.json                              Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt                  Third-party attribution
   src/
@@ -278,6 +284,8 @@ PolyHavenBrowser_viewer_only/
       Views/MainPage.xaml(.cs)             Buttons, engine dropdown, SKXamlCanvas, pointer
                                              forwarding and coordinate conversion
     PolyHavenBrowser.Core/                 The app library that carries every package the heads need
+      PolyHavenBrowser.Core.csproj         The desktop build (net10.0), obj/ and bin/
+      PolyHavenBrowser.Core.Android.csproj The Android twin (net10.0-android36.1), obj.android/ and bin.android/
       RegisterServices.cs                  The one AddPolyHavenBrowser() DI registration
       Helpers/HostHelper.cs                IHostBuilderProvider for SimpleServiceResolver
       Converters/                          BoolToAccentStyleConverter, the selected-button highlight
@@ -310,6 +318,8 @@ PolyHavenBrowser_viewer_only/
         Exceptions/                        The API, not-found and integrity exceptions
         Serialization/                     The source-generated JsonSerializerContext
       PolyHavenBrowser.Rendering/          Headless loaders, cameras, decoders, three renderers
+        PolyHavenBrowser.Rendering.csproj  The desktop build (net10.0), obj/ and bin/
+        PolyHavenBrowser.Rendering.Android.csproj  The Android twin, obj.android/ and bin.android/
         Cameras/OrbitCamera.cs             Turntable camera plus model framing
         GL/                                IModelSceneRenderer and GlModelSceneRenderer
         Vulkan/                            VulkanSceneRenderer, VulkanShaders, VulkanPlatformSupport
@@ -341,11 +351,15 @@ assembly. The two side libraries enable `Nullable`, `ImplicitUsings` and
 `GenerateDocumentationFile`, which the heads and Core do not, and the rendering library adds
 `AllowUnsafeBlocks` for its pixel and interop code.
 
-`PolyHavenBrowser.Core` and `PolyHavenBrowser.Rendering` build for two target frameworks. The
-`net10.0` build references the CodeBrix.Platform packages and serves the desktop heads; the
-`net10.0-android36.1` build references their CodeBrix.Android counterparts and serves the Android
-head. The choice is made by a target-framework condition on each package group in the project
-file. The Android build leaves out what has no Android form: the rendering library's
+`PolyHavenBrowser.Core` and `PolyHavenBrowser.Rendering` each come as two project files in one
+folder. `X.csproj` targets `net10.0`, references the CodeBrix.Platform packages and serves the
+desktop heads and the tests; its twin `X.Android.csproj` targets `net10.0-android36.1`, references
+their CodeBrix.Android counterparts and serves the Android head, which references
+`PolyHavenBrowser.Core.Android`, which in turn references `PolyHavenBrowser.Rendering.Android`. The
+twin compiles the same source files under the same assembly name and root namespace, and keeps its
+build output in `obj.android/` and `bin.android/`. Because each of those folders holds two project
+files, a bare `dotnet build` there is ambiguous; build a solution or name the project file. The
+Android twins leave out what has no Android form: the rendering library's
 `Vulkan/VulkanSceneRenderer.cs`, `Vulkan/VulkanShaders.cs` and `Images/ExrDecoder.cs`, with the
 Silk.NET.Vulkan and TinyEXR.NET packages they need, and Core's `Display/VulkanModelRenderEngine.cs`.
 Two short `#if HAS_CODEBRIX_ANDROID` sections cover the rest: the Vulkan case of
@@ -366,7 +380,7 @@ Android head adds no code of its own beyond its application and activity classes
 | CodeBrix.Platform Fonts (Roboto) | The bundled application font, set as the default text font family and also exposed as a `FontFamily` resource | `src/PolyHavenBrowser.UI/App.xaml`, `src/PolyHavenBrowser.UI/App.xaml.cs` |
 | CodeBrix.Graphics3D.Gltf2 | Reads `.gltf` and `.glb`, walks the node tree, and exposes material channels including `Transmission`; its builders make in-memory `.glb` fixtures in the tests | `src/libs/PolyHavenBrowser.Rendering/Models/GltfModelLoader.cs`, `tests/libs/PolyHavenBrowser.Rendering.Tests/TestData/TestAssets.cs` |
 | CodeBrix.Imaging | Decodes the downloaded JPEG, PNG and WebP maps and glTF embedded textures to `SKBitmap` or raw RGBA | `src/libs/PolyHavenBrowser.Rendering/Images/LdrImageDecoder.cs` |
-| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the SkiaSharp Views and Graphics3DGL add-ins; the Android head and the Android builds of Core and the rendering library reference these instead of the CodeBrix.Platform packages | `src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj`, `src/PolyHavenBrowser.Core/PolyHavenBrowser.Core.csproj`, `src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.csproj` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the SkiaSharp Views and Graphics3DGL add-ins; the Android head and the `.Android` twins of Core and the rendering library reference these instead of the CodeBrix.Platform packages | `src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj`, `src/PolyHavenBrowser.Core/PolyHavenBrowser.Core.Android.csproj`, `src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.Android.csproj` |
 | CodeBrix.TestMocks | `Mock<T>` doubles for `IModelLoader`, `IModelSceneRenderer`, `IPolyHavenApiClient` and its factory | `tests/libs/PolyHavenBrowser.Rendering.Tests/Mocked/`, `tests/libs/PolyHavenBrowser.PolyHavenApiClient.Tests/Mocked/` |
 | SilverAssertions | The assertion style in both test projects | both projects under `tests/libs/` |
 
@@ -714,7 +728,7 @@ assembly is named `PolyHavenBrowser.Core`; that is exactly what makes
 `MainPage.xaml`. The rendering library hosts no XAML control, so it keeps its default root
 namespace, and its csproj says so. The second rule is about a package reference, not a namespace:
 the code does have `using CodeBrix.Platform.OpenGL;`, because that is where the `GL` type lives,
-but no project declares a reference to that package, and the comment in both csproj files calls
+but no project declares a reference to that package, and the comment in both desktop csproj files calls
 coding to Graphics3DGL a hard rule. The pay-off is that the off-screen context resolves the head's
 own native GL wrapper, so the application ships no platform GL loader of its own and works on all
 six heads.

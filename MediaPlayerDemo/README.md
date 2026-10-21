@@ -78,11 +78,17 @@ CodeBrix.Platform project layout.
 
 ## Building, running and testing
 
-There is one solution, `MediaPlayerDemo.slnx`, and its own comment says what it
-is: everything that builds with the .NET SDK and its android workload on Linux,
-macOS and Windows. Open it on any of the three operating systems. There is no second, Windows-only
-solution, because this application has no native (WinUI 3, WPF or .NET MAUI) head
-- only Skia heads.
+There are two solutions, and each one's own comment says what it is. Both open on
+Linux, macOS and Windows. There is no Windows-only solution, because this
+application has no native (WinUI 3, WPF or .NET MAUI) head - only Skia heads.
+
+| Solution | What it holds | Needs |
+| --- | --- | --- |
+| `MediaPlayerDemo.slnx` | The shared UI project, Core, the six desktop heads and the PlayTests | The plain .NET 10 SDK |
+| `MediaPlayerDemo.WithAndroid.slnx` | Everything in `MediaPlayerDemo.slnx`, plus the Android head and `MediaPlayerDemo.Core.Android.csproj` | The .NET 10 SDK with the `android` workload, and the Android SDK |
+
+Open `MediaPlayerDemo.slnx` if you only have the .NET 10 SDK; open
+`MediaPlayerDemo.WithAndroid.slnx` to also get the Android head.
 
 The heads:
 
@@ -98,19 +104,20 @@ The heads:
 
 The Android head targets `net10.0-android36.1`, builds on any of the three
 operating systems, and runs on Android 13 (API level 33) and later.
-`MediaPlayerDemo.Core` builds for both target frameworks, so a single change to it
-reaches every head.
+`MediaPlayerDemo.Core` has an Android twin, `MediaPlayerDemo.Core.Android.csproj`,
+beside it that compiles the same source files, so a single change to Core reaches
+every head.
 
 Prerequisites:
 
-- The .NET 10 SDK with the `android` workload (`dotnet workload install android`).
-  The desktop projects target `net10.0`; the WinWpfSkia head targets
-  `net10.0-windows` and sets `EnableWindowsTargeting` so the solution still
-  restores on Linux and macOS. The workload is needed for every build of this
-  application, a desktop-only build and the test runs included, because the Core
-  project also builds for Android.
-- For the Android head, which a build of the whole solution includes, the Android
-  SDK; to run it, an Android device or emulator reachable with `adb`. The Android
+- The .NET 10 SDK. The desktop projects target `net10.0`; the WinWpfSkia head
+  targets `net10.0-windows` and sets `EnableWindowsTargeting` so the solution still
+  restores on Linux and macOS. `MediaPlayerDemo.slnx`, the desktop heads and the
+  test runs need nothing more.
+- For the Android head (built on its own or through
+  `MediaPlayerDemo.WithAndroid.slnx`), the `android` workload
+  (`dotnet workload install android`) and the Android SDK; to run it, an Android
+  device or emulator reachable with `adb`. The Android
   head needs no extra media package: the Android form of the MediaPlayer add-in
   brings its own player library and decodes with the device's codecs.
 - All CodeBrix packages come from NuGet. No CodeBrix library is referenced as a
@@ -175,7 +182,8 @@ library. `global.json` selects the Microsoft.Testing.Platform runner they use.
 
 ```text
 MediaPlayerDemo/
-  MediaPlayerDemo.slnx                  The one solution; every project; opens on Linux, macOS and Windows
+  MediaPlayerDemo.slnx                  The desktop solution: UI, Core, six desktop heads, PlayTests; plain .NET 10 SDK
+  MediaPlayerDemo.WithAndroid.slnx      The same plus the Android head and Core.Android; needs the android workload
   global.json                           Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt               Third-party content used by this application
   src/
@@ -187,7 +195,8 @@ MediaPlayerDemo/
       Views/MainPage.xaml               The whole UI: address box, Load button, stretch picker, media element, status line
       Views/MainPage.xaml.cs            Thin code-behind: hands the view model a XamlRoot getter
     MediaPlayerDemo.Core/               Class library; carries every non-head package
-      MediaPlayerDemo.Core.csproj       RootNamespace MediaPlayerDemo; two target frameworks; framework, add-in, font, hosting and logging packages
+      MediaPlayerDemo.Core.csproj       RootNamespace MediaPlayerDemo; net10.0; framework, add-in, font, hosting and logging packages
+      MediaPlayerDemo.Core.Android.csproj   The Android twin: same sources, net10.0-android36.1, CodeBrix.Android packages, obj.android/ and bin.android/
       Helpers/HostHelper.cs             The IHostBuilderProvider that SimpleServiceResolver builds its container from
       ViewModels/MainViewModel.cs       The only view model: address, playback source and its release, status, stretch options, LoadCommand
     MediaPlayerDemo.LinuxX11/           Head: Program.cs plus a csproj with one runtime package
@@ -201,8 +210,9 @@ MediaPlayerDemo/
     MediaPlayerDemo.PlayTests/          PlayTests of the real page, with a recording engine in place of libVLC
 ```
 
-The dependency direction is one way. Each head project takes a project reference
-on `MediaPlayerDemo.Core` and file-links the shared UI by importing
+The dependency direction is one way. Each desktop head project takes a project
+reference on `MediaPlayerDemo.Core.csproj`, the Android head on
+`MediaPlayerDemo.Core.Android.csproj`, and each file-links the shared UI by importing
 `..\MediaPlayerDemo.UI\MediaPlayerDemo.UI.projitems` with `Label="Shared"`.
 `MediaPlayerDemo.Core` references nothing else in the application; it only carries
 package references, so everything the heads share arrives transitively through it.
@@ -217,12 +227,15 @@ assembly-qualified `clr-namespace`
 while the code-behind's own namespace resolves inside whichever head is being
 built. Nothing flows the other way: Core knows nothing about the UI or the heads.
 
-Core builds for two target frameworks. The `net10.0` build references the
-CodeBrix.Platform package and the CodeBrix.Platform.MediaPlayer add-in and serves
-the desktop heads; the `net10.0-android36.1` build references their CodeBrix.Android
-counterparts and serves the Android head. The choice is made by a target-framework
-condition on each package group in the project file, so the source files are the
-same for both; the font package is shared by both builds. The Android head adds no
+Core is two project files in one folder. `MediaPlayerDemo.Core.csproj` targets
+`net10.0`, references the CodeBrix.Platform package and the
+CodeBrix.Platform.MediaPlayer add-in, and serves the desktop heads.
+`MediaPlayerDemo.Core.Android.csproj` targets `net10.0-android36.1`, references
+their CodeBrix.Android counterparts, and serves the Android head. It compiles the
+same source files under the same assembly name and root namespace, and keeps its
+build output in its own `obj.android/` and `bin.android/` folders; the font,
+hosting and logging packages are in both. Because the folder holds two project
+files, build it through a solution or by naming the project file. The Android head adds no
 code of its own beyond its application and activity classes; `App.xaml`,
 `MainPage.xaml` and the view model run unchanged.
 
@@ -234,7 +247,7 @@ code of its own beyond its application and activity classes; `App.xaml`,
 | CodeBrix.Platform.MediaPlayer add-in | Supplies the `MediaPlayerElement` control and the `Windows.Media.Core` and `Windows.Media.Playback` types (`MediaSource`, `IMediaPlaybackSource`) the view model builds a source with | `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj`, `src/MediaPlayerDemo.UI/Views/MainPage.xaml`, `src/MediaPlayerDemo.Core/ViewModels/MainViewModel.cs` |
 | CodeBrix.Platform.Fonts.OpenSans | Ships the Open Sans font that is set as the application-wide default and as the page's `FontFamily`, addressed through an `ms-appx:///` URI | `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj`, `src/MediaPlayerDemo.UI/App.xaml`, `src/MediaPlayerDemo.UI/App.xaml.cs`, `src/MediaPlayerDemo.UI/Views/MainPage.xaml` |
 | CodeBrix.Platform runtime for the head | Exactly one runtime package per desktop head - the X11, Wayland, framebuffer, macOS, Win32 and WPF Skia runtimes - and nothing else | the six desktop head csproj files under `src/` |
-| CodeBrix.Android | The Android implementation of the same framework, with the Android form of the MediaPlayer add-in; the Android head and the Android build of Core reference these instead of the CodeBrix.Platform packages | `src/MediaPlayerDemo.Android/MediaPlayerDemo.Android.csproj`, `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android form of the MediaPlayer add-in; the Android head and the Android twin of Core reference these instead of the CodeBrix.Platform packages | `src/MediaPlayerDemo.Android/MediaPlayerDemo.Android.csproj`, `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.Android.csproj` |
 
 Third-party libraries:
 
@@ -243,7 +256,7 @@ Third-party libraries:
 | Microsoft.Extensions.Hosting | `Host.CreateDefaultBuilder()` behind an `IHostBuilderProvider`, which `SimpleServiceResolver` uses to build the dependency-injection container | `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj`, `src/MediaPlayerDemo.Core/Helpers/HostHelper.cs` |
 | Microsoft.Extensions.Logging.Console | The `LoggerFactory` with a console provider that is wired into the platform's ambient logger in Debug builds, and the `ILogger` the view model asks that ambient factory for | `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj`, `src/MediaPlayerDemo.UI/App.xaml.cs`, `src/MediaPlayerDemo.Core/ViewModels/MainViewModel.cs` |
 | LibVLC native runtime for Windows | The native media backend the MediaPlayer add-in needs on the two Windows heads; declared only there | `src/MediaPlayerDemo.Win32Skia/MediaPlayerDemo.Win32Skia.csproj`, `src/MediaPlayerDemo.WinWpfSkia/MediaPlayerDemo.WinWpfSkia.csproj` |
-| AndroidX Media3 ExoPlayer | The media backend the Android form of the MediaPlayer add-in plays through; arrives with that add-in, so the Android head declares nothing for it | the Android build of `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.csproj` |
+| AndroidX Media3 ExoPlayer | The media backend the Android form of the MediaPlayer add-in plays through; arrives with that add-in, so the Android head declares nothing for it | `src/MediaPlayerDemo.Core/MediaPlayerDemo.Core.Android.csproj` |
 
 ## Worth studying in this application
 

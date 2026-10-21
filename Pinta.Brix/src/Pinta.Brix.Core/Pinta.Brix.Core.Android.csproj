@@ -1,0 +1,41 @@
+<Project>
+  <!-- Its own obj/bin folders: this project sits beside Pinta.Brix.Core.csproj, which builds the same sources -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj.android\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin.android\</BaseOutputPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.1</TargetFramework>
+    <AssemblyName>Pinta.Brix.Core</AssemblyName>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+
+    <!-- Match the namespace used by the app code -->
+    <RootNamespace>Pinta.Brix</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
+    <PackageReference Include="CodeBrix.Platform.Fonts.OpenSans.ApacheLicenseForever" Version="1.0.248.1181" />
+  </ItemGroup>
+
+  <!-- The Android head: the CodeBrix.Android twin of the same package -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\libs\Pinta.Brix.Engine\Pinta.Brix.Engine.Android.csproj" />
+    <ProjectReference Include="..\libs\Pinta.Brix.FileFormats\Pinta.Brix.FileFormats.Android.csproj" />
+    <ProjectReference Include="..\libs\Pinta.Brix.Effects\Pinta.Brix.Effects.Android.csproj" />
+    <ProjectReference Include="..\libs\Pinta.Brix.Tools\Pinta.Brix.Tools.Android.csproj" />
+    <ProjectReference Include="..\libs\Pinta.Brix.Controls\Pinta.Brix.Controls.Android.csproj" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

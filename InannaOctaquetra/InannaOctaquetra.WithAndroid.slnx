@@ -1,0 +1,21 @@
+<Solution>
+  <!-- InannaOctaquetra.WithAndroid.slnx
+       The Android solution: everything in InannaOctaquetra.slnx PLUS the Android head and the
+       .Android twins of its library projects, which need the .NET Android workload.
+       Open InannaOctaquetra.slnx instead if you only have the plain .NET SDK. -->
+  <Project Path="src/InannaOctaquetra.UI/InannaOctaquetra.UI.shproj" />
+  <Project Path="src/InannaOctaquetra.Core/InannaOctaquetra.Core.csproj" />
+  <Project Path="src/InannaOctaquetra.Core/InannaOctaquetra.Core.Android.csproj" />
+  <Project Path="src/InannaOctaquetra.LinuxX11/InannaOctaquetra.LinuxX11.csproj" />
+  <Project Path="src/InannaOctaquetra.LinuxWayland/InannaOctaquetra.LinuxWayland.csproj" />
+  <Project Path="src/InannaOctaquetra.MacOS/InannaOctaquetra.MacOS.csproj" />
+  <Project Path="src/InannaOctaquetra.Win32Skia/InannaOctaquetra.Win32Skia.csproj" />
+  <Project Path="src/InannaOctaquetra.Android/InannaOctaquetra.Android.csproj" />
+  <Folder Name="/Libraries/">
+    <Project Path="src/libs/InannaOctaquetra.Reading/InannaOctaquetra.Reading.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/InannaOctaquetra.PlayTests/InannaOctaquetra.PlayTests.csproj" />
+    <Project Path="tests/libs/InannaOctaquetra.Reading.Tests/InannaOctaquetra.Reading.Tests.csproj" />
+  </Folder>
+</Solution>

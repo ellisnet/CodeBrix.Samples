@@ -145,12 +145,16 @@ user choices through the CodeBrix.Platform.AppSettings add-in behind a one-file 
 
 ## Building, running and testing
 
-There is one solution, `KenneyAssetBrowser.slnx`, and its own comment says it holds
-"everything that builds with the plain .NET SDK on Linux, macOS and Windows" - so it opens
-on any of the three. It contains the shared UI project, the Core project, the six desktop
-head projects and the Android head project, a `Libraries` solution folder for the three `src/libs` projects, and a `Tests`
-solution folder for their test projects. There is no second, operating-system-restricted
-solution.
+There are two solutions, and both open on Linux, macOS and Windows. Open
+`KenneyAssetBrowser.slnx` if you only have the .NET 10 SDK; open
+`KenneyAssetBrowser.WithAndroid.slnx` to also get the Android head.
+
+| Solution | What it holds |
+| --- | --- |
+| `KenneyAssetBrowser.slnx` | "Everything that builds with the plain .NET SDK on Linux, macOS and Windows", as its own comment says: the shared UI project, the Core project, the six desktop head projects, a `Libraries` solution folder for the three `src/libs` projects, and a `Tests` solution folder for their test projects and the PlayTests UI suite |
+| `KenneyAssetBrowser.WithAndroid.slnx` | Everything in `KenneyAssetBrowser.slnx`, plus the Android head and the `.Android` twins of the Core, Settings and Rendering projects; it needs the .NET Android workload and the Android SDK |
+
+There is no operating-system-restricted solution.
 
 | Head project | Platform |
 | --- | --- |
@@ -167,17 +171,17 @@ Five of them target `net10.0`. `KenneyAssetBrowser.WinWpfSkia` targets `net10.0-
 sets `EnableWindowsTargeting`, so the solution still restores and builds on Linux and macOS.
 The Android head targets `net10.0-android36.1`, builds on any of the three operating systems
 as well, and runs on Android 13 (API level 33) and later. `KenneyAssetBrowser.Core`, the
-Settings library and the Rendering library build for both target frameworks, so a single
-change to any of them reaches every head.
+Settings library and the Rendering library each have a `.Android.csproj` twin beside their
+project file that compiles the same source files for the Android head, so a single change
+to any of them reaches every head.
 
 Prerequisites:
 
-- The .NET 10 SDK with the `android` workload (`dotnet workload install android`). The
-  workload is needed for every build of this application, a desktop-only build and the
-  test runs included, because the Core project and two of the libraries also build for
-  Android.
-- For the Android head, which a build of the whole solution includes, the Android SDK; to
-  run it, an Android device or emulator reachable with `adb`.
+- The .NET 10 SDK. It is all that `KenneyAssetBrowser.slnx`, the desktop heads and the
+  test runs need.
+- For the Android head and `KenneyAssetBrowser.WithAndroid.slnx`, the `android` workload
+  (`dotnet workload install android`) and the Android SDK; to run it, an Android device or
+  emulator reachable with `adb`.
 - A session appropriate to the head: an X11 display for LinuxX11, a Wayland compositor for
   LinuxWayland, a Linux virtual console with framebuffer and input access for
   LinuxFrameBuffer, macOS for MacOS, Windows for the two Windows heads, an Android device for
@@ -235,15 +239,29 @@ dotnet run --project tests/libs/KenneyAssetBrowser.Rendering.Tests/KenneyAssetBr
 dotnet run --project tests/libs/KenneyAssetBrowser.Settings.Tests/KenneyAssetBrowser.Settings.Tests.csproj
 ```
 
-The tests need nothing beyond a filesystem: no display, no GPU, no network. They build
+The library tests need nothing beyond a filesystem: no display, no GPU, no network. They build
 their own inputs - synthetic zips, PNGs encoded from Skia bitmaps, tiny in-memory glTF
 binaries - and delete their temporary folders afterwards.
+
+`tests/KenneyAssetBrowser.PlayTests` drives the real page and view models through the
+CodeBrix.Platform PlayTest head, headless by default: the folder picker, ZIP catalog loading
+and bundle switching, filters, lazy grid loading, every viewer kind, the License, error and
+3D-unavailable dialogs, model facts and animation, the audio transport through a recording
+fake, and the viewer layout in both orientations. It builds small zips in code and copies
+bundles from `sample_asset_bundles/`; OpenGL is launched as unavailable, so no 3D pixels are
+rendered. It runs through `dotnet test`; its README covers the visible preview and the
+orientation and theme options:
+
+```text
+dotnet test --project tests/KenneyAssetBrowser.PlayTests/KenneyAssetBrowser.PlayTests.csproj -c Release
+```
 
 ## How the projects and folders are organized
 
 ```text
 KenneyAssetBrowser/
-  KenneyAssetBrowser.slnx                 The one solution; opens on Linux, macOS and Windows
+  KenneyAssetBrowser.slnx                 Everything but Android; needs only the .NET 10 SDK
+  KenneyAssetBrowser.WithAndroid.slnx     The same plus the Android head and the .Android twins
   global.json                             Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt                 Notices for the bundled asset packs
   sample_asset_bundles/                   Kenney asset packs (.zip, CC0) to browse out of the box
@@ -255,6 +273,8 @@ KenneyAssetBrowser/
       Services/                           AssetCatalogService: the gateway to the AssetRead library
       ViewModels/                         MainViewModel, the cell view models, the four bridge interfaces
       RegisterServices.cs                 The AddKenneyAssetBrowser() DI extension method
+      KenneyAssetBrowser.Core.csproj      The net10.0 build for the desktop heads
+      KenneyAssetBrowser.Core.Android.csproj  The Android twin: same sources, own obj.android/ and bin.android/
     KenneyAssetBrowser.LinuxX11/          Head: Program.cs plus one runtime package
     KenneyAssetBrowser.LinuxWayland/      Head: Program.cs plus one runtime package
     KenneyAssetBrowser.LinuxFrameBuffer/  Head: Program.cs, opting into the folder picker and software keyboard
@@ -272,12 +292,15 @@ KenneyAssetBrowser/
         Images/                           ImageCanvasPainter, LdrImageDecoder, SvgImageDecoder, FontSpecimenRenderer
         Models/                           IModelLoader, GltfModelLoader, LoadedModel, AnimatedModel, the clip types
         Tiled/                            TiledMapParser, TiledMapDocument, TiledMapRenderer
+        KenneyAssetBrowser.Rendering.Android.csproj  The Android twin of the Rendering project
       KenneyAssetBrowser.Settings/        SettingsService and LoggingService facades over the AppSettings add-in
+        KenneyAssetBrowser.Settings.Android.csproj   The Android twin of the Settings project
   tests/
     libs/
       KenneyAssetBrowser.AssetRead.Tests/ Mirrors AssetRead; builds synthetic zip archives
       KenneyAssetBrowser.Rendering.Tests/ Mirrors Rendering; builds in-memory GLB models and PNGs
       KenneyAssetBrowser.Settings.Tests/  Mirrors Settings; drives the store in temporary folders
+    KenneyAssetBrowser.PlayTests/         PlayTest UI suite of the real page over generated and sample bundles
 ```
 
 Dependencies point one way. Each head project references `KenneyAssetBrowser.Core` by
@@ -289,17 +312,23 @@ that is not a head runtime; each head adds exactly one runtime package for its o
 and the comment saying so is in all six head project files. The three libraries reference
 neither Core nor each other: `KenneyAssetBrowser.AssetRead` knows nothing about UI,
 `KenneyAssetBrowser.Rendering` references CodeBrix.Platform only because it hosts the GL
-canvas control, and `KenneyAssetBrowser.Settings` only wraps the settings add-in. Each test
-project references only the one library it mirrors.
+canvas control, and `KenneyAssetBrowser.Settings` only wraps the settings add-in. Each library test
+project references only the one library it mirrors; the PlayTests project references Core and
+imports the shared UI the way a head does.
 
-Core, `KenneyAssetBrowser.Settings` and `KenneyAssetBrowser.Rendering` build for two target
-frameworks. The `net10.0` build references the CodeBrix.Platform packages and serves the
-desktop heads; the `net10.0-android36.1` build references their CodeBrix.Android
-counterparts and serves the Android head. The choice is made by a target-framework condition
-on each package group in the project file, so the source files are the same for both;
-Imaging, glTF, SkiaSharp, SkiaSvg and the font package are shared by both builds.
-`KenneyAssetBrowser.AssetRead` holds no UI types and references no CodeBrix.Platform
-package, so it stays `net10.0` and the Android head uses it as it is. The Android head adds
+Core, `KenneyAssetBrowser.Settings` and `KenneyAssetBrowser.Rendering` each come as two
+project files in the same folder. `X.csproj` targets `net10.0`, references the
+CodeBrix.Platform packages and serves the desktop heads and the tests; its twin
+`X.Android.csproj` targets `net10.0-android36.1`, references their CodeBrix.Android
+counterparts and serves the Android head. The twin compiles the same source files under the
+same assembly name and root namespace, and builds into its own `obj.android/` and
+`bin.android/` folders; Imaging, glTF, SkiaSharp, SkiaSvg and the font package are
+referenced by both. The Android head references `KenneyAssetBrowser.Core.Android.csproj`,
+which references the `.Android` twins of the two libraries. Because each of those folders
+holds two project files, a bare `dotnet build` there is ambiguous: build a solution, or name
+the project file. `KenneyAssetBrowser.AssetRead` holds no UI types and references no
+CodeBrix.Platform package, so it has a single `net10.0` project and the Android build uses
+it as it is. The Android head adds
 no code of its own beyond its application and activity classes; `App.xaml`, `MainPage.xaml`
 and every view model run unchanged.
 
@@ -319,8 +348,9 @@ and every view model run unchanged.
 | CodeBrix.Graphics3D.Gltf2 | Reads `.glb` and `.gltf` documents and evaluates their scenes into triangles; its scene evaluation is what CPU-bakes the animation clips, and its builders make the tiny in-memory models the loader tests use | `src/libs/KenneyAssetBrowser.Rendering/Models/GltfModelLoader.cs`, `src/libs/KenneyAssetBrowser.Rendering/Models/AnimatedModel.cs`, `tests/libs/KenneyAssetBrowser.Rendering.Tests/TestData/TestAssets.cs` |
 | CodeBrix.Imaging | Decodes PNG, JPEG, WebP and the rest into RGBA, both as a bitmap for display and as raw bytes for a GPU texture upload | `src/libs/KenneyAssetBrowser.Rendering/Images/LdrImageDecoder.cs` |
 | CodeBrix.SkiaSvg | Rasterizes a pack's SVG art for the viewer and for grid thumbnails | `src/libs/KenneyAssetBrowser.Rendering/Images/SvgImageDecoder.cs` |
+| CodeBrix.Platform.PlayTest | The test head the PlayTests drive the real page through, with its OpenGL companion package referenced but launched as unavailable | `tests/KenneyAssetBrowser.PlayTests/KenneyAssetBrowser.PlayTests.csproj` (the base package through `PlayTestSupport/CodeBrix.Sample.PlayTests.props`) |
 | CodeBrix.Sqlite | Not referenced by the application directly; it arrives with the AppSettings add-in and its store type is named by the settings tests | `tests/libs/KenneyAssetBrowser.Settings.Tests/SettingsStoreTests.cs` |
-| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the FlexPanel, SkiaSharp views, Graphics3DGL, AudioPlayer and AppSettings add-ins; the Android head and the Android builds of Core and the Settings and Rendering libraries reference these instead of the CodeBrix.Platform packages. The AudioPlayer form plays through CodeBrix.Audio.Android, which it starts itself | `src/KenneyAssetBrowser.Android/KenneyAssetBrowser.Android.csproj`, `src/KenneyAssetBrowser.Core/KenneyAssetBrowser.Core.csproj`, `src/libs/KenneyAssetBrowser.Settings/KenneyAssetBrowser.Settings.csproj`, `src/libs/KenneyAssetBrowser.Rendering/KenneyAssetBrowser.Rendering.csproj` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the FlexPanel, SkiaSharp views, Graphics3DGL, AudioPlayer and AppSettings add-ins; the Android head and the `.Android` twins of Core and the Settings and Rendering libraries reference these instead of the CodeBrix.Platform packages. The AudioPlayer form plays through CodeBrix.Audio.Android, which it starts itself | `src/KenneyAssetBrowser.Android/KenneyAssetBrowser.Android.csproj`, `src/KenneyAssetBrowser.Core/KenneyAssetBrowser.Core.Android.csproj`, `src/libs/KenneyAssetBrowser.Settings/KenneyAssetBrowser.Settings.Android.csproj`, `src/libs/KenneyAssetBrowser.Rendering/KenneyAssetBrowser.Rendering.Android.csproj` |
 
 Third-party libraries:
 
@@ -328,7 +358,7 @@ Third-party libraries:
 | --- | --- | --- |
 | SkiaSharp | The bitmap, canvas, paint and typeface types the Rendering library draws with | `src/libs/KenneyAssetBrowser.Rendering/Images/`, `src/libs/KenneyAssetBrowser.Rendering/Tiled/TiledMapRenderer.cs` |
 | Microsoft.Extensions.Hosting and Logging.Console | The generic host that backs `SimpleServiceResolver`, and the Debug-only console logger factory | `src/KenneyAssetBrowser.Core/Helpers/HostHelper.cs`, `src/KenneyAssetBrowser.UI/App.xaml.cs` |
-| xUnit v3, Microsoft.NET.Test.Sdk, SilverAssertions | The test stack every test project uses | the three `tests/libs/*/*.csproj` |
+| xUnit v3, Microsoft.NET.Test.Sdk, SilverAssertions | The test stack every test project uses | `tests/libs/*/*.csproj`, `tests/KenneyAssetBrowser.PlayTests/KenneyAssetBrowser.PlayTests.csproj` (xUnit v3 and Microsoft.NET.Test.Sdk through `PlayTestSupport/CodeBrix.Sample.PlayTests.props`) |
 | SkiaSharp Linux native assets | Supplies the native Skia library so the Rendering tests can draw outside a running head | `tests/libs/KenneyAssetBrowser.Rendering.Tests/KenneyAssetBrowser.Rendering.Tests.csproj` |
 
 ## Worth studying in this application

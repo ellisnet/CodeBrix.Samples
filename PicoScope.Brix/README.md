@@ -125,14 +125,17 @@ several places that the code names and handles.
 
 ## Building, running and testing
 
-There is one solution, `PicoScope.Brix.slnx`, and it holds everything: the
-shared UI project, the Core project, all six desktop heads and the Android head,
-the two libraries under a `Libraries` solution folder and the test projects
-under a `Tests` solution folder. Its header comment describes it as everything
-that builds with the .NET SDK on Linux, macOS and Windows, which holds here
-because every desktop head is a Skia head and the Android head builds on all
-three once the `android` workload is installed. There is no second,
-Windows-only solution.
+There are two solutions:
+
+| Solution | Holds | Needs |
+| --- | --- | --- |
+| `PicoScope.Brix.slnx` | The shared UI project, the Core project, all six desktop heads, the two libraries under a `Libraries` solution folder and the test projects under a `Tests` solution folder | The plain .NET 10 SDK, on Linux, macOS or Windows |
+| `PicoScope.Brix.WithAndroid.slnx` | Everything in `PicoScope.Brix.slnx`, plus the Android head and `PicoScope.Brix.Core.Android.csproj` | The .NET Android workload and the Android SDK as well |
+
+Open `PicoScope.Brix.slnx` if you only have the .NET 10 SDK; open
+`PicoScope.Brix.WithAndroid.slnx` to also get the Android head. Both open on
+Linux, macOS and Windows, because every desktop head is a Skia head and the
+Android head builds on all three once the `android` workload is installed.
 
 The heads:
 
@@ -149,19 +152,19 @@ The heads:
 The six desktop heads target `net10.0` (WinWpfSkia `net10.0-windows`) and each
 runs only on the platform it is named for. The Android head targets
 `net10.0-android36.1`, builds on any of the three operating systems, and runs on
-Android 13 (API level 33) and later. `PicoScope.Brix.Core` builds for both target
-frameworks, so a single change to it reaches every head.
+Android 13 (API level 33) and later. `PicoScope.Brix.Core` has two project files
+in one folder that compile the same sources, so a single change to it reaches
+every head.
 
 Prerequisites:
 
-- The .NET 10 SDK with the `android` workload (`dotnet workload install android`).
-  The workload is needed for every build of this application, a desktop-only
-  build and the test runs included, because the Core project also builds for
-  Android. The WinWpfSkia head targets `net10.0-windows` and sets
+- The .NET 10 SDK. That alone builds `PicoScope.Brix.slnx`, every desktop head
+  and every test project. The WinWpfSkia head targets `net10.0-windows` and sets
   `EnableWindowsTargeting` so the solution still restores and builds on Linux and
   macOS.
-- For the Android head, which a build of the whole solution includes, the
-  Android SDK; to run it, an Android device or emulator reachable with `adb`.
+- For `PicoScope.Brix.WithAndroid.slnx` and the Android head only, the `android`
+  workload (`dotnet workload install android`) and the Android SDK; to run the
+  Android head, an Android device or emulator reachable with `adb`.
 - All CodeBrix packages come from NuGet. No CodeBrix library is referenced as a
   source project, so this folder builds on its own.
 - **No hardware is required.** With nothing attached, every head falls back to
@@ -247,7 +250,8 @@ What each test project needs:
 
 ```text
 PicoScope.Brix/
-  PicoScope.Brix.slnx                   The one solution; every project; opens on Linux, macOS and Windows
+  PicoScope.Brix.slnx                   Every project except the Android ones; needs only the .NET 10 SDK
+  PicoScope.Brix.WithAndroid.slnx       The same plus the Android head and Core's Android twin; needs the android workload
   THIRD-PARTY-NOTICES.txt               Third-party content used by this application
   src/
     PicoScope.Brix.UI/                  Shared items project: the XAML that every head compiles
@@ -258,7 +262,8 @@ PicoScope.Brix/
       Views/MainPage.xaml               The whole UI: header, acquisition row, generator row, chart, status line
       Views/MainPage.xaml.cs            Thin code-behind: XamlRoot getter, and the page lifetime that starts and releases the scope
     PicoScope.Brix.Core/                Class library; carries every non-head package
-      PicoScope.Brix.Core.csproj        RootNamespace PicoScope.Brix; framework, chart add-in, font, hosting and logging packages
+      PicoScope.Brix.Core.csproj        net10.0, for the desktop heads; RootNamespace PicoScope.Brix; framework, chart add-in, font, hosting and logging packages
+      PicoScope.Brix.Core.Android.csproj  The Android twin: same sources and assembly name, CodeBrix.Android packages, own obj.android/ and bin.android/
       Helpers/HostHelper.cs             The IHostBuilderProvider that SimpleServiceResolver builds its container from
       Charting/ScopePlot.cs             Owns the plot model; turns blocks and streaming batches into series under the model's lock
       ViewModels/MainViewModel.cs       All application logic: find, configure, capture, stream, generate, report
@@ -284,8 +289,9 @@ PicoScope.Brix/
 ```
 
 The dependency direction is one way, and the interesting part is what is
-missing from it. Each head project takes a project reference on
-`PicoScope.Brix.Core` and file-links the shared UI by importing
+missing from it. Each desktop head takes a project reference on
+`PicoScope.Brix.Core.csproj`, the Android head on
+`PicoScope.Brix.Core.Android.csproj`, and each head file-links the shared UI by importing
 `..\PicoScope.Brix.UI\PicoScope.Brix.UI.projitems` with `Label="Shared"`, so
 `App.xaml`, `App.xaml.cs`, `MainPage.xaml` and `MainPage.xaml.cs` are compiled
 once into each head assembly - which is why each head csproj also
@@ -305,15 +311,19 @@ Android counterpart of `Program.Main`, registers the simulator alone.
 `PicoScope.Brix.ScopeData` itself has no package references at all, which is
 what stops it from ever growing one.
 
-Core builds for two target frameworks. The `net10.0` build references the
-CodeBrix.Platform packages and serves the desktop heads; the
-`net10.0-android36.1` build references their CodeBrix.Android counterparts and
-serves the Android head. The choice is made by a target-framework condition on
-each package group in the project file, so the source files are the same for
-both. `PicoScope.Brix.ScopeData` references no CodeBrix package, so it stays
-`net10.0` and the Android head uses it as it is. The Android head adds no code of
-its own beyond its application and activity classes; `App.xaml`, `MainPage.xaml`
-and the view model run unchanged.
+Core has two project files side by side in its folder.
+`PicoScope.Brix.Core.csproj` targets `net10.0`, references the CodeBrix.Platform
+packages and serves the desktop heads and the tests;
+`PicoScope.Brix.Core.Android.csproj` targets `net10.0-android36.1`, references
+their CodeBrix.Android counterparts and serves the Android head. The Android twin
+compiles the same source files under the same assembly name and root namespace,
+and keeps its build output in its own `obj.android/` and `bin.android/` folders.
+Because the folder holds two project files, a bare `dotnet build` there is
+ambiguous: build a solution, or name the project file.
+`PicoScope.Brix.ScopeData` references no CodeBrix package, so it has no twin: it
+stays `net10.0` and `PicoScope.Brix.Core.Android.csproj` uses it as it is. The
+Android head adds no code of its own beyond its application and activity
+classes; `App.xaml`, `MainPage.xaml` and the view model run unchanged.
 
 ## CodeBrix libraries and add-ins used
 
@@ -323,7 +333,7 @@ and the view model run unchanged.
 | CodeBrix.Platform.PlotterView add-in | Supplies the `PlotterControl` that renders the chart on every head and gives it pan, zoom and tracker interaction. It brings the CodeBrix.Plotter engine with it, which is where `PlotModel`, the axes, the line series and the colors come from, so nothing here references the plotting engine directly | `src/PicoScope.Brix.Core/PicoScope.Brix.Core.csproj`, `src/PicoScope.Brix.UI/Views/MainPage.xaml`, `src/PicoScope.Brix.Core/Charting/ScopePlot.cs` |
 | CodeBrix.Platform.Fonts.Roboto | Ships the Roboto font that is set as the application-wide default and as the page's `FontFamily`, addressed through an `ms-appx:///` URI, together with the Noto faces registered as script fallbacks | `src/PicoScope.Brix.Core/PicoScope.Brix.Core.csproj`, `src/PicoScope.Brix.UI/App.xaml`, `src/PicoScope.Brix.UI/App.xaml.cs`, `src/PicoScope.Brix.UI/Views/MainPage.xaml` |
 | CodeBrix.Platform runtime for the head | Exactly one runtime package per desktop head - the X11, Wayland, framebuffer, macOS, Win32 and WPF Skia runtimes - and nothing else | the six desktop head csproj files under `src/` |
-| CodeBrix.Android | The Android implementation of the same framework, with the Android form of the PlotterView add-in; the Android head and the Android build of Core reference these instead of the CodeBrix.Platform packages | `src/PicoScope.Brix.Android/PicoScope.Brix.Android.csproj`, `src/PicoScope.Brix.Core/PicoScope.Brix.Core.csproj` |
+| CodeBrix.Android | The Android implementation of the same framework, with the Android form of the PlotterView add-in; the Android head and `PicoScope.Brix.Core.Android.csproj` reference these instead of the CodeBrix.Platform packages | `src/PicoScope.Brix.Android/PicoScope.Brix.Android.csproj`, `src/PicoScope.Brix.Core/PicoScope.Brix.Core.Android.csproj` |
 | SilverAssertions | The assertion style the test projects use | the test csproj files under `tests/` |
 
 Third-party libraries:

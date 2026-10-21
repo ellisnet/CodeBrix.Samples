@@ -25,7 +25,7 @@
   <!-- Shared UI files (App.xaml + Views) -->
   <Import Project="..\PdfSideBySide.UI\PdfSideBySide.UI.projitems" Label="Shared" />
   <ItemGroup>
-    <ProjectReference Include="..\PdfSideBySide.Core\PdfSideBySide.Core.csproj" />
+    <ProjectReference Include="..\PdfSideBySide.Core\PdfSideBySide.Core.Android.csproj" />
   </ItemGroup>
 
   <!-- EXACTLY ONE platform head package; all other packages come from PdfSideBySide.Core -->

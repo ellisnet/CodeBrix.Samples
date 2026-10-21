@@ -1,0 +1,24 @@
+<Solution>
+  <!-- SimpleCbxVideoPlayer.WithAndroid.slnx
+       The Android solution: everything in SimpleCbxVideoPlayer.slnx PLUS the Android head and the
+       .Android twins of its library projects, which need the .NET Android workload.
+       Open SimpleCbxVideoPlayer.slnx instead if you only have the plain .NET SDK. -->
+  <Project Path="src/SimpleCbxVideoPlayer.UI/SimpleCbxVideoPlayer.UI.shproj" />
+  <Project Path="src/SimpleCbxVideoPlayer.Core/SimpleCbxVideoPlayer.Core.csproj" />
+  <Project Path="src/SimpleCbxVideoPlayer.Core/SimpleCbxVideoPlayer.Core.Android.csproj" />
+  <Project Path="src/SimpleCbxVideoPlayer.LinuxX11/SimpleCbxVideoPlayer.LinuxX11.csproj" />
+  <Project Path="src/SimpleCbxVideoPlayer.LinuxWayland/SimpleCbxVideoPlayer.LinuxWayland.csproj" />
+  <Project Path="src/SimpleCbxVideoPlayer.LinuxFrameBuffer/SimpleCbxVideoPlayer.LinuxFrameBuffer.csproj" />
+  <Project Path="src/SimpleCbxVideoPlayer.MacOS/SimpleCbxVideoPlayer.MacOS.csproj" />
+  <Project Path="src/SimpleCbxVideoPlayer.Win32Skia/SimpleCbxVideoPlayer.Win32Skia.csproj" />
+  <Project Path="src/SimpleCbxVideoPlayer.WinWpfSkia/SimpleCbxVideoPlayer.WinWpfSkia.csproj" />
+  <Project Path="src/SimpleCbxVideoPlayer.Android/SimpleCbxVideoPlayer.Android.csproj" />
+  <Folder Name="/Libraries/">
+    <Project Path="src/libs/SimpleCbxVideoPlayer.SkiaVideo/SimpleCbxVideoPlayer.SkiaVideo.csproj" />
+    <Project Path="src/libs/SimpleCbxVideoPlayer.SkiaVideo/SimpleCbxVideoPlayer.SkiaVideo.Android.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/SimpleCbxVideoPlayer.PlayTests/SimpleCbxVideoPlayer.PlayTests.csproj" />
+    <Project Path="tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests/SimpleCbxVideoPlayer.SkiaVideo.Tests.csproj" />
+  </Folder>
+</Solution>

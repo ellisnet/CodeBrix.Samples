@@ -25,7 +25,7 @@
   <!-- Shared UI files (App.xaml + Views) -->
   <Import Project="..\WikipediaPublisher.UI\WikipediaPublisher.UI.projitems" Label="Shared" />
   <ItemGroup>
-    <ProjectReference Include="..\WikipediaPublisher.Core\WikipediaPublisher.Core.csproj" />
+    <ProjectReference Include="..\WikipediaPublisher.Core\WikipediaPublisher.Core.Android.csproj" />
   </ItemGroup>
 
   <!-- EXACTLY ONE platform head package; all other packages come from WikipediaPublisher.Core -->

@@ -11,6 +11,7 @@
   </Configurations>
   <Folder Name="/CodeBrixPlatform/">
     <Project Path="CodeBrixPlatform/JustBetweenUs.Core/JustBetweenUs.Core.csproj" />
+    <Project Path="CodeBrixPlatform/JustBetweenUs.Core/JustBetweenUs.Core.Android.csproj" />
     <Project Path="CodeBrixPlatform/JustBetweenUs.LinuxFrameBuffer/JustBetweenUs.LinuxFrameBuffer.csproj" />
     <Project Path="CodeBrixPlatform/JustBetweenUs.LinuxWayland/JustBetweenUs.LinuxWayland.csproj" />
     <Project Path="CodeBrixPlatform/JustBetweenUs.LinuxX11/JustBetweenUs.LinuxX11.csproj" />

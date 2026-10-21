@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj.android/**;bin.android/**</DefaultItemExcludes>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -14,17 +15,13 @@
     <RootNamespace>PolyHavenBrowser.Rendering</RootNamespace>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.285.619" />
     <PackageReference Include="CodeBrix.Graphics3D.Gltf2.MitLicenseForever" Version="1.0.261.293" />
     <PackageReference Include="SkiaSharp" Version="4.153.1" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+  <ItemGroup>
     <!-- CodeBrix.Platform (base) supplies the FrameworkElement / DependencyProperty surface the
          GLCanvasElement subclass is built on. Graphics3DGL supplies GLCanvasElement itself and,
          transitively, the CodeBrix.Platform.OpenGL `GL` type the shader renderer draws with.
@@ -33,9 +30,4 @@
     <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.291.1177" />
   </ItemGroup>
 
-  <!-- The Android head gets the same FrameworkElement surface and GLCanvasElement from the CodeBrix.Android twins -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
-    <PackageReference Include="CodeBrix.Android.Graphics3DGL.ApacheLicenseForever" Version="1.0.292.307" />
-  </ItemGroup>
 </Project>

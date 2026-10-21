@@ -25,7 +25,7 @@
   <!-- Shared UI files (App.xaml + Views) -->
   <Import Project="..\NotionDocumentCreator.UI\NotionDocumentCreator.UI.projitems" Label="Shared" />
   <ItemGroup>
-    <ProjectReference Include="..\NotionDocumentCreator.Core\NotionDocumentCreator.Core.csproj" />
+    <ProjectReference Include="..\NotionDocumentCreator.Core\NotionDocumentCreator.Core.Android.csproj" />
   </ItemGroup>
 
   <!-- EXACTLY ONE platform head package; all other packages come from NotionDocumentCreator.Core -->

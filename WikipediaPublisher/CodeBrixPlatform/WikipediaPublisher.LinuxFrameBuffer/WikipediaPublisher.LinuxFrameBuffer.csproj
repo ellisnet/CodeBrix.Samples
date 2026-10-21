@@ -7,7 +7,7 @@
     <DefineConstants>$(DefineConstants);HAS_CODEBRIX;HAS_CODEBRIX_WINUI</DefineConstants>
   </PropertyGroup>
 
-  <!-- Tell MSBuild to treat .xaml files as CodeBrix.Platform (Uno-style) XAML pages -->
+  <!-- Tell MSBuild to treat .xaml files as CodeBrix.Platform XAML pages -->
   <ItemGroup>
     <Page Include="**\*.xaml" Exclude="bin\**\*.xaml;obj\**\*.xaml" />
     <None Remove="**\*.xaml" />

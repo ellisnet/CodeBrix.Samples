@@ -3,15 +3,16 @@
 These recipes cover how a multi-head application is laid out on
 disk and how its packages are apportioned, so that adding a head
 or a dependency does not mean editing every project file. They show
-the Core-library-plus-one-runtime-package rule, the second target framework that
-lets the same Core serve an Android head, the shared project that
+the Core-library-plus-one-runtime-package rule, the twin Android project that
+lets the same Core sources serve an Android head, the shared project that
 compiles App.xaml and the views into each head, the root-namespace settings
 that keep libraries referencing CodeBrix.Platform from colliding, and the
 src/libs plus tests/libs shape that lets non-UI work be tested without a
 window. They also cover native payloads: fanning per-platform native packages
 out across the heads, embedding assets with explicit logical names, letting a
 Windows-targeting head restore on Linux and macOS, keeping separate solutions
-where some heads cannot build everywhere, and recording bundled content
+where some heads cannot build everywhere, keeping the Android head in its own
+solution, and recording bundled content
 in a notices file. They finish with two rules about boundaries: the loose source
 files linked into each head with a symbol that picks its UI stack, and keeping a
 library's public surface down to the one type its host drives. Reach for this
@@ -26,7 +27,7 @@ conventions the code blocks follow.
 ## Recipes in this file
 
 - [Carry every package in one Core library and give each head exactly one runtime package](#carry-every-package-in-one-core-library-and-give-each-head-exactly-one-runtime-package)
-- [Add an Android head by giving Core a second target framework](#add-an-android-head-by-giving-core-a-second-target-framework)
+- [Add an Android head with a twin Android project beside Core](#add-an-android-head-with-a-twin-android-project-beside-core)
 - [Share App xaml and the views across heads with a shared project](#share-app-xaml-and-the-views-across-heads-with-a-shared-project)
 - [Set the Core library root namespace to the application namespace](#set-the-core-library-root-namespace-to-the-application-namespace)
 - [Give a library that references CodeBrix Platform its own root namespace](#give-a-library-that-references-codebrix-platform-its-own-root-namespace)
@@ -35,6 +36,7 @@ conventions the code blocks follow.
 - [Let a Windows-targeting head build inside a cross-platform solution](#let-a-windows-targeting-head-build-inside-a-cross-platform-solution)
 - [Restrict the solution platforms to what a WinUI head declares](#restrict-the-solution-platforms-to-what-a-winui-head-declares)
 - [Ship a separate solution where some heads cannot build everywhere](#ship-a-separate-solution-where-some-heads-cannot-build-everywhere)
+- [Keep the Android head and the twins in a WithAndroid solution](#keep-the-android-head-and-the-twins-in-a-withandroid-solution)
 - [Organize an application as src libs plus tests libs around a shared UI project](#organize-an-application-as-src-libs-plus-tests-libs-around-a-shared-ui-project)
 - [Code to the higher-level graphics package and let the binding arrive transitively](#code-to-the-higher-level-graphics-package-and-let-the-binding-arrive-transitively)
 - [Know what a transitive package brings and name what you depend on](#know-what-a-transitive-package-brings-and-name-what-you-depend-on)
@@ -171,26 +173,34 @@ references, and the csproj comment there states that ownership rule)
 - The documented exceptions to "exactly one platform package" are native payloads;
   see the native-assets blueprint below.
 
-### Add an Android head by giving Core a second target framework
+### Add an Android head with a twin Android project beside Core
 
 **When you want this.** You want the application on a phone or tablet, on the
-CodeBrix.Android packages, without a second Core project and without touching
-the shared XAML. The desktop heads must keep building exactly as before.
+CodeBrix.Android packages, without touching the shared XAML or the Core
+sources. The desktop heads must keep building with nothing but the plain .NET
+SDK.
 
-**The MVVM shape.** Not a view-model concern. The Core library gains a second
-target framework, `net10.0-android36.1`, beside `net10.0`. Every package that
-exists in both families is listed twice, once per target: the CodeBrix.Platform
-package and its add-ins in a `net10.0`-conditioned item group, their
-CodeBrix.Android twins in an android-conditioned one. Everything else (the font
-package, the generic host, UI-free CodeBrix libraries, SkiaSharp) stays
-unconditional. The Android head is one more thin project: the same page glob,
-the same shared-project import, the same single project reference to Core, and
-exactly one runtime package, which here is the CodeBrix.Android framework
-package. Its own files are an `[Application]` subclass that creates the shared
-`App`, an `[Activity]` subclass for the launcher, and a manifest. A library
-under `src/libs` follows Core's two-target shape only when it references a
-CodeBrix.Platform package or add-in itself, or references a project that does;
-a pure library keeps its single target and is consumed unchanged.
+**The MVVM shape.** Not a view-model concern. `<App>.Core.csproj` targets
+`net10.0` only and carries the CodeBrix.Platform package and its add-ins. In the
+same folder, a twin, `<App>.Core.Android.csproj`, targets `net10.0-android36.1`
+only, compiles the same source files under the same `AssemblyName` and
+`RootNamespace`, and carries the CodeBrix.Android twins of those packages.
+Everything else (the font package, the generic host, UI-free CodeBrix
+libraries, SkiaSharp) is listed in both. Because the two projects share a
+folder, the twin sets its own `obj.android/` and `bin.android/` folders before
+the SDK props are imported, each project excludes the other's folders from its
+items, and the twin therefore imports `Sdk.props` and `Sdk.targets` explicitly
+instead of naming the SDK on the `Project` element. The desktop heads and the
+test projects reference the plain project; the Android head is one more thin
+project: the same page glob, the same shared-project import, a single project
+reference to the Core twin, and exactly one runtime package, which here is the
+CodeBrix.Android framework package. Its own files are an `[Application]`
+subclass that creates the shared `App`, an `[Activity]` subclass for the
+launcher, and a manifest. A library under `src/libs` gets its own `.Android`
+twin when it references a CodeBrix.Platform package or add-in itself,
+references a project that does, or needs a different package on Android; the
+Android twins reference each other's twins, and a pure library has no twin and
+is referenced unchanged by both.
 
 **Code.**
 
@@ -199,35 +209,69 @@ a pure library keeps its single target and is consumed unchanged.
 <!-- Package versions elided; see the project's csproj -->
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj.android/**;bin.android/**</DefaultItemExcludes>
 
     <!-- Match the namespace used by the app code -->
     <RootNamespace>GitHubIssueFinder</RootNamespace>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
-  </PropertyGroup>
-
   <ItemGroup>
-    <!-- ... the generic host, console logging and the Roboto font package: both targets ... -->
+    <!-- ... the generic host, console logging and the Roboto font package ... -->
   </ItemGroup>
 
   <!-- The desktop heads: CodeBrix.Platform and its add-ins -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+  <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="..." />
     <PackageReference Include="CodeBrix.Platform.FlexPanel.ApacheLicenseForever" Version="..." />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\libs\GitHubIssueFinder.GitHub\GitHubIssueFinder.GitHub.csproj" />
+    <ProjectReference Include="..\libs\GitHubIssueFinder.Settings\GitHubIssueFinder.Settings.csproj" />
+  </ItemGroup>
+</Project>
+```
+
+```xml
+<!-- Adapted from CodeBrix.Samples/GitHubIssueFinder/src/GitHubIssueFinder.Core/GitHubIssueFinder.Core.Android.csproj -->
+<!-- Package versions elided; see the project's csproj -->
+<Project>
+  <!-- Its own obj/bin folders: this project sits beside GitHubIssueFinder.Core.csproj, which builds the same sources -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj.android\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin.android\</BaseOutputPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.1</TargetFramework>
+    <AssemblyName>GitHubIssueFinder.Core</AssemblyName>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+
+    <!-- Match the namespace used by the app code -->
+    <RootNamespace>GitHubIssueFinder</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ... the generic host, console logging and the Roboto font package, as in the plain project ... -->
+  </ItemGroup>
+
   <!-- The Android head: the CodeBrix.Android twins of the same packages -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
+  <ItemGroup>
     <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="..." />
     <PackageReference Include="CodeBrix.Android.FlexPanel.ApacheLicenseForever" Version="..." />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- ... the project references, unchanged ... -->
+    <ProjectReference Include="..\libs\GitHubIssueFinder.GitHub\GitHubIssueFinder.GitHub.csproj" />
+    <ProjectReference Include="..\libs\GitHubIssueFinder.Settings\GitHubIssueFinder.Settings.Android.csproj" />
   </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>
 ```
 
@@ -260,7 +304,7 @@ a pure library keeps its single target and is consumed unchanged.
   <!-- Shared UI files (App.xaml + Views) -->
   <Import Project="..\GitHubIssueFinder.UI\GitHubIssueFinder.UI.projitems" Label="Shared" />
   <ItemGroup>
-    <ProjectReference Include="..\GitHubIssueFinder.Core\GitHubIssueFinder.Core.csproj" />
+    <ProjectReference Include="..\GitHubIssueFinder.Core\GitHubIssueFinder.Core.Android.csproj" />
   </ItemGroup>
 
   <!-- EXACTLY ONE platform head package; all other packages come from GitHubIssueFinder.Core -->
@@ -300,49 +344,57 @@ Where a sample needs code that differs on Android, it is fenced with
 `#if HAS_CODEBRIX_ANDROID`, a symbol the CodeBrix.Android package defines for
 every project that references it; the `#else` branch is the desktop code, and no
 project defines the symbol itself. Whole files that cannot compile for Android
-are kept out of the build with a `Compile Remove` item conditioned on the android
-target rather than wrapped in the symbol.
+are kept out of the build with a `Compile Remove` item in the `.Android` twin
+rather than wrapped in the symbol.
 
 **Where to look.**
-`GitHubIssueFinder/src/GitHubIssueFinder.Core/GitHubIssueFinder.Core.csproj`
+`GitHubIssueFinder/src/GitHubIssueFinder.Core/GitHubIssueFinder.Core.csproj` and
+`GitHubIssueFinder.Core.Android.csproj` beside it
 `GitHubIssueFinder/src/GitHubIssueFinder.Android/` (the whole head: four files)
-`GitHubIssueFinder/src/libs/GitHubIssueFinder.Settings/GitHubIssueFinder.Settings.csproj`
-(a library that references an add-in, so it follows the two-target shape; its
-sibling `GitHubIssueFinder.GitHub` references none and keeps one target)
+`GitHubIssueFinder/src/libs/GitHubIssueFinder.Settings/` (a library that
+references an add-in, so it has an `.Android` twin; its sibling
+`GitHubIssueFinder.GitHub` references none and has no twin)
 
 **Also shown by.**
-`Pinta.Brix/src/` (Core and all six libraries two-target, because every library
-either references an add-in or references one that does)
+`Pinta.Brix/src/` (Core and all six libraries have `.Android` twins, because
+every library either references an add-in or references one that does)
 `PicoScope.Brix/src/PicoScope.Brix.Android/MainApplication.cs` (the head
 registers the simulated instrument in its constructor, the one thing the
 desktop heads do in `Program.cs` that the Android head does differently)
-`PolyHavenBrowser_viewer_only/src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.csproj`
-(two third-party packages and their files kept out of the android target with
-conditioned package references and a `Compile Remove`; the three call sites
-that reach them fenced with the symbol)
-`SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/SimpleCbxVideoPlayer.SkiaVideo.csproj`
-(the audio output package chosen per target: the desktop CodeBrix.Audio natives
-for `net10.0`, CodeBrix.Audio.Android for the android target)
-`JustBetweenUs`, `PainDiagram`, `WikipediaPublisher` (the head line added to
-every solution file the application has)
+`PolyHavenBrowser_viewer_only/src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.Android.csproj`
+(two third-party packages listed only in the plain project and their files kept
+out of the twin with a `Compile Remove`; the three call sites that reach them
+fenced with the symbol)
+`SimpleCbxVideoPlayer/src/libs/SimpleCbxVideoPlayer.SkiaVideo/` (a library with
+no platform reference that has a twin because its audio output package differs:
+the desktop CodeBrix.Audio natives in the plain project, CodeBrix.Audio.Android
+in the twin)
+`JustBetweenUs`, `PainDiagram`, `WikipediaPublisher` (the head and the twins
+added to the `.WithAndroid.slnx` and to every platform-specific solution file
+the application has)
 
 **Sharp edges.**
-- Once Core targets Android, every build of the application restores the
-  Android framework, including a desktop-only build, a PlayTests run and a
-  Windows or macOS build. The android workload and the Android SDK are
-  prerequisites for the whole application, and its README says so.
-- Keep literal `Version` attributes inside the conditioned item groups; a
-  version property hides the pin from the tooling that updates packages.
-- The CodeBrix.Platform packages pinned for `net10.0` and the CodeBrix.Android
-  packages pinned for the android target must come from matching releases:
-  the Android release re-ships one Platform version, and the two targets
-  compile against the same API only when the desktop pin is that version.
+- A folder that holds both `X.csproj` and `X.Android.csproj` makes a bare
+  `dotnet build` there ambiguous. Build the solution, or name the project.
+- The twin must set `BaseIntermediateOutputPath` before `Sdk.props` is
+  imported, which is why it imports the SDK explicitly; and each project of the
+  pair must exclude the other's output folders, or one project compiles the
+  other's generated files.
+- Keep the plain and the `.Android` projects in step: a source file, package or
+  project reference added to one usually belongs in the other. Keep literal
+  `Version` attributes in both; a version property hides the pin from the
+  tooling that updates packages.
+- The CodeBrix.Platform packages pinned in the plain project and the
+  CodeBrix.Android packages pinned in the twin must come from matching
+  releases: the Android release re-ships one Platform version, and the two
+  projects compile against the same API only when the desktop pin is that
+  version.
 - Install per project with an explicit runtime identifier
   (`-t:Install -p:RuntimeIdentifier=android-arm64` or `android-x64`); a
   solution-level identifier fails.
 - The Android build turns on XML documentation for libraries. A broken
-  `<see cref>` that was silent on the desktop is a warning on the android
-  target, so fix the comment rather than suppress it.
+  `<see cref>` that was silent on the desktop is a warning in the `.Android`
+  twin, so fix the comment rather than suppress it.
 - A `GetService<T>()` lookup for an optional service throws when nothing is
   registered. PlayTests register their own doubles and so never see it; the
   real head does. Use the overload that returns null for an unregistered
@@ -886,28 +938,91 @@ sharing the same project files.
 **Code.**
 
 ```text
-JustBetweenUs.Windows.slnx  all six Skia heads + WinUI + WPF + Mobile + Encryption + tests
-JustBetweenUs.Linux.slnx    Skia heads except WinWpfSkia + Encryption + tests
-JustBetweenUs.MacOS.slnx    Skia heads except WinWpfSkia + Mobile + Encryption + tests
+JustBetweenUs.slnx              all six Skia heads + Encryption + tests
+JustBetweenUs.WithAndroid.slnx  JustBetweenUs.slnx + Android + Core.Android
+JustBetweenUs.Windows.slnx      all six Skia heads + Android + WinUI + WPF + Mobile + Encryption + tests
+JustBetweenUs.Linux.slnx        Skia heads except WinWpfSkia + Android + Encryption + tests
+JustBetweenUs.MacOS.slnx        Skia heads except WinWpfSkia + Android + Mobile + Encryption + tests
 ```
 
 **Where to look.**
-`JustBetweenUs/JustBetweenUs.Windows.slnx`, `JustBetweenUs.Linux.slnx`,
+`JustBetweenUs/JustBetweenUs.slnx`, `JustBetweenUs.WithAndroid.slnx`,
+`JustBetweenUs.Windows.slnx`, `JustBetweenUs.Linux.slnx`,
 `JustBetweenUs.MacOS.slnx`
 `PainDiagram/PainDiagram.slnx` and `PainDiagram/PainDiagram.Windows.slnx`
 `WikipediaPublisher/WikipediaPublisher.slnx` and
 `WikipediaPublisher/WikipediaPublisher.Windows.slnx`
 
 **Sharp edges.**
-- Two solution files is the usual shape: one cross-platform, one Windows-only that
-  is a superset, both at the application root with a comment at the top saying
-  which is which.
+- Beside the plain cross-platform solution (and its `.WithAndroid` partner),
+  one Windows-only superset is the usual shape, all at the application root
+  with a comment at the top saying which is which.
 - Exclude a head only when it genuinely cannot restore. A Win32 Skia head targets
   plain `net10.0` and so restores and builds anywhere even though it only runs on
   Windows; the WPF-hosted head targets the Windows moniker and cannot.
 - A mobile head belongs only in the solutions whose workloads can build it.
 - Where a solution declares several platform names, every project except the WinUI
   head maps all of them to Any CPU.
+
+### Keep the Android head and the twins in a WithAndroid solution
+
+**When you want this.** The application has an Android head, and you want
+anyone with only the plain .NET 10 SDK to open and build the application
+without the Android workload.
+
+**The MVVM shape.** Not a code pattern; a repository shape. `<App>.slnx` holds
+every project that builds with the plain SDK - the shared UI project, the plain
+Core, the desktop heads, the libraries and the tests - and no Android head and
+no `.Android` twin. `<App>.WithAndroid.slnx` beside it is the same list plus the
+Android head and every `.Android` twin, and is the one to open when you also
+want the Android head; it needs the android workload
+(`dotnet workload install android`) and the Android SDK. A comment at the top
+of each solution says which is which.
+
+**Code.**
+
+```xml
+<!-- Adapted from CodeBrix.Samples/GitHubIssueFinder/GitHubIssueFinder.WithAndroid.slnx -->
+<Solution>
+  <!-- GitHubIssueFinder.WithAndroid.slnx
+       The Android solution: everything in GitHubIssueFinder.slnx PLUS the Android head and the
+       .Android twins of its library projects, which need the .NET Android workload.
+       Open GitHubIssueFinder.slnx instead if you only have the plain .NET SDK. -->
+  <Project Path="src/GitHubIssueFinder.UI/GitHubIssueFinder.UI.shproj" />
+  <Project Path="src/GitHubIssueFinder.Core/GitHubIssueFinder.Core.csproj" />
+  <Project Path="src/GitHubIssueFinder.Core/GitHubIssueFinder.Core.Android.csproj" />
+  <!-- ... the four desktop heads, as in GitHubIssueFinder.slnx ... -->
+  <Project Path="src/GitHubIssueFinder.Android/GitHubIssueFinder.Android.csproj" />
+  <Folder Name="/Libraries/">
+    <Project Path="src/libs/GitHubIssueFinder.GitHub/GitHubIssueFinder.GitHub.csproj" />
+    <Project Path="src/libs/GitHubIssueFinder.Settings/GitHubIssueFinder.Settings.csproj" />
+    <Project Path="src/libs/GitHubIssueFinder.Settings/GitHubIssueFinder.Settings.Android.csproj" />
+  </Folder>
+  <!-- ... the Tests folder, as in GitHubIssueFinder.slnx ... -->
+</Solution>
+```
+
+**Where to look.**
+`GitHubIssueFinder/GitHubIssueFinder.slnx` and
+`GitHubIssueFinder/GitHubIssueFinder.WithAndroid.slnx`
+`Pinta.Brix/Pinta.Brix.WithAndroid.slnx` (Core and six library twins)
+
+**Also shown by.**
+Every application with an Android head.
+`JustBetweenUs`, `PainDiagram`, `WikipediaPublisher` (whose platform-specific
+solutions - `.Windows.slnx`, and for JustBetweenUs also `.Linux.slnx` and
+`.MacOS.slnx` - also carry the Android head and the twins, so they need the
+android workload too)
+
+**Sharp edges.**
+- List every `.Android` twin in the `.WithAndroid` solution, not only the Core
+  twin: Visual Studio on Windows needs each project that a solution builds
+  listed in it.
+- The plain solution must hold no Android project at all. One Android head or
+  twin left in it makes the whole solution need the workload.
+- Build the Android head by naming its project file
+  (`dotnet build <path to the head csproj>`) or through the `.WithAndroid`
+  solution; a plain-solution build never touches Android.
 
 ### Organize an application as src libs plus tests libs around a shared UI project
 

@@ -1,14 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net10.0-android36.1</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj.android/**;bin.android/**</DefaultItemExcludes>
     <!-- Ported-from-Pinta code keeps upstream nullable annotations
          (same approach as other vendored/ported CodeBrix code) -->
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,13 +22,8 @@
        that lays out every TextBlock in CodeBrix.Platform; see the plan's P12.
        MUST stay lock-stepped with the CodeBrix.Platform version the heads
        reference - the family ships at one version. -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+  <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.TextLayout.ApacheLicenseForever" Version="1.0.291.1177" />
   </ItemGroup>
 
-  <!-- The Android head: the CodeBrix.Android twin of the TextLayout add-in,
-       lock-stepped with the CodeBrix.Android version the head references -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android36.1'">
-    <PackageReference Include="CodeBrix.Android.TextLayout.ApacheLicenseForever" Version="1.0.292.307" />
-  </ItemGroup>
 </Project>

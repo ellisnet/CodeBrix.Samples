@@ -10,7 +10,6 @@
   <Project Path="src/PicoScope.Brix.MacOS/PicoScope.Brix.MacOS.csproj" />
   <Project Path="src/PicoScope.Brix.Win32Skia/PicoScope.Brix.Win32Skia.csproj" />
   <Project Path="src/PicoScope.Brix.WinWpfSkia/PicoScope.Brix.WinWpfSkia.csproj" />
-  <Project Path="src/PicoScope.Brix.Android/PicoScope.Brix.Android.csproj" />
   <Folder Name="/Libraries/">
     <Project Path="src/libs/PicoScope.Brix.ScopeData/PicoScope.Brix.ScopeData.csproj" />
     <Project Path="src/libs/PicoScope.Brix.ScopeData.Ps2000/PicoScope.Brix.ScopeData.Ps2000.csproj" />
