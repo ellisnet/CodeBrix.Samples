@@ -27,8 +27,8 @@
         </Grid.RowDefinitions>
 
         <!-- Sample selector: the active button is highlighted with the accent style. To its
-             right, the rendering-engine dropdown (OpenGL/Vulkan) - hidden in HDRI mode, whose
-             CPU panorama renderer is unaffected by the engine choice -->
+             right, the rendering-engine dropdown (WebGpu/OpenGL/Vulkan/Metal) - hidden in HDRI mode, whose
+             panorama renderer (WebGPU, or the CPU) is unaffected by the engine choice -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
             <Button Content="Sample Texture" Command="{d:Binding SelectTextureCommand}" MinWidth="140"
                     Style="{d:Binding IsTextureSelected, Converter={StaticResource SelectedButtonStyle}}" />

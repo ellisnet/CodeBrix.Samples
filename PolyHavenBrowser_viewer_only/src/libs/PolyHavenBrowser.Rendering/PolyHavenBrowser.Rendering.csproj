@@ -9,9 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.285.619" />
-    <PackageReference Include="CodeBrix.Graphics3D.Gltf2.MitLicenseForever" Version="1.0.261.293" />
+    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.290.858" />
+    <PackageReference Include="CodeBrix.Graphics3D.Gltf2.MitLicenseForever" Version="1.0.290.996" />
     <PackageReference Include="SkiaSharp" Version="4.153.1" />
+
+    <!-- The WebGPU backend (WebGpu/): CodeBrix.WebGpu.Skia owns the WebGPU device and the headless
+         render target the frames are read back from; it brings CodeBrix.WebGpu.Native (the raw
+         WebGPU binding, with the native wgpu library for every desktop platform and Android). -->
+    <PackageReference Include="CodeBrix.WebGpu.Skia.MitLicenseForever" Version="1.0.291.34" />
   </ItemGroup>
 
   <!-- The desktop heads -->

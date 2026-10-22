@@ -21,6 +21,9 @@ public sealed class Mode2Extraction
     /// <param name="audioPacketCount">How many coded audio packets were carried across.</param>
     /// <param name="leftAlphaPlaneBehind">True when the file carried an alpha plane, which is not carried across.</param>
     /// <param name="sidecars">The chapters and captions taken out of the file's header.</param>
+    /// <param name="soundCarriedAsVorbis">
+    /// True when a master's FLAC sound had to be re-encoded as Vorbis to go into the intermediate.
+    /// </param>
     public Mode2Extraction(
         string intermediatePath,
         string videoIvfPath,
@@ -29,7 +32,8 @@ public sealed class Mode2Extraction
         int videoFrameCount,
         int audioPacketCount,
         bool leftAlphaPlaneBehind,
-        MediaSidecars sidecars)
+        MediaSidecars sidecars,
+        bool soundCarriedAsVorbis = false)
     {
         IntermediatePath = intermediatePath;
         VideoIvfPath = videoIvfPath;
@@ -39,6 +43,7 @@ public sealed class Mode2Extraction
         AudioPacketCount = audioPacketCount;
         LeftAlphaPlaneBehind = leftAlphaPlaneBehind;
         Sidecars = sidecars ?? MediaSidecars.None;
+        SoundCarriedAsVorbis = soundCarriedAsVorbis;
     }
 
     /// <summary>
@@ -77,6 +82,14 @@ public sealed class Mode2Extraction
 
     /// <summary>The chapters and captions taken out of the file's header.</summary>
     public MediaSidecars Sidecars { get; }
+
+    /// <summary>
+    /// True when a master's FLAC sound went into the intermediate re-encoded as Vorbis rather than as it
+    /// was. That happens only where there is no FFmpeg to remux it - on Android - because the playback
+    /// core's managed Matroska muxer writes Vorbis and Opus sound and nothing else. Everything else is
+    /// still carried across without re-encoding.
+    /// </summary>
+    public bool SoundCarriedAsVorbis { get; }
 
     /// <summary>True when an audio stream was carried across.</summary>
     public bool HasAudio => !string.IsNullOrEmpty(AudioPath);

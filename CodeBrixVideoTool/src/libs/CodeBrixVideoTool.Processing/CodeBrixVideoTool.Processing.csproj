@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj.android/**;bin.android/**</DefaultItemExcludes>
 
     <!-- This library hosts a SimpleViewModel-derived view model, so it references CodeBrix.Platform.
          Keep this library's OWN RootNamespace (not the app's "CodeBrixVideoTool") so the per-head
@@ -15,16 +16,25 @@
     <PackageReference Include="CodeBrix.VideoPlayback.Authoring.MitLicenseForever" Version="1.0.290.1224" />
 
     <!-- The playback core's readers and writers: MediaContainers/CbvReader demultiplex a Mode 2
-         file, IvfWriter and OggAudioWriter re-wrap its streams for FFmpeg, FfMetadataChapters and
-         CaptionFiles carry its chapters and cues across, and StreamableProfile validates what was
-         written. Arrives transitively with .Authoring at the same version; referenced explicitly
-         because this library codes against it directly. -->
+         file, IvfWriter, OggAudioWriter and MatroskaMuxer re-wrap its streams into an intermediate an
+         engine can read, FfMetadataChapters and CaptionFiles carry its chapters and cues across, and
+         StreamableProfile validates what was written. Arrives transitively with .Authoring at the same
+         version; referenced explicitly because this library codes against it directly. -->
     <PackageReference Include="CodeBrix.VideoPlayback.MitLicenseForever" Version="1.0.290.1224" />
 
-    <!-- ffmpeg and ffprobe: probing, the .mp4 export pass, the Mode 2 intermediate remux, and the
-         synthetic sample clips the tests and the smoke run use. The ONLY way this application is
-         allowed to run an external process. -->
-    <PackageReference Include="CodeBrix.VideoProcessing.MitLicenseForever" Version="1.0.290.1023" />
+    <!-- The engine-neutral video-processing contract: probing, the .mp4 export, and - through its
+         external-tools facet, where the engine has one - the ffmpeg command lines for the MP4 export,
+         the master's FLAC remux and the synthetic sample clips. It names NO engine: each head registers
+         its own (CodeBrix.VideoProcessing on the desktop, CodeBrix.VideoProcessing.Android on Android),
+         so this library is the same on both. Arrives transitively with .Authoring at the same version. -->
+    <PackageReference Include="CodeBrix.VideoProcessing.Core.MitLicenseForever" Version="1.0.290.1023" />
+
+    <!-- A master's FLAC sound where there is no ffmpeg to remux it: the audio core's managed FLAC
+         packet decoder, and the Vorbis encoder the authoring library writes Mode 2 sound with. Both
+         arrive transitively with .Authoring; referenced explicitly because Mode2Extractor codes
+         against them directly. -->
+    <PackageReference Include="CodeBrix.Audio.Core.MitLicenseForever" Version="1.0.283.1382" />
+    <PackageReference Include="CodeBrix.Audio.Vorbis.BsdLicenseForever" Version="1.0.283.1118" />
 
     <!-- SimpleViewModel and SimpleCommand for the operation view model -->
     <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.291.1177" />

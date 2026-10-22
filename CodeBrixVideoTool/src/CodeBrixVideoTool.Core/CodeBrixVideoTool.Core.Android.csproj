@@ -1,0 +1,49 @@
+<Project>
+  <!-- Its own obj/bin folders: this project sits beside CodeBrixVideoTool.Core.csproj, which builds the same sources -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj.android\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin.android\</BaseOutputPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.1</TargetFramework>
+    <AssemblyName>CodeBrixVideoTool.Core</AssemblyName>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+
+    <!-- Match the namespace used by the app code -->
+    <RootNamespace>CodeBrixVideoTool</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.13" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.13" />
+    <PackageReference Include="CodeBrix.Platform.Fonts.Roboto.OflLicenseForever" Version="1.0.248.1219" />
+  </ItemGroup>
+
+  <!-- The Android head: the CodeBrix.Android twins of the same packages -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
+
+    <!-- The VideoPlayer add-in's Android side: the same VideoPlayer element in the same namespace, its
+         picture presented on the SkiaSharp.Views canvas (composed on the GPU through Graphics3DGL where
+         it can be), its sound through CodeBrix.Audio's Android backend, which the add-in initialises. -->
+    <PackageReference Include="CodeBrix.Android.VideoPlayer.ApacheLicenseForever" Version="1.0.292.307" />
+
+    <!-- Android's video-processing ENGINE: the platform's own MediaExtractor, MediaCodec and MediaMuxer
+         behind the same contract the libraries code against. It offers no external tools, so every
+         route that runs ffmpeg on the desktop takes its in-process answer here. App registers it once
+         at start-up, in place of the desktop's ffmpeg engine. -->
+    <PackageReference Include="CodeBrix.VideoProcessing.Android.MitLicenseForever" Version="1.0.290.1023" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\libs\CodeBrixVideoTool.Processing\CodeBrixVideoTool.Processing.Android.csproj" />
+    <ProjectReference Include="..\libs\CodeBrixVideoTool.Playback\CodeBrixVideoTool.Playback.Android.csproj" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

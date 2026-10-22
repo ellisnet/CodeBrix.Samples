@@ -1,8 +1,8 @@
 # 3D rendering inside a CodeBrix.Platform view
 
 This folder is a self-contained reference for **rendering a 3D model into an ordinary
-CodeBrix.Platform UI view** — the model is drawn off-screen with OpenGL, **Vulkan, or Metal**
-(a runtime dropdown choice), the pixels are read back and composited onto a **Skia canvas**
+CodeBrix.Platform UI view** — the model is drawn off-screen with **WebGPU** (the default),
+OpenGL, **Vulkan, or Metal** (a runtime dropdown choice), the pixels are read back and composited onto a **Skia canvas**
 (`SKXamlCanvas`) that lives in the app's normal XAML, and the user can orbit/zoom it. Copy
 this folder (plus the `PolyHavenBrowser.Rendering` library it depends on) as a starting point.
 
@@ -26,8 +26,13 @@ this folder (plus the `PolyHavenBrowser.Rendering` library it depends on) as a s
    │    glReadPixels →          image → copy-to-buffer  offscreen tex → │
    │      RGBA bytes            → RGBA bytes            blit-to-buffer →│
    │                                                   RGBA bytes      │
+   │                                                                  │
+   │  WebGpu…Engine (the default, every head incl. Android)           │
+   │    WebGpuSceneRenderer (Rendering lib) → CodeBrix.WebGpu device  │
+   │      (D3D12 / Vulkan / Metal) → WGSL pipelines → headless        │
+   │      WebGpuSkiaTarget → ReadPixels → RGBA bytes                  │
    └─────────────────────────────────────────────────────────────────┘
-      │  RenderedFrame (RGBA pixels; IsBottomUp true for GL/Vulkan, false for Metal - see below)
+      │  RenderedFrame (RGBA pixels; IsBottomUp true for GL/Vulkan, false for Metal/WebGPU - see below)
       ▼  ModelScenePainter  (API-agnostic)
    draw darkened background texture → SKImage.FromPixelCopy → flip if bottom-up → DrawImage
       │
@@ -35,10 +40,13 @@ this folder (plus the `PolyHavenBrowser.Rendering` library it depends on) as a s
    on screen, inside the normal app UI
 ```
 
-The HDRI panorama takes a simpler path: `PanoramaScenePainter` is a **CPU** ray-tracer
-(`EquirectPanoramaRenderer` in the Rendering lib) that produces an `SKBitmap` directly — no
-GPU engine involved, which is why the engine dropdown is hidden in HDRI mode. Both painters
-implement `IScenePainter` so the page treats them uniformly.
+The HDRI panorama takes a simpler path that does not go through the engine dropdown (which is
+why the dropdown is hidden in HDRI mode): `PanoramaScenePainter` renders the view into an
+`SKBitmap` with **WebGPU** (`WebGpuPanoramaRenderer` — one full-screen triangle whose WGSL
+fragment shader does the equirect lookup + tone mapping, read back from a headless target) and
+falls back to the **CPU** ray-tracer (`EquirectPanoramaRenderer`) when WebGPU cannot start, or
+if a GPU frame fails later. Both produce the same image (a test compares them pixel for pixel).
+Both painters implement `IScenePainter` so the page treats them uniformly.
 
 ## The seam that makes the graphics API swappable
 
@@ -53,6 +61,11 @@ any backend:
 
 Everything **below** it is API-specific, one class-cluster per backend:
 
+- WebGPU (the default): `WebGpuModelRenderEngine`, a thin adapter over the Rendering lib's
+  self-contained `WebGpuSceneRenderer` (CodeBrix.WebGpu: `WebGpuSkiaDevice` creates the device on
+  Direct3D 12 / Vulkan / Metal, a headless `WebGpuSkiaTarget` is the colour target and does the
+  readback, and the raw `WebGpu` binding builds the pipelines; WGSL compiled at runtime from
+  `WebGpuShaders`). Works on every head, Android included.
 - OpenGL: `OpenGlModelRenderEngine` (+ Graphics3DGL's `OffscreenGLContext`, + `GlModelSceneRenderer`'s
   GL shaders in the Rendering lib).
 - Vulkan: `VulkanModelRenderEngine`, a thin adapter over the Rendering lib's self-contained
@@ -69,8 +82,12 @@ Everything **below** it is API-specific, one class-cluster per backend:
 `IModelRenderEngineSelector` (registered in `RegisterServices`) owns the list of backends and
 the platform gate:
 
-- `AvailableKinds` → `[OpenGL, Vulkan, Metal]`, in dropdown order; the app always starts on OpenGL.
-- `IsSupported(kind)` → OpenGL everywhere; Vulkan and Metal each only where the Rendering
+- `AvailableKinds` → `[WebGpu, OpenGL, Vulkan, Metal]`, in dropdown order; the app always starts
+  on WebGPU, pre-warmed off the UI thread, and falls back to OpenGL (with a status-line note) when
+  WebGPU cannot start on the machine.
+- `IsSupported(kind)` → WebGPU and OpenGL everywhere (CodeBrix.WebGpu ships a native library for
+  every platform, so WebGPU needs no allow-list — a missing driver is caught at runtime by the
+  pre-warm instead); Vulkan and Metal each only where the Rendering
   library's **hardcoded** allow-list okays them — and the two are **mirror images**:
   - `VulkanPlatformSupport`: the Linux **X11** and **Wayland** heads and the **Win32Skia**/
     **WinWpfSkia** heads. **macOS** (no system Vulkan loader) and the Linux **FrameBuffer** head
@@ -84,11 +101,12 @@ the platform gate:
   (the detection is shared).
 - `Create(kind, getXamlRoot)` → a fresh engine (the caller owns and disposes it). The
   `getXamlRoot` accessor is used only by the OpenGL engine, to create its offscreen native GL
-  context from the hosting page's `XamlRoot`; the Vulkan and Metal engines ignore it.
+  context from the hosting page's `XamlRoot`; the WebGPU, Vulkan and Metal engines ignore it.
 
 Picking an unsupported engine (Vulkan on macOS, or Metal off macOS) shows a `SimpleDialog` alert
-("{engine} rendering is not available on this platform.") and snaps the dropdown back to OpenGL.
-On a supported platform the view model pre-warms the new own-stack engine (Vulkan **or** Metal)
+("{engine} rendering is not available on this platform.") and snaps the dropdown back to the
+engine that is running. On a supported platform the view model pre-warms the new own-stack engine
+(WebGPU, Vulkan **or** Metal)
 with a 1×1 off-thread frame so a missing/broken driver fails fast into a status message (never
 inside the paint callback), then swaps painters and re-displays the current sample from the local
 cache.
@@ -115,13 +133,14 @@ cache.
   vertically inverted too, so it **also** reports `IsBottomUp: true` and the same flip serves
   both. **Metal is the exception**: its clip-space Y points *up* (like GL) while its framebuffer
   origin is top-left (like Vulkan), so with the same matrices the readback comes out **top-down**
-  and `MetalModelRenderEngine` reports `IsBottomUp: false` (no flip). Separately, the
-  model-view-projection matrix is uploaded **without** an extra `Matrix4x4.Transpose` on all
-  three APIs: System.Numerics is row-major, and GL/SPIR-V/MSL reading it as column-major already
-  applies the transpose needed — transposing again silently flattens the depth axis for rotated
-  cameras (see the regression test
+  and `MetalModelRenderEngine` reports `IsBottomUp: false` (no flip). **WebGPU** has the same
+  pairing as Metal, so `WebGpuModelRenderEngine` reports `IsBottomUp: false` too (pinned by the
+  `readback_is_top_down` test). Separately, the model-view-projection matrix is uploaded
+  **without** an extra `Matrix4x4.Transpose` on all four APIs: System.Numerics is row-major, and
+  GL/SPIR-V/MSL/WGSL reading it as column-major already applies the transpose needed —
+  transposing again silently flattens the depth axis for rotated cameras (see the regression test
   `nearer_geometry_occludes_farther_geometry_regardless_of_draw_order`, which exists for all
-  three renderers).
+  four renderers).
 - **Shaders without a toolchain.** Vulkan consumes SPIR-V, not GLSL, so its shaders are compiled
   once at development time and the words embedded as static source in `VulkanShaders.cs` (GLSL
   alongside in comments) — the same pre-captured-output approach as the CodeBrix.Platform.OpenGL
@@ -163,7 +182,8 @@ cache.
 | `IModelRenderEngineSelector.cs` | Runtime backend choice + platform gate (the dropdown) | no |
 | `ModelScenePainter.cs` | Input + Skia compositing over any engine | no |
 | `CubeMeshBuilder.cs` | Texture → a cube `LoadedModel` | no |
-| `PanoramaScenePainter.cs` | HDRI panorama (CPU → `SKBitmap`) | no |
+| `PanoramaScenePainter.cs` | HDRI panorama (WebGPU, or the CPU as fallback → `SKBitmap`) | no |
+| `WebGpuModelRenderEngine.cs` | WebGPU engine adapter (+ its factory) — the default | **yes** |
 | `OpenGlModelRenderEngine.cs` | OpenGL FBO + readback over Graphics3DGL's `OffscreenGLContext` | **yes** |
 | `VulkanModelRenderEngine.cs` | Vulkan engine adapter (+ its factory) | **yes** |
 | `MetalModelRenderEngine.cs` | Metal engine adapter (+ its factory) | **yes** |
@@ -178,4 +198,6 @@ so there is no app-owned EGL/WGL/GLX class here.)
 for the whole Vulkan stack and its allow-list; and
 `Metal/MetalSceneRenderer.cs` + `Metal/MetalShaders.cs` + `Metal/MetalInterop.cs` +
 `Metal/MetalPlatformSupport.cs` for the whole direct-to-Metal stack, its raw Objective-C interop,
-and its macOS-only allow-list.)
+and its macOS-only allow-list; and `WebGpu/WebGpuSceneRenderer.cs` + `WebGpu/WebGpuPanoramaRenderer.cs`
++ `WebGpu/WebGpuShaders.cs` + `WebGpu/WebGpuSupport.cs` for the WebGPU model and HDRI renderers,
+their WGSL, and the shared device/shader helpers.)

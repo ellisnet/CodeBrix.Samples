@@ -8,7 +8,7 @@ public interface IMediaProbe
 {
     /// <summary>
     /// Probes one file. A <c>.cbv</c> file is read by the playback core's own container readers; every
-    /// other file is probed with ffprobe through CodeBrix.VideoProcessing.
+    /// other file is described by the registered video-processing engine (ffprobe on the desktop).
     /// </summary>
     /// <param name="path">The file to look at.</param>
     /// <param name="cancellationToken">Stops the probe.</param>

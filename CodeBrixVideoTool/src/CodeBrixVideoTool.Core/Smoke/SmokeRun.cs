@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 using CodeBrixVideoTool.Playback.Services;
 using CodeBrixVideoTool.Processing.Formats;
 using CodeBrixVideoTool.Processing.Operations;
+using CodeBrixVideoTool.Processing.Probing;
 using CodeBrixVideoTool.Processing.Samples;
+using CodeBrixVideoTool.Processing.Tools;
 using CodeBrixVideoTool.Processing.ViewModels;
 using CodeBrixVideoTool.ViewModels;
 
@@ -73,8 +75,15 @@ public sealed class SmokeRun
             Fact("destination", options.Destination);
             Fact("workFolder", options.WorkFolder);
 
-            var sourcePath = await SampleClipFactory
-                .WriteRichMp4Async(options.WorkFolder, TimeSpan.FromSeconds(3));
+            //The source carries captions and chapters wherever the engine can write them - FFmpeg's muxers
+            //can, an engine without external tools cannot - and is a plain MP4 everywhere else. Either way
+            //the checks below compare what came out with what the source really had.
+            var inProcess = !ProcessingEngine.HasExternalTools;
+            Fact("engine", ProcessingEngine.Current.Name);
+            var sourcePath = SampleClipFactory.CanWriteRichClips
+                ? await SampleClipFactory.WriteRichMp4Async(options.WorkFolder, TimeSpan.FromSeconds(3))
+                : await SampleClipFactory.WriteMp4Async(
+                    Path.Combine(options.WorkFolder, "sample.mp4"), 320, 240, TimeSpan.FromSeconds(3));
             Fact("source", sourcePath);
 
             var info = await viewModel.AddAsync(sourcePath, CancellationToken.None);
@@ -141,9 +150,12 @@ public sealed class SmokeRun
                 (profileShouldPass ? "expected to pass: " : "a standard MKV is expected not to pass: ") +
                 (outcome.ProfileVerdict ?? "(not checked)"));
 
-            //A master is encoded in process, so its "command" is a settings line naming the cq-level
-            //rather than an FFmpeg command line naming -crf. It is the same number on the same scale.
-            var betterRateFactor = options.Destination == MediaFormatKind.CodeBrixMaster ? "cq-level 24" : "-crf 24";
+            //A master is encoded in process, and so is everything on an engine without FFmpeg, so its
+            //"command" is a settings line naming the cq-level rather than an FFmpeg command line naming
+            //-crf. It is the same number on the same scale.
+            var betterRateFactor = options.Destination == MediaFormatKind.CodeBrixMaster || inProcess
+                ? "cq-level 24"
+                : "-crf 24";
             Check("quality-reached-the-encoder",
                 outcome.Commands.Any(command => command.Contains(betterRateFactor, StringComparison.Ordinal)),
                 "AV1 rate factor 24 is Better");
@@ -210,7 +222,12 @@ public sealed class SmokeRun
 
             //An exported .mp4 joins the list like every other output: dimmed, refused by the player,
             //and still a conversion source in its own right.
-            await RunMp4ExportAsync(viewModel);
+            await RunMp4ExportAsync(viewModel, inProcess);
+
+            if (options.ThenDestination is { } then && produced is not null)
+            {
+                await RunThenTranscodeAsync(viewModel, produced, then);
+            }
 
             //Leaves the window up with everything loaded, for a scripted run that wants to look at
             //it rather than only read what it printed.
@@ -244,7 +261,7 @@ public sealed class SmokeRun
     /// Exports whatever the run has just produced to an <c>.mp4</c> and proves that it joins the file
     /// list as a dimmed, unplayable, still-selectable row.
     /// </summary>
-    private async Task RunMp4ExportAsync(MainViewModel viewModel)
+    private async Task RunMp4ExportAsync(MainViewModel viewModel, bool inProcess)
     {
         var export = viewModel.Conversion.Destinations.FirstOrDefault(d => d.Kind == MediaFormatKind.Mp4);
         Check("mp4-export-is-offered", export is not null, "Export to MP4");
@@ -269,8 +286,9 @@ public sealed class SmokeRun
         Fact("exportOutput", outcome.OutputPath);
         Fact("exportBytes", outcome.SizeInBytes);
         //A master goes out through the authoring library's exporter, whose plan line says "cq 17" where
-        //the FFmpeg export's command line says "-crf 17": the same x264 rate factor either way.
-        var betterRateFactor = options.Destination == MediaFormatKind.CodeBrixMaster ? "cq 17" : "-crf 17";
+        //the FFmpeg export's command line says "-crf 17", and so does the engine's own transcode where
+        //there is no FFmpeg: the same rate factor every way.
+        var betterRateFactor = options.Destination == MediaFormatKind.CodeBrixMaster || inProcess ? "cq 17" : "-crf 17";
         Check("export-quality-reached-the-encoder",
             outcome.Commands.Any(command => command.Contains(betterRateFactor, StringComparison.Ordinal)),
             "H.264 rate factor 17 is Better");
@@ -304,12 +322,98 @@ public sealed class SmokeRun
 
         //The dimming is a property of the row itself, not only of the converter behind it: the row the
         //list built for the file it cannot play is shown fainter than the row beside it.
+        //A list whose rows are native views (Android's) builds the row for an item that has only just
+        //been added on its next layout pass rather than inside the layout call, so give it a few frames.
         surface.LayOutLibraryList();
         var dimmedRow = surface.ShownRowOpacity(exported);
+        for (var attempt = 0; attempt < 40 && dimmedRow is null; attempt++)
+        {
+            await Task.Delay(50);
+            surface.LayOutLibraryList();
+            dimmedRow = surface.ShownRowOpacity(exported);
+        }
+
         var fullRow = surface.ShownRowOpacity(viewModel.Library.FirstOrDefault(item => item.IsPlayable));
         Check("the-exported-row-is-shown-dimmed",
             dimmedRow is { } dim && fullRow is { } full && dim > 0d && dim < full,
             $"{Describe(dimmedRow)} against {Describe(fullRow)}");
+    }
+
+    /// <summary>
+    /// Transcodes the run's own output on to a second format and plays what comes out: a conversion FROM
+    /// one of the five formats, which for a Mode 2 or Mode 3 output goes through the demultiplexer and its
+    /// intermediate file first.
+    /// </summary>
+    private async Task RunThenTranscodeAsync(MainViewModel viewModel, SourceMediaInfo produced, MediaFormatKind then)
+    {
+        viewModel.SelectedItem = produced;
+        Fact("thenSource", produced.FileName);
+        Fact("thenDestination", then);
+
+        var destination = viewModel.Conversion.Destinations.FirstOrDefault(d => d.Kind == then);
+        Check("then-destination-offered", destination is not null, then.ToString());
+        if (destination is null)
+        {
+            return;
+        }
+
+        viewModel.Conversion.SelectedDestination = destination;
+        Fact("thenAction", viewModel.Conversion.ActionLabel);
+
+        var thenPath = Path.Combine(options.WorkFolder, "smoke-then" + MediaFormats.Extension(then));
+        SetOutputPath(viewModel.Conversion, thenPath);
+
+        var outcome = await RunConversionAsync(viewModel.Conversion);
+        Check("then-conversion-succeeded", outcome.Succeeded, outcome.Failure ?? outcome.ToString());
+        if (!outcome.Succeeded)
+        {
+            return;
+        }
+
+        Fact("thenOutputBytes", outcome.SizeInBytes);
+        Fact("thenProfileVerdict", outcome.ProfileVerdict ?? "(not checked)");
+        foreach (var line in viewModel.Conversion.LastRunNotes)
+        {
+            Fact("thenNote", line);
+        }
+
+        //The list add and the player open both happen off the conversion-finished event.
+        for (var attempt = 0; attempt < 100 &&
+             !(string.Equals(viewModel.Playback.CurrentItem?.Path, thenPath, StringComparison.Ordinal) &&
+               viewModel.Playback.IsOpen && surface.PlayerDurationSeconds > 0); attempt++)
+        {
+            await Task.Delay(100);
+        }
+
+        var transcoded = viewModel.SelectedItem;
+        Check("then-output-added-to-the-list",
+            transcoded is not null && string.Equals(transcoded.Path, thenPath, StringComparison.Ordinal),
+            transcoded?.FileName ?? "(nothing selected)");
+        if (transcoded is null)
+        {
+            return;
+        }
+
+        Fact("thenOutputFormat", transcoded.Format);
+        Fact("thenOutputVideoCodec", transcoded.VideoCodec);
+        Fact("thenOutputAudioCodec", transcoded.AudioCodec);
+        Check("then-output-is-the-format-asked-for", transcoded.Format == then, transcoded.Format.ToString());
+        Check("then-player-opened",
+            string.Equals(viewModel.Playback.CurrentItem?.Path, thenPath, StringComparison.Ordinal) &&
+            surface.PlayerDurationSeconds > 0,
+            $"DurationSeconds={surface.PlayerDurationSeconds:F2}");
+
+        var startPosition = surface.PlayerPositionSeconds;
+        var startFrames = surface.FrameCounts.Presented;
+        viewModel.Playback.PlayCommand.Execute(null);
+        await Task.Delay(3000);
+        var endPosition = surface.PlayerPositionSeconds;
+        var presented = surface.FrameCounts.Presented - startFrames;
+
+        Check("then-position-advances", endPosition - startPosition > 1.0,
+            $"advanced {endPosition - startPosition:F2} s in 3 s");
+        Check("then-frames-were-presented", presented > 0, presented.ToString(CultureInfo.InvariantCulture));
+        viewModel.Playback.StopCommand.Execute(null);
     }
 
     /// <summary>

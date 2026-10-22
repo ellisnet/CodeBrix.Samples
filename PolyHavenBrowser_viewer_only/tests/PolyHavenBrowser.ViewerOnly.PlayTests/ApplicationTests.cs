@@ -1,5 +1,6 @@
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CodeBrix.Platform.PlayTest;
 using CodeBrix.Samples.PlayTests;
@@ -14,7 +15,11 @@ namespace PolyHavenBrowser.ViewerOnly.PlayTests;
 public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<AppFixture, MainPage>(fixture)
 {
     private const string TextureStatus = "Texture: " + SampleTransport.TextureName + " · drag to rotate · scroll to zoom";
-    private const string HdriStatus = "HDRI: " + SampleTransport.HdriName + " · drag to look around · scroll to zoom";
+    // The HDRI panorama is rendered for real (not through the fake engine selector): with WebGPU on a
+    // machine that has a usable GPU, on the CPU otherwise - so the status names either renderer.
+    private static readonly Regex HdriStatus = new(
+        "^HDRI: " + Regex.Escape(SampleTransport.HdriName)
+        + @"\s+·\s+rendered with (WebGPU \(\w+\)|CPU)\s+·\s+drag to look around · scroll to zoom$");
     private const string ModelStatus = "Model: " + SampleTransport.ModelName + " · drag to rotate · scroll to zoom";
     private Locator Status => Page.GetByTestId("StatusText");
     private Locator EngineSelector => Page.GetByTestId("RenderEngine");
@@ -29,9 +34,9 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
         await Expect(EngineSelector).ToBeVisibleAsync();
         await Expect(Page.GetByRole(AriaRole.Progressbar)).ToBeHiddenAsync();
         Fixture.Transport.Requests.Should().Equal("/info/red_brick", "/files/red_brick", "/download/red_brick/" + FixtureAssets.TextureFile);
-        // The texture is wrapped on a cube (12 triangles) and handed to the OpenGL engine, the default.
+        // The texture is wrapped on a cube (12 triangles) and handed to the WebGPU engine, the default.
         var engine = Fixture.Engines.Current;
-        engine.Kind.Should().Be(RenderEngineKind.OpenGL);
+        engine.Kind.Should().Be(RenderEngineKind.WebGpu);
         engine.Model.TriangleCount.Should().Be(12);
         File.Exists(Path.Combine(Fixture.CacheRoot, "texture", "sample.json")).Should().BeTrue();
         await SnapshotAsync("PolyHavenBrowser_viewer_only-texture");
@@ -108,10 +113,10 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
         await Expect(Dialog("Metal Rendering")).ToContainTextAsync("Metal rendering is not available on this platform.");
         await Dialog("Metal Rendering").GetByRole(AriaRole.Button).First.ClickAsync();
         await Expect(Page.GetByRole(AriaRole.Dialog)).ToHaveCountAsync(0);
-        await Fixture.Application.WaitForAsync(() => Fixture.Model.SelectedRenderEngine, kind => kind == RenderEngineKind.OpenGL,
+        await Fixture.Application.WaitForAsync(() => Fixture.Model.SelectedRenderEngine, kind => kind == RenderEngineKind.WebGpu,
             description: "the reverted engine");
-        await Expect(EngineSelector).ToContainTextAsync("OpenGL");
-        Fixture.Engines.Created.Select(engine => engine.Kind).Should().Equal(RenderEngineKind.OpenGL);
+        await Expect(EngineSelector).ToContainTextAsync("WebGpu");
+        Fixture.Engines.Created.Select(engine => engine.Kind).Should().Equal(RenderEngineKind.WebGpu);
         Fixture.Engines.Current.IsDisposed.Should().BeFalse();
         await Expect(Status).ToHaveTextAsync(TextureStatus);
     }
@@ -120,14 +125,14 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
     public async Task Switching_engine_reloads_current_sample_from_cache()
     {
         var requests = Fixture.Transport.Requests.Count;
-        var openGl = Fixture.Engines.Current;
+        var webGpu = Fixture.Engines.Current;
         await ChooseEngineAsync("Vulkan");
         await Fixture.Application.WaitForAsync(() => Fixture.Engines.Current.Kind, kind => kind == RenderEngineKind.Vulkan,
             description: "the Vulkan engine");
         await Fixture.Application.WaitForAsync(() => Fixture.Engines.Current.ModelFrames, frames => frames > 0,
             description: "a frame drawn by the Vulkan engine");
         await Expect(Status).ToHaveTextAsync(TextureStatus);
-        openGl.IsDisposed.Should().BeTrue();
+        webGpu.IsDisposed.Should().BeTrue();
         Fixture.Engines.Current.Model.TriangleCount.Should().Be(12);
         (await Page.EvaluateAsync(() => Fixture.Model.SelectedRenderEngine)).Should().Be(RenderEngineKind.Vulkan);
         Fixture.Transport.Requests.Count.Should().Be(requests);

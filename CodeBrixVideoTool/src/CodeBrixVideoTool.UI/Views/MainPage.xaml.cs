@@ -83,7 +83,15 @@ public sealed partial class MainPage : Page, ISmokeSurface
         {
             var picker = new FileOpenPicker
             {
+#if HAS_CODEBRIX_ANDROID
+                //On Android the videos library is a FILTER rather than a folder: it asks the system picker
+                //for video/* documents only, and Android has no MIME type for .cbv or .cbvmaster, so every
+                //CodeBrix file would be listed greyed out. The extension filter below lets through anything
+                //Android has no type for, so the picker is left to it.
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary
+#else
                 SuggestedStartLocation = PickerLocationId.VideosLibrary
+#endif
             };
 
             foreach (var extension in MediaFormats.ImportExtensions)

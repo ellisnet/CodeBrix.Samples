@@ -241,10 +241,10 @@ public sealed class ReadingInterpreter : IReadingInterpreter
         {
             var relation = s.Goddess switch
             {
-                >= 5 => "The flower around it is thickly peopled with goddesses, so the matter is being worked on you by persons rather than by circumstances, and the persons have their own purposes.",
-                >= 2 => "A handful of goddesses stand around it, enough to give the matter faces and intentions without turning the whole reading into a question of character.",
-                1 => "Only one other goddess keeps the centre company, so the matter is less about who is involved than about what must be passed through and what must be used.",
-                _ => "No goddess stands on the petals at all, which leaves the centre unattended: this is a matter of thresholds and instruments rather than of anyone's temperament.",
+                >= 5 => "The flower around it is thickly peopled with Goddesses, so the matter is being worked on you by persons rather than by circumstances, and the persons have their own purposes.",
+                >= 2 => "A handful of Goddesses stand around it, enough to give the matter faces and intentions without turning the whole reading into a question of character.",
+                1 => "Only one other Goddess keeps the centre company, so the matter is less about who is involved than about what must be passed through and what must be used.",
+                _ => "No Goddess stands on the petals at all, which leaves the centre unattended: this is a matter of thresholds and instruments rather than of anyone's temperament.",
             };
             insights.Add(new Insight("The Still Centre",
                 string.Join(" ",
@@ -401,7 +401,7 @@ public sealed class ReadingInterpreter : IReadingInterpreter
     #region Empty reading
 
     private const string EmptyOpening =
-        "No cards have been laid, so the Octaquetra is still only a shape: a still centre and eight empty petals waiting in the order the goddess walked, from heaven down through the descent and up again to the gift. There is nothing here to read yet, and nothing to be inferred from the silence. Shuffle, ask your question plainly, and set a card at the Heart before anything else; the centre decides what the petals are about. When the flower is even partly open the reading will speak. Until then, take the empty spread as an invitation rather than an omen, and begin whenever you are ready to hear a plain answer.";
+        "No cards have been laid, so the Octaquetra is still only a shape: a still centre and eight empty petals waiting in the order the Goddess walked, from Heaven down through the descent and up again to the gift. There is nothing here to read yet, and nothing to be inferred from the silence. Shuffle, ask your question plainly, and set a card at the Heart before anything else; the centre decides what the petals are about. When the flower is even partly open the reading will speak. Until then, take the empty spread as an invitation rather than an omen, and begin whenever you are ready to hear a plain answer.";
 
     private const string EmptyCounsel =
         "Begin with the Heart. Draw one card and set it at the centre, and let it tell you what the matter actually is before you decide what you want to ask about it. Then lay the petals in order — Heaven first, then the Morning Star, and on around the flower — and resist reading each one as it lands. An Octaquetra is built to be read whole, with every petal corrected by the one facing it, so the sense of it arrives at the end and not before. If you have only a few minutes, lay three: the Heart, and one opposite pair. That is a complete reading in miniature, and it will tell you more than nine cards read in a hurry.";

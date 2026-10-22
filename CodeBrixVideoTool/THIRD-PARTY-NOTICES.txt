@@ -14,12 +14,14 @@ application references for playback.
 ------------------------------------------------------------------------
 FFmpeg (used at run time, not bundled)
 ------------------------------------------------------------------------
-For media probing and conversion the application invokes the ffmpeg and
+For media probing and conversion the desktop heads invoke the ffmpeg and
 ffprobe executables already installed on the host system (via the
 CodeBrix.VideoProcessing library). FFmpeg (https://ffmpeg.org) is licensed
 under the LGPL 2.1 or later, with optional components under the GPL; consult
 the license of the ffmpeg build installed on your system. No FFmpeg binaries
-are bundled with, or distributed by, this application.
+are bundled with, or distributed by, this application. The Android head uses
+no FFmpeg at all: it probes and converts through the platform's own media
+codecs (via the CodeBrix.VideoProcessing.Android library).
 
 ------------------------------------------------------------------------
 User media (opened at run time)

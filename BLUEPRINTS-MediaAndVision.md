@@ -837,79 +837,64 @@ public static TargetAudioCodec AudioCodecFor(MediaFormatKind kind) => kind switc
 
 ### Export an mp4 with FFmpeg through the CodeBrix VideoProcessing library
 
-**When you want this.** You want the FFmpeg argument-builder style - inputs,
-stream selection, codecs, filters, progress and cancellation - from a service a
-view model drives.
+**When you want this.** You want the FFmpeg command line - inputs, stream
+selection, codecs, filters, progress and cancellation - from a service a view
+model drives, in a library that must also run where there is no FFmpeg at all
+(Android).
 
 **The MVVM shape.** The same service and the same interface, with a different
-private method chosen by the plan's destination. The command line that was run is
-returned in the outcome for the record.
+private method chosen by the plan's destination. The library references only the
+engine-neutral contract, CodeBrix.VideoProcessing.Core; each head registers its own
+engine. Where the engine offers the contract's external-tools facet (the desktop's
+FFmpeg engine), the library composes its own FFmpeg line and runs it through the
+engine; where it offers none (Android's MediaCodec engine), the same export is the
+contract's whole-file transcode. The command line, or the transcode's settings
+line, is returned in the outcome for the record.
 
 **Code.**
 
 ```csharp
 // From CodeBrix.Samples/CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Operations/ConversionRunner.cs
-var arguments = FFMpegArguments.FromFileInput(sourcePath);
+if (!ProcessingEngine.TryGetExternalTools(out var tools))
+{
+    return await TranscodeToMp4Async(plan, sourcePath, sidecars, progress, notes, stopwatch, cancellationToken)
+        .ConfigureAwait(false);
+}
+
+var arguments = FfmpegLine.Start().Add("-i").AddPath(sourcePath);
 foreach (var caption in sidecars.Captions)
 {
-    arguments = arguments.AddFileInput(caption.Path, false);
+    arguments.Add("-i").AddPath(caption.Path);
 }
 
 if (sidecars.HasChapters)
 {
-    arguments = arguments.AddFileInput(sidecars.ChaptersPath, false)
-        .MapMetaData(sidecars.Captions.Count + 1);
+    arguments.Add("-i").AddPath(sidecars.ChaptersPath)
+        .Add("-map_metadata " + (sidecars.Captions.Count + 1).ToString(CultureInfo.InvariantCulture));
 }
 
-var errors = new List<string>();
-var processor = arguments
-    .OutputToFile(plan.OutputPath, true, options =>
-    {
-        options.SelectStream(0, 0, Channel.Video);
-        if (plan.Source.HasAudio)
-        {
-            options.SelectStream(0, 0, Channel.Audio);
-        }
+arguments.Add("-map 0:v:0");
+// ... -map 0:a:0, and per caption track: -map N:s:0 and -metadata:s:s:I language=... ...
 
-        for (var index = 0; index < sidecars.Captions.Count; index++)
-        {
-            options.SelectStream(0, index + 1, Channel.Subtitle);
-            options.WithStreamMetadata(Channel.Subtitle, index, "language", sidecars.Captions[index].Language);
-        }
+arguments
+    .Add("-c:v libx264")
+    .Add("-crf " + H264RateFactor(plan.Quality).ToString(CultureInfo.InvariantCulture))
+    .Add("-preset medium")
+    .Add("-pix_fmt yuv420p");
 
-        options
-            .WithVideoCodec("libx264")
-            .WithConstantRateFactor(H264RateFactor(plan.Quality))
-            .WithSpeedPreset(Speed.Medium)
-            .ForcePixelFormat("yuv420p");
+// ... -vf scale=W:H, -c:a aac -b:a 192k and -ac N, -c:s mov_text ...
 
-        if (plan.IsResized)
-        {
-            options.WithVideoFilters(filters => filters.Scale(plan.Resolution.Width, plan.Resolution.Height));
-        }
+arguments.Add("-movflags faststart").Add("-f mp4").AddPath(plan.OutputPath);
 
-        // ... audio codec, bitrate, and the channel argument ...
-
-        if (sidecars.Captions.Count > 0)
-        {
-            //MP4's own timed-text track. Nothing else in the MP4 family carries WebVTT.
-            options.WithSubtitleCodec("mov_text");
-        }
-
-        options.WithFastStart().ForceFormat("mp4");
-    })
-    .NotifyOnProgress(
-        percent => progress?.Report(new ConversionProgress(gerund, 2, 2, percent)),
-        plan.Source.Duration)
-    .NotifyOnError(errors.Add)
-    .CancellableThrough(cancellationToken);
-
-var commands = new[] { "ffmpeg " + processor.Arguments };
-
-bool succeeded;
+FfmpegRun run;
 try
 {
-    succeeded = await processor.ProcessAsynchronously(false).ConfigureAwait(false);
+    run = await FfmpegLine.RunAsync(
+        tools,
+        arguments,
+        plan.Source.Duration,
+        percent => progress?.Report(new ConversionProgress(gerund, 2, 2, percent)),
+        cancellationToken).ConfigureAwait(false);
 }
 catch (OperationCanceledException)
 {
@@ -918,30 +903,68 @@ catch (OperationCanceledException)
 }
 ```
 
+```csharp
+// From CodeBrix.Samples/CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Tools/FfmpegLine.cs
+internal static ExternalToolArguments Start() => new ExternalToolArguments()
+    .Add("-hide_banner")
+    .Add("-nostats")
+    .Add("-progress pipe:1")
+    .Add("-y");
+
+// ... in RunAsync:
+var command = new ExternalToolCommand(ToolName, arguments)
+{
+    OnStandardOutputLine = line => ReportProgress(line, duration, percent),
+    OnStandardErrorLine = line => { /* keep the last few lines for a failure message */ },
+};
+
+//The runner is synchronous and waits for the process, so it runs on a worker thread. Cancelling
+//kills FFmpeg and its children and surfaces as OperationCanceledException.
+var result = await Task.Run(() => tools.Run(command, cancellationToken), CancellationToken.None)
+    .ConfigureAwait(false);
+```
+
 **Where to look.**
 `CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Operations/ConversionRunner.cs`
+(`ExportToMp4Async`, and `TranscodeToMp4Async` for an engine without tools)
+`CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Tools/FfmpegLine.cs`
+`CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Tools/ProcessingEngine.cs`
 
 **Sharp edges.**
+- The library must not reference an engine package: the FFmpeg one would force
+  FFmpeg onto Android, the Android one would force Android code onto the desktop.
+  Reference CodeBrix.VideoProcessing.Core, ask for the engine at the moment of
+  use, and let each head's Core project carry the engine and App register it.
 - Progress needs the source duration to turn a position into a percentage, which
-  is why the probe refuses a file that states none.
-- `ProcessAsynchronously(false)` is used throughout: false means "return a bool
-  rather than throw", so the code checks the result and the output file itself and
-  reports the last few error lines it collected.
-- Cancellation is checked twice: the exception from the cancellable wrapper, and
-  the token after the call returns. Both delete the part-written file.
+  is why the probe refuses a file that states none. Read it from
+  `-progress pipe:1` (`out_time_us=`, in microseconds, as is `out_time_ms=` despite
+  its name) rather than from the statistics line on standard error, which FFmpeg
+  redraws in place with carriage returns.
+- `ExternalToolArguments.Add` appends its token verbatim and `AddPath` quotes a
+  path; a token may hold several words (`-map 0:v:0`), and a filter graph with
+  spaces needs `AddPath`'s quotes.
+- A non-zero exit is a result, never an exception, so the code checks the result
+  and the output file itself and reports the last few error lines it collected.
+  A missing FFmpeg IS an exception, from the engine, naming where it looked.
+- Cancellation kills the process and throws `OperationCanceledException`; the
+  part-written file is deleted on the way out.
 - Where a destination must reduce channels it has to say so explicitly, because
   left to itself the encoder can refuse the layout outright and the export fails.
 - Captions in this container need the container's own timed-text codec; nothing
   else in that family carries the caption format the sidecars are written in.
-- Order matters in the option chain: the streaming-friendly flag before the forced
-  format.
+- The engine without tools writes the picture and the sound and nothing else, so
+  its notes must say the captions and chapters were left out rather than claim
+  they were carried. Its `ConstantQuality` level is mapped to a bit rate by the
+  platform encoder, so the same stop does not look identical on both engines.
 
 ### Demultiplex a bespoke container and remux it so an external tool can read it
 
 **When you want this.** Your own container holds perfectly ordinary elementary
 streams, and you want to hand them to a tool that cannot open the container. The
 sample's extractor handles both versions of its bespoke container: Mode 2, and
-the Mode 3 master form with its FLAC sound and alpha-plane track.
+the Mode 3 master form with its FLAC sound and alpha-plane track. It writes the
+intermediate with the playback library's own managed Matroska muxer, so no
+external tool is needed at all - on Android as on the desktop.
 
 **The MVVM shape.** A service class the runner uses as its first stage; the view
 model never knows it happened beyond one note in the run notes and one sentence in
@@ -953,7 +976,7 @@ the route line.
 // From CodeBrix.Samples/CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Containers/Mode2Extractor.cs
 using (var reader = MediaContainers.Open(source.Path))
 {
-    if (reader is not CbvReader) { /* ... refuse ... */ }
+    if (reader is not CbvReader and not MatroskaReader) { /* ... refuse ... */ }
 
     //The picture, never a master's alpha plane: that is a second video track beside it.
     var video = reader.Tracks.FirstOrDefault(t => t.Kind == MediaTrackKind.Video && !t.IsAlphaPlane)
@@ -968,13 +991,17 @@ using (var reader = MediaContainers.Open(source.Path))
     hasAlphaPlane = reader.Tracks.Any(t => t.IsAlphaPlane);
     var audio = reader.Tracks.FirstOrDefault(t => t.Kind == MediaTrackKind.Audio);
 
+    audioIsFlac = audio is not null && IsFlac(audio);
+    var flacAsVorbis = audioIsFlac && !hasTools;
+
     using var ivf = IvfWriter.CreateAv1(ivfPath, video.Width, video.Height);
     if (audio is not null)
     {
-        audioPath = Path.Combine(workingFolder, AudioFileNameFor(audio));
+        //FLAC needs no Ogg around it: a FLAC stream is its header and then its frames, end to end.
+        audioPath = Path.Combine(workingFolder, audioIsFlac && !flacAsVorbis ? "audio.flac" : "audio.ogg");
     }
 
-    var audioWriter = audio is null ? null : CreateAudioWriter(audio, audioPath, source.FileName);
+    var audioWriter = audio is null ? null : CreateAudioWriter(audio, audioPath, flacAsVorbis, source.FileName);
 
     try
     {
@@ -993,16 +1020,20 @@ using (var reader = MediaContainers.Open(source.Path))
     sidecars = SidecarExtractor.ExtractFromReader(reader, workingFolder);
 }
 
-await RemuxAsync(ivfPath, hasAudio ? audioPath : null, intermediatePath, cancellationToken)
-    .ConfigureAwait(false);
+var muxedAudioPath = hasAudio ? audioPath : null;
+if (hasAudio && audioIsFlac && hasTools)
+{
+    await RemuxFlacWithFfmpegAsync(tools, ivfPath, muxedAudioPath, intermediatePath, cancellationToken)
+        .ConfigureAwait(false);
+}
+else
+{
+    MuxInProcess(ivfPath, muxedAudioPath, intermediatePath, cancellationToken);
+}
 ```
 
 ```csharp
 // From CodeBrix.Samples/CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Containers/Mode2Extractor.cs
-//FLAC needs no Ogg around it: a FLAC stream is its header and then its frames, end to end.
-private static string AudioFileNameFor(MediaTrackInfo audio) =>
-    string.Equals(audio.CodecId, VideoCodecIds.Flac, StringComparison.OrdinalIgnoreCase) ? "audio.flac" : "audio.ogg";
-
 // ... in FlacStreamWriter, the master's sound: the stream header once, then every packet as it is ...
 public static FlacStreamWriter Create(string path, ReadOnlySpan<byte> streamHeader, string fileName)
 {
@@ -1046,21 +1077,18 @@ while (reader.TryReadPacket(out var packet))
 
 ```csharp
 // From CodeBrix.Samples/CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Containers/Mode2Extractor.cs
-var succeeded = await arguments
-    .OutputToFile(outputPath, true, options =>
-    {
-        options.SelectStream(0, 0, Channel.Video);
-        if (audioPath is not null)
-        {
-            options.SelectStream(0, 1, Channel.Audio);
-        }
+MatroskaMuxer.Write(new MatroskaAuthoringRequest
+{
+    OutputPath = outputPath,
+    DocType = MatroskaDocType.Matroska,
+    VideoIvfPath = ivfPath,
+    AudioOggPath = oggPath,
 
-        options.WithCopyCodec().ForceFormat("matroska");
-    })
-    .NotifyOnError(errors.Add)
-    .CancellableThrough(cancellationToken)
-    .ProcessAsynchronously(false)
-    .ConfigureAwait(false);
+    //An intermediate is read once, start to finish, by the conversion that follows: where its
+    //index sits and whether it would stream are nobody's business.
+    CuesToFront = false,
+    EvaluateProfile = false,
+});
 ```
 
 **Where to look.**
@@ -1086,7 +1114,21 @@ var succeeded = await arguments
   not carried into the intermediate, because every destination this route leads
   to is opaque, and the extraction records that so the run notes can say so.
 - The remux copies codecs: nothing is decoded and nothing is re-encoded, so from
-  the intermediate onwards the conversion is an ordinary one.
+  the intermediate onwards the conversion is an ordinary one. The playback
+  library's `MatroskaMuxer` does it in process from the IVF file and the Ogg file,
+  so no external tool is needed.
+- That muxer writes Opus and Vorbis sound and nothing else, so a master's FLAC is
+  the exception. Where the engine runs FFmpeg, FFmpeg remuxes the plain FLAC
+  stream, still copying. Where it does not (Android), each FLAC frame is decoded as
+  it is read - the audio core's `FlacPacketCodecFactory` gives a packet decoder,
+  and every packet decodes on its own - and encoded straight into Ogg Vorbis at
+  the top of its quality scale with `OggVorbisEncoder`. The extraction records
+  that, so the run notes stop saying "without re-encoding".
+- The same rewrap serves a Matroska or WebM file the engine cannot time as it
+  stands: Android's media extractor reports no frame rate for a WebM document
+  with its index in front, and the engine will not decode a stream it cannot
+  time. Ask the engine (`Analyse`, then `FrameRate.IsSpecified`) and rewrap only
+  when it says so, rather than writing a rule about platforms.
 - The writers throw when the codec-private data is not what they expect; the
   extractor catches that and restates it as its own message.
 - The reader is disposed only after the sidecars are taken out of it; both uses
@@ -1158,17 +1200,25 @@ if (!TextCaptionCodecs.Contains(codec, StringComparer.OrdinalIgnoreCase))
     continue;
 }
 
+if (!hasTools)
+{
+    notes.Add($"Caption track {index} ('{codec}') was not carried across: the '{engine.Name}' engine " +
+              "cannot turn an MP4's captions into WebVTT.");
+    continue;
+}
+
 var language = NormalizeLanguage(stream.Language);
 var path = Path.Combine(workingFolder, WebVttFile.FileNameFor(index, language));
 
-var succeeded = await FFMpegArguments
-    .FromFileInput(source.Path)
-    .OutputToFile(path, true, options => options
-        .SelectStream(index, 0, Channel.Subtitle)
-        .WithSubtitleCodec("webvtt")
-        .ForceFormat("webvtt"))
-    .CancellableThrough(cancellationToken)
-    .ProcessAsynchronously(false)
+//The index counts caption streams only, which is exactly what 0:s:N selects.
+var arguments = FfmpegLine.Start()
+    .Add("-i").AddPath(source.Path)
+    .Add("-map 0:s:" + index.ToString(CultureInfo.InvariantCulture))
+    .Add("-c:s webvtt")
+    .Add("-f webvtt")
+    .AddPath(path);
+
+var run = await FfmpegLine.RunAsync(tools, arguments, TimeSpan.Zero, null, cancellationToken)
     .ConfigureAwait(false);
 ```
 
@@ -1187,8 +1237,12 @@ var succeeded = await FFMpegArguments
 - Where the application supports one title language, chapters are collapsed to one
   untagged title each, and the note counts distinct languages dropped across the
   whole file rather than chapters.
-- An external tool sometimes reports a placeholder string as a chapter title;
-  treat that like an empty title and substitute a generated one.
+- The `.mp4` route asks the registered engine's `Analyse` for the caption streams
+  and the chapters. An engine that does not read chapters (Android's) leaves the
+  list empty, which says nothing about the file - check
+  `VideoProcessorCapabilities.Chapters` before reading it as "none" - and an engine
+  without external tools has nothing to convert a caption stream with, so say so
+  in a note for each one.
 - The playback library reads the caption format and formats its timestamps but
   publishes no writer, so this application brings a small one, preserving cue
   identifiers and settings because both destinations that can carry them do.

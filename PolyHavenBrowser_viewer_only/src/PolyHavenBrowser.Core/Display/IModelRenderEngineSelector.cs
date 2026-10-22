@@ -10,7 +10,10 @@ namespace PolyHavenBrowser.Display;
 /// <summary>The 3D rendering backends the app can offer.</summary>
 public enum RenderEngineKind
 {
-    /// <summary>OpenGL via the head's native GL context (<see cref="OpenGlModelRenderEngine"/>) - the default, available on every head.</summary>
+    /// <summary>WebGPU via CodeBrix.WebGpu (<see cref="WebGpuModelRenderEngine"/>) - the default, offered on every head (Android included).</summary>
+    WebGpu,
+
+    /// <summary>OpenGL via the head's native GL context (<see cref="OpenGlModelRenderEngine"/>) - available on every head, and the fallback when WebGPU cannot start.</summary>
     OpenGL,
 
     /// <summary>Vulkan via Silk.NET (<c>VulkanModelRenderEngine</c>) - only on platforms <see cref="VulkanPlatformSupport"/> okays.</summary>
@@ -30,7 +33,7 @@ public enum RenderEngineKind
 /// </summary>
 public interface IModelRenderEngineSelector
 {
-    /// <summary>Every engine kind the app offers, in display order (OpenGL first - the default).</summary>
+    /// <summary>Every engine kind the app offers, in display order (WebGPU first - the default).</summary>
     IReadOnlyList<RenderEngineKind> AvailableKinds { get; }
 
     /// <summary>Whether the given engine kind may be used on the platform the app is running on.</summary>
@@ -43,21 +46,22 @@ public interface IModelRenderEngineSelector
     /// <param name="kind">The backend to create.</param>
     /// <param name="getXamlRoot">
     /// Returns the hosting page's <see cref="XamlRoot"/>; used by the OpenGL engine to create its
-    /// offscreen native GL context (the Vulkan engine owns its own stack and ignores it).
+    /// offscreen native GL context (the WebGPU, Vulkan and Metal engines own their own stack and ignore it).
     /// </param>
     IModelRenderEngine Create(RenderEngineKind kind, Func<XamlRoot> getXamlRoot);
 }
 
 /// <summary>
-/// The default selector: OpenGL everywhere, Vulkan only on the platforms the Rendering
+/// The default selector: WebGPU and OpenGL everywhere, Vulkan only on the platforms the Rendering
 /// library's hardcoded <see cref="VulkanPlatformSupport"/> allow-list okays, and Metal only on
 /// the platforms <see cref="MetalPlatformSupport"/> okays (macOS). The two GPU-API gates are
-/// mirror images - Vulkan excludes macOS, Metal is macOS-only.
+/// mirror images - Vulkan excludes macOS, Metal is macOS-only. WebGPU needs no gate: CodeBrix.WebGpu
+/// ships its native library for every platform the app runs on (see <see cref="WebGpuSupport"/>).
 /// </summary>
 public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
 {
     private static readonly RenderEngineKind[] Kinds =
-        [RenderEngineKind.OpenGL, RenderEngineKind.Vulkan, RenderEngineKind.Metal];
+        [RenderEngineKind.WebGpu, RenderEngineKind.OpenGL, RenderEngineKind.Vulkan, RenderEngineKind.Metal];
 
     /// <inheritdoc />
     public IReadOnlyList<RenderEngineKind> AvailableKinds => Kinds;
@@ -65,6 +69,7 @@ public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
     /// <inheritdoc />
     public bool IsSupported(RenderEngineKind kind) => kind switch
     {
+        RenderEngineKind.WebGpu => true,
         RenderEngineKind.OpenGL => true,
         RenderEngineKind.Vulkan => VulkanPlatformSupport.IsCurrentPlatformSupported,
         RenderEngineKind.Metal => MetalPlatformSupport.IsCurrentPlatformSupported,
@@ -81,6 +86,7 @@ public sealed class ModelRenderEngineSelector : IModelRenderEngineSelector
 
         return kind switch
         {
+            RenderEngineKind.WebGpu => new WebGpuModelRenderEngineFactory().Create(),
             RenderEngineKind.OpenGL => new OpenGlModelRenderEngineFactory(getXamlRoot).Create(),
 #if HAS_CODEBRIX_ANDROID
             //The Vulkan engine is not built for Android; IsSupported is false there, so this is unreachable.

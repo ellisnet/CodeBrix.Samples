@@ -1,6 +1,6 @@
 # CodeBrixVideoTool
 
-CodeBrix Video Tool is a desktop video converter and player. Opening a file adds
+CodeBrix Video Tool is a video converter and player for the desktop and Android. Opening a file adds
 it to a list down the left of the window, with a format badge, its name and a
 one-line summary of what is inside it. Selecting a row loads that file into the
 player on the right, which has a scrubber, timecodes, play, pause and stop, a
@@ -25,7 +25,10 @@ in-application player decodes AV1 and nothing else. It is the reference for
 hosting the CodeBrix.Platform VideoPlayer add-in in a page and driving it from a
 view model, for playing and authoring CodeBrix `.cbv` and `.cbvmaster` video,
 and for running long FFmpeg work with progress and cancellation from a
-SimpleViewModel.
+SimpleViewModel. It is also the reference for a library that processes video
+through the engine-neutral CodeBrix.VideoProcessing.Core contract, so that the
+same code converts video with FFmpeg on the desktop and with the platform's own
+codecs on Android.
 
 | Format | Extension | Container | Video | Audio |
 | --- | --- | --- | --- | --- |
@@ -41,6 +44,18 @@ SimpleViewModel.
 - Put the VideoPlayer add-in on a page and let a view model own what is open,
   what the transport may do and which chapter and caption track are showing:
   [Host the VideoPlayer add-in in a page and drive it from the view model](../BLUEPRINTS-MediaAndVision.md#host-the-videoplayer-add-in-in-a-page-and-drive-it-from-the-view-model).
+- Code the conversion library against the engine-neutral video-processing
+  contract and let each head register its own engine - FFmpeg on the desktop,
+  MediaCodec on Android - so the library is the same on both. See
+  [The engine the application registers, and what changes without FFmpeg](#the-engine-the-application-registers-and-what-changes-without-ffmpeg).
+- Run the FFmpeg command lines only FFmpeg can run through the engine's
+  external-tools facet, and take an in-process route where the engine has none:
+  [Export an mp4 with FFmpeg through the CodeBrix VideoProcessing library](../BLUEPRINTS-MediaAndVision.md#export-an-mp4-with-ffmpeg-through-the-codebrix-videoprocessing-library).
+- Add an Android head with `.Android` twins of Core and both libraries, kept in
+  their own solution:
+  [Add an Android head with a twin Android project beside Core](../BLUEPRINTS-ProjectLayoutAndPackaging.md#add-an-android-head-with-a-twin-android-project-beside-core)
+  and
+  [Keep the Android head and the twins in a WithAndroid solution](../BLUEPRINTS-ProjectLayoutAndPackaging.md#keep-the-android-head-and-the-twins-in-a-withandroid-solution).
 - Turn on the AV1 and Opus decoders once at start-up, because they are the
   application's dependencies and never the add-in's:
   [Turn on extra media codecs once at startup](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-extra-media-codecs-once-at-startup).
@@ -182,15 +197,16 @@ SimpleViewModel.
 
 ## Building, running and testing
 
-There is one solution file, and it holds everything.
+There are two solution files.
 
 | Solution | Contains | Open on |
 | --- | --- | --- |
-| `CodeBrixVideoTool.slnx` | The shared UI project, the Core library, all four heads, both libraries under a `Libraries` solution folder and the test projects under a `Tests` solution folder | Any OS - its own comment describes it as everything that builds with the plain .NET SDK on Linux, macOS and Windows |
+| `CodeBrixVideoTool.slnx` | The shared UI project, the Core library, the four desktop heads, both libraries under a `Libraries` solution folder and the test projects under a `Tests` solution folder | Any OS - its own comment describes it as everything that builds with the plain .NET SDK on Linux, macOS and Windows |
+| `CodeBrixVideoTool.WithAndroid.slnx` | Everything in `CodeBrixVideoTool.slnx`, plus the Android head and the `.Android.csproj` twins of Core and both libraries | The .NET Android workload and the Android SDK as well |
 
-Four of the six CodeBrix.Platform heads are present. There is no WinWpfSkia head
-and no LinuxFrameBuffer head, and there are no native (non-Skia) heads: no
-WinUI 3, WPF or .NET MAUI project exists here.
+Four of the six CodeBrix.Platform heads are present, and an Android head. There
+is no WinWpfSkia head and no LinuxFrameBuffer head, and there are no native
+(non-Skia) heads: no WinUI 3, WPF or .NET MAUI project exists here.
 
 | Head project | Platform | Host-builder call |
 | --- | --- | --- |
@@ -198,16 +214,29 @@ WinUI 3, WPF or .NET MAUI project exists here.
 | `src/CodeBrixVideoTool.LinuxWayland` | Linux, Wayland | `UseLinuxWayland()` |
 | `src/CodeBrixVideoTool.MacOS` | macOS | `UseMacOS()` |
 | `src/CodeBrixVideoTool.Win32Skia` | Windows, Win32 | `UseWindowsWin32()` |
+| `src/CodeBrixVideoTool.Android` | Android phones, tablets and Android laptops (Android 13, API level 33, and later; arm64 and x86-64) | none: `MainApplication` (a `CodeBrixApplication`) creates `App`, and `MainActivity` (a `CodeBrixActivity`) shows it |
 
 All four `Program.cs` files are the same but for the head call; each one calls
 `App.InitializeLogging()` first, then `UseDirectSkiaCanvasMode()` before
 `Build()`.
 
+The Android head targets `net10.0-android36.1`. `CodeBrixVideoTool.Core` and the
+two libraries each have an `.Android.csproj` twin beside them that compiles the
+same sources for Android, with its own `obj.android/` and `bin.android/` folders,
+and references the CodeBrix.Android packages in place of CodeBrix.Platform - and,
+in Core, the Android video-processing engine in place of the FFmpeg one. The
+shared `App.xaml.cs` picks which engine to register with the
+`HAS_CODEBRIX_ANDROID` constant the CodeBrix.Android package defines, and the page
+picks the open dialog's start location the same way (see below).
+
 ### Prerequisites
 
-- The .NET 10 SDK. Every project targets `net10.0`.
-- **FFmpeg and ffprobe on the path.** The Processing library runs them through
-  CodeBrix.VideoProcessing, and `MediaProbe` describes them as the only external
+- The .NET 10 SDK. Every desktop project targets `net10.0`.
+- For `CodeBrixVideoTool.WithAndroid.slnx` and the Android head only, the
+  `android` workload (`dotnet workload install android`) and the Android SDK, and
+  an Android 13 or later device or emulator to run it on.
+- **On the desktop, FFmpeg and ffprobe on the path.** The desktop's engine,
+  CodeBrix.VideoProcessing, finds and runs them, and they are the only external
   process this application ever starts. They are needed to probe anything that
   is not a CodeBrix file, to run any conversion at all (a Mode 3 master is
   encoded in process, but its source is still decoded by the FFmpeg engine, and
@@ -232,6 +261,12 @@ All four `Program.cs` files are the same but for the head call; each one calls
   packages and need nothing installed; Vorbis and FLAC are decoded by the
   playback core's own managed audio library.
 
+- **On Android, nothing at all.** The Android engine works through the
+  platform's own MediaExtractor, MediaCodec and MediaMuxer; the AV1 encoder and
+  decoder, the Vorbis, Opus and FLAC encoders all travel inside their packages,
+  for arm64-v8a and x86_64. What differs there is described under
+  [The engine the application registers, and what changes without FFmpeg](#the-engine-the-application-registers-and-what-changes-without-ffmpeg).
+
 ### Running a head
 
 From this folder:
@@ -243,10 +278,21 @@ dotnet run --project src/CodeBrixVideoTool.LinuxX11
 Substitute `CodeBrixVideoTool.LinuxWayland`, `CodeBrixVideoTool.MacOS` or
 `CodeBrixVideoTool.Win32Skia` for the other heads.
 
+Build the Android head and install it on a device. The install target needs the
+device's runtime identifier - `android-arm64` for most phones and tablets,
+`android-x64` for an emulator or an x86-64 Android laptop:
+
+```text
+dotnet build src/CodeBrixVideoTool.Android/CodeBrixVideoTool.Android.csproj -c Debug -t:Install -p:RuntimeIdentifier=android-arm64
+```
+
+The Android package name is `com.codebrix.samples.codebrixvideotool`. The Android
+head logs to logcat rather than to a console.
+
 ### The scripted run
 
 Any head will drive itself end to end when `CODEBRIXVIDEOTOOL_SMOKE` is set; the
-other three variables tune the run. They are read by `SmokeOptions` in
+other four variables tune the run. They are read by `SmokeOptions` in
 `src/CodeBrixVideoTool.Core/Smoke/`, and the run prints `CBVT-SMOKE:` lines and
 exits with 0 or 1. With the first variable unset the application behaves exactly
 as it always does.
@@ -257,6 +303,20 @@ as it always does.
 | `CODEBRIXVIDEOTOOL_SMOKE_OUT` | A working folder; a temporary one is made when it is not given |
 | `CODEBRIXVIDEOTOOL_SMOKE_KEEP` | `1` or `true` to keep the files it wrote |
 | `CODEBRIXVIDEOTOOL_SMOKE_HOLD` | Seconds to leave the window up, clamped to 0-300 |
+| `CODEBRIXVIDEOTOOL_SMOKE_THEN` | A second destination, named the same way, to transcode the run's own output to at the end and play - the way to drive a conversion FROM a Mode 2, Mode 3, Mode 1, WebM or MKV file |
+
+Where the engine can run FFmpeg, the run starts from an MP4 with a caption track
+and chapters; where it cannot (Android), it starts from a plain MP4 it draws
+itself and writes through the engine, and every check compares what came out
+with what the source really had. On Android the variables are set for a Debug
+build through a system property, `|`-separated and at most 92 characters, and
+the `CBVT-SMOKE:` lines go to logcat under the `DOTNET` tag:
+
+```text
+adb shell setprop debug.mono.env "'CODEBRIXVIDEOTOOL_SMOKE=mode3|CODEBRIXVIDEOTOOL_SMOKE_THEN=mode1'"
+adb shell monkey -p com.codebrix.samples.codebrixvideotool -c android.intent.category.LAUNCHER 1
+adb logcat -s DOTNET
+```
 
 ### Tests
 
@@ -315,7 +375,8 @@ repository.
 
 ```text
 CodeBrixVideoTool/
-  CodeBrixVideoTool.slnx                  The one solution; everything is in it
+  CodeBrixVideoTool.slnx                  Everything that builds with the plain .NET SDK
+  CodeBrixVideoTool.WithAndroid.slnx      The same plus the Android head and the three .Android.csproj twins
   global.json                             Selects the Microsoft.Testing.Platform test runner
   THIRD-PARTY-NOTICES.txt                 What is used at run time and what is never redistributed
   src/
@@ -325,6 +386,7 @@ CodeBrixVideoTool/
       App.xaml, App.xaml.cs               Palette, theme brushes, fonts, codecs, services, logging
       Views/MainPage.xaml(.cs)            The one page, the player element, and what a scripted run reads off the screen
     CodeBrixVideoTool.Core/               The library that carries the application's packages
+      CodeBrixVideoTool.Core.Android.csproj  The Android twin: same sources, own obj.android/ and bin.android/
       Helpers/HostHelper.cs               The IHostBuilderProvider SimpleServiceResolver builds from
       Services/IMediaFileBridge.cs        The "pick a file to open" bridge
       ViewModels/MainViewModel.cs         The file list, the selection, and the two child view models
@@ -337,20 +399,22 @@ CodeBrixVideoTool/
     CodeBrixVideoTool.LinuxWayland/       Head: Linux Wayland
     CodeBrixVideoTool.MacOS/              Head: macOS
     CodeBrixVideoTool.Win32Skia/          Head: Windows Win32
+    CodeBrixVideoTool.Android/            Head: the Android application and activity, the manifest, one runtime package
     libs/
-      CodeBrixVideoTool.Playback/         The player half
+      CodeBrixVideoTool.Playback/         The player half (and CodeBrixVideoTool.Playback.Android.csproj, its twin)
         Services/PlaybackCodecs.cs        RegisterOnce() for the AV1 and Opus decoders (Vorbis and FLAC are built in)
         Services/IVideoPlayerSurface.cs   What the view model needs from the player element
         Services/PlaybackSelection.cs     The player half's rules, as plain static methods
         Models/                           One row of the chapter drop-down, one of the caption drop-down
         ViewModels/PlaybackViewModel.cs   The observable wrapper over PlaybackSelection
-      CodeBrixVideoTool.Processing/       The conversion half
+      CodeBrixVideoTool.Processing/       The conversion half (and CodeBrixVideoTool.Processing.Android.csproj, its twin)
         Formats/                          The six container shapes and every policy about them
         Probing/                          IMediaProbe and the two probing routes
         Resolution/                       The resolution ladder
         Planning/                         ConversionPlan and ConversionPlanner
         Operations/                       IConversionRunner, the runner, progress, outcome, output bridge
-        Containers/                       CBVF (Mode 2 and Mode 3) demultiplexing, sidecar extraction, WebVTT writing
+        Containers/                       CBVF (Mode 2 and Mode 3) demultiplexing and rewrapping, sidecar extraction, WebVTT writing
+        Tools/                            The registered engine, FFmpeg lines through its tools, the FFmpeg check
         Samples/SampleClipFactory.cs      Synthetic clips (one with an alpha channel) for the tests and the scripted run
         ViewModels/ConversionViewModel.cs The operation panel
         VideoToolProcessingException.cs   The one application exception
@@ -373,6 +437,9 @@ Processing library which formats exist and which of them are playable;
 library test project references only its own library; the PlayTests project
 references Core and imports the shared UI, as a head does.
 
+The Android head references `CodeBrixVideoTool.Core.Android.csproj`, which
+references the two libraries' `.Android.csproj` twins in the same shape.
+
 Every package except the head runtime packages is declared in Core or in one of
 the two libraries and reaches the heads transitively. Each head csproj carries
 exactly one `PackageReference` and says so in a comment. Core sets its
@@ -394,7 +461,11 @@ generated per-head resources class collide across assemblies.
 | CodeBrix.VideoPlayback.Authoring | Writes all five supported formats from one authoring request naming the flavor (WebM profile, bespoke or master), container, frame size, speed preset, rate factor, audio codec, alpha mode and caption inputs; its `VideoExporter` writes a Mode 3 master out to MP4, compositing any alpha over a backdrop | `src/libs/CodeBrixVideoTool.Processing/Operations/ConversionRunner.cs` |
 | CodeBrix.VideoPlayback.Dav1d | The AV1 decoder, turned on by the application at start-up - the application's dependency, not the add-in's. It decodes a master's alpha plane too, and the authoring library's exporter decodes with it | `src/libs/CodeBrixVideoTool.Playback/Services/PlaybackCodecs.cs` |
 | CodeBrix.Audio.Opus | The Opus decoder, turned on beside it | `src/libs/CodeBrixVideoTool.Playback/Services/PlaybackCodecs.cs` |
-| CodeBrix.VideoProcessing | ffmpeg and ffprobe: the analysis call, the argument builder, `NotifyOnProgress()`, `NotifyOnError()` and `CancellableThrough()` | `Probing/MediaProbe.cs`, `Containers/Mode2Extractor.cs`, `Containers/SidecarExtractor.cs`, `Operations/ConversionRunner.cs`, `Samples/SampleClipFactory.cs` |
+| CodeBrix.VideoProcessing.Core | The engine-neutral contract the Processing library codes against: `Analyse` for probing, the whole-file transcode for an MP4 export without FFmpeg, the standard MP4 writer for the drawn sample clip, and the external-tools facet the FFmpeg lines run through | `Tools/ProcessingEngine.cs`, `Tools/FfmpegLine.cs`, `Probing/MediaProbe.cs`, `Containers/SidecarExtractor.cs`, `Operations/ConversionRunner.cs`, `Samples/SampleClipFactory.cs` |
+| CodeBrix.VideoProcessing (the FFmpeg engine) | The desktop's engine: it finds and runs ffmpeg and ffprobe and offers them through the contract. Referenced by the desktop Core project only, and registered in `App` | `src/CodeBrixVideoTool.Core/CodeBrixVideoTool.Core.csproj`, `src/CodeBrixVideoTool.UI/App.xaml.cs` |
+| CodeBrix.VideoProcessing.Android | Android's engine: MediaExtractor, MediaCodec and MediaMuxer behind the same contract, with no external tools. Referenced by the Android Core twin only, and registered in `App` | `src/CodeBrixVideoTool.Core/CodeBrixVideoTool.Core.Android.csproj`, `src/CodeBrixVideoTool.UI/App.xaml.cs` |
+| CodeBrix.Android, with its VideoPlayer add-in | The Android head's platform: the same XAML, the same `VideoPlayer` element in the same namespace, the Storage Access Framework pickers | the three `.Android.csproj` twins and `src/CodeBrixVideoTool.Android` |
+| CodeBrix.Audio.Core and CodeBrix.Audio.Vorbis | A master's FLAC sound where there is no FFmpeg to remux it: the managed FLAC packet decoder and the Vorbis encoder | `Containers/Mode2Extractor.cs` |
 | SilverAssertions | The assertion style in every test project | the projects under `tests/` |
 
 Third-party libraries:
@@ -472,16 +543,65 @@ application registered rather than referencing a decoder of its own. See
 [Turn on extra media codecs once at startup](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-extra-media-codecs-once-at-startup).
 
 
-### The video-processing engine the application registers
+### The engine the application registers, and what changes without FFmpeg
 
-`App`'s constructor also calls `CodeBrixVideoProcessing.Register()`, right after the
-decoders. The authoring library that writes every `.cbv` and `.cbvmaster` decodes its
-source through whichever video-processing engine the process has registered, and
-refuses with a message naming that call when there is none; on the desktop the engine
-is the FFmpeg one. Its exporter writes a master's MP4 through the same engine. The
-call is idempotent and does not look for the executables, so a machine without FFmpeg
-still starts and still gets the missing-FFmpeg dialog on the first Open. The
-processing tests' media fixture makes the same call before it imports.
+`App`'s constructor also registers a video-processing engine, right after the
+decoders: `CodeBrixVideoProcessing.Register()` on the desktop heads,
+`CodeBrixVideoProcessingAndroid.Register()` on the Android head, chosen by the
+`HAS_CODEBRIX_ANDROID` constant. The authoring library that writes every `.cbv` and
+`.cbvmaster` decodes its source through whichever engine the process has
+registered, and refuses when there is none; its exporter writes a master's MP4
+through the same engine. The Processing library asks the same engine everything
+else, through the engine-neutral contract, and never names one: the desktop Core
+project references the FFmpeg engine and the Android Core twin the Android one.
+The desktop call is idempotent and does not look for the executables, so a
+machine without FFmpeg still starts and still gets the missing-FFmpeg dialog on
+the first Open. The processing tests' media fixture makes the same call before it
+imports.
+
+The two engines differ in one way that matters here: the FFmpeg engine offers the
+contract's external-tools facet, and Android's does not. `ProcessingEngine` in
+`src/libs/CodeBrixVideoTool.Processing/Tools/` answers that question once, and
+every route that runs an FFmpeg line takes an in-process answer where there are
+no tools:
+
+| Route | With FFmpeg (desktop) | Without (Android) |
+| --- | --- | --- |
+| Probing an `.mp4` | ffprobe, through the engine's `Analyse` | the platform's extractor, through the same call |
+| Probing an `.mkv` or `.webm` | ffprobe | the playback core's container reader, because the engine reads no chapters |
+| Import, transcode to the five formats | the authoring library's FFmpeg passes | the authoring library's in-process passes - AV1, Opus and Vorbis encoded in process, the WebM muxed by the playback core; its notes say so |
+| A Mode 2 or Mode 3 source | demultiplexed into a Matroska intermediate by the playback core's muxer; a master's FLAC remuxed by FFmpeg | the same intermediate; a master's FLAC decoded and carried into it as Vorbis at the highest quality, and a note says so |
+| A Mode 1, WebM or MKV source the engine cannot time | never happens | rewrapped into the same intermediate first, without re-encoding - see below |
+| Export to `.mp4` | an FFmpeg line, with captions and chapters | the contract's whole-file transcode, H.264 and AAC at the same quality stop; captions and chapters left out, and the notes say so |
+| A master exported to `.mp4` | the authoring library's exporter, then a copy-only FFmpeg pass for captions and chapters | the exporter alone; its own note says what it left out |
+| Captions in an `.mp4` source | converted to WebVTT by FFmpeg | listed, but not carried; a note per track |
+| The FFmpeg check on the first Open | ffmpeg, ffprobe and SVT-AV1 | nothing to check |
+
+The rewrap answers a gap in the Android engine rather than in this application:
+Android's media extractor reports no frame rate for a WebM document with its
+index in front - which is every Mode 1 and WebM file this application writes -
+although the track states its frame duration, and the engine will not decode a
+stream it cannot time. `ConversionRunner` asks the engine (`Analyse`, then
+`FrameRate.IsSpecified`) and, only when it cannot say, hands the file to the
+demultiplexer, whose Matroska intermediate with its index at the end it does
+read. On the desktop the question costs one ffprobe call and the answer is
+always no.
+
+On Android the open dialog starts in the documents provider rather than the
+videos library, because there the videos library is a filter - video/* documents
+only - and Android has no MIME type for `.cbv` or `.cbvmaster`, so every CodeBrix
+file would be listed greyed out. The dialogs' paths need nothing else: a picked
+file's `Path` is a local copy, and a saved file's `Path` is copied back to the
+chosen document whenever the conversion finishes writing it.
+
+Tested on a Samsung Galaxy Tab S8 (Android 16, arm64): the scripted run passes
+for all five destinations, each followed by a transcode on from its own output
+(Mode 2 to MKV, Mode 3 to Mode 1, Mode 1 to Mode 2, WebM to Mode 3, MKV to WebM),
+with an MP4 export of every one. On an x86-64 Android 13 laptop whose platform
+software codecs crash in their own process, the application starts, opens and
+plays every format through the AV1 decoder, and a conversion fails with the
+engine's message in the status bar rather than with a crash: everything that
+runs through MediaCodec needs a device whose codecs work.
 
 ### One page, one data context, two child view models
 
@@ -580,7 +700,7 @@ and
 
 ### Stage one: preparing a source before anything is encoded
 
-FFmpeg cannot open the bespoke CBVF container, so a Mode 2 or Mode 3 source is
+No engine can open the bespoke CBVF container, so a Mode 2 or Mode 3 source is
 demultiplexed first. `Containers/Mode2Extractor.cs` (named for the format it was
 first written for; it reads both CBVF versions) opens the file with the playback
 core's reader, picks the picture track - never a master's alpha plane - and
@@ -590,8 +710,12 @@ two containers the authoring library writes when it builds a bespoke file, used
 here in the opposite direction. A master's FLAC needs no wrapper at all: the
 track's codec-private data is a FLAC stream header and each packet is one
 complete FLAC frame, so written end to end they are a `.flac` file. The streams
-are then remuxed into a Matroska intermediate with a copy codec. Nothing is
-decoded and nothing is re-encoded, so from the intermediate onwards the
+are then muxed into a Matroska intermediate by the playback core's own
+`MatroskaMuxer`, in process. A master's FLAC is the exception - that muxer writes
+Opus and Vorbis only - so where the engine runs FFmpeg, FFmpeg remuxes it with a
+copy codec, and where it does not, the FLAC frames are decoded as they are read
+and go in as Vorbis at the highest quality. Otherwise nothing is decoded and
+nothing is re-encoded, so from the intermediate onwards the
 conversion is an ordinary conversion; the view model learns of it only through
 one note in the run notes and one sentence in the route line. A master's alpha
 plane is the one thing left behind on this route, because every destination it
@@ -849,8 +973,9 @@ See [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt) in this folder. This
 application bundles no third-party fonts, models, media or ported source; every
 third-party dependency arrives as a package that carries its own license and
 notices. The two things the notices file records are that FFmpeg is **used at
-run time and not bundled** - the application invokes the ffmpeg and ffprobe
-executables already installed on the host, through CodeBrix.VideoProcessing -
+run time and not bundled** - the desktop heads invoke the ffmpeg and ffprobe
+executables already installed on the host, through CodeBrix.VideoProcessing, and
+the Android head uses no FFmpeg at all -
 and that the media a person opens, plays and converts belongs to its owners and
 is never redistributed as part of this repository. Every clip the tests and the
 scripted run touch is generated at run time from FFmpeg's own synthetic sources;

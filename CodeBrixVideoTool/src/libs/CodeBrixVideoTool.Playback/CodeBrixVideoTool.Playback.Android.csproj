@@ -1,0 +1,43 @@
+<Project>
+  <!-- Its own obj/bin folders: this project sits beside CodeBrixVideoTool.Playback.csproj, which builds the same sources -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj.android\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin.android\</BaseOutputPath>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android36.1</TargetFramework>
+    <AssemblyName>CodeBrixVideoTool.Playback</AssemblyName>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- This library hosts a SimpleViewModel-derived view model, so it references CodeBrix.Android.
+         Keep this library's OWN RootNamespace (not the app's "CodeBrixVideoTool") so the per-head
+         generated GlobalStaticResources class does not collide across assemblies (CS0433). -->
+    <RootNamespace>CodeBrixVideoTool.Playback</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SupportedOSPlatformVersion>33</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <!-- The same packages as CodeBrixVideoTool.Playback.csproj. The AV1 decoder carries its Android
+       natives (arm64-v8a and x86_64) in the same package as the desktop ones, and the Opus decoder is
+       managed code, so both are the application's dependencies here exactly as there. -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.VideoPlayback.MitLicenseForever" Version="1.0.290.1224" />
+    <PackageReference Include="CodeBrix.VideoPlayback.Dav1d.BsdLicenseForever" Version="1.0.271.1206" />
+    <PackageReference Include="CodeBrix.Audio.Opus.BsdLicenseForever" Version="1.0.290.960" />
+  </ItemGroup>
+
+  <!-- The Android head: the CodeBrix.Android twin of CodeBrix.Platform, for SimpleViewModel and SimpleCommand -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodeBrixVideoTool.Processing\CodeBrixVideoTool.Processing.Android.csproj" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

@@ -218,12 +218,12 @@ public static class FixtureAssets
     }
 }
 
-// Stands in for a platform where OpenGL and Vulkan work and Metal does not. The PlayTest head has
+// Stands in for a platform where WebGPU, OpenGL and Vulkan work and Metal does not. The PlayTest head has
 // no GPU surface, so every engine is a CPU fake that records what the view model asks of it.
 public sealed class FakeRenderEngineSelector : IModelRenderEngineSelector
 {
     private readonly ConcurrentQueue<FakeRenderEngine> _created = new();
-    public IReadOnlyList<RenderEngineKind> AvailableKinds { get; } = [RenderEngineKind.OpenGL, RenderEngineKind.Vulkan, RenderEngineKind.Metal];
+    public IReadOnlyList<RenderEngineKind> AvailableKinds { get; } = [RenderEngineKind.WebGpu, RenderEngineKind.OpenGL, RenderEngineKind.Vulkan, RenderEngineKind.Metal];
     public IReadOnlyList<FakeRenderEngine> Created => _created.ToArray();
     // The engine the current page draws with: the newest one it has not disposed.
     public FakeRenderEngine Current => Created.Last(engine => !engine.IsDisposed);

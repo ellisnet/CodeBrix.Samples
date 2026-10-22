@@ -32,7 +32,7 @@
          rather than composing a flowing document through a document object model. -->
     <PackageReference Include="CodeBrix.PdfDocuments.MitLicenseForever" Version="1.0.285.692" />
     <!-- IServiceCollection, for the AddReading() registration extension -->
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.13" />
   </ItemGroup>
 
 </Project>

@@ -25,7 +25,7 @@ public static class RegisterServices
 
         services.AddSingleton<SampleAssetService>();
 
-        //The 3D rendering backends. The selector owns the list of engines (OpenGL + Vulkan),
+        //The 3D rendering backends. The selector owns the list of engines (WebGPU, OpenGL, Vulkan, Metal),
         //knows which are supported on the running platform, and creates them on demand for
         //the view model's rendering-engine dropdown.
         services.AddSingleton<IModelRenderEngineSelector, ModelRenderEngineSelector>();

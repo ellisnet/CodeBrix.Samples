@@ -9,12 +9,18 @@ namespace CodeBrixVideoTool.Smoke;
 /// <param name="WorkFolder">The folder the run writes its source clip and its outputs into.</param>
 /// <param name="KeepFiles">Whether the work folder is left behind when the run finishes.</param>
 /// <param name="HoldSeconds">How long the window is left up at the end, from 0 to 300 seconds.</param>
-public sealed record SmokeOptions(MediaFormatKind Destination, string WorkFolder, bool KeepFiles, int HoldSeconds)
+/// <param name="ThenDestination">
+/// A second format to transcode the run's own output to at the end, or null for none - the way to drive a
+/// conversion FROM one of the five formats, a Mode 2 or Mode 3 file above all, through the whole pipeline.
+/// </param>
+public sealed record SmokeOptions(
+    MediaFormatKind Destination, string WorkFolder, bool KeepFiles, int HoldSeconds, MediaFormatKind? ThenDestination = null)
 {
     /// <summary>
     /// Reads what the environment asked for. <c>CODEBRIXVIDEOTOOL_SMOKE</c> names the destination and
     /// is what turns a scripted run on at all; <c>CODEBRIXVIDEOTOOL_SMOKE_OUT</c>,
-    /// <c>CODEBRIXVIDEOTOOL_SMOKE_KEEP</c> and <c>CODEBRIXVIDEOTOOL_SMOKE_HOLD</c> tune it.
+    /// <c>CODEBRIXVIDEOTOOL_SMOKE_KEEP</c>, <c>CODEBRIXVIDEOTOOL_SMOKE_HOLD</c> and
+    /// <c>CODEBRIXVIDEOTOOL_SMOKE_THEN</c> tune it.
     /// </summary>
     /// <returns>What the run was asked for, or null when no scripted run was asked for.</returns>
     public static SmokeOptions FromEnvironment()
@@ -25,15 +31,6 @@ public sealed record SmokeOptions(MediaFormatKind Destination, string WorkFolder
             return null;
         }
 
-        var destination = requested.Trim().ToLowerInvariant() switch
-        {
-            "mode1" => MediaFormatKind.CodeBrixMode1,
-            "webm" => MediaFormatKind.WebM,
-            "mkv" or "matroska" => MediaFormatKind.Matroska,
-            "mode3" or "master" => MediaFormatKind.CodeBrixMaster,
-            _ => MediaFormatKind.CodeBrixMode2,
-        };
-
         var folder = Environment.GetEnvironmentVariable("CODEBRIXVIDEOTOOL_SMOKE_OUT");
         if (string.IsNullOrWhiteSpace(folder))
         {
@@ -43,6 +40,19 @@ public sealed record SmokeOptions(MediaFormatKind Destination, string WorkFolder
         var keep = Environment.GetEnvironmentVariable("CODEBRIXVIDEOTOOL_SMOKE_KEEP");
         _ = int.TryParse(Environment.GetEnvironmentVariable("CODEBRIXVIDEOTOOL_SMOKE_HOLD"), out var hold);
 
-        return new SmokeOptions(destination, folder, keep is "1" or "true", Math.Clamp(hold, 0, 300));
+        var then = Environment.GetEnvironmentVariable("CODEBRIXVIDEOTOOL_SMOKE_THEN");
+        MediaFormatKind? thenDestination = string.IsNullOrWhiteSpace(then) ? null : ParseDestination(then);
+
+        return new SmokeOptions(
+            ParseDestination(requested), folder, keep is "1" or "true", Math.Clamp(hold, 0, 300), thenDestination);
     }
+
+    private static MediaFormatKind ParseDestination(string requested) => requested.Trim().ToLowerInvariant() switch
+    {
+        "mode1" => MediaFormatKind.CodeBrixMode1,
+        "webm" => MediaFormatKind.WebM,
+        "mkv" or "matroska" => MediaFormatKind.Matroska,
+        "mode3" or "master" => MediaFormatKind.CodeBrixMaster,
+        _ => MediaFormatKind.CodeBrixMode2,
+    };
 }

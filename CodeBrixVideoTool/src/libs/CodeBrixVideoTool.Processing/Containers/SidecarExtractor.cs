@@ -1,10 +1,10 @@
 using CodeBrix.VideoPlayback.Captions;
 using CodeBrix.VideoPlayback.Chapters;
 using CodeBrix.VideoPlayback.Containers;
-using CodeBrix.VideoProcessing;
-using CodeBrix.VideoProcessing.Enums;
+using CodeBrix.VideoProcessing.Core.Media;
 using CodeBrixVideoTool.Processing.Formats;
 using CodeBrixVideoTool.Processing.Probing;
+using CodeBrixVideoTool.Processing.Tools;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,7 +12,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Chapter = CodeBrix.VideoPlayback.Chapters.Chapter; //CodeBrix.VideoProcessing has a Chapter of its own
 
 namespace CodeBrixVideoTool.Processing.Containers;
 
@@ -23,9 +22,15 @@ namespace CodeBrixVideoTool.Processing.Containers;
 /// <remarks>
 /// <para>
 /// The five supported formats are all read by the playback core's own container readers, which hand
-/// over chapters and cues as objects and need no external tool. Only the <c>.mp4</c> family goes
-/// through FFmpeg, and only for its text caption streams: an image-based caption track has no WebVTT
-/// form at all and is reported rather than silently lost.
+/// over chapters and cues as objects and need no external tool. The <c>.mp4</c> family is described by
+/// the registered video-processing engine, which lists its caption streams and its chapters, and its text
+/// caption streams are converted to WebVTT by FFmpeg, through the engine's external tools. An image-based
+/// caption track has no WebVTT form at all, and is reported rather than silently lost.
+/// </para>
+/// <para>
+/// An engine without external tools - Android's - lists an MP4's caption streams but has nothing to turn
+/// them into WebVTT with, and reads no chapters at all, so on that engine an MP4's captions are reported
+/// as not carried across and its chapters are never seen.
 /// </para>
 /// <para>
 /// Every chapter written from here carries exactly ONE title, whichever path it came down: this
@@ -55,7 +60,7 @@ public sealed class SidecarExtractor
 
         return MediaFormats.IsSupportedFormat(source.Format)
             ? ExtractFromContainerReader(source, workingFolder)
-            : await ExtractWithFfmpegAsync(source, workingFolder, cancellationToken).ConfigureAwait(false);
+            : await ExtractThroughEngineAsync(source, workingFolder, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -178,17 +183,17 @@ public sealed class SidecarExtractor
         }
     }
 
-    private static async Task<MediaSidecars> ExtractWithFfmpegAsync(
+    private static async Task<MediaSidecars> ExtractThroughEngineAsync(
         SourceMediaInfo source, string workingFolder, CancellationToken cancellationToken)
     {
         var notes = new List<string>();
         var captions = new List<ExtractedCaption>();
+        var engine = ProcessingEngine.Current;
 
-        IMediaAnalysis analysis;
+        MediaInfo analysis;
         try
         {
-            analysis = await FFProbe.AnalyseAsync(source.Path, cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
+            analysis = await engine.AnalyseAsync(source.Path, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -196,7 +201,8 @@ public sealed class SidecarExtractor
                 $"'{source.FileName}' could not be probed for its chapters and captions: {exception.Message}", exception);
         }
 
-        var streams = analysis.SubtitleStreams ?? [];
+        var hasTools = ProcessingEngine.TryGetExternalTools(out var tools);
+        var streams = analysis.SubtitleStreams;
         for (var index = 0; index < streams.Count; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -209,20 +215,28 @@ public sealed class SidecarExtractor
                 continue;
             }
 
+            if (!hasTools)
+            {
+                notes.Add($"Caption track {index} ('{codec}') was not carried across: the '{engine.Name}' engine " +
+                          "cannot turn an MP4's captions into WebVTT.");
+                continue;
+            }
+
             var language = NormalizeLanguage(stream.Language);
             var path = Path.Combine(workingFolder, WebVttFile.FileNameFor(index, language));
 
-            var succeeded = await FFMpegArguments
-                .FromFileInput(source.Path)
-                .OutputToFile(path, true, options => options
-                    .SelectStream(index, 0, Channel.Subtitle)
-                    .WithSubtitleCodec("webvtt")
-                    .ForceFormat("webvtt"))
-                .CancellableThrough(cancellationToken)
-                .ProcessAsynchronously(false)
+            //The index counts caption streams only, which is exactly what 0:s:N selects.
+            var arguments = FfmpegLine.Start()
+                .Add("-i").AddPath(source.Path)
+                .Add("-map 0:s:" + index.ToString(CultureInfo.InvariantCulture))
+                .Add("-c:s webvtt")
+                .Add("-f webvtt")
+                .AddPath(path);
+
+            var run = await FfmpegLine.RunAsync(tools, arguments, TimeSpan.Zero, null, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (!succeeded || !File.Exists(path))
+            if (!run.Succeeded || !File.Exists(path))
             {
                 notes.Add($"Caption track {index} ('{codec}') could not be converted to WebVTT and was not carried across.");
                 continue;
@@ -243,7 +257,7 @@ public sealed class SidecarExtractor
         return new MediaSidecars(chaptersPath, captions, notes);
     }
 
-    private static IReadOnlyList<Chapter> ChaptersFrom(IMediaAnalysis analysis)
+    private static IReadOnlyList<Chapter> ChaptersFrom(MediaInfo analysis)
     {
         var source = analysis.Chapters;
         if (source is not { Count: > 0 })
@@ -255,7 +269,7 @@ public sealed class SidecarExtractor
         for (var index = 0; index < source.Count; index++)
         {
             var chapter = source[index];
-            var title = string.IsNullOrWhiteSpace(chapter.Title) || chapter.Title == "TitleValueNotSet"
+            var title = string.IsNullOrWhiteSpace(chapter.Title)
                 ? string.Create(CultureInfo.InvariantCulture, $"Chapter {index + 1}")
                 : chapter.Title;
 

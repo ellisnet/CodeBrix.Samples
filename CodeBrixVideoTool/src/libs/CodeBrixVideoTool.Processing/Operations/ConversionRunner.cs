@@ -3,12 +3,13 @@ using CodeBrix.VideoPlayback.Authoring.Captions;
 using CodeBrix.VideoPlayback.Authoring.Encoding;
 using CodeBrix.VideoPlayback.Authoring.Export;
 using CodeBrix.VideoPlayback.Containers;
-using CodeBrix.VideoProcessing;
+using CodeBrix.VideoProcessing.Core;
 using CodeBrix.VideoProcessing.Core.Output;
-using CodeBrix.VideoProcessing.Enums;
+using CodeBrix.VideoProcessing.Core.Tools;
 using CodeBrixVideoTool.Processing.Containers;
 using CodeBrixVideoTool.Processing.Formats;
 using CodeBrixVideoTool.Processing.Planning;
+using CodeBrixVideoTool.Processing.Tools;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,14 +23,24 @@ namespace CodeBrixVideoTool.Processing.Operations;
 
 /// <summary>
 /// Carries out one conversion: the five supported formats through the authoring library, an
-/// <c>.mp4</c> export through FFmpeg - or, for a Mode 3 master, through the authoring library's
-/// exporter - and a Mode 2 or Mode 3 source through the demultiplexer first.
+/// <c>.mp4</c> export through the registered video-processing engine - or, for a Mode 3 master, through
+/// the authoring library's exporter - and a Mode 2 or Mode 3 source through the demultiplexer first.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Every conversion runs in exactly two stages. The first prepares the source - demultiplexing a
 /// bespoke CBVF file when there is one, and lifting out the chapters and captions the authoring pass
 /// has to be handed as separate inputs. The second encodes. Only the second can report a percentage,
 /// because only the encoder knows how far through the media it has got.
+/// </para>
+/// <para>
+/// Nothing here names an engine. The authoring library and the exporter work through whichever one the
+/// application registered. The ordinary <c>.mp4</c> export is an FFmpeg command line, run through the
+/// engine's external tools, wherever the engine has them (the desktop's FFmpeg engine), because only
+/// that line carries captions and chapters into an MP4. Where it has none (Android's MediaCodec engine)
+/// the export is the contract's own whole-file transcode, at the same quality stops, and the run's notes
+/// say what it could not carry.
+/// </para>
 /// </remarks>
 public sealed class ConversionRunner : IConversionRunner
 {
@@ -79,13 +90,30 @@ public sealed class ConversionRunner : IConversionRunner
             var sourcePath = plan.Source.Path;
             var sidecars = MediaSidecars.None;
 
-            if (plan.RequiresMode2Extraction)
+            var rewrapsUntimedSource = !plan.RequiresMode2Extraction &&
+                await EngineCannotTimeAsync(plan, cancellationToken).ConfigureAwait(false);
+
+            if (rewrapsUntimedSource)
             {
                 var extraction = await mode2Extractor
                     .ExtractAsync(plan.Source, workingFolder, cancellationToken).ConfigureAwait(false);
                 sourcePath = extraction.IntermediatePath;
                 sidecars = extraction.Sidecars;
-                notes.Add($"{MediaFormats.ShortName(plan.Source.Format)} source demultiplexed without re-encoding: {extraction}.");
+                notes.Add($"{MediaFormats.ShortName(plan.Source.Format)} source rewrapped into a Matroska intermediate " +
+                          $"without re-encoding, because the '{ProcessingEngine.Current.Name}' engine could not read its " +
+                          $"frame rate as it stood: {extraction}.");
+            }
+            else if (plan.RequiresMode2Extraction)
+            {
+                var extraction = await mode2Extractor
+                    .ExtractAsync(plan.Source, workingFolder, cancellationToken).ConfigureAwait(false);
+                sourcePath = extraction.IntermediatePath;
+                sidecars = extraction.Sidecars;
+                notes.Add(extraction.SoundCarriedAsVorbis
+                    ? $"{MediaFormats.ShortName(plan.Source.Format)} source demultiplexed: {extraction}. Its lossless FLAC " +
+                      $"sound went into the intermediate as Vorbis at the highest quality, because the '{ProcessingEngine.Current.Name}' " +
+                      "engine cannot remux FLAC and the managed Matroska muxer writes Vorbis and Opus only."
+                    : $"{MediaFormats.ShortName(plan.Source.Format)} source demultiplexed without re-encoding: {extraction}.");
 
                 if (extraction.LeftAlphaPlaneBehind)
                 {
@@ -139,6 +167,35 @@ public sealed class ConversionRunner : IConversionRunner
         finally
         {
             DeleteFolder(workingFolder);
+        }
+    }
+
+    /// <summary>
+    /// Whether the registered engine, which decodes the source for every conversion but a master's MP4
+    /// export, cannot say what frame rate a Matroska-family source runs at. An engine refuses to decode a
+    /// stream it cannot time, so such a source is rewrapped into the demultiplexer's intermediate first.
+    /// </summary>
+    /// <remarks>
+    /// The FFmpeg engine always knows. Android's does not for a WebM document with its index in front -
+    /// which is every Mode 1 and WebM file this application writes - so the question is put to the engine
+    /// itself rather than answered by a rule about platforms. A probe that fails says nothing either way:
+    /// the conversion pass will report the problem in its own words.
+    /// </remarks>
+    private static async Task<bool> EngineCannotTimeAsync(ConversionPlan plan, CancellationToken cancellationToken)
+    {
+        if (plan.ExportsThroughVideoExporter || !MediaFormats.IsSupportedFormat(plan.Source.Format))
+        {
+            return false;
+        }
+
+        try
+        {
+            var analysis = await ProcessingEngine.Current.AnalyseAsync(plan.Source.Path, cancellationToken).ConfigureAwait(false);
+            return analysis.PrimaryVideo is { FrameRate.IsSpecified: false };
+        }
+        catch (VideoProcessingException)
+        {
+            return false;
         }
     }
 
@@ -298,80 +355,79 @@ public sealed class ConversionRunner : IConversionRunner
         var gerund = MediaFormats.ActionGerund(plan.Operation);
         progress?.Report(new ConversionProgress(gerund, 2, 2, 0d));
 
-        var arguments = FFMpegArguments.FromFileInput(sourcePath);
+        if (!ProcessingEngine.TryGetExternalTools(out var tools))
+        {
+            return await TranscodeToMp4Async(plan, sourcePath, sidecars, progress, notes, stopwatch, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        var arguments = FfmpegLine.Start().Add("-i").AddPath(sourcePath);
         foreach (var caption in sidecars.Captions)
         {
-            arguments = arguments.AddFileInput(caption.Path, false);
+            arguments.Add("-i").AddPath(caption.Path);
         }
 
         if (sidecars.HasChapters)
         {
-            arguments = arguments.AddFileInput(sidecars.ChaptersPath, false)
-                .MapMetaData(sidecars.Captions.Count + 1);
+            arguments.Add("-i").AddPath(sidecars.ChaptersPath)
+                .Add("-map_metadata " + (sidecars.Captions.Count + 1).ToString(CultureInfo.InvariantCulture));
         }
 
-        var errors = new List<string>();
-        var processor = arguments
-            .OutputToFile(plan.OutputPath, true, options =>
+        arguments.Add("-map 0:v:0");
+        if (plan.Source.HasAudio)
+        {
+            arguments.Add("-map 0:a:0");
+        }
+
+        for (var index = 0; index < sidecars.Captions.Count; index++)
+        {
+            arguments
+                .Add(string.Create(CultureInfo.InvariantCulture, $"-map {index + 1}:s:0"))
+                .Add(string.Create(CultureInfo.InvariantCulture, $"-metadata:s:s:{index} language={sidecars.Captions[index].Language}"));
+        }
+
+        arguments
+            .Add("-c:v libx264")
+            .Add("-crf " + H264RateFactor(plan.Quality).ToString(CultureInfo.InvariantCulture))
+            .Add("-preset medium")
+            .Add("-pix_fmt yuv420p");
+
+        if (plan.IsResized)
+        {
+            arguments.Add(string.Create(CultureInfo.InvariantCulture, $"-vf scale={plan.Resolution.Width}:{plan.Resolution.Height}"));
+        }
+
+        if (plan.Source.HasAudio)
+        {
+            arguments.Add("-c:a aac").Add(string.Create(CultureInfo.InvariantCulture, $"-b:a {Mp4AudioKilobitsPerSecond}k"));
+
+            //An .mp4 export is the one destination this application does not cap at stereo: AAC keeps the
+            //source's own layout. It is still capped at the eight channels AAC is written with here, and a
+            //source with more than that has to be told so - left to itself, FFmpeg's AAC encoder refuses
+            //the layout outright and the export fails.
+            if (plan.DownmixesAudio)
             {
-                options.SelectStream(0, 0, Channel.Video);
-                if (plan.Source.HasAudio)
-                {
-                    options.SelectStream(0, 0, Channel.Audio);
-                }
+                arguments.Add("-ac " + plan.AudioChannels.ToString(CultureInfo.InvariantCulture));
+            }
+        }
 
-                for (var index = 0; index < sidecars.Captions.Count; index++)
-                {
-                    options.SelectStream(0, index + 1, Channel.Subtitle);
-                    options.WithStreamMetadata(Channel.Subtitle, index, "language", sidecars.Captions[index].Language);
-                }
+        if (sidecars.Captions.Count > 0)
+        {
+            //MP4's own timed-text track. Nothing else in the MP4 family carries WebVTT.
+            arguments.Add("-c:s mov_text");
+        }
 
-                options
-                    .WithVideoCodec("libx264")
-                    .WithConstantRateFactor(H264RateFactor(plan.Quality))
-                    .WithSpeedPreset(Speed.Medium)
-                    .ForcePixelFormat("yuv420p");
+        arguments.Add("-movflags faststart").Add("-f mp4").AddPath(plan.OutputPath);
 
-                if (plan.IsResized)
-                {
-                    options.WithVideoFilters(filters => filters.Scale(plan.Resolution.Width, plan.Resolution.Height));
-                }
-
-                if (plan.Source.HasAudio)
-                {
-                    options.WithAudioCodec("aac").WithAudioBitrate(Mp4AudioKilobitsPerSecond);
-
-                    //An .mp4 export is the one destination this application does not cap at stereo: AAC
-                    //keeps the source's own layout. It is still capped at the eight channels AAC is
-                    //written with here, and a source with more than that has to be told so - left to
-                    //itself, FFmpeg's AAC encoder refuses the layout outright and the export fails.
-                    if (plan.DownmixesAudio)
-                    {
-                        options.WithCustomArgument(
-                            "-ac " + plan.AudioChannels.ToString(CultureInfo.InvariantCulture));
-                    }
-                }
-
-                if (sidecars.Captions.Count > 0)
-                {
-                    //MP4's own timed-text track. Nothing else in the MP4 family carries WebVTT.
-                    options.WithSubtitleCodec("mov_text");
-                }
-
-                options.WithFastStart().ForceFormat("mp4");
-            })
-            .NotifyOnProgress(
-                percent => progress?.Report(new ConversionProgress(gerund, 2, 2, percent)),
-                plan.Source.Duration)
-            .NotifyOnError(errors.Add)
-            .CancellableThrough(cancellationToken);
-
-        var commands = new[] { "ffmpeg " + processor.Arguments };
-
-        bool succeeded;
+        FfmpegRun run;
         try
         {
-            succeeded = await processor.ProcessAsynchronously(false).ConfigureAwait(false);
+            run = await FfmpegLine.RunAsync(
+                tools,
+                arguments,
+                plan.Source.Duration,
+                percent => progress?.Report(new ConversionProgress(gerund, 2, 2, percent)),
+                cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -379,17 +435,10 @@ public sealed class ConversionRunner : IConversionRunner
             return ConversionOutcome.Cancelled(stopwatch.Elapsed, notes);
         }
 
-        if (cancellationToken.IsCancellationRequested)
+        if (!run.Succeeded || !File.Exists(plan.OutputPath))
         {
             DeletePartialOutput(plan.OutputPath);
-            return ConversionOutcome.Cancelled(stopwatch.Elapsed, notes);
-        }
-
-        if (!succeeded || !File.Exists(plan.OutputPath))
-        {
-            DeletePartialOutput(plan.OutputPath);
-            return ConversionOutcome.Failed(
-                "The MP4 export failed. " + string.Join(" ", errors.TakeLast(5)), stopwatch.Elapsed, notes);
+            return ConversionOutcome.Failed("The MP4 export failed. " + run.ErrorText, stopwatch.Elapsed, notes);
         }
 
         AddAudioNotes(plan, notes);
@@ -398,7 +447,98 @@ public sealed class ConversionRunner : IConversionRunner
         progress?.Report(new ConversionProgress(gerund, 2, 2, 100d));
 
         return ConversionOutcome.Success(
-            plan.OutputPath, new FileInfo(plan.OutputPath).Length, stopwatch.Elapsed, null, false, notes, commands);
+            plan.OutputPath, new FileInfo(plan.OutputPath).Length, stopwatch.Elapsed, null, false, notes, [run.Command]);
+    }
+
+    /// <summary>
+    /// The <c>.mp4</c> export on an engine with no external tools: the contract's own whole-file transcode,
+    /// H.264 and AAC at the same quality stop and the same size the FFmpeg line would write. A transcode
+    /// carries the picture and the sound and nothing else, so the source's captions and chapters are left
+    /// out, and the notes say so.
+    /// </summary>
+    private static async Task<ConversionOutcome> TranscodeToMp4Async(
+        ConversionPlan plan,
+        string sourcePath,
+        MediaSidecars sidecars,
+        IProgress<ConversionProgress> progress,
+        List<string> notes,
+        Stopwatch stopwatch,
+        CancellationToken cancellationToken)
+    {
+        var gerund = MediaFormats.ActionGerund(plan.Operation);
+        var engine = ProcessingEngine.Current;
+        engine.RequireCapability(VideoProcessorCapabilities.DirectTranscode, "an MP4 export");
+
+        var request = new TranscodeRequest
+        {
+            InputPath = sourcePath,
+            Output = new StandardVideoRequest
+            {
+                OutputPath = plan.OutputPath,
+                Profile = StandardVideoProfile.Mp4H264Aac,
+
+                //Zero keeps the source's own size; the frame rate is left unspecified, which keeps its rate.
+                Width = plan.IsResized ? plan.Resolution.Width : 0,
+                Height = plan.IsResized ? plan.Resolution.Height : 0,
+
+                //The engine maps the level onto its encoder's own controls - a platform encoder takes a bit
+                //rate, not a rate factor - so the stop means the same thing here as far as that encoder can.
+                Quality = VideoQuality.ConstantQuality(H264RateFactor(plan.Quality)),
+                FastStart = true,
+                HasAudio = plan.Source.HasAudio,
+                AudioSampleRate = 0,
+                AudioChannels = plan.DownmixesAudio ? plan.AudioChannels : 0,
+                AudioBitrateKilobitsPerSecond = Mp4AudioKilobitsPerSecond,
+            },
+        };
+
+        var command = DescribeTranscode(engine, plan, sourcePath);
+        var duration = plan.Source.Duration;
+        var reporter = new RelayProgress(report =>
+        {
+            var fraction = report.Fraction
+                ?? (duration > TimeSpan.Zero ? report.Position.TotalMilliseconds / duration.TotalMilliseconds : (double?)null);
+            if (fraction is { } known)
+            {
+                progress?.Report(new ConversionProgress(gerund, 2, 2, Math.Clamp(known * 100d, 0d, 100d)));
+            }
+        });
+
+        //The engine is synchronous, so the transcode runs on a worker thread. It watches the token and throws
+        //OperationCanceledException when cancelled, which RunAsync turns into a cancelled outcome.
+        await Task.Run(() => engine.TranscodeFile(request, reporter, cancellationToken), CancellationToken.None)
+            .ConfigureAwait(false);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!File.Exists(plan.OutputPath))
+        {
+            return ConversionOutcome.Failed(
+                $"The MP4 export failed: the '{engine.Name}' engine finished without writing a file.", stopwatch.Elapsed, notes);
+        }
+
+        AddAudioNotes(plan, notes);
+        AddAlphaNotes(plan, notes);
+        AddLeftOutSidecarNotes(engine, sidecars, notes);
+        progress?.Report(new ConversionProgress(gerund, 2, 2, 100d));
+
+        return ConversionOutcome.Success(
+            plan.OutputPath, new FileInfo(plan.OutputPath).Length, stopwatch.Elapsed, null, false, notes, [command]);
+    }
+
+    //The transcode's own line for the run's commands: what it was asked for, in the same words the exporter's
+    //plan line uses for the same things ("cq 17" is x264's rate factor 17 on both).
+    private static string DescribeTranscode(IVideoProcessor engine, ConversionPlan plan, string sourcePath)
+    {
+        var size = plan.IsResized
+            ? string.Create(CultureInfo.InvariantCulture, $"size {plan.Resolution.Width}x{plan.Resolution.Height}")
+            : "size source";
+        var sound = !plan.Source.HasAudio
+            ? "no audio"
+            : string.Create(CultureInfo.InvariantCulture, $"aac {Mp4AudioKilobitsPerSecond} kbit/s") +
+              (plan.DownmixesAudio ? string.Create(CultureInfo.InvariantCulture, $" {plan.AudioChannels} channel(s)") : string.Empty);
+
+        return string.Create(CultureInfo.InvariantCulture,
+            $"{engine.Name} transcode h264 cq {H264RateFactor(plan.Quality)} {size} {sound} fast-start <- {sourcePath} -> {plan.OutputPath}");
     }
 
     /// <summary>
@@ -408,7 +548,8 @@ public sealed class ConversionRunner : IConversionRunner
     /// the picture over 50% grey by its alpha - an MP4 has no transparency to carry it in - and writes
     /// H.264 and AAC through the registered video-processing engine. The exporter carries no captions or
     /// chapters, so when the master has any a second, copy-only FFmpeg pass adds them, exactly as the
-    /// ordinary export writes them.
+    /// ordinary export writes them - where the engine can run FFmpeg. Where it cannot, the exporter's own
+    /// note that they were left out stands.
     /// </summary>
     private static async Task<ConversionOutcome> ExportMasterToMp4Async(
         ConversionPlan plan,
@@ -422,7 +563,8 @@ public sealed class ConversionRunner : IConversionRunner
         var gerund = MediaFormats.ActionGerund(plan.Operation);
         progress?.Report(new ConversionProgress(gerund, 2, 2, 0d));
 
-        var addsSidecars = sidecars.CaptionCount > 0 || sidecars.HasChapters;
+        IExternalTools tools = null;
+        var addsSidecars = (sidecars.CaptionCount > 0 || sidecars.HasChapters) && ProcessingEngine.TryGetExternalTools(out tools);
         var exportPath = addsSidecars ? Path.Combine(workingFolder, "exported.mp4") : plan.OutputPath;
 
         var request = new VideoExportRequest
@@ -462,14 +604,17 @@ public sealed class ConversionRunner : IConversionRunner
         if (addsSidecars)
         {
             commands.Add(await AddSidecarsToMp4Async(
-                exportPath, result.AudioSource != VideoExportAudioSource.None, sidecars, plan.OutputPath, cancellationToken)
+                tools, exportPath, result.AudioSource != VideoExportAudioSource.None, sidecars, plan.OutputPath, cancellationToken)
                 .ConfigureAwait(false));
         }
 
         cancellationToken.ThrowIfCancellationRequested();
 
         AddAudioNotes(plan, notes);
-        AddSidecarNotes(plan, sidecars, notes);
+        if (addsSidecars)
+        {
+            AddSidecarNotes(plan, sidecars, notes);
+        }
         progress?.Report(new ConversionProgress(gerund, 2, 2, 100d));
 
         return ConversionOutcome.Success(
@@ -480,59 +625,56 @@ public sealed class ConversionRunner : IConversionRunner
     //ordinary export would have written into it: the captions as MP4 timed text, the chapters from the
     //FFmpeg metadata file.
     private static async Task<string> AddSidecarsToMp4Async(
-        string exportedPath, bool hasAudio, MediaSidecars sidecars, string outputPath, CancellationToken cancellationToken)
+        IExternalTools tools,
+        string exportedPath,
+        bool hasAudio,
+        MediaSidecars sidecars,
+        string outputPath,
+        CancellationToken cancellationToken)
     {
-        var arguments = FFMpegArguments.FromFileInput(exportedPath);
+        var arguments = FfmpegLine.Start().Add("-i").AddPath(exportedPath);
         foreach (var caption in sidecars.Captions)
         {
-            arguments = arguments.AddFileInput(caption.Path, false);
+            arguments.Add("-i").AddPath(caption.Path);
         }
 
         if (sidecars.HasChapters)
         {
-            arguments = arguments.AddFileInput(sidecars.ChaptersPath, false)
-                .MapMetaData(sidecars.Captions.Count + 1);
+            arguments.Add("-i").AddPath(sidecars.ChaptersPath)
+                .Add("-map_metadata " + (sidecars.Captions.Count + 1).ToString(CultureInfo.InvariantCulture));
         }
 
-        var errors = new List<string>();
-        var processor = arguments
-            .OutputToFile(outputPath, true, options =>
-            {
-                options.SelectStream(0, 0, Channel.Video);
-                if (hasAudio)
-                {
-                    options.SelectStream(0, 0, Channel.Audio);
-                }
+        arguments.Add("-map 0:v:0");
+        if (hasAudio)
+        {
+            arguments.Add("-map 0:a:0");
+        }
 
-                for (var index = 0; index < sidecars.Captions.Count; index++)
-                {
-                    options.SelectStream(0, index + 1, Channel.Subtitle);
-                    options.WithStreamMetadata(Channel.Subtitle, index, "language", sidecars.Captions[index].Language);
-                }
+        for (var index = 0; index < sidecars.Captions.Count; index++)
+        {
+            arguments
+                .Add(string.Create(CultureInfo.InvariantCulture, $"-map {index + 1}:s:0"))
+                .Add(string.Create(CultureInfo.InvariantCulture, $"-metadata:s:s:{index} language={sidecars.Captions[index].Language}"));
+        }
 
-                options.WithCopyCodec();
-                if (sidecars.Captions.Count > 0)
-                {
-                    options.WithSubtitleCodec("mov_text");
-                }
+        arguments.Add("-c copy");
+        if (sidecars.Captions.Count > 0)
+        {
+            arguments.Add("-c:s mov_text");
+        }
 
-                options.WithFastStart().ForceFormat("mp4");
-            })
-            .NotifyOnError(errors.Add)
-            .CancellableThrough(cancellationToken);
+        arguments.Add("-movflags faststart").Add("-f mp4").AddPath(outputPath);
 
-        var command = "ffmpeg " + processor.Arguments;
-        var succeeded = await processor.ProcessAsynchronously(false).ConfigureAwait(false);
+        var run = await FfmpegLine.RunAsync(tools, arguments, TimeSpan.Zero, null, cancellationToken).ConfigureAwait(false);
 
         cancellationToken.ThrowIfCancellationRequested();
-        if (!succeeded || !File.Exists(outputPath))
+        if (!run.Succeeded || !File.Exists(outputPath))
         {
             throw new VideoToolProcessingException(
-                "The master was exported, but its captions and chapters could not be added to the MP4. " +
-                string.Join(" ", errors.TakeLast(5)));
+                "The master was exported, but its captions and chapters could not be added to the MP4. " + run.ErrorText);
         }
 
-        return command;
+        return run.Command;
     }
 
     //THE QUALITY KNOB, IN ITS ENTIRETY. A quality stop moves the encoder's constant rate factor and
@@ -657,6 +799,20 @@ public sealed class ConversionRunner : IConversionRunner
         }
     }
 
+    //What an export through an engine without FFmpeg had to leave out, in place of "carried across".
+    private static void AddLeftOutSidecarNotes(IVideoProcessor engine, MediaSidecars sidecars, List<string> notes)
+    {
+        if (sidecars.CaptionCount > 0)
+        {
+            notes.Add($"{sidecars.CaptionCount} caption track(s) left out: the '{engine.Name}' engine cannot write captions into an MP4.");
+        }
+
+        if (sidecars.HasChapters)
+        {
+            notes.Add($"Chapters left out: the '{engine.Name}' engine cannot write chapters into an MP4.");
+        }
+    }
+
     private static void DeletePartialOutput(string path)
     {
         if (string.IsNullOrEmpty(path))
@@ -698,5 +854,12 @@ public sealed class ConversionRunner : IConversionRunner
         {
             //As above.
         }
+    }
+
+    //Hands the engine's progress straight on, on whatever thread it reports from. Progress<T> would post each
+    //report through the thread pool, where they can overtake one another.
+    private sealed class RelayProgress(Action<VideoProgress> report) : IProgress<VideoProgress>
+    {
+        public void Report(VideoProgress value) => report(value);
     }
 }

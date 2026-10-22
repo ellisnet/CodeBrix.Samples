@@ -858,22 +858,27 @@ var filterGraph = string.Create(CultureInfo.InvariantCulture,
 
 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path)));
 
-var errors = new List<string>();
-var succeeded = await FFMpegArguments
-    .FromFileInput(filterGraph, false, input => input.ForceFormat("lavfi"))
-    .OutputToFile(path, true, options => options
-        .WithDuration(length)
-        .WithVideoCodec("libx264")
-        .WithConstantRateFactor(28)
-        .WithSpeedPreset(Speed.UltraFast)
-        .ForcePixelFormat("yuv420p")
-        .WithAudioCodec("aac")
-        .WithAudioBitrate(96)
-        .ForceFormat("mp4"))
-    .NotifyOnError(errors.Add)
-    .CancellableThrough(cancellationToken)
-    .ProcessAsynchronously(false)
-    .ConfigureAwait(false);
+if (!ProcessingEngine.TryGetExternalTools(out var tools))
+{
+    //No FFmpeg test sources here (Android): draw the clip and write it through the engine's own writer.
+    await Task.Run(() => DrawMp4(path, width, height, length, frameRate, cancellationToken), CancellationToken.None)
+        .ConfigureAwait(false);
+    return path;
+}
+
+var arguments = FfmpegLine.Start()
+    .Add("-f lavfi").Add("-i").AddPath(filterGraph)
+    .Add("-t " + Seconds(length))
+    .Add("-c:v libx264")
+    .Add("-crf 28")
+    .Add("-preset ultrafast")
+    .Add("-pix_fmt yuv420p")
+    .Add("-c:a aac")
+    .Add("-b:a 96k")
+    .Add("-f mp4")
+    .AddPath(path);
+
+var run = await FfmpegLine.RunAsync(tools, arguments, TimeSpan.Zero, null, cancellationToken).ConfigureAwait(false);
 ```
 
 **Where to look.**
@@ -881,8 +886,14 @@ var succeeded = await FFMpegArguments
 (`WriteMp4Async`, `WriteRichMp4Async`, `WriteWebVtt`, `WriteChapterMetadata`)
 
 **Sharp edges.**
-- The synthetic input is passed as a file input with the filter-graph format
-  forced and existence checking turned off - a filter graph is not a file.
+- The synthetic input is passed as an input with the filter-graph format forced
+  (`-f lavfi`); the graph holds spaces, so it goes in through `AddPath`, which
+  quotes it.
+- Where the engine runs no FFmpeg (Android), the plain clip is drawn frame by
+  frame and written, with its tone, through the contract's own standard writer -
+  which every engine has. The clips that need FFmpeg's muxers (the one with
+  captions and chapters, the one with an alpha channel) are refused there, and
+  `SampleClipFactory.CanWriteRichClips` says so in advance.
 - The interesting case is built in two passes: a plain clip, then a mux that adds
   a caption track and a chapter metadata file, copying the media rather than
   re-encoding it, with the metadata mapping pointing at the right input.

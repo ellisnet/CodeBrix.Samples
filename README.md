@@ -24,9 +24,8 @@ compiled for Android by a twin project, `<App>.Core.Android.csproj`, that sits
 beside `<App>.Core.csproj` and references the CodeBrix.Android twins of the
 desktop's CodeBrix.Platform packages. Each
 application's README says whether it has one and what, if anything, differs on
-a phone or tablet; the applications built on the game engine, a camera, a
-Tcl/Tk canvas or the video authoring library have none, because those
-libraries have no Android support. Libraries are consumed as packages, never as source references, so each
+a phone or tablet; the applications built on the game engine, a camera or a
+Tcl/Tk canvas have none, because those libraries have no Android support. Libraries are consumed as packages, never as source references, so each
 application folder is self-contained and can be opened and built on its own.
 
 Everything in this repository is licensed under the Apache License, Version 2.0.
@@ -47,7 +46,7 @@ collect how-tos mined from all of them.
 | Application | What it is | Headline CodeBrix libraries |
 | --- | --- | --- |
 | [BrixInvaders](BrixInvaders/README.md) | Space Invaders game with five sectors, multi-section bosses, power-ups, high scores, keyboard and gamepad play, every sprite, sound and font read straight from five Kenney zips, and endless music written live by a model while it plays | CodeBrix.Platform.GameEngine with its KenneyAssets, Sdl2 and GeneratedMusic add-ins; the CodeBrix.Audio.MusicGeneration SkyTNT and MuPT models; the CodeBrix.Platform AppSettings add-in |
-| [CodeBrixVideoTool](CodeBrixVideoTool/README.md) | Desktop video converter and player for AV1 media, with chapter and caption drop-downs, a resolution and quality ladder, and long conversions run with live progress and cancellation | CodeBrix.Platform.VideoPlayer add-in, CodeBrix.VideoPlayback, CodeBrix.VideoPlayback.Authoring, CodeBrix.VideoProcessing |
+| [CodeBrixVideoTool](CodeBrixVideoTool/README.md) | Video converter and player for AV1 media, on the desktop and Android, with chapter and caption drop-downs, a resolution and quality ladder, and long conversions run with live progress and cancellation | CodeBrix.Platform.VideoPlayer add-in, CodeBrix.VideoPlayback, CodeBrix.VideoPlayback.Authoring, CodeBrix.VideoProcessing (Core, the ffmpeg engine and the Android engine); CodeBrix.Android |
 | [DRAKON.Brix](DRAKON.Brix/README.md) | The DRAKON Editor, a visual algorithm-language editor whose entire Tcl/Tk program runs unmodified on a managed Tcl interpreter and Tk toolkit inside one XAML page, generating source code in many target languages and exporting diagrams to PDF | CodeBrix.Platform.TclTk, CodeBrix.Platform.TclTk.Extras, CodeBrix.Platform.TkCanvas |
 | [GameEngineMusicDemo](GameEngineMusicDemo/README.md) | Control surface for the game engine's music system: buses, fades and crossfades, bar-quantized transitions, adaptive stems, MIDI through SFZ and Decent Sampler instruments, ducking, stingers and a global pause, with every asset generated on first run | CodeBrix.Platform.GameEngine |
 | [GitHubIssueFinder](GitHubIssueFinder/README.md) | Finds the open issues and pull requests nobody has picked up across a GitHub user's or organization's public repositories, grouped by repository, paced to the anonymous API allowance with every wait shown on screen and five switchable color schemes | the CodeBrix.Platform FlexPanel and AppSettings add-ins |
@@ -114,7 +113,7 @@ head; the
 packages for the Linux WebView (WikipediaPublisher); a webcam (WebcamPainter,
 PalmVisualizer, WebcamViewer); network access for the applications that download content; a
 Notion integration token (NotionDocumentCreator); ffmpeg and ffprobe on the
-host for probing and conversion (CodeBrixVideoTool, and optionally
+host for probing and conversion (CodeBrixVideoTool's desktop heads, and optionally
 NotionDocumentCreator); a reachable Docker daemon (RedisSetupTool); and Pico's
 ps2000 driver with a PicoScope 2204A attached for live traces, though
 PicoScope.Brix runs on its simulated device without either.

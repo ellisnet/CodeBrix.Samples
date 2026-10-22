@@ -65,8 +65,8 @@ internal static class InterpretationTemplates
     public static readonly string[] OpeningFrame =
     [
         "The Octaquetra has been laid{0}, {1} {2} set in the pattern of the eight-petalled star, to be read as one flower and not as a row of verdicts.{3}",
-        "Here is the Octaquetra{0}: {1} {2} turning about a single centre, in the old order that runs from heaven down through the descent and home again.{3}",
-        "This reading opens{0} with {1} {2} on the petals of Inanna's star, laid in the sequence the goddess walked, from the highest reach to the great below.{3}",
+        "Here is the Octaquetra{0}: {1} {2} turning about a single centre, in the old order that runs from Heaven down through the descent and home again.{3}",
+        "This reading opens{0} with {1} {2} on the petals of Inanna's star, laid in the sequence the Goddess walked, from the highest reach to the Great Below.{3}",
         "The Octaquetra is down{0} — {1} {2} arranged as the whorl of petals that gave this spread its name, each station holding one face of a single matter.{3}",
     ];
 
@@ -83,9 +83,9 @@ internal static class InterpretationTemplates
 
     public static readonly string[] GoddessDominant =
     [
-        "The goddesses hold the field, making this a reading about persons and powers: who you are asked to become, and whose hand is already on the matter.",
-        "With the goddesses in the majority, the Octaquetra speaks of character rather than circumstance; the forces working here have names, faces and very long memories.",
-        "A crowd of goddesses gives the flower a personal weather. What moves in this matter moves through people — through temperament, allegiance and appetite rather than through events.",
+        "The Goddesses hold the field, making this a reading about persons and powers: who you are asked to become, and whose hand is already on the matter.",
+        "With the Goddesses in the majority, the Octaquetra speaks of character rather than circumstance; the forces working here have names, faces and very long memories.",
+        "A crowd of Goddesses gives the flower a personal weather. What moves in this matter moves through people — through temperament, allegiance and appetite rather than through events.",
     ];
 
     public static readonly string[] GateDominant =
@@ -256,8 +256,8 @@ internal static class InterpretationTemplates
 
     public static readonly string[] CounselFromExalted =
     [
-        "Neither Gift nor Heart was laid, so the counsel falls to the most exalted goddess on the flower: {0}, {1}.",
-        "With the centre and the eighth petal both empty, take the instruction from {0}, {1}, the highest of the goddesses present.",
+        "Neither Gift nor Heart was laid, so the counsel falls to the most exalted Goddess on the flower: {0}, {1}.",
+        "With the centre and the eighth petal both empty, take the instruction from {0}, {1}, the highest of the Goddesses present.",
         "The counsel here belongs to {0}, {1}, who stands nearest the top of the deck's own order among the cards you have drawn.",
     ];
 

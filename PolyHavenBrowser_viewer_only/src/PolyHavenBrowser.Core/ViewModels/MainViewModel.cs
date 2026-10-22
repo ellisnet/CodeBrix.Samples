@@ -63,8 +63,12 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
     private IScenePainter _currentPainter;
     private PanoramaScenePainter _panoramaPainter;
     private SampleAssetKind _selectedKind = SampleAssetKind.Texture;
-    private RenderEngineKind _currentEngineKind = RenderEngineKind.OpenGL;
-    private RenderEngineKind _selectedRenderEngine = RenderEngineKind.OpenGL;
+    private RenderEngineKind _currentEngineKind = RenderEngineKind.WebGpu;
+    private RenderEngineKind _selectedRenderEngine = RenderEngineKind.WebGpu;
+
+    //Why the default engine (WebGPU) could not start and the app fell back to OpenGL, shown once
+    //on the status line; null when WebGPU started.
+    private string _engineFallbackNote;
 
     private SimpleCommand _selectTextureCommand;
     private SimpleCommand _selectHdriCommand;
@@ -77,13 +81,65 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
 
         _assets = GetService<SampleAssetService>();
 
-        //The engine selector owns the available 3D backends (OpenGL + Vulkan) and creates
-        //them on demand; the app always starts on OpenGL (no persistence).
+        //The engine selector owns the available 3D backends (WebGPU, OpenGL, Vulkan, Metal) and
+        //creates them on demand; the app always starts on WebGPU (no persistence), falling back
+        //to OpenGL when WebGPU cannot start on this machine.
         _engineSelector = GetService<IModelRenderEngineSelector>();
 
-        _modelPainter = new ModelScenePainter(_engineSelector.Create(RenderEngineKind.OpenGL, GetXamlRoot));
+        Initialization = InitializeAsync();
+    }
 
-        Initialization = SelectAsync(SampleAssetKind.Texture);
+    //Starts the default engine, then shows the first sample. Never faults: both steps report
+    //their failures on the status line.
+    private async Task InitializeAsync()
+    {
+        await StartDefaultEngineAsync();
+        await SelectAsync(SampleAssetKind.Texture);
+    }
+
+    //Creates and pre-warms the default WebGPU engine off the UI thread; when that fails (no GPU
+    //driver WebGPU can use), the app starts on OpenGL instead - which, as before, creates its
+    //context lazily at first paint.
+    private async Task StartDefaultEngineAsync()
+    {
+        //Busy while starting, so the sample buttons and the engine dropdown wait for a painter.
+        IsBusy = true;
+        try
+        {
+            await StartDefaultEngineCoreAsync();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task StartDefaultEngineCoreAsync()
+    {
+        IModelRenderEngine engine = null;
+        try
+        {
+            engine = _engineSelector.Create(RenderEngineKind.WebGpu, GetXamlRoot);
+            await Task.Run(() => engine.RenderFrame(1, 1, (0f, 0f, 0f, 1f)));
+            if (_isDisposed)
+            {
+                engine.Dispose();
+                return;
+            }
+            _modelPainter = new ModelScenePainter(engine);
+            return;
+        }
+        catch (Exception ex)
+        {
+            engine?.Dispose();
+            _engineFallbackNote = $"WebGPU is not available ({ex.Message}), using OpenGL";
+        }
+
+        if (_isDisposed) { return; }
+        _modelPainter = new ModelScenePainter(_engineSelector.Create(RenderEngineKind.OpenGL, GetXamlRoot));
+        _currentEngineKind = RenderEngineKind.OpenGL;
+        _selectedRenderEngine = RenderEngineKind.OpenGL;
+        NotifyPropertyChanged(nameof(SelectedRenderEngine));
     }
 
     /// <summary>
@@ -125,7 +181,7 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
         private set => SetProperty(ref field, value ?? string.Empty);
     } = "Starting up…";
 
-    /// <summary>The rendering engines shown in the dropdown (OpenGL first - the default).</summary>
+    /// <summary>The rendering engines shown in the dropdown (WebGPU first - the default).</summary>
     public IReadOnlyList<RenderEngineKind> RenderEngineKinds =>
         _engineSelector?.AvailableKinds ?? Array.Empty<RenderEngineKind>();
 
@@ -150,7 +206,8 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
 
     /// <summary>
     /// The engine dropdown's visibility: shown in Texture and Model modes, hidden in HDRI mode
-    /// (the HDRI panorama is CPU-rendered and unaffected by the engine choice).
+    /// (the HDRI panorama picks its own renderer - WebGPU, falling back to the CPU - and is
+    /// unaffected by the engine choice).
     /// </summary>
     public Visibility EngineSelectorVisibility => GetVisibility(_selectedKind != SampleAssetKind.Hdri);
 
@@ -328,21 +385,23 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
         }
 
         IsBusy = true;
+        IModelRenderEngine engine = null;
         try
         {
-            var engine = _engineSelector.Create(kind, GetXamlRoot);
-            if (kind is RenderEngineKind.Vulkan or RenderEngineKind.Metal)
+            engine = _engineSelector.Create(kind, GetXamlRoot);
+            if (kind is RenderEngineKind.WebGpu or RenderEngineKind.Vulkan or RenderEngineKind.Metal)
             {
                 //Fail fast off the UI thread (a supported platform can still lack a working
                 //driver) so a failure never surfaces inside the Skia paint callback. Safe for the
-                //own-stack engines (Vulkan, Metal): they have no thread-affinity, unlike the
-                //OpenGL engine's native GL context, which must be created on the render thread at
-                //first paint.
+                //own-stack engines (WebGPU, Vulkan, Metal): they have no thread-affinity, unlike
+                //the OpenGL engine's native GL context, which must be created on the render thread
+                //at first paint.
                 await Task.Run(() => engine.RenderFrame(1, 1, (0f, 0f, 0f, 1f)));
             }
 
             var oldPainter = _modelPainter;
             _modelPainter = new ModelScenePainter(engine);
+            engine = null; //The painter owns it now.
             _currentEngineKind = kind;
             if (ReferenceEquals(CurrentPainter, oldPainter))
             {
@@ -352,6 +411,8 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
         }
         catch (Exception ex)
         {
+            //An engine that never reached a painter is released here, or its device would leak.
+            engine?.Dispose();
             StatusText = $"Could not switch to {kind} rendering: {ex.Message}";
             RevertEngineSelection();
             return;
@@ -399,7 +460,8 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
             });
             var asset = await _assets.EnsureSampleAsync(kind, progress, _lifetime.Token);
 
-            //Decode off the UI thread; the painters upload to GL lazily during Paint.
+            //Decode off the UI thread; the model painter uploads to the GPU lazily during Paint,
+            //while an HDRI's painter sets up (and uploads to) WebGPU right here.
             var decoded = await Task.Run(() => DecodeSample(kind, asset), _lifetime.Token);
 
             //Hand the decoded content to a painter back on the UI thread: the painters, their
@@ -409,9 +471,13 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
             await InvokeOnMainThreadAsync(() =>
             {
                 finished = true;
-                if (_isDisposed) { return Task.FromResult(false); }
+                if (_isDisposed)
+                {
+                    decoded.PanoramaPainter?.Dispose();
+                    return Task.FromResult(false);
+                }
                 CurrentPainter = ApplyDecodedSample(kind, decoded);
-                StatusText = $"{Label(kind)}: {asset.Name}    ·    {Hint(kind)}";
+                StatusText = $"{Label(kind)}: {asset.Name}    ·    {RendererNote(kind, decoded)}{Hint(kind)}";
                 return Task.FromResult(true);
             });
         }
@@ -431,8 +497,9 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
         }
     }
 
-    //Runs on a worker thread: decodes the downloaded file and builds the mesh. It touches no
-    //painter, no camera and no bound state, so nothing here needs the UI thread.
+    //Runs on a worker thread: decodes the downloaded file and builds the mesh (or, for an HDRI,
+    //the panorama painter, whose WebGPU setup is the slow part). It touches no displayed painter,
+    //no camera and no bound state, so nothing here needs the UI thread.
     private static DecodedSample DecodeSample(SampleAssetKind kind, SampleAsset asset)
     {
         switch (kind)
@@ -452,11 +519,9 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
 
             case SampleAssetKind.Hdri:
                 var bytes = File.ReadAllBytes(asset.PrimaryFilePath);
-                return new DecodedSample
-                {
-                    Panorama = TextureImageLoader.LoadFloatImage(
-                        bytes, Path.GetExtension(asset.PrimaryFilePath)),
-                };
+                var panorama = TextureImageLoader.LoadFloatImage(bytes, Path.GetExtension(asset.PrimaryFilePath));
+                //Rendered with WebGPU when it can be, with the CPU otherwise.
+                return new DecodedSample { PanoramaPainter = PanoramaScenePainter.Create(panorama) };
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(kind));
@@ -495,7 +560,7 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
                 return _modelPainter;
 
             case SampleAssetKind.Hdri:
-                var newPainter = new PanoramaScenePainter(decoded.Panorama);
+                var newPainter = decoded.PanoramaPainter;
                 var old = _panoramaPainter;
                 _panoramaPainter = newPainter;
                 old?.Dispose();
@@ -522,6 +587,20 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
         _ => kind.ToString(),
     };
 
+    //Names the renderer on the status line where the dropdown doesn't: which one drew the HDRI,
+    //and - once - that the app fell back from WebGPU to OpenGL.
+    private string RendererNote(SampleAssetKind kind, DecodedSample decoded)
+    {
+        if (kind == SampleAssetKind.Hdri)
+        {
+            return $"rendered with {decoded.PanoramaPainter.RendererName}    ·    ";
+        }
+
+        var note = _engineFallbackNote;
+        _engineFallbackNote = null;
+        return note == null ? string.Empty : note + "    ·    ";
+    }
+
     private static string Hint(SampleAssetKind kind) => kind switch
     {
         SampleAssetKind.Hdri => "drag to look around · scroll to zoom",
@@ -536,7 +615,7 @@ public sealed class MainViewModel : SimpleViewModel, ICanvasInvalidator
 
         public LoadedModel Model { get; init; }
 
-        public FloatImage Panorama { get; init; }
+        public PanoramaScenePainter PanoramaPainter { get; init; }
     }
 
     #region | IDisposable implementation |

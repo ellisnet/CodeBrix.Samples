@@ -27,7 +27,8 @@
 
   <!-- The Android head: the CodeBrix.Android twins of the same packages. The Vulkan engine is not
        built for Android (its renderer is desktop only); the engine dropdown reports it as not
-       available there, as it does on the heads outside the Vulkan allow-list. -->
+       available there, as it does on the heads outside the Vulkan allow-list. The WebGPU engine
+       (WebGpuModelRenderEngine) IS built for Android: CodeBrix.WebGpu ships the Android natives. -->
   <ItemGroup>
     <PackageReference Include="CodeBrix.Android.ApacheLicenseForever" Version="1.0.292.307" />
     <PackageReference Include="CodeBrix.Android.SkiaSharp.Views.ApacheLicenseForever" Version="1.0.292.307" />

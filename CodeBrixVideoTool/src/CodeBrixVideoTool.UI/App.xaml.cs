@@ -4,7 +4,6 @@ using CodeBrixVideoTool.Processing.Operations;
 using CodeBrixVideoTool.Processing.Probing;
 using CodeBrixVideoTool.Processing.Tools;
 using CodeBrix.Platform.Simple;
-using CodeBrix.VideoProcessing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
@@ -38,10 +37,16 @@ public partial class App : Application
         //alpha plane is AV1 too. Its FLAC sound needs nothing: the audio core decodes FLAC itself.
         PlaybackCodecs.RegisterOnce();
 
-        //Make the ffmpeg engine the process-wide video processor, once. CodeBrix.VideoPlayback.Authoring
+        //Make this head's engine the process-wide video processor, once. CodeBrix.VideoPlayback.Authoring
         //decodes every conversion source through the registered engine and refuses when there is none,
-        //and its exporter writes a master's MP4 through the same engine.
-        CodeBrixVideoProcessing.Register();
+        //its exporter writes a master's MP4 through the same engine, and the Processing library asks it
+        //everything else. The libraries name no engine: the desktop heads get the ffmpeg one, the Android
+        //head the platform's own MediaCodec one.
+#if HAS_CODEBRIX_ANDROID
+        global::CodeBrix.VideoProcessing.Android.CodeBrixVideoProcessingAndroid.Register();
+#else
+        global::CodeBrix.VideoProcessing.CodeBrixVideoProcessing.Register();
+#endif
 
         SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>
         {

@@ -6,8 +6,8 @@ Android, that shows three fixed sample assets from Poly Haven, one at a time, on
 environment (an interactive drag-to-look equirectangular panorama), and a glTF 3D model. Three
 buttons across the top switch modes and the active one carries the accent style. Beside them a
 **Rendering engine** dropdown picks the 3D graphics backend while the application is running;
-it is hidden in HDRI mode, because the panorama is drawn on the CPU and is unaffected by the
-choice. Dragging orbits the cube or the model and looks around the panorama, the scroll wheel
+it is hidden in HDRI mode, because the panorama picks its own renderer (WebGPU, falling back to
+the CPU) and is unaffected by the choice. Dragging orbits the cube or the model and looks around the panorama, the scroll wheel
 zooms, an indeterminate progress bar shows while an asset downloads, and a status line under the
 canvas reports what is loaded and how to drive it. Each sample is downloaded on demand and cached
 per user under `LocalApplicationData/PolyHavenBrowser/cache`, keyed by the curated asset slug, so
@@ -15,9 +15,10 @@ after the first run every sample loads with no network.
 
 It is the reference application for **rendering 3D content off screen with a swappable graphics
 API and compositing the result onto an `SKXamlCanvas` in ordinary XAML**: one interface,
-`IModelRenderEngine`, with three independent implementations behind it (OpenGL through
-Graphics3DGL's off-screen context, Vulkan through a self-contained Silk.NET renderer, and Metal
-through the raw Objective-C runtime), each gated to the heads that can run it. Secondarily it is
+`IModelRenderEngine`, with four independent implementations behind it (WebGPU through
+CodeBrix.WebGpu - the default, on every head including Android -, OpenGL through Graphics3DGL's
+off-screen context, Vulkan through a self-contained Silk.NET renderer, and Metal through the raw
+Objective-C runtime), the last two gated to the heads that can run them. Secondarily it is
 the reference for the "application that carries extra library assemblies" layout, `src/libs` plus
 `tests/libs`. The architecture of the rendering layer has its own in-repo document,
 [`src/PolyHavenBrowser.Core/Display/RENDERING-PIPELINE.md`](src/PolyHavenBrowser.Core/Display/RENDERING-PIPELINE.md),
@@ -51,6 +52,10 @@ whole Poly Haven library instead of three curated samples.
 - Writing the camera math once, in `System.Numerics`, and feeding the same matrices to GLSL,
   SPIR-V and MSL without an extra transpose:
   [Share one camera and one matrix convention across graphics APIs](../BLUEPRINTS-GraphicsAndRendering.md#share-one-camera-and-one-matrix-convention-across-graphics-apis).
+- Rendering with WebGPU on every head through CodeBrix.WebGpu - the model engine and the HDRI
+  panorama alike - into a headless target that is read back for the Skia canvas, and falling
+  back (to OpenGL, or to the CPU) when the machine has no GPU driver WebGPU can use: see
+  [WebGPU, the default backend on every head](#webgpu-the-default-backend-on-every-head) below.
 - Producing an interactive view entirely on the CPU, for a head with no GPU or as a fallback
   path:
   [Paint a CPU ray traced panorama into an SKBitmap](../BLUEPRINTS-GraphicsAndRendering.md#paint-a-cpu-ray-traced-panorama-into-an-skbitmap).
@@ -203,14 +208,19 @@ Prerequisites:
   configured in `src/PolyHavenBrowser.Core/RegisterServices.cs`.
 - Network access the first time each of the three samples is opened. After that the cached copy
   under `LocalApplicationData/PolyHavenBrowser/cache` is used and the application runs offline.
-- A GPU or a software rasterizer for the texture and model modes. OpenGL is the default and works
-  on every head, because Graphics3DGL resolves the head's own native GL machinery (WGL on the
-  Windows heads, GLX on X11, EGL on Wayland and the framebuffer head, OpenGL ES through ANGLE
-  on macOS). Vulkan additionally needs a Vulkan loader and driver, and is offered only on the LinuxX11,
-  LinuxWayland, Win32Skia and WinWpfSkia heads. Metal is offered only on macOS. On Android the
-  OpenGL engine renders through OpenGL ES, and Vulkan is not available: the Vulkan renderer is not
-  built for Android, so the dropdown answers a Vulkan pick (or a Metal one) with its "not available
-  on this platform" alert. The HDRI mode needs no GPU at all.
+- A GPU or a software rasterizer for the texture and model modes. WebGPU is the default and is
+  offered on every head, Android included: CodeBrix.WebGpu ships its native library for Windows
+  (Direct3D 12), Linux and Android (Vulkan) and macOS (Metal), so it needs only a working GPU
+  driver for that API. When WebGPU cannot start, the application starts on OpenGL instead and says
+  so on the status line. OpenGL works on every head, because Graphics3DGL resolves the head's own
+  native GL machinery (WGL on the Windows heads, GLX on X11, EGL on Wayland and the framebuffer
+  head, OpenGL ES through ANGLE on macOS). Vulkan additionally needs a Vulkan loader and driver,
+  and is offered only on the LinuxX11, LinuxWayland, Win32Skia and WinWpfSkia heads. Metal is
+  offered only on macOS. On Android the OpenGL engine renders through OpenGL ES, and Vulkan is not
+  available: the Vulkan renderer is not built for Android, so the dropdown answers a Vulkan pick
+  (or a Metal one) with its "not available on this platform" alert. The HDRI mode needs no GPU at
+  all: it renders with WebGPU when it can and on the CPU otherwise, and the status line names
+  which.
 
 Run one head from the application folder:
 
@@ -239,7 +249,7 @@ The Android package name is `com.codebrix.samples.polyhavenviewer` and the launc
 | Test project | Covers |
 | --- | --- |
 | `tests/libs/PolyHavenBrowser.PolyHavenApiClient.Tests` | Offline unit tests over a stub `HttpMessageHandler` (request URLs, JSON parsing, file-tree traversal, thumbnail URLs, download progress and MD5 verification, error mapping), factory and DI registration tests, mocked-consumer tests, and a separate `Live/` suite that hits the real API |
-| `tests/libs/PolyHavenBrowser.Rendering.Tests` | Pure unit tests (orbit and panorama cameras, the EXR, Radiance HDR and LDR decoders, tone mapping, float images, glTF loading, texture-loader dispatch), real-GPU suites for each of the three renderers, and platform-gate tests for the Vulkan and Metal allow lists |
+| `tests/libs/PolyHavenBrowser.Rendering.Tests` | Pure unit tests (orbit and panorama cameras, the EXR, Radiance HDR and LDR decoders, tone mapping, float images, glTF loading, texture-loader dispatch), real-GPU suites for each of the four model renderers and for the WebGPU HDRI renderer (checked pixel for pixel against the CPU one), and platform-gate tests for the Vulkan and Metal allow lists |
 | `tests/PolyHavenBrowser.ViewerOnly.PlayTests` | UI tests through CodeBrix.Platform.PlayTest over an offline HTTP fixture and a CPU stand-in rendering engine: sample switching, the busy state, download failures, the cache, the rendering-engine dropdown and its alert, canvas drag and zoom, the HDRI panorama pixels, page teardown, theme and orientation; see its own README.md |
 
 `global.json` in this folder selects the Microsoft.Testing.Platform runner:
@@ -266,7 +276,8 @@ suite carries `[Trait("Category", "RequiresGL")]` and skips when a surfaceless E
 be created (Linux, Mesa, llvmpipe or a hardware render node is enough); the Vulkan suite carries
 `[Trait("Category", "RequiresVulkan")]` and skips when no Vulkan stack is present (lavapipe is
 enough); the Metal suite carries `[Trait("Category", "RequiresMetal")]` and skips everywhere
-except macOS. The live API tests carry `[Trait("Category", "LiveApi")]`, share one `LiveApiFixture`
+except macOS; the two WebGPU suites carry `[Trait("Category", "RequiresWebGpu")]` and skip when
+no WebGPU device can be created. The live API tests carry `[Trait("Category", "LiveApi")]`, share one `LiveApiFixture`
 through `[Collection("LiveApi")]`, and need network; the fixture's own doc comment records the
 exclusion filter `Category!=LiveApi`.
 
@@ -297,11 +308,12 @@ PolyHavenBrowser_viewer_only/
         IModelRenderEngine.cs              The swappable graphics-API seam, and RenderedFrame
         IModelRenderEngineFactory.cs       Per-backend factories; the OpenGL factory lives here
         IModelRenderEngineSelector.cs      RenderEngineKind, the platform gate, the dropdown source
+        WebGpuModelRenderEngine.cs         Adapter over WebGpuSceneRenderer, and its factory
         OpenGlModelRenderEngine.cs         OffscreenGLContext, an FBO, and glReadPixels
         VulkanModelRenderEngine.cs         Adapter over VulkanSceneRenderer, and its factory
         MetalModelRenderEngine.cs          Adapter over MetalSceneRenderer, and its factory
         ModelScenePainter.cs               API-agnostic pointer input and Skia compositing
-        PanoramaScenePainter.cs            The CPU HDRI panorama painter
+        PanoramaScenePainter.cs            The HDRI panorama painter: WebGPU, or the CPU as fallback
         CubeMeshBuilder.cs                 Texture to a textured cube LoadedModel
       Services/SampleAssetService.cs       Picks, downloads and slug-caches the three samples
     PolyHavenBrowser.Win32Skia/            }
@@ -317,13 +329,14 @@ PolyHavenBrowser_viewer_only/
         Models/                            Asset, author, file tree, file reference, progress
         Exceptions/                        The API, not-found and integrity exceptions
         Serialization/                     The source-generated JsonSerializerContext
-      PolyHavenBrowser.Rendering/          Headless loaders, cameras, decoders, three renderers
+      PolyHavenBrowser.Rendering/          Headless loaders, cameras, decoders, the renderers
         PolyHavenBrowser.Rendering.csproj  The desktop build (net10.0), obj/ and bin/
         PolyHavenBrowser.Rendering.Android.csproj  The Android twin, obj.android/ and bin.android/
         Cameras/OrbitCamera.cs             Turntable camera plus model framing
         GL/                                IModelSceneRenderer and GlModelSceneRenderer
         Vulkan/                            VulkanSceneRenderer, VulkanShaders, VulkanPlatformSupport
         Metal/                             MetalSceneRenderer, MetalShaders, MetalInterop, MetalPlatformSupport
+        WebGpu/                            WebGpuSceneRenderer, WebGpuPanoramaRenderer, WebGpuShaders (WGSL), WebGpuSupport
         Models/                            IModelLoader, GltfModelLoader, LoadedModel and materials
         Images/                            FloatImage, ExrDecoder, RadianceHdrDecoder, LdrImageDecoder
         Panorama/                          EquirectPanoramaRenderer and PanoramaCamera
@@ -333,7 +346,7 @@ PolyHavenBrowser_viewer_only/
     PolyHavenBrowser.ViewerOnly.PlayTests/          UI tests on the CodeBrix.Platform PlayTest head
     libs/
       PolyHavenBrowser.PolyHavenApiClient.Tests/   Unit, Mocked, Live, TestDoubles, TestData
-      PolyHavenBrowser.Rendering.Tests/            Unit, Gl, Vulkan, Metal, Mocked, TestDoubles, TestData
+      PolyHavenBrowser.Rendering.Tests/            Unit, Gl, Vulkan, Metal, WebGpu, Mocked, TestDoubles, TestData
 ```
 
 The dependency direction is strictly one way, from the UI down. Each head references
@@ -364,7 +377,9 @@ Android twins leave out what has no Android form: the rendering library's
 Silk.NET.Vulkan and TinyEXR.NET packages they need, and Core's `Display/VulkanModelRenderEngine.cs`.
 Two short `#if HAS_CODEBRIX_ANDROID` sections cover the rest: the Vulkan case of
 `ModelRenderEngineSelector.Create`, and the `.exr` branches of `TextureImageLoader`, which report
-OpenEXR as not supported on Android. `PolyHavenBrowser.PolyHavenApiClient` holds no UI types and
+OpenEXR as not supported on Android. The WebGPU backend is built for Android unchanged - the
+CodeBrix.WebGpu package carries the Android natives - so both twins compile its files too.
+`PolyHavenBrowser.PolyHavenApiClient` holds no UI types and
 references no CodeBrix package, so it stays `net10.0` and the Android head uses it as it is. The
 Android head adds no code of its own beyond its application and activity classes; `App.xaml`,
 `MainPage.xaml` and the view model run unchanged.
@@ -381,6 +396,7 @@ Android head adds no code of its own beyond its application and activity classes
 | CodeBrix.Graphics3D.Gltf2 | Reads `.gltf` and `.glb`, walks the node tree, and exposes material channels including `Transmission`; its builders make in-memory `.glb` fixtures in the tests | `src/libs/PolyHavenBrowser.Rendering/Models/GltfModelLoader.cs`, `tests/libs/PolyHavenBrowser.Rendering.Tests/TestData/TestAssets.cs` |
 | CodeBrix.Imaging | Decodes the downloaded JPEG, PNG and WebP maps and glTF embedded textures to `SKBitmap` or raw RGBA | `src/libs/PolyHavenBrowser.Rendering/Images/LdrImageDecoder.cs` |
 | CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the SkiaSharp Views and Graphics3DGL add-ins; the Android head and the `.Android` twins of Core and the rendering library reference these instead of the CodeBrix.Platform packages | `src/PolyHavenBrowser.Android/PolyHavenBrowser.Android.csproj`, `src/PolyHavenBrowser.Core/PolyHavenBrowser.Core.Android.csproj`, `src/libs/PolyHavenBrowser.Rendering/PolyHavenBrowser.Rendering.Android.csproj` |
+| CodeBrix.WebGpu.Skia (with CodeBrix.WebGpu.Native) | The WebGPU backend: `WebGpuSkiaDevice` creates the device on the platform's GPU API, a headless `WebGpuSkiaTarget` is the colour target each frame renders into and is read back from, and the raw `WebGpu` binding builds the WGSL pipelines and records the draws; on desktop and Android alike | `src/libs/PolyHavenBrowser.Rendering/WebGpu/`, `src/PolyHavenBrowser.Core/Display/WebGpuModelRenderEngine.cs`, `src/PolyHavenBrowser.Core/Display/PanoramaScenePainter.cs` |
 | CodeBrix.TestMocks | `Mock<T>` doubles for `IModelLoader`, `IModelSceneRenderer`, `IPolyHavenApiClient` and its factory | `tests/libs/PolyHavenBrowser.Rendering.Tests/Mocked/`, `tests/libs/PolyHavenBrowser.PolyHavenApiClient.Tests/Mocked/` |
 | SilverAssertions | The assertion style in both test projects | both projects under `tests/libs/` |
 
@@ -405,12 +421,12 @@ The Metal backend deliberately takes no library at all: `MetalInterop` P/Invokes
 `RenderFrame(width, height, background)`, and returns a `RenderedFrame` of RGBA bytes that says
 how wide, how tall and whether the first row is the bottom of the image. Everything above that
 interface, `ModelScenePainter`, the camera, `CubeMeshBuilder`, `GltfModelLoader`, the view model
-and the XAML, is graphics-API-agnostic and is reused unchanged by all three backends. Everything
+and the XAML, is graphics-API-agnostic and is reused unchanged by all four backends. Everything
 below it is one class cluster per API.
 
 The choice is owned by a service, not by the page. `ModelRenderEngineSelector` is registered as a
-singleton in `RegisterServices.cs`, exposes `AvailableKinds` (OpenGL, Vulkan, Metal, in dropdown
-order), answers `IsSupported(kind)` and creates engines on demand. The view model resolves it and
+singleton in `RegisterServices.cs`, exposes `AvailableKinds` (WebGPU, OpenGL, Vulkan, Metal, in
+dropdown order), answers `IsSupported(kind)` and creates engines on demand. The view model resolves it and
 exposes `AvailableKinds` as `RenderEngineKinds`, which the dropdown binds to directly, so the
 choices are the enum members themselves and the selected value is a `RenderEngineKind` rather than
 a parsed string; the dropdown never sees an engine, a factory or a platform check. `Create()`
@@ -461,6 +477,38 @@ reason, every transfer goes through a shared-storage staging buffer blitted to a
 texture, with rows padded to the 256-byte alignment buffer-to-texture blits require.
 [Add a self contained Vulkan renderer that needs no shader toolchain](../BLUEPRINTS-GraphicsAndRendering.md#add-a-self-contained-vulkan-renderer-that-needs-no-shader-toolchain) ·
 [Add a direct to Metal renderer with no NuGet package or Apple bindings](../BLUEPRINTS-GraphicsAndRendering.md#add-a-direct-to-metal-renderer-with-no-nuget-package-or-apple-bindings)
+
+### WebGPU, the default backend on every head
+
+`WebGpu/WebGpuSceneRenderer.cs` is the fourth model renderer and the one the application starts
+on. It is built on CodeBrix.WebGpu: `WebGpuSkiaDevice.Create()` makes a device on the platform's
+own GPU API (Direct3D 12 on Windows, Vulkan on Linux and Android, Metal on macOS), a headless
+`WebGpuSkiaTarget` is the colour target each frame renders into, and `target.ReadPixels(...)` is
+the readback; the pipelines, buffers and draws are the raw `CodeBrix.WebGpu.Native` binding. Like
+Metal, WebGPU compiles its shader language at run time, so `WebGpuShaders.cs` is just WGSL source
+that mirrors the GLSL, SPIR-V and MSL shading, and like Metal its clip-space Y points up over a
+top-left framebuffer origin, so `WebGpuModelRenderEngine` reports `IsBottomUp: false`. Two
+bind-group layouts (the per-draw uniform block, then texture plus sampler) are declared explicitly
+rather than taken from the pipelines, so one set of bind groups serves both the opaque and the
+translucent pipeline. WebGPU's validation errors are collected by the owned device instead of
+ending the process, and `WebGpuSupport.ThrowIfErrors` turns any reported during setup into an
+ordinary exception the application can fall back from.
+
+There is no allow-list: the CodeBrix.WebGpu package carries a native library for every platform the
+application runs on, Android included, so `ModelRenderEngineSelector.IsSupported(WebGpu)` is always
+true and a machine without a usable driver is caught at run time instead. At startup the view model
+creates the WebGPU engine and pre-warms it off the UI thread before the first sample loads; if that
+fails it starts on OpenGL, selects OpenGL in the dropdown and names the reason once on the status
+line.
+
+The HDRI panorama uses WebGPU too. `WebGpu/WebGpuPanoramaRenderer.cs` uploads the panorama once as
+an `RGBA16Float` texture (filterable on every WebGPU device, unlike 32-bit float) and draws one
+full-screen triangle whose fragment shader does exactly what `EquirectPanoramaRenderer` does per
+pixel: cast the ray, map it to equirectangular coordinates, sample with the seam wrapping, then
+exposure, tone map and sRGB. A test renders both and compares them pixel for pixel. It sets itself
+up eagerly, so `PanoramaScenePainter.Create` can build it on the decode worker thread and fall back
+to the CPU renderer when it fails; if a GPU frame fails later, the painter switches to the CPU on
+the spot, keeping the current view.
 
 ### The platform gate, and how a headless library knows which head it is in
 
@@ -525,7 +573,7 @@ failed switch returns to whatever is really live.
 A supported platform can still have a missing or broken driver, so before the new engine is handed
 to a paint callback the view model renders one throwaway 1x1 frame inside `Task.Run()`. A failure
 there becomes bound `StatusText`, not an exception inside `PaintSurface`. That pre-warm is applied
-only to Vulkan and Metal: the OpenGL engine is excluded on purpose, because its native context has
+only to WebGPU, Vulkan and Metal: the OpenGL engine is excluded on purpose, because its native context has
 thread affinity and must be created on the render thread at first paint. The swap order matters
 too: `_currentPainter` is cleared before the old painter is disposed, so the page's paint handler
 cannot reach a disposed painter in between. After a successful switch the current sample is
@@ -538,13 +586,14 @@ re-displayed from the local cache, so changing engines never touches the network
 `Display/IScenePainter.cs` is the contract the view model drives: `Paint(surface, info)` plus
 `PointerDown`, `PointerDrag`, `PointerSkip`, `PointerUp` and `Zoom`. There are two implementations.
 `ModelScenePainter` wraps whichever `IModelRenderEngine` is current and serves both the texture and
-the model modes. `PanoramaScenePainter` is pure CPU: `EquirectPanoramaRenderer` ray-traces the
-equirectangular image into a reused `SKBitmap` through a `Parallel.For` over the rows, which is why
-the engine dropdown is hidden in HDRI mode and why that mode works on a head with no GPU. The two
-painters even use opposite strategies for staying interactive: the GPU painter always renders at
-full canvas resolution and drops frames under load, while the panorama painter caps its render
-resolution, with a lower cap while a drag is in progress and the full cap once the drag stops, then
-scales the result up.
+the model modes. `PanoramaScenePainter` renders with `WebGpuPanoramaRenderer` when WebGPU is
+available and otherwise with `EquirectPanoramaRenderer`, which ray-traces the equirectangular image
+into a reused `SKBitmap` through a `Parallel.For` over the rows; it picks its own renderer, which is
+why the engine dropdown is hidden in HDRI mode and why that mode works on a head with no GPU. The
+model painter always renders at full canvas resolution and drops frames under load. The panorama
+painter on the CPU caps its render resolution, with a lower cap while a drag is in progress and the
+full cap once the drag stops, then scales the result up; on WebGPU it keeps full resolution while
+dragging, with a cap that only bounds the readback on very large displays.
 
 The three modes differ across a pair of methods, and both are worth reading for the framing
 decisions as much as the plumbing. `MainViewModel.DecodeSample` is the worker-thread half: it is
@@ -695,10 +744,12 @@ is acceptable for the small amount of transparent geometry in preview models.
 assembly. Its GL suite creates a real context with no window system through
 `TestDoubles/EglTestContext.cs`, which asks Mesa for a surfaceless EGL display; the entry point it
 uses is `eglGetPlatformDisplay`, core EGL, rather than `eglGetPlatformDisplayEXT`, because only the
-former is a real exported symbol under the GLVND dispatcher. The three GPU suites deliberately
-mirror each other test for test, covering drawing over the background, clearing the model, resizing
-between frames, a textured material's color, the full path from a `.glb` to pixels, and the
-depth-ordering regression, so all three backends prove the same behaviors. The Metal suite's pixel
+former is a real exported symbol under the GLVND dispatcher. The four model-renderer GPU suites
+deliberately mirror each other test for test, covering drawing over the background, clearing the
+model, resizing between frames, a textured material's color, the full path from a `.glb` to pixels,
+and the depth-ordering regression, so all four backends prove the same behaviors; the WebGPU suite
+adds a check of its top-down readback, and the WebGPU panorama suite compares the GPU panorama with
+the CPU one. The Metal suite's pixel
 checks are written to be orientation-agnostic, scanning the whole image or picking a vertically
 symmetric center pixel, so they hold whether the readback is top-down or bottom-up. Fixtures are
 built in memory: `TestData/TestAssets.cs` hand-encodes Radiance bytes and uses CodeBrix.Graphics3D.Gltf2

@@ -1,14 +1,17 @@
+using CodeBrix.Audio.Codecs;
+using CodeBrix.Audio.Engine.Interfaces;
+using CodeBrix.Audio.Vorbis;
 using CodeBrix.VideoPlayback;
 using CodeBrix.VideoPlayback.Containers;
 using CodeBrix.VideoPlayback.Containers.Cbv;
 using CodeBrix.VideoPlayback.Containers.Ivf;
+using CodeBrix.VideoPlayback.Containers.Matroska;
 using CodeBrix.VideoPlayback.Containers.Ogg;
 using CodeBrix.VideoPlayback.Decoding;
-using CodeBrix.VideoProcessing;
-using CodeBrix.VideoProcessing.Enums;
+using CodeBrix.VideoProcessing.Core.Tools;
 using CodeBrixVideoTool.Processing.Probing;
+using CodeBrixVideoTool.Processing.Tools;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -17,18 +20,36 @@ using System.Threading.Tasks;
 namespace CodeBrixVideoTool.Processing.Containers;
 
 /// <summary>
-/// Turns a bespoke CBVF file - Mode 2, or its master form, Mode 3 - into something FFmpeg can read.
+/// Turns a bespoke CBVF file - Mode 2, or its master form, Mode 3 - into something a video-processing
+/// engine can read.
 /// </summary>
 /// <remarks>
 /// <para>
-/// FFmpeg cannot open the bespoke CBVF container, so a Mode 2 or Mode 3 file cannot be handed straight
-/// to a conversion pass the way a Mode 1, WebM or Matroska file can. What it can do is read the streams
-/// inside it, which are perfectly ordinary AV1 and Vorbis - or, in a master, FLAC. So this
-/// demultiplexes the file with the playback core's own reader, re-wraps the AV1 stream in IVF with the
-/// core's own <see cref="IvfWriter" />, re-wraps Vorbis or Opus sound in Ogg with its
-/// <see cref="OggAudioWriter" /> - the two containers the authoring library itself writes when it builds
-/// a bespoke file, used here in the opposite direction - writes FLAC sound out as a plain FLAC stream,
-/// and muxes the two into one Matroska file with no re-encoding at all.
+/// No engine can open the bespoke CBVF container - not FFmpeg on the desktop, not the platform's media
+/// extractor on Android - so a Mode 2 or Mode 3 file cannot be handed straight to a conversion pass the
+/// way a Mode 1, WebM or Matroska file can. What they can read is the streams inside it, which are
+/// perfectly ordinary AV1 and Vorbis - or, in a master, FLAC. So this demultiplexes the file with the
+/// playback core's own reader, re-wraps the AV1 stream in IVF with the core's own <see cref="IvfWriter" />,
+/// re-wraps Vorbis or Opus sound in Ogg with its <see cref="OggAudioWriter" /> - the two containers the
+/// authoring library itself writes when it builds a bespoke file, used here in the opposite direction -
+/// and muxes the two into one Matroska file with the core's own <see cref="MatroskaMuxer" />, with no
+/// re-encoding and no external tool at all.
+/// </para>
+/// <para>
+/// A master's FLAC sound is the one thing that muxer does not take: it writes Opus and Vorbis tracks
+/// only. Where the registered engine can run FFmpeg, the FLAC is written out as a plain FLAC stream and
+/// FFmpeg remuxes it, still without re-encoding anything. Where it cannot - on Android - the FLAC frames
+/// are decoded as they are read and the sound goes into the intermediate as Vorbis at the encoder's
+/// highest quality, and the extraction says so. The destination re-encodes the sound in any case; this
+/// is one generation more, at a quality chosen to make it as close to nothing as Vorbis gets.
+/// </para>
+/// <para>
+/// The same rewrap serves a Matroska or WebM file the engine cannot time as it stands. Android's
+/// media extractor reports no frame rate for a WebM document with its index in front - every Mode 1
+/// and WebM file this application writes - although the track states its frame duration, and the
+/// engine will not decode a stream whose rate it does not know. The Matroska intermediate, index at
+/// the end, it reads. <see cref="Operations.ConversionRunner" /> asks the engine first and rewraps only
+/// when it has to.
 /// </para>
 /// <para>
 /// From that point on the conversion is an ordinary conversion. Nothing is decoded, nothing is
@@ -39,7 +60,11 @@ namespace CodeBrixVideoTool.Processing.Containers;
 /// </remarks>
 public sealed class Mode2Extractor
 {
-    /// <summary>Demultiplexes a bespoke CBVF file and remuxes it into an FFmpeg-readable intermediate.</summary>
+    //Vorbis at the top of its scale - about 500 kbit/s for 44.1 or 48 kHz stereo - for a master's FLAC
+    //sound where nothing but Vorbis or Opus can go into the intermediate.
+    private const float BridgeVorbisQuality = VorbisEncoderOptions.MaximumQuality;
+
+    /// <summary>Demultiplexes a bespoke CBVF file and remuxes it into an engine-readable intermediate.</summary>
     /// <param name="source">What probing found in the file.</param>
     /// <param name="workingFolder">A folder the intermediate files may be written into.</param>
     /// <param name="cancellationToken">Stops the extraction.</param>
@@ -47,6 +72,7 @@ public sealed class Mode2Extractor
     /// <exception cref="VideoToolProcessingException">
     /// The file is not a bespoke CBVF file, carries no AV1 video, or could not be re-wrapped.
     /// </exception>
+    /// <exception cref="OperationCanceledException">The extraction was cancelled.</exception>
     public async Task<Mode2Extraction> ExtractAsync(
         SourceMediaInfo source, string workingFolder, CancellationToken cancellationToken)
     {
@@ -61,15 +87,21 @@ public sealed class Mode2Extractor
         var audioCodecId = string.Empty;
         string audioPath = null;
         var hasAudio = false;
+        var audioIsFlac = false;
         bool hasAlphaPlane;
         MediaSidecars sidecars;
 
+        //FLAC goes to FFmpeg as it is where the engine can run FFmpeg, and into Vorbis where it cannot.
+        var hasTools = ProcessingEngine.TryGetExternalTools(out var tools);
+
         using (var reader = MediaContainers.Open(source.Path))
         {
-            if (reader is not CbvReader)
+            //A Matroska or WebM file is rewrapped the same way when the engine cannot time it as it stands -
+            //see ConversionRunner. Anything else is not this class's business.
+            if (reader is not CbvReader and not MatroskaReader)
             {
                 throw new VideoToolProcessingException(
-                    $"'{source.FileName}' is not a bespoke CodeBrix Mode 2 or Mode 3 file, so it does not need demultiplexing.");
+                    $"'{source.FileName}' is neither a bespoke CodeBrix Mode 2 or Mode 3 file nor a Matroska or WebM file, so it cannot be rewrapped.");
             }
 
             //The picture, never a master's alpha plane: that is a second video track beside it.
@@ -85,13 +117,17 @@ public sealed class Mode2Extractor
             hasAlphaPlane = reader.Tracks.Any(t => t.IsAlphaPlane);
             var audio = reader.Tracks.FirstOrDefault(t => t.Kind == MediaTrackKind.Audio);
 
+            audioIsFlac = audio is not null && IsFlac(audio);
+            var flacAsVorbis = audioIsFlac && !hasTools;
+
             using var ivf = IvfWriter.CreateAv1(ivfPath, video.Width, video.Height);
             if (audio is not null)
             {
-                audioPath = Path.Combine(workingFolder, AudioFileNameFor(audio));
+                //FLAC needs no Ogg around it: a FLAC stream is its header and then its frames, end to end.
+                audioPath = Path.Combine(workingFolder, audioIsFlac && !flacAsVorbis ? "audio.flac" : "audio.ogg");
             }
 
-            var audioWriter = audio is null ? null : CreateAudioWriter(audio, audioPath, source.FileName);
+            var audioWriter = audio is null ? null : CreateAudioWriter(audio, audioPath, flacAsVorbis, source.FileName);
 
             try
             {
@@ -121,19 +157,27 @@ public sealed class Mode2Extractor
             sidecars = SidecarExtractor.ExtractFromReader(reader, workingFolder);
         }
 
-        await RemuxAsync(ivfPath, hasAudio ? audioPath : null, intermediatePath, cancellationToken)
-            .ConfigureAwait(false);
+        var muxedAudioPath = hasAudio ? audioPath : null;
+        if (hasAudio && audioIsFlac && hasTools)
+        {
+            await RemuxFlacWithFfmpegAsync(tools, ivfPath, muxedAudioPath, intermediatePath, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            MuxInProcess(ivfPath, muxedAudioPath, intermediatePath, cancellationToken);
+        }
 
         return new Mode2Extraction(
-            intermediatePath, ivfPath, hasAudio ? audioPath : null, audioCodecId,
-            videoFrames, audioPackets, hasAlphaPlane, sidecars);
+            intermediatePath, ivfPath, muxedAudioPath, audioCodecId,
+            videoFrames, audioPackets, hasAlphaPlane, sidecars,
+            soundCarriedAsVorbis: hasAudio && audioIsFlac && !hasTools);
     }
 
-    //FLAC needs no Ogg around it: a FLAC stream is its header and then its frames, end to end.
-    private static string AudioFileNameFor(MediaTrackInfo audio) =>
-        string.Equals(audio.CodecId, VideoCodecIds.Flac, StringComparison.OrdinalIgnoreCase) ? "audio.flac" : "audio.ogg";
+    private static bool IsFlac(MediaTrackInfo audio) =>
+        string.Equals(audio.CodecId, VideoCodecIds.Flac, StringComparison.OrdinalIgnoreCase);
 
-    private static IAudioStreamWriter CreateAudioWriter(MediaTrackInfo audio, string path, string fileName)
+    private static IAudioStreamWriter CreateAudioWriter(MediaTrackInfo audio, string path, bool flacAsVorbis, string fileName)
     {
         try
         {
@@ -156,13 +200,15 @@ public sealed class Mode2Extractor
                 exception);
         }
 
-        if (string.Equals(audio.CodecId, VideoCodecIds.Flac, StringComparison.OrdinalIgnoreCase))
+        if (IsFlac(audio))
         {
-            return FlacStreamWriter.Create(path, audio.CodecPrivate.Span, fileName);
+            return flacAsVorbis
+                ? FlacAsVorbisWriter.Create(path, audio.CodecPrivate, fileName)
+                : FlacStreamWriter.Create(path, audio.CodecPrivate.Span, fileName);
         }
 
         throw new VideoToolProcessingException(
-            $"'{fileName}' carries '{audio.CodecId}' audio, which cannot be re-wrapped for FFmpeg.");
+            $"'{fileName}' carries '{audio.CodecId}' audio, which cannot be re-wrapped into an intermediate file.");
     }
 
     private static void Demultiplex(
@@ -227,37 +273,60 @@ public sealed class Mode2Extractor
 
     private static TimeSpan MaxOf(TimeSpan first, TimeSpan second) => second > first ? second : first;
 
-    private static async Task RemuxAsync(
-        string ivfPath, string audioPath, string outputPath, CancellationToken cancellationToken)
+    /// <summary>
+    /// Muxes the IVF picture and the Ogg sound into the Matroska intermediate with the playback core's own
+    /// muxer: in process, nothing re-encoded, on every engine.
+    /// </summary>
+    private static void MuxInProcess(string ivfPath, string oggPath, string outputPath, CancellationToken cancellationToken)
     {
-        var arguments = FFMpegArguments.FromFileInput(ivfPath);
-        if (audioPath is not null)
+        cancellationToken.ThrowIfCancellationRequested();
+
+        try
         {
-            arguments = arguments.AddFileInput(audioPath);
-        }
-
-        var errors = new List<string>();
-        var succeeded = await arguments
-            .OutputToFile(outputPath, true, options =>
+            MatroskaMuxer.Write(new MatroskaAuthoringRequest
             {
-                options.SelectStream(0, 0, Channel.Video);
-                if (audioPath is not null)
-                {
-                    options.SelectStream(0, 1, Channel.Audio);
-                }
+                OutputPath = outputPath,
+                DocType = MatroskaDocType.Matroska,
+                VideoIvfPath = ivfPath,
+                AudioOggPath = oggPath,
 
-                options.WithCopyCodec().ForceFormat("matroska");
-            })
-            .NotifyOnError(errors.Add)
-            .CancellableThrough(cancellationToken)
-            .ProcessAsynchronously(false)
-            .ConfigureAwait(false);
-
-        if (!succeeded || !File.Exists(outputPath))
+                //An intermediate is read once, start to finish, by the conversion that follows: where its
+                //index sits and whether it would stream are nobody's business.
+                CuesToFront = false,
+                EvaluateProfile = false,
+            });
+        }
+        catch (Exception exception) when (exception is VideoPlaybackException or IOException or ArgumentException)
         {
             throw new VideoToolProcessingException(
-                "The demultiplexed CodeBrix streams could not be muxed into an intermediate file. " +
-                string.Join(" ", errors.TakeLast(5)));
+                "The demultiplexed CodeBrix streams could not be muxed into an intermediate file: " + exception.Message,
+                exception);
+        }
+    }
+
+    /// <summary>
+    /// Remuxes the IVF picture and a plain FLAC stream into the Matroska intermediate with FFmpeg, copying
+    /// both: the one remux the core's muxer cannot do, run through the engine's external tools.
+    /// </summary>
+    private static async Task RemuxFlacWithFfmpegAsync(
+        IExternalTools tools, string ivfPath, string flacPath, string outputPath, CancellationToken cancellationToken)
+    {
+        var arguments = FfmpegLine.Start()
+            .Add("-i").AddPath(ivfPath)
+            .Add("-i").AddPath(flacPath)
+            .Add("-map 0:v:0")
+            .Add("-map 1:a:0")
+            .Add("-c copy")
+            .Add("-f matroska")
+            .AddPath(outputPath);
+
+        var run = await FfmpegLine.RunAsync(tools, arguments, TimeSpan.Zero, null, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!run.Succeeded || !File.Exists(outputPath))
+        {
+            throw new VideoToolProcessingException(
+                "The demultiplexed CodeBrix streams could not be muxed into an intermediate file. " + run.ErrorText);
         }
     }
 
@@ -311,5 +380,73 @@ public sealed class Mode2Extractor
         public void Complete() => stream.Flush();
 
         public void Dispose() => stream.Dispose();
+    }
+
+    /// <summary>
+    /// Where there is no FFmpeg to remux FLAC: decodes each FLAC frame as it is read, with the audio core's
+    /// own managed decoder - every packet is one complete frame and decodes on its own - and encodes the
+    /// samples straight into an Ogg Vorbis file at the highest quality, which the core's muxer does take.
+    /// </summary>
+    private sealed class FlacAsVorbisWriter : IAudioStreamWriter
+    {
+        private readonly IPacketSoundDecoder decoder;
+        private readonly FileStream stream;
+        private readonly OggVorbisEncoder encoder;
+        private readonly float[] samples;
+
+        private FlacAsVorbisWriter(IPacketSoundDecoder decoder, FileStream stream, OggVorbisEncoder encoder)
+        {
+            this.decoder = decoder;
+            this.stream = stream;
+            this.encoder = encoder;
+            samples = new float[decoder.MaxSamplesPerPacket];
+        }
+
+        public static FlacAsVorbisWriter Create(string path, ReadOnlyMemory<byte> streamHeader, string fileName)
+        {
+            var decoder = new FlacPacketCodecFactory().CreateDecoder(VideoCodecIds.Flac, streamHeader, null)
+                ?? throw new VideoToolProcessingException(
+                    $"'{fileName}' carries FLAC audio whose setup data is not a FLAC stream header, so its sound cannot be decoded.");
+
+            FileStream stream = null;
+            try
+            {
+                stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+                var encoder = new OggVorbisEncoder(stream, decoder.Channels, decoder.SampleRate,
+                    new VorbisEncoderOptions { Mode = VorbisEncoderMode.Quality, Quality = BridgeVorbisQuality });
+                return new FlacAsVorbisWriter(decoder, stream, encoder);
+            }
+            catch (Exception exception) when (exception is VorbisEncoderException or ArgumentException)
+            {
+                stream?.Dispose();
+                var described = $"{decoder.Channels}-channel {decoder.SampleRate} Hz";
+                decoder.Dispose();
+                throw new VideoToolProcessingException(
+                    $"'{fileName}' carries {described} FLAC audio that could not be carried across as Vorbis: {exception.Message}",
+                    exception);
+            }
+        }
+
+        public void WritePacket(ReadOnlySpan<byte> packet, TimeSpan endTimestamp)
+        {
+            var written = decoder.DecodePacket(packet, samples);
+            if (written > 0)
+            {
+                encoder.Encode(samples.AsSpan(0, written));
+            }
+        }
+
+        public void Complete()
+        {
+            encoder.Flush();
+            stream.Flush();
+        }
+
+        public void Dispose()
+        {
+            encoder.Dispose();
+            stream.Dispose();
+            decoder.Dispose();
+        }
     }
 }
