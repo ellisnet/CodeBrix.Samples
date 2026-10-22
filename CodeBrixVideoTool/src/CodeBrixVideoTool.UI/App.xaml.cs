@@ -33,12 +33,14 @@ public partial class App : Application
             "ms-appx:///CodeBrix.Platform.Fonts.Roboto/Fonts/NotoSansGeorgian.ttf",
         ];
 
-        //Turn on AV1 video and Opus audio, once. Every one of the four formats this application
-        //writes carries AV1, so nothing plays at all without the first of these.
+        //Turn on AV1 video and Opus audio, once. Every one of the five formats this application
+        //writes carries AV1, so nothing plays at all without the first of these - and a Mode 3 master's
+        //alpha plane is AV1 too. Its FLAC sound needs nothing: the audio core decodes FLAC itself.
         PlaybackCodecs.RegisterOnce();
 
         //Make the ffmpeg engine the process-wide video processor, once. CodeBrix.VideoPlayback.Authoring
-        //decodes every conversion source through the registered engine and refuses when there is none.
+        //decodes every conversion source through the registered engine and refuses when there is none,
+        //and its exporter writes a master's MP4 through the same engine.
         CodeBrixVideoProcessing.Register();
 
         SimpleServiceResolver.CreateInstance(HostHelper.GetHost(), services =>

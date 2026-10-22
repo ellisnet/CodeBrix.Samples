@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -65,6 +66,7 @@ public class ConversionViewModel : SimpleViewModel, IOutputPathBridge
         set
         {
             SetProperty(ref field, value);
+            RefreshResolutions();
             NotifyPropertyChanged(nameof(ActionLabel));
             NotifyPropertyChanged(nameof(AudioCodecText));
             NotifyPropertyChanged(nameof(VideoCodecText));
@@ -72,7 +74,10 @@ public class ConversionViewModel : SimpleViewModel, IOutputPathBridge
         }
     }
 
-    /// <summary>The sizes the result may be written at, from the source's own size downwards.</summary>
+    /// <summary>
+    /// The sizes the result may be written at, from the source's own size downwards - or the source's
+    /// own size alone, for a conversion that cannot change it (see <see cref="MediaFormats.CanResize" />).
+    /// </summary>
     public ObservableCollection<ResolutionOption> Resolutions { get; } = new();
 
     /// <summary>
@@ -166,11 +171,8 @@ public class ConversionViewModel : SimpleViewModel, IOutputPathBridge
                 ? $"{SelectedResolution.Width} x {SelectedResolution.Height}"
                 : "its own size";
 
-            var demux = Source.Format == MediaFormatKind.CodeBrixMode2
-                ? " The bespoke container is demultiplexed first, without re-encoding."
-                : string.Empty;
-
-            return $"{ActionLabel} {Source.FileName} to {SelectedDestination.Label} at {size}.{demux}";
+            return $"{ActionLabel} {Source.FileName} to {SelectedDestination.Label} at {size}." +
+                   DescribeRoute(Source, SelectedDestination.Kind);
         }
     }
 
@@ -347,6 +349,47 @@ public class ConversionViewModel : SimpleViewModel, IOutputPathBridge
     #endregion
 
     /// <summary>
+    /// What the route line adds after "Import x to y at size." for one source and destination: how a
+    /// bespoke container is read, and what becomes of an alpha channel. Empty when there is nothing to
+    /// add.
+    /// </summary>
+    /// <param name="source">The file being converted.</param>
+    /// <param name="destination">The format being written.</param>
+    /// <returns>Zero or more sentences, each with a leading space.</returns>
+    public static string DescribeRoute(SourceMediaInfo source, MediaFormatKind destination)
+    {
+        if (source is null)
+        {
+            return string.Empty;
+        }
+
+        var masterExport = source.Format == MediaFormatKind.CodeBrixMaster && destination == MediaFormatKind.Mp4;
+        var route = string.Empty;
+
+        if (masterExport)
+        {
+            route += source.HasAlpha
+                ? " The master is decoded in process and composited over grey, because an MP4 has no transparency."
+                : " The master is decoded in process.";
+        }
+        else if (MediaFormats.IsBespokeContainer(source.Format))
+        {
+            route += " The bespoke container is demultiplexed first, without re-encoding.";
+        }
+
+        if (source.HasAlpha && MediaFormats.CarriesAlpha(destination))
+        {
+            route += " Its alpha channel is kept.";
+        }
+        else if (source.HasAlpha && !masterExport)
+        {
+            route += " Its alpha channel is left behind.";
+        }
+
+        return route;
+    }
+
+    /// <summary>
     /// The lines the operation panel shows under the status bar for one finished conversion: the
     /// streamable-profile verdict when there was one, then the outcome's own notes in their order.
     /// </summary>
@@ -398,12 +441,10 @@ public class ConversionViewModel : SimpleViewModel, IOutputPathBridge
     private void RefreshForSource()
     {
         Destinations.Clear();
-        Resolutions.Clear();
 
         if (Source is null)
         {
             SelectedDestination = null;
-            SelectedResolution = null;
             NotifyPropertyChanged(nameof(PanelVisibility));
             NotifyPropertyChanged(nameof(RouteText));
             return;
@@ -414,15 +455,36 @@ public class ConversionViewModel : SimpleViewModel, IOutputPathBridge
             Destinations.Add(new DestinationOption(destination));
         }
 
-        foreach (var rung in ResolutionLadder.Build(Source.Width, Source.Height))
+        //Selecting the destination rebuilds the resolution ladder for it.
+        SelectedDestination = Destinations.Count > 0 ? Destinations[0] : null;
+
+        NotifyPropertyChanged(nameof(PanelVisibility));
+        NotifyPropertyChanged(nameof(RouteText));
+    }
+
+    //The ladder depends on the destination as well as the source, because one conversion - a master
+    //exported to MP4 - always keeps its source's size. The rung a person picked survives a change of
+    //destination whenever the new ladder still offers it.
+    private void RefreshResolutions()
+    {
+        var previous = SelectedResolution;
+        Resolutions.Clear();
+
+        if (Source is null || SelectedDestination is null)
+        {
+            SelectedResolution = null;
+            return;
+        }
+
+        var ladder = ResolutionLadder.Build(Source.Width, Source.Height);
+        var offered = MediaFormats.CanResize(Source.Format, SelectedDestination.Kind) ? ladder : ladder.Take(1);
+        foreach (var rung in offered)
         {
             Resolutions.Add(rung);
         }
 
-        SelectedDestination = Destinations.Count > 0 ? Destinations[0] : null;
-        SelectedResolution = Resolutions.Count > 0 ? Resolutions[0] : null;
-
-        NotifyPropertyChanged(nameof(PanelVisibility));
-        NotifyPropertyChanged(nameof(RouteText));
+        SelectedResolution = Resolutions.FirstOrDefault(rung =>
+                                 previous is not null && rung.Width == previous.Width && rung.Height == previous.Height)
+                             ?? (Resolutions.Count > 0 ? Resolutions[0] : null);
     }
 }

@@ -93,7 +93,7 @@ public class MainViewModel : SimpleViewModel, IMediaFileBridge
 
     /// <summary>A one-line description of what the application does, for the header.</summary>
     public string Subtitle =>
-        "Import, transcode, export and play MKV, WebM, CodeBrix Mode 1 and CodeBrix Mode 2 video.";
+        "Import, transcode, export and play MKV, WebM and CodeBrix Mode 1, Mode 2 and Mode 3 video.";
 
     #endregion
 

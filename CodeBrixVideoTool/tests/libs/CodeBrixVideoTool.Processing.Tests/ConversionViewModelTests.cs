@@ -1,5 +1,6 @@
 using CodeBrixVideoTool.Processing.Formats;
 using CodeBrixVideoTool.Processing.Operations;
+using CodeBrixVideoTool.Processing.Probing;
 using CodeBrixVideoTool.Processing.ViewModels;
 using SilverAssertions;
 using System;
@@ -129,5 +130,58 @@ public class ConversionViewModelTests
 
         //Assert
         lines.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void the_route_says_a_bespoke_source_is_demultiplexed_first()
+    {
+        //Arrange
+        var source = new SourceMediaInfo { Format = MediaFormatKind.CodeBrixMaster };
+
+        //Act
+        var route = ConversionViewModel.DescribeRoute(source, MediaFormatKind.CodeBrixMode2);
+
+        //Assert
+        route.Should().Be(" The bespoke container is demultiplexed first, without re-encoding.");
+    }
+
+    [Fact]
+    public void the_route_says_a_master_with_alpha_is_composited_on_the_way_to_mp4()
+    {
+        //Arrange
+        var source = new SourceMediaInfo { Format = MediaFormatKind.CodeBrixMaster, HasAlpha = true };
+
+        //Act
+        var route = ConversionViewModel.DescribeRoute(source, MediaFormatKind.Mp4);
+
+        //Assert
+        route.Should().Contain("composited over grey");
+        route.Should().NotContain("demultiplexed");
+        route.Should().NotContain("left behind");
+    }
+
+    [Fact]
+    public void the_route_says_what_becomes_of_an_alpha_channel()
+    {
+        //Arrange
+        var source = new SourceMediaInfo { Format = MediaFormatKind.Mp4, HasAlpha = true };
+
+        //Act
+        var kept = ConversionViewModel.DescribeRoute(source, MediaFormatKind.CodeBrixMaster);
+        var dropped = ConversionViewModel.DescribeRoute(source, MediaFormatKind.CodeBrixMode1);
+
+        //Assert
+        kept.Should().Be(" Its alpha channel is kept.");
+        dropped.Should().Be(" Its alpha channel is left behind.");
+    }
+
+    [Fact]
+    public void an_opaque_import_has_nothing_to_add_to_the_route()
+    {
+        //Act
+        var route = ConversionViewModel.DescribeRoute(new SourceMediaInfo { Format = MediaFormatKind.Mp4 }, MediaFormatKind.CodeBrixMaster);
+
+        //Assert
+        route.Should().BeEmpty();
     }
 }

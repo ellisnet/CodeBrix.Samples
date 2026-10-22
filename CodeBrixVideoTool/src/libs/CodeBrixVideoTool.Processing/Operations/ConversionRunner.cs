@@ -1,8 +1,10 @@
 using CodeBrix.VideoPlayback.Authoring;
 using CodeBrix.VideoPlayback.Authoring.Captions;
 using CodeBrix.VideoPlayback.Authoring.Encoding;
+using CodeBrix.VideoPlayback.Authoring.Export;
 using CodeBrix.VideoPlayback.Containers;
 using CodeBrix.VideoProcessing;
+using CodeBrix.VideoProcessing.Core.Output;
 using CodeBrix.VideoProcessing.Enums;
 using CodeBrixVideoTool.Processing.Containers;
 using CodeBrixVideoTool.Processing.Formats;
@@ -19,14 +21,15 @@ using System.Threading.Tasks;
 namespace CodeBrixVideoTool.Processing.Operations;
 
 /// <summary>
-/// Carries out one conversion: the four supported formats through the authoring library, an
-/// <c>.mp4</c> export through FFmpeg, and a Mode 2 source through the demultiplexer first.
+/// Carries out one conversion: the five supported formats through the authoring library, an
+/// <c>.mp4</c> export through FFmpeg - or, for a Mode 3 master, through the authoring library's
+/// exporter - and a Mode 2 or Mode 3 source through the demultiplexer first.
 /// </summary>
 /// <remarks>
 /// Every conversion runs in exactly two stages. The first prepares the source - demultiplexing a
-/// Mode 2 file when there is one, and lifting out the chapters and captions the authoring pass has
-/// to be handed as separate inputs. The second encodes. Only the second can report a percentage,
-/// because only FFmpeg knows how far through the media it has got.
+/// bespoke CBVF file when there is one, and lifting out the chapters and captions the authoring pass
+/// has to be handed as separate inputs. The second encodes. Only the second can report a percentage,
+/// because only the encoder knows how far through the media it has got.
 /// </remarks>
 public sealed class ConversionRunner : IConversionRunner
 {
@@ -42,6 +45,16 @@ public sealed class ConversionRunner : IConversionRunner
     //the nominal 128 kbit/s for 44.1 or 48 kHz stereo, the same figure the authoring library uses as
     //its bit-rate default, and it scales with the channel count.
     private const double VorbisQuality = 4d;
+
+    //A master's sound is lossless whatever is chosen; 16 bits is the authoring library's own default and
+    //what nearly every source this application is given was recorded at, so it comes out sample for
+    //sample rather than being widened for nothing.
+    private const int FlacBitDepth = 16;
+
+    //The one note the exporter writes that this application makes untrue: a master's captions and
+    //chapters ARE carried into the MP4, by the remux pass after the export. It is matched by its opening
+    //words, which are the exporter's own.
+    private const string ExporterCaptionsNoteStart = "the source carries captions and/or chapters";
 
     private readonly Mode2Extractor mode2Extractor = new();
     private readonly SidecarExtractor sidecarExtractor = new();
@@ -72,7 +85,13 @@ public sealed class ConversionRunner : IConversionRunner
                     .ExtractAsync(plan.Source, workingFolder, cancellationToken).ConfigureAwait(false);
                 sourcePath = extraction.IntermediatePath;
                 sidecars = extraction.Sidecars;
-                notes.Add("Mode 2 source demultiplexed without re-encoding: " + extraction + ".");
+                notes.Add($"{MediaFormats.ShortName(plan.Source.Format)} source demultiplexed without re-encoding: {extraction}.");
+
+                if (extraction.LeftAlphaPlaneBehind)
+                {
+                    notes.Add($"The master's alpha plane was left behind: {MediaFormats.DisplayName(plan.Destination)} " +
+                              "is opaque, so the picture is written without its transparency.");
+                }
             }
             else if (plan.Source.CaptionTrackCount > 0 || plan.Source.ChapterCount > 0)
             {
@@ -83,11 +102,22 @@ public sealed class ConversionRunner : IConversionRunner
             notes.AddRange(sidecars.Notes);
             cancellationToken.ThrowIfCancellationRequested();
 
-            var outcome = plan.Destination == MediaFormatKind.Mp4
-                ? await ExportToMp4Async(plan, sourcePath, sidecars, progress, notes, stopwatch, cancellationToken)
-                    .ConfigureAwait(false)
-                : await AuthorAsync(plan, sourcePath, sidecars, workingFolder, progress, notes, stopwatch, cancellationToken)
+            ConversionOutcome outcome;
+            if (plan.ExportsThroughVideoExporter)
+            {
+                outcome = await ExportMasterToMp4Async(plan, sidecars, workingFolder, progress, notes, stopwatch, cancellationToken)
                     .ConfigureAwait(false);
+            }
+            else if (plan.Destination == MediaFormatKind.Mp4)
+            {
+                outcome = await ExportToMp4Async(plan, sourcePath, sidecars, progress, notes, stopwatch, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                outcome = await AuthorAsync(plan, sourcePath, sidecars, workingFolder, progress, notes, stopwatch, cancellationToken)
+                    .ConfigureAwait(false);
+            }
 
             return outcome;
         }
@@ -143,6 +173,7 @@ public sealed class ConversionRunner : IConversionRunner
 
         notes.AddRange(result.Notes);
         AddAudioNotes(plan, notes);
+        AddAlphaNotes(plan, notes);
         AddSidecarNotes(plan, sidecars, notes);
 
         progress?.Report(new ConversionProgress(gerund, 2, 2, 100d));
@@ -169,17 +200,21 @@ public sealed class ConversionRunner : IConversionRunner
             ChaptersPath = sidecars.ChaptersPath,
             CancellationToken = cancellationToken,
 
-            //The bespoke CBVF container is written by the muxer in the playback core; the other
-            //three are written by FFmpeg's own WebM and Matroska muxers.
-            Flavour = plan.Destination == MediaFormatKind.CodeBrixMode2
-                ? VideoAuthoringFlavour.Bespoke
-                : VideoAuthoringFlavour.WebMProfile,
+            //The bespoke CBVF container is written by the muxer in the playback core - at format
+            //version 1, the master form, for Mode 3 - and the other three by FFmpeg's own WebM and
+            //Matroska muxers.
+            Flavour = plan.Destination switch
+            {
+                MediaFormatKind.CodeBrixMode2 => VideoAuthoringFlavour.Bespoke,
+                MediaFormatKind.CodeBrixMaster => VideoAuthoringFlavour.Master,
+                _ => VideoAuthoringFlavour.WebMProfile,
+            },
 
             Container = plan.Destination == MediaFormatKind.Matroska
                 ? AuthoringContainerFormat.Matroska
                 : AuthoringContainerFormat.WebM,
 
-            //Only the two .cbv flavours are meant to satisfy the streamable profile. A standard MKV
+            //Only the three CodeBrix modes are meant to satisfy the streamable profile. A standard MKV
             //is checked and reported on, but its failures are not this application's business.
             CuesToFront = plan.Destination != MediaFormatKind.Matroska,
             ValidateProfile = true,
@@ -192,19 +227,40 @@ public sealed class ConversionRunner : IConversionRunner
         request.Video.SpeedPreset = Av1SpeedPreset;
         request.Video.ConstantRateFactor = Av1RateFactor(plan.Quality);
 
+        if (plan.Destination == MediaFormatKind.CodeBrixMaster)
+        {
+            //A master is encoded IN PROCESS by the AV1 encoder package, which is the reference encoder
+            //FFmpeg calls libaom-av1, not SVT-AV1. The rate factor means the same 0-63 scale to it (its
+            //cq-level) and the pinned preset is its cpu-used, which the library caps at 8 - exactly where
+            //it is pinned already. The stops were calibrated on SVT-AV1, so they are close on a master
+            //rather than identical. Alpha is carried whenever the engine finds the source has it, and the
+            //alpha plane gets the library's own rate factor: six points better than the picture's.
+            request.Video.Alpha = AuthoringAlphaMode.Auto;
+        }
+
         request.Audio.Include = plan.Source.HasAudio;
-        request.Audio.Codec = plan.AudioCodec == TargetAudioCodec.Vorbis
-            ? AuthoringAudioCodec.LibVorbis
-            : AuthoringAudioCodec.LibOpus;
+        request.Audio.Codec = plan.AudioCodec switch
+        {
+            TargetAudioCodec.Vorbis => AuthoringAudioCodec.LibVorbis,
+            TargetAudioCodec.Flac => AuthoringAudioCodec.Flac,
+            _ => AuthoringAudioCodec.LibOpus,
+        };
 
         if (plan.Source.HasAudio)
         {
             //The channel count is the plan's decision: the source's own, capped at stereo for every
-            //one of the four formats this application writes, because it writes mono or stereo audio
+            //one of the five formats this application writes, because it writes mono or stereo audio
             //only. The quality knob never touches sound.
             request.Audio.Channels = plan.AudioChannels;
 
-            if (plan.AudioCodec == TargetAudioCodec.Vorbis)
+            if (plan.AudioCodec == TargetAudioCodec.Flac)
+            {
+                //Lossless sound keeps the source's own sample rate: resampling it would be the one lossy
+                //step in a lossless pass.
+                request.Audio.SampleRateHz = Math.Clamp(plan.Source.AudioSampleRateHz, 8000, 192000);
+                request.Audio.FlacBitDepth = FlacBitDepth;
+            }
+            else if (plan.AudioCodec == TargetAudioCodec.Vorbis)
             {
                 //Vorbis keeps the source's own sample rate rather than resampling, and is rate-controlled
                 //by QUALITY rather than by bit rate. libvorbis's bit-rate mode opens only inside a band
@@ -337,11 +393,146 @@ public sealed class ConversionRunner : IConversionRunner
         }
 
         AddAudioNotes(plan, notes);
+        AddAlphaNotes(plan, notes);
         AddSidecarNotes(plan, sidecars, notes);
         progress?.Report(new ConversionProgress(gerund, 2, 2, 100d));
 
         return ConversionOutcome.Success(
             plan.OutputPath, new FileInfo(plan.OutputPath).Length, stopwatch.Elapsed, null, false, notes, commands);
+    }
+
+    /// <summary>
+    /// A Mode 3 master out to <c>.mp4</c>: the authoring library's exporter reads the master itself,
+    /// decodes the picture, the alpha plane and the FLAC sound with the decoders the APPLICATION
+    /// registered (the same AV1 decoder the player uses; FLAC is built into the audio core), composites
+    /// the picture over 50% grey by its alpha - an MP4 has no transparency to carry it in - and writes
+    /// H.264 and AAC through the registered video-processing engine. The exporter carries no captions or
+    /// chapters, so when the master has any a second, copy-only FFmpeg pass adds them, exactly as the
+    /// ordinary export writes them.
+    /// </summary>
+    private static async Task<ConversionOutcome> ExportMasterToMp4Async(
+        ConversionPlan plan,
+        MediaSidecars sidecars,
+        string workingFolder,
+        IProgress<ConversionProgress> progress,
+        List<string> notes,
+        Stopwatch stopwatch,
+        CancellationToken cancellationToken)
+    {
+        var gerund = MediaFormats.ActionGerund(plan.Operation);
+        progress?.Report(new ConversionProgress(gerund, 2, 2, 0d));
+
+        var addsSidecars = sidecars.CaptionCount > 0 || sidecars.HasChapters;
+        var exportPath = addsSidecars ? Path.Combine(workingFolder, "exported.mp4") : plan.OutputPath;
+
+        var request = new VideoExportRequest
+        {
+            SourcePath = plan.Source.Path,
+            OutputPath = exportPath,
+            Codec = VideoExportCodec.H264,
+
+            //The same quality stops as the FFmpeg export: the exporter's constant quality is x264's crf.
+            Quality = VideoQuality.ConstantQuality(H264RateFactor(plan.Quality)),
+            IncludeAudio = plan.Source.HasAudio,
+            AudioBitrateKilobitsPerSecond = Mp4AudioKilobitsPerSecond,
+            FastStart = true,
+            ProgressCallback = report => progress?.Report(new ConversionProgress($"{gerund} - {report.Label}", 2, 2, report.Percent)),
+            CancellationToken = cancellationToken,
+        };
+
+        //The exporter is synchronous, so it runs on a worker thread. Like the authoring library it watches
+        //the request's own token, deletes its part-written output when cancelled and surfaces the cancel
+        //as an OperationCanceledException, which RunAsync turns into a cancelled outcome.
+        var commands = new List<string>();
+        var result = await Task.Run(() =>
+        {
+            commands.AddRange(VideoExporter.DryRun(request).Split('\n').Select(line => "VideoExporter " + line));
+            return VideoExporter.Run(request);
+        }, CancellationToken.None).ConfigureAwait(false);
+
+        notes.AddRange(addsSidecars
+            ? result.Notes.Where(note => !note.StartsWith(ExporterCaptionsNoteStart, StringComparison.OrdinalIgnoreCase))
+            : result.Notes);
+
+        if (plan.Source.HasAlpha)
+        {
+            notes.Add("The master's alpha plane was composited over 50% grey: an MP4 has no transparency of its own.");
+        }
+
+        if (addsSidecars)
+        {
+            commands.Add(await AddSidecarsToMp4Async(
+                exportPath, result.AudioSource != VideoExportAudioSource.None, sidecars, plan.OutputPath, cancellationToken)
+                .ConfigureAwait(false));
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        AddAudioNotes(plan, notes);
+        AddSidecarNotes(plan, sidecars, notes);
+        progress?.Report(new ConversionProgress(gerund, 2, 2, 100d));
+
+        return ConversionOutcome.Success(
+            plan.OutputPath, new FileInfo(plan.OutputPath).Length, stopwatch.Elapsed, null, false, notes, commands);
+    }
+
+    //Copies an exported MP4's video and sound as they are and adds the caption tracks and chapters the
+    //ordinary export would have written into it: the captions as MP4 timed text, the chapters from the
+    //FFmpeg metadata file.
+    private static async Task<string> AddSidecarsToMp4Async(
+        string exportedPath, bool hasAudio, MediaSidecars sidecars, string outputPath, CancellationToken cancellationToken)
+    {
+        var arguments = FFMpegArguments.FromFileInput(exportedPath);
+        foreach (var caption in sidecars.Captions)
+        {
+            arguments = arguments.AddFileInput(caption.Path, false);
+        }
+
+        if (sidecars.HasChapters)
+        {
+            arguments = arguments.AddFileInput(sidecars.ChaptersPath, false)
+                .MapMetaData(sidecars.Captions.Count + 1);
+        }
+
+        var errors = new List<string>();
+        var processor = arguments
+            .OutputToFile(outputPath, true, options =>
+            {
+                options.SelectStream(0, 0, Channel.Video);
+                if (hasAudio)
+                {
+                    options.SelectStream(0, 0, Channel.Audio);
+                }
+
+                for (var index = 0; index < sidecars.Captions.Count; index++)
+                {
+                    options.SelectStream(0, index + 1, Channel.Subtitle);
+                    options.WithStreamMetadata(Channel.Subtitle, index, "language", sidecars.Captions[index].Language);
+                }
+
+                options.WithCopyCodec();
+                if (sidecars.Captions.Count > 0)
+                {
+                    options.WithSubtitleCodec("mov_text");
+                }
+
+                options.WithFastStart().ForceFormat("mp4");
+            })
+            .NotifyOnError(errors.Add)
+            .CancellableThrough(cancellationToken);
+
+        var command = "ffmpeg " + processor.Arguments;
+        var succeeded = await processor.ProcessAsynchronously(false).ConfigureAwait(false);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!succeeded || !File.Exists(outputPath))
+        {
+            throw new VideoToolProcessingException(
+                "The master was exported, but its captions and chapters could not be added to the MP4. " +
+                string.Join(" ", errors.TakeLast(5)));
+        }
+
+        return command;
     }
 
     //THE QUALITY KNOB, IN ITS ENTIRETY. A quality stop moves the encoder's constant rate factor and
@@ -393,7 +584,7 @@ public sealed class ConversionRunner : IConversionRunner
     //
     //The stops were chosen to MATCH the AV1 ones stop for stop rather than to look tidy on x264's own
     //scale: 27/20/17/14 measure within 0.4 dB of 42/30/24/18 on both clips, so picking "Better" gives
-    //the same picture whether the destination is one of the four formats or an exported .mp4. x264's
+    //the same picture whether the destination is one of the five formats or an exported .mp4. x264's
     //scale turns out to move about half as far as SVT-AV1's does in this band, which is why its steps
     //are three points where AV1's are six.
     private static int H264RateFactor(QualityLevel quality) => quality switch
@@ -439,6 +630,16 @@ public sealed class ConversionRunner : IConversionRunner
         notes.Add(plan.Destination == MediaFormatKind.Mp4
             ? $"Audio reduced from {plan.Source.AudioChannels} channels to {plan.AudioChannels}: an exported MP4 carries at most eight."
             : $"Audio downmixed from {plan.Source.AudioChannels} channels to stereo: this application writes mono or stereo audio only.");
+    }
+
+    private static void AddAlphaNotes(ConversionPlan plan, List<string> notes)
+    {
+        //A demultiplexed master says so itself, and a master exported to MP4 is composited instead.
+        if (plan.DropsAlpha && !plan.RequiresMode2Extraction)
+        {
+            notes.Add($"The source's alpha channel was left behind: {MediaFormats.DisplayName(plan.Destination)} " +
+                      "is opaque. Import to CodeBrix Mode 3 to keep it.");
+        }
     }
 
     private static void AddSidecarNotes(ConversionPlan plan, MediaSidecars sidecars, List<string> notes)

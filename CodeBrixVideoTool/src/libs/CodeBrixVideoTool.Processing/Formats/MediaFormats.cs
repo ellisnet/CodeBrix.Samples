@@ -1,5 +1,6 @@
 using CodeBrix.VideoPlayback.Containers.Cbv;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Linq;
 namespace CodeBrixVideoTool.Processing.Formats;
 
 /// <summary>
-/// Everything the application knows about the five container shapes: which of them it writes, what
+/// Everything the application knows about the six container shapes: which of them it writes, what
 /// each is called, which codecs each is written with, and which of them the in-application player
 /// can open.
 /// </summary>
@@ -34,13 +35,26 @@ public static class MediaFormats
         ".3gp",
     ];
 
-    /// <summary>The four formats this application writes, plays and transcodes between.</summary>
+    /// <summary>
+    /// The file-name extensions of the formats the in-application player opens, lower-case and dotted:
+    /// the rest of the open dialog's filter, after <see cref="ImportExtensions" />.
+    /// </summary>
+    public static IReadOnlyList<string> PlayableExtensions { get; } =
+    [
+        ".mkv",
+        ".webm",
+        CbvFormat.FileExtension,
+        CbvFormat.MasterFileExtension,
+    ];
+
+    /// <summary>The five formats this application writes, plays and transcodes between.</summary>
     public static IReadOnlyList<MediaFormatKind> SupportedFormats { get; } =
     [
         MediaFormatKind.Matroska,
         MediaFormatKind.WebM,
         MediaFormatKind.CodeBrixMode1,
         MediaFormatKind.CodeBrixMode2,
+        MediaFormatKind.CodeBrixMaster,
     ];
 
     /// <summary>The name to show a person for one format.</summary>
@@ -53,6 +67,7 @@ public static class MediaFormats
         MediaFormatKind.WebM => "WebM .webm (AV1 + Opus)",
         MediaFormatKind.CodeBrixMode1 => "CodeBrix Mode 1 .cbv (AV1 + Opus)",
         MediaFormatKind.CodeBrixMode2 => "CodeBrix Mode 2 .cbv (AV1 + Vorbis)",
+        MediaFormatKind.CodeBrixMaster => "CodeBrix Mode 3 .cbvmaster (AV1 + alpha + FLAC)",
         _ => "Unrecognised",
     };
 
@@ -66,6 +81,7 @@ public static class MediaFormats
         MediaFormatKind.WebM => "WebM",
         MediaFormatKind.CodeBrixMode1 => "Mode 1",
         MediaFormatKind.CodeBrixMode2 => "Mode 2",
+        MediaFormatKind.CodeBrixMaster => "Mode 3",
         _ => "?",
     };
 
@@ -78,11 +94,12 @@ public static class MediaFormats
     /// <returns>What to call a file with that extension in a dialog.</returns>
     /// <remarks>
     /// An extension this application does not write is described as an MP4, because the <c>.mp4</c>
-    /// export is the one destination that is not one of the four supported formats.
+    /// export is the one destination that is not one of the five supported formats.
     /// </remarks>
     public static string DescribeExtension(string extension) => extension switch
     {
         ".cbv" => "CodeBrix video",
+        ".cbvmaster" => "CodeBrix master video",
         ".mkv" => "Matroska video",
         ".webm" => "WebM video",
         _ => "MP4 video",
@@ -99,12 +116,14 @@ public static class MediaFormats
         MediaFormatKind.WebM => ".webm",
         MediaFormatKind.CodeBrixMode1 => ".cbv",
         MediaFormatKind.CodeBrixMode2 => ".cbv",
+        MediaFormatKind.CodeBrixMaster => ".cbvmaster",
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "There is no extension for an unrecognised format."),
     };
 
     /// <summary>
     /// The audio codec a destination format is written with. This is the whole of the application's
-    /// audio-codec policy: Mode 2 is Vorbis, the rest of the four are Opus, and an export is AAC.
+    /// audio-codec policy: Mode 2 is Vorbis, Mode 3 is FLAC, the other three are Opus, and an export
+    /// is AAC.
     /// </summary>
     /// <param name="kind">The destination format.</param>
     /// <returns>The codec that destination is written with.</returns>
@@ -119,11 +138,14 @@ public static class MediaFormats
         //The hard invariant: a bespoke CBVF file this application writes carries Vorbis, never Opus.
         MediaFormatKind.CodeBrixMode2 => TargetAudioCodec.Vorbis,
 
+        //Its master form is lossless: FLAC is the only codec a Mode 3 file takes.
+        MediaFormatKind.CodeBrixMaster => TargetAudioCodec.Flac,
+
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "There is no audio codec for an unrecognised format."),
     };
 
     /// <summary>
-    /// The most audio channels a destination may carry. The four formats this application writes are
+    /// The most audio channels a destination may carry. The five formats this application writes are
     /// capped at stereo whichever codec they carry, because this application writes mono or stereo
     /// audio only; an <c>.mp4</c> export is not capped and keeps the source's own layout, up to the
     /// authoring ceiling of eight.
@@ -132,7 +154,7 @@ public static class MediaFormats
     /// <returns>The channel ceiling for that destination.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The format is not one this application writes.</exception>
     /// <remarks>
-    /// The cap is an application policy rather than a codec limit: nothing in Opus, Vorbis or the
+    /// The cap is an application policy rather than a codec limit: nothing in Opus, Vorbis, FLAC or the
     /// containers themselves stops a surround track being written. It is stated per DESTINATION and
     /// not per codec so that the one uncapped destination - the <c>.mp4</c> export, which is AAC -
     /// stays uncapped no matter what else is written with the same codec later.
@@ -144,6 +166,7 @@ public static class MediaFormats
         MediaFormatKind.WebM => 2,
         MediaFormatKind.CodeBrixMode1 => 2,
         MediaFormatKind.CodeBrixMode2 => 2,
+        MediaFormatKind.CodeBrixMaster => 2,
         _ => throw new ArgumentOutOfRangeException(nameof(destination), destination, "There is no channel ceiling for an unrecognised format."),
     };
 
@@ -184,27 +207,61 @@ public static class MediaFormats
         MediaFormatKind.WebM => TargetVideoCodec.Av1,
         MediaFormatKind.CodeBrixMode1 => TargetVideoCodec.Av1,
         MediaFormatKind.CodeBrixMode2 => TargetVideoCodec.Av1,
+        MediaFormatKind.CodeBrixMaster => TargetVideoCodec.Av1,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "There is no video codec for an unrecognised format."),
     };
 
-    /// <summary>Whether a format is one of the four this application writes and plays.</summary>
+    /// <summary>Whether a format is one of the five this application writes and plays.</summary>
     /// <param name="kind">The format.</param>
-    /// <returns>True for MKV, WebM, Mode 1 and Mode 2.</returns>
+    /// <returns>True for MKV, WebM, Mode 1, Mode 2 and Mode 3.</returns>
     public static bool IsSupportedFormat(MediaFormatKind kind) => SupportedFormats.Contains(kind);
 
     /// <summary>
     /// Whether the in-application player can open a format. The player decodes AV1, so it opens all
-    /// four supported formats and no <c>.mp4</c> ever.
+    /// five supported formats and no <c>.mp4</c> ever. A Mode 3 file needs nothing more: its alpha
+    /// plane is an ordinary AV1 stream, and its FLAC sound is decoded by the playback core itself.
     /// </summary>
     /// <param name="kind">The format.</param>
     /// <returns>True when the file can be played inside this application.</returns>
     public static bool IsPlayable(MediaFormatKind kind) => IsSupportedFormat(kind);
 
-    /// <summary>Whether a format is carried in a <c>.cbv</c> file.</summary>
+    /// <summary>Whether a format is one of the CodeBrix video formats, carried in a <c>.cbv</c> or <c>.cbvmaster</c> file.</summary>
     /// <param name="kind">The format.</param>
-    /// <returns>True for Mode 1 and Mode 2.</returns>
+    /// <returns>True for Mode 1, Mode 2 and Mode 3.</returns>
     public static bool IsCodeBrixContainer(MediaFormatKind kind) =>
-        kind is MediaFormatKind.CodeBrixMode1 or MediaFormatKind.CodeBrixMode2;
+        kind is MediaFormatKind.CodeBrixMode1 or MediaFormatKind.CodeBrixMode2 or MediaFormatKind.CodeBrixMaster;
+
+    /// <summary>
+    /// Whether a format is the bespoke CBVF container, which FFmpeg cannot open at all: Mode 2, or its
+    /// master form, Mode 3.
+    /// </summary>
+    /// <param name="kind">The format.</param>
+    /// <returns>True for Mode 2 and Mode 3.</returns>
+    public static bool IsBespokeContainer(MediaFormatKind kind) =>
+        kind is MediaFormatKind.CodeBrixMode2 or MediaFormatKind.CodeBrixMaster;
+
+    /// <summary>
+    /// Whether a format carries an alpha channel - real transparency - when this application writes
+    /// it. Only the master form does; every other destination is opaque.
+    /// </summary>
+    /// <param name="kind">The format.</param>
+    /// <returns>True for Mode 3.</returns>
+    public static bool CarriesAlpha(MediaFormatKind kind) => kind == MediaFormatKind.CodeBrixMaster;
+
+    /// <summary>
+    /// Whether a conversion between two formats may change the picture's size, which decides whether
+    /// the resolution drop-down offers anything below the source's own size.
+    /// </summary>
+    /// <param name="source">Where the media is coming from.</param>
+    /// <param name="destination">Where it is going.</param>
+    /// <returns>False only for a Mode 3 file exported to <c>.mp4</c>.</returns>
+    /// <remarks>
+    /// A master goes out to <c>.mp4</c> through the authoring library's exporter, because that is what
+    /// composites its alpha over a backdrop, and the exporter always writes the source's own size.
+    /// Scaling the result afterwards would encode the picture twice, so a smaller size is not offered.
+    /// </remarks>
+    public static bool CanResize(MediaFormatKind source, MediaFormatKind destination) =>
+        !(source == MediaFormatKind.CodeBrixMaster && destination == MediaFormatKind.Mp4);
 
     /// <summary>What a conversion between two formats is called.</summary>
     /// <param name="source">Where the media is coming from.</param>
@@ -254,8 +311,8 @@ public static class MediaFormats
     };
 
     /// <summary>
-    /// The destination formats offered for one source: the four supported formats other than the
-    /// source's own, plus <c>.mp4</c> when the source is one of the four.
+    /// The destination formats offered for one source: the five supported formats other than the
+    /// source's own, plus <c>.mp4</c> when the source is one of the five.
     /// </summary>
     /// <param name="source">The format the media is in now.</param>
     /// <returns>The destinations that make sense, in the order they should be listed.</returns>
@@ -290,9 +347,11 @@ public static class MediaFormats
     /// <param name="path">The file to look at.</param>
     /// <returns>The format, or Unknown.</returns>
     /// <remarks>
-    /// A <c>.cbv</c> file is Mode 2 when it starts with the ASCII bytes "CBVF" and Mode 1 when it
-    /// starts with the EBML magic. Nothing else about either file is consulted, which is exactly how
-    /// the playback core picks its reader.
+    /// A <c>.cbv</c> or <c>.cbvmaster</c> file is Mode 1 when it starts with the EBML magic, and the
+    /// bespoke container when it starts with the ASCII bytes "CBVF": Mode 2 at format version 0 and
+    /// Mode 3, the master form, at version 1. Nothing else about the file is consulted, which is exactly
+    /// how the playback core picks its reader. The extension is only ever a hint, so a master file named
+    /// <c>.cbv</c> is still a master.
     /// </remarks>
     public static MediaFormatKind Detect(string path)
     {
@@ -304,7 +363,7 @@ public static class MediaFormats
         var extension = Path.GetExtension(path).ToLowerInvariant();
         var sniffed = SniffSignature(path);
 
-        if (extension == ".cbv")
+        if (extension is ".cbv" or ".cbvmaster")
         {
             return sniffed == MediaFormatKind.Unknown ? MediaFormatKind.Unknown : sniffed;
         }
@@ -327,18 +386,28 @@ public static class MediaFormats
         try
         {
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            Span<byte> first = stackalloc byte[4];
-            if (stream.Read(first) < 4)
+
+            //The four-byte magic, then - in the bespoke container - its u16 little-endian format version.
+            Span<byte> first = stackalloc byte[6];
+            var read = stream.ReadAtLeast(first, first.Length, false);
+            if (read < 4)
             {
                 return MediaFormatKind.Unknown;
             }
 
             if (CbvReader.IsCbv(first))
             {
-                return MediaFormatKind.CodeBrixMode2;
+                if (read < first.Length)
+                {
+                    return MediaFormatKind.Unknown;
+                }
+
+                return BinaryPrimitives.ReadUInt16LittleEndian(first[4..]) >= CbvFormat.MasterVersion
+                    ? MediaFormatKind.CodeBrixMaster
+                    : MediaFormatKind.CodeBrixMode2;
             }
 
-            return first.SequenceEqual(CbvFormat.EbmlMagic) ? MediaFormatKind.CodeBrixMode1 : MediaFormatKind.Unknown;
+            return first[..4].SequenceEqual(CbvFormat.EbmlMagic) ? MediaFormatKind.CodeBrixMode1 : MediaFormatKind.Unknown;
         }
         catch (IOException)
         {

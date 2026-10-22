@@ -6,7 +6,7 @@ namespace CodeBrixVideoTool.Processing.Formats;
 /// </summary>
 public enum TargetVideoCodec
 {
-    /// <summary>AV1 - every one of the four supported formats.</summary>
+    /// <summary>AV1 - every one of the five supported formats.</summary>
     Av1 = 0,
 
     /// <summary>H.264 - the <c>.mp4</c> export, for the widest possible compatibility.</summary>

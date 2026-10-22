@@ -20,5 +20,12 @@
   <ItemGroup>
     <PackageReference Include="CodeBrix.Platform.TkCanvas.BsdLicenseForever" Version="1.0.281.88" />
     <PackageReference Include="CodeBrix.Platform.TclTk.Extras.BsdLicenseForever" Version="1.0.281.88" />
+
+    <!-- The 'System.Security.Cryptography.Pkcs' package should only be transtively pulled into this
+         project - no direct package reference should be needed. But if we rely on it to be transitively
+         pulled in; then version 10.0.12 is pulled in, and 10.0.12 has a known serious vulnerability.
+         So, for now, we have to directly reference the patched version; but hopefully this package
+         reference can be removed in the future. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
   </ItemGroup>
 </Project>

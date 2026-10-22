@@ -43,6 +43,12 @@ public sealed class SourceMediaInfo
     /// <summary>The audio track's sample rate in hertz, or zero when there is no audio.</summary>
     public int AudioSampleRateHz { get; set; }
 
+    /// <summary>
+    /// True when the picture carries an alpha channel: a Mode 3 file with an alpha-plane track, or a
+    /// source whose pixel format has one.
+    /// </summary>
+    public bool HasAlpha { get; set; }
+
     /// <summary>How many caption tracks the file carries.</summary>
     public int CaptionTrackCount { get; set; }
 
@@ -79,7 +85,7 @@ public sealed class SourceMediaInfo
     /// <returns>Format, resolution, duration and track counts.</returns>
     public override string ToString()
     {
-        var resolution = HasVideo ? $"{Width}x{Height}" : "no video";
+        var resolution = HasVideo ? $"{Width}x{Height}{(HasAlpha ? " with alpha" : string.Empty)}" : "no video";
         var audio = HasAudio ? $"{AudioCodec} {AudioChannels}ch" : "no audio";
         return $"{MediaFormats.DisplayName(Format)} - {resolution}, {Duration:hh\\:mm\\:ss}, {audio}";
     }

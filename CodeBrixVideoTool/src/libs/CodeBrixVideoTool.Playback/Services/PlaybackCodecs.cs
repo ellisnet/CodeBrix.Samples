@@ -15,10 +15,13 @@ namespace CodeBrixVideoTool.Playback.Services;
 /// its own.
 /// </para>
 /// <para>
-/// Dav1d is not optional here: every one of the four supported formats carries AV1, so nothing plays
-/// without it. Opus is needed for WebM, Matroska and Mode 1; Mode 2 carries Vorbis, which the
-/// playback core decodes itself. There is deliberately no module initializer doing this - that would
-/// work in a debug build and silently not run in a trimmed publish.
+/// Dav1d is not optional here: every one of the five supported formats carries AV1, so nothing plays
+/// without it - and a Mode 3 master's alpha plane is a monochrome AV1 stream decoded by the same
+/// package. Opus is needed for WebM, Matroska and Mode 1; Mode 2 carries Vorbis and Mode 3 carries
+/// FLAC, both of which the playback core decodes itself. The same registrations serve the authoring
+/// library's exporter, which decodes a master with whatever the application registered. There is
+/// deliberately no module initializer doing this - that would work in a debug build and silently not
+/// run in a trimmed publish.
 /// </para>
 /// </remarks>
 public static class PlaybackCodecs

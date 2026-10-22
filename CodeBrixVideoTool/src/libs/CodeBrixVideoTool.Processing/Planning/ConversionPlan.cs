@@ -77,10 +77,31 @@ public sealed class ConversionPlan
     public TargetVideoCodec VideoCodec => MediaFormats.VideoCodecFor(Destination);
 
     /// <summary>
-    /// True when the source is a Mode 2 file, which FFmpeg cannot open and which therefore has to be
-    /// demultiplexed and re-wrapped before anything else can happen.
+    /// True when the source is a bespoke CBVF file - Mode 2, or a Mode 3 master going anywhere but
+    /// <c>.mp4</c> - which FFmpeg cannot open and which therefore has to be demultiplexed and re-wrapped
+    /// before anything else can happen.
     /// </summary>
-    public bool RequiresMode2Extraction => Source.Format == MediaFormatKind.CodeBrixMode2;
+    public bool RequiresMode2Extraction =>
+        MediaFormats.IsBespokeContainer(Source.Format) && !ExportsThroughVideoExporter;
+
+    /// <summary>
+    /// True when a Mode 3 master is going out to <c>.mp4</c>. That runs through the authoring library's
+    /// exporter, which reads the master itself, decodes its picture, alpha plane and FLAC sound with the
+    /// decoders the application registered, and composites the picture over a backdrop - because an MP4
+    /// has no transparency of its own.
+    /// </summary>
+    public bool ExportsThroughVideoExporter =>
+        Source.Format == MediaFormatKind.CodeBrixMaster && Destination == MediaFormatKind.Mp4;
+
+    /// <summary>True when the destination keeps the source's alpha channel: a master written from a source with one.</summary>
+    public bool KeepsAlpha => Source.HasAlpha && MediaFormats.CarriesAlpha(Destination);
+
+    /// <summary>
+    /// True when the source has an alpha channel the destination cannot carry and nothing composites:
+    /// the picture is written opaque. A master exported to <c>.mp4</c> is composited instead, so it is
+    /// not counted here.
+    /// </summary>
+    public bool DropsAlpha => Source.HasAlpha && !MediaFormats.CarriesAlpha(Destination) && !ExportsThroughVideoExporter;
 
     /// <summary>True when the size is being reduced rather than kept.</summary>
     public bool IsResized => Resolution is { IsOriginal: false };

@@ -1,7 +1,7 @@
 namespace CodeBrixVideoTool.Processing.Formats;
 
 /// <summary>
-/// The container shapes this application knows about: the four formats it can write and play, plus
+/// The container shapes this application knows about: the five formats it can write and play, plus
 /// the <c>.mp4</c> family it imports from and exports to.
 /// </summary>
 public enum MediaFormatKind
@@ -10,7 +10,7 @@ public enum MediaFormatKind
     Unknown = 0,
 
     /// <summary>
-    /// The <c>.mp4</c> family: the FFmpeg-readable interchange containers that sit outside the four
+    /// The <c>.mp4</c> family: the FFmpeg-readable interchange containers that sit outside the five
     /// supported formats. Import reads one of these; export writes an <c>.mp4</c>. Never playable
     /// inside this application, because the in-application player decodes AV1 and nothing else.
     /// </summary>
@@ -33,4 +33,11 @@ public enum MediaFormatKind
     /// audio, with every index entry and every caption cue ahead of the media data.
     /// </summary>
     CodeBrixMode2 = 5,
+
+    /// <summary>
+    /// CodeBrix Mode 3, the MASTER form: a <c>.cbvmaster</c> file in the bespoke CBVF container at format
+    /// version 1 - AV1 video, an optional alpha-plane track beside it so the picture has real
+    /// transparency, and lossless FLAC audio.
+    /// </summary>
+    CodeBrixMaster = 6,
 }

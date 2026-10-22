@@ -30,6 +30,7 @@ public sealed record SmokeOptions(MediaFormatKind Destination, string WorkFolder
             "mode1" => MediaFormatKind.CodeBrixMode1,
             "webm" => MediaFormatKind.WebM,
             "mkv" or "matroska" => MediaFormatKind.Matroska,
+            "mode3" or "master" => MediaFormatKind.CodeBrixMaster,
             _ => MediaFormatKind.CodeBrixMode2,
         };
 

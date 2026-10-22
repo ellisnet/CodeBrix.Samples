@@ -15,7 +15,7 @@ namespace CodeBrixVideoTool.Processing.Resolution;
 /// phone clip is offered "720p (720 x 1280)", not a 720-tall rung 406 pixels wide.
 /// </para>
 /// <para>
-/// Dimensions are kept even because every one of the four supported formats carries AV1 in 4:2:0,
+/// Dimensions are kept even because every one of the five supported formats carries AV1 in 4:2:0,
 /// whose chroma planes are half-size in each direction; an odd dimension has no 4:2:0 representation
 /// and the encoder refuses it.
 /// </para>

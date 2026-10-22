@@ -129,7 +129,7 @@ public static class PlaybackSelection
     {
         ArgumentNullException.ThrowIfNull(item);
         return $"{MediaFormats.DisplayName(item.Format)} is not played in this application - " +
-               "import it to one of the four CodeBrix formats first.";
+               "import it to one of the five supported formats first.";
     }
 
     // ... BuildChapterRows, BuildCaptionRows, ShouldShowChapters, ShouldShowCaptions, DescribeOpened ...
@@ -615,15 +615,18 @@ public sealed class SampleMediaFixture : IAsyncLifetime
     public string Root { get; } = Path.Combine(
         Path.GetTempPath(), "CodeBrixVideoTool.Tests", Guid.NewGuid().ToString("N"));
 
-    // ... Mp4Path, CaptionsPath, ChaptersPath, RichMp4Path, Mode2Path, Mode1Path ...
+    // ... Mp4Path, CaptionsPath, ChaptersPath, RichMp4Path, Mode2Path, Mode1Path,
+    //     MasterPath, AlphaMovPath, AlphaMasterPath ...
 
     public async ValueTask InitializeAsync()
     {
+        // ... register the video-processing engine, and the AV1 decoder a master's MP4 export needs ...
         Directory.CreateDirectory(Root);
 
         await SampleClipFactory.WriteMp4Async(Mp4Path, Width, Height, Duration).ConfigureAwait(false);
         SampleClipFactory.WriteWebVtt(CaptionsPath, Duration);
         SampleClipFactory.WriteChapterMetadata(ChaptersPath, Duration);
+        await SampleClipFactory.WriteAlphaMovAsync(AlphaMovPath, Width, Height, Duration).ConfigureAwait(false);
 
         // ... mux the three into RichMp4Path ...
 
@@ -631,12 +634,17 @@ public sealed class SampleMediaFixture : IAsyncLifetime
         var runner = new ConversionRunner();
 
         RichMp4Info = await probe.ProbeAsync(RichMp4Path, CancellationToken.None).ConfigureAwait(false);
+        AlphaMovInfo = await probe.ProbeAsync(AlphaMovPath, CancellationToken.None).ConfigureAwait(false);
 
-        await ImportAsync(probe, runner, MediaFormatKind.CodeBrixMode2, Mode2Path).ConfigureAwait(false);
-        await ImportAsync(probe, runner, MediaFormatKind.CodeBrixMode1, Mode1Path).ConfigureAwait(false);
+        await ImportAsync(runner, RichMp4Info, MediaFormatKind.CodeBrixMode2, Mode2Path).ConfigureAwait(false);
+        await ImportAsync(runner, RichMp4Info, MediaFormatKind.CodeBrixMode1, Mode1Path).ConfigureAwait(false);
+        await ImportAsync(runner, RichMp4Info, MediaFormatKind.CodeBrixMaster, MasterPath).ConfigureAwait(false);
+        await ImportAsync(runner, AlphaMovInfo, MediaFormatKind.CodeBrixMaster, AlphaMasterPath).ConfigureAwait(false);
 
         Mode2Info = await probe.ProbeAsync(Mode2Path, CancellationToken.None).ConfigureAwait(false);
         Mode1Info = await probe.ProbeAsync(Mode1Path, CancellationToken.None).ConfigureAwait(false);
+        MasterInfo = await probe.ProbeAsync(MasterPath, CancellationToken.None).ConfigureAwait(false);
+        AlphaMasterInfo = await probe.ProbeAsync(AlphaMasterPath, CancellationToken.None).ConfigureAwait(false);
         // ...
     }
 
@@ -680,7 +688,8 @@ public class ConversionRunnerTests
     [InlineData(MediaFormatKind.WebM)]
     [InlineData(MediaFormatKind.CodeBrixMode1)]
     [InlineData(MediaFormatKind.CodeBrixMode2)]
-    public async Task an_import_writes_every_one_of_the_four_formats(MediaFormatKind destination)
+    [InlineData(MediaFormatKind.CodeBrixMaster)]
+    public async Task an_import_writes_every_one_of_the_five_formats(MediaFormatKind destination)
     {
         //Arrange
         var output = Path.Combine(media.Root, "import-" + destination + MediaFormats.Extension(destination));

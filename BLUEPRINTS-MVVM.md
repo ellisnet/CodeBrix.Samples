@@ -3408,11 +3408,13 @@ turns anything the switch throws into the same status line and the same revert:
 **When you want this.** Two drop-downs whose contents depend on what is selected,
 rebuilt whenever the selection changes.
 
-**The MVVM shape.** One private refresh method, called from the source property's
-setter. It clears and refills both collections from static rules that live in
-plain classes, selects the first row of each, and notifies the derived text
-properties. The rules are static methods, so tests can prove them without a view
-model.
+**The MVVM shape.** One private refresh method per dependency. The source
+property's setter refills the destinations and selects the first one; the
+destination property's setter rebuilds the resolutions, because which sizes make
+sense depends on where the file is going as well as on what it is. Both refills
+come from static rules that live in plain classes, and the derived text
+properties are notified by hand. The rules are static methods, so tests can prove
+them without a view model.
 
 **Code.**
 
@@ -3421,12 +3423,10 @@ model.
 private void RefreshForSource()
 {
     Destinations.Clear();
-    Resolutions.Clear();
 
     if (Source is null)
     {
         SelectedDestination = null;
-        SelectedResolution = null;
         NotifyPropertyChanged(nameof(PanelVisibility));
         NotifyPropertyChanged(nameof(RouteText));
         return;
@@ -3437,16 +3437,37 @@ private void RefreshForSource()
         Destinations.Add(new DestinationOption(destination));
     }
 
-    foreach (var rung in ResolutionLadder.Build(Source.Width, Source.Height))
+    //Selecting the destination rebuilds the resolution ladder for it.
+    SelectedDestination = Destinations.Count > 0 ? Destinations[0] : null;
+
+    NotifyPropertyChanged(nameof(PanelVisibility));
+    NotifyPropertyChanged(nameof(RouteText));
+}
+
+//The ladder depends on the destination as well as the source, because one conversion - a master
+//exported to MP4 - always keeps its source's size. The rung a person picked survives a change of
+//destination whenever the new ladder still offers it.
+private void RefreshResolutions()
+{
+    var previous = SelectedResolution;
+    Resolutions.Clear();
+
+    if (Source is null || SelectedDestination is null)
+    {
+        SelectedResolution = null;
+        return;
+    }
+
+    var ladder = ResolutionLadder.Build(Source.Width, Source.Height);
+    var offered = MediaFormats.CanResize(Source.Format, SelectedDestination.Kind) ? ladder : ladder.Take(1);
+    foreach (var rung in offered)
     {
         Resolutions.Add(rung);
     }
 
-    SelectedDestination = Destinations.Count > 0 ? Destinations[0] : null;
-    SelectedResolution = Resolutions.Count > 0 ? Resolutions[0] : null;
-
-    NotifyPropertyChanged(nameof(PanelVisibility));
-    NotifyPropertyChanged(nameof(RouteText));
+    SelectedResolution = Resolutions.FirstOrDefault(rung =>
+                             previous is not null && rung.Width == previous.Width && rung.Height == previous.Height)
+                         ?? (Resolutions.Count > 0 ? Resolutions[0] : null);
 }
 ```
 
@@ -3488,6 +3509,10 @@ public static IReadOnlyList<MediaFormatKind> DestinationsFor(MediaFormatKind sou
 - The action button's caption is derived rather than stored: it asks the rules
   what the operation is called and falls back to a neutral word when the pair is
   one the application does not offer.
+- A drop-down that depends on another drop-down is refilled from that one's
+  setter, not only from the root selection's - and keeps the row a person chose
+  when the new list still has it, so changing an unrelated choice does not quietly
+  undo theirs.
 
 ### Settle an operation in a plan before running any of it
 
@@ -3563,10 +3588,21 @@ public bool DownmixesAudio => Source.HasAudio && AudioChannels < Source.AudioCha
 public TargetVideoCodec VideoCodec => MediaFormats.VideoCodecFor(Destination);
 
 /// <summary>
-/// True when the source is a Mode 2 file, which FFmpeg cannot open and which therefore has to be
-/// demultiplexed and re-wrapped before anything else can happen.
+/// True when the source is a bespoke CBVF file - Mode 2, or a Mode 3 master going anywhere but
+/// <c>.mp4</c> - which FFmpeg cannot open and which therefore has to be demultiplexed and re-wrapped
+/// before anything else can happen.
 /// </summary>
-public bool RequiresMode2Extraction => Source.Format == MediaFormatKind.CodeBrixMode2;
+public bool RequiresMode2Extraction =>
+    MediaFormats.IsBespokeContainer(Source.Format) && !ExportsThroughVideoExporter;
+
+/// <summary>
+/// True when a Mode 3 master is going out to <c>.mp4</c>. That runs through the authoring library's
+/// exporter, which reads the master itself, decodes its picture, alpha plane and FLAC sound with the
+/// decoders the application registered, and composites the picture over a backdrop - because an MP4
+/// has no transparency of its own.
+/// </summary>
+public bool ExportsThroughVideoExporter =>
+    Source.Format == MediaFormatKind.CodeBrixMaster && Destination == MediaFormatKind.Mp4;
 
 /// <summary>True when the size is being reduced rather than kept.</summary>
 public bool IsResized => Resolution is { IsOriginal: false };

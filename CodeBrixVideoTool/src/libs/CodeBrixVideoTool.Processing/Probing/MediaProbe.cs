@@ -15,10 +15,10 @@ namespace CodeBrixVideoTool.Processing.Probing;
 /// The application's one way of finding out what is in a media file.
 /// </summary>
 /// <remarks>
-/// A <c>.cbv</c> file is opened with the playback core's container readers, because ffprobe cannot read
-/// the bespoke CBVF container at all and would only see a Mode 1 file as an ordinary WebM. Everything
-/// else goes to ffprobe, run through CodeBrix.VideoProcessing - the only external process this
-/// application ever starts.
+/// A <c>.cbv</c> or <c>.cbvmaster</c> file is opened with the playback core's container readers, because
+/// ffprobe cannot read the bespoke CBVF container at all and would only see a Mode 1 file as an
+/// ordinary WebM. Everything else goes to ffprobe, run through CodeBrix.VideoProcessing - the only
+/// external process this application ever starts.
 /// </remarks>
 public sealed class MediaProbe : IMediaProbe
 {
@@ -53,7 +53,9 @@ public sealed class MediaProbe : IMediaProbe
         {
             using var reader = MediaContainers.Open(path);
 
-            var video = reader.Tracks.FirstOrDefault(t => t.Kind == MediaTrackKind.Video);
+            //A master file's alpha plane is a second video track - monochrome, the picture's own size and
+            //in lock step with it. It is not the picture, so it is counted rather than described.
+            var video = reader.Tracks.FirstOrDefault(t => t.Kind == MediaTrackKind.Video && !t.IsAlphaPlane);
             var audio = reader.Tracks.FirstOrDefault(t => t.Kind == MediaTrackKind.Audio);
 
             var info = new SourceMediaInfo
@@ -69,6 +71,7 @@ public sealed class MediaProbe : IMediaProbe
                 AudioCodec = audio?.CodecId ?? string.Empty,
                 AudioChannels = audio?.Channels ?? 0,
                 AudioSampleRateHz = audio?.SampleRate ?? 0,
+                HasAlpha = reader.Tracks.Any(t => t.IsAlphaPlane),
                 CaptionTrackCount = reader.CaptionTracks.Count,
                 ChapterCount = reader.Chapters.Count,
                 SizeInBytes = new FileInfo(path).Length,
@@ -124,6 +127,7 @@ public sealed class MediaProbe : IMediaProbe
             AudioCodec = audio?.CodecName ?? string.Empty,
             AudioChannels = audio?.Channels ?? 0,
             AudioSampleRateHz = audio?.SampleRateHz ?? 0,
+            HasAlpha = HasAlphaChannel(video?.PixelFormat),
             CaptionTrackCount = analysis.SubtitleStreams?.Count ?? 0,
             ChapterCount = analysis.Chapters?.Count ?? 0,
             SizeInBytes = new FileInfo(path).Length,
@@ -138,6 +142,36 @@ public sealed class MediaProbe : IMediaProbe
     {
         var errors = analysis.ErrorData;
         return errors is { Count: > 0 } ? errors.ToArray() : [];
+    }
+
+    /// <summary>
+    /// Whether an FFmpeg pixel format carries an alpha channel: the yuva, ya and gbrap families and the
+    /// four packed RGB orders with an alpha byte. This is the same reading the authoring library's
+    /// FFmpeg engine makes when a master is written with its alpha left to Auto, so what the list says
+    /// about a source is what an import to Mode 3 will find.
+    /// </summary>
+    /// <param name="pixelFormat">The pixel format ffprobe reported, or null.</param>
+    /// <returns>True when the format has an alpha channel.</returns>
+    /// <remarks>
+    /// It is a description, not a promise: a VP8 or VP9 WebM keeps its alpha in a side stream that
+    /// ffprobe does not report in the pixel format, and a source whose alpha is everywhere opaque still
+    /// "has" one.
+    /// </remarks>
+    public static bool HasAlphaChannel(string pixelFormat)
+    {
+        if (string.IsNullOrWhiteSpace(pixelFormat))
+        {
+            return false;
+        }
+
+        var format = pixelFormat.Trim().ToLowerInvariant();
+        return format.StartsWith("yuva", StringComparison.Ordinal)
+            || format.StartsWith("gbrap", StringComparison.Ordinal)
+            || format.StartsWith("ya", StringComparison.Ordinal)
+            || format.StartsWith("rgba", StringComparison.Ordinal)
+            || format.StartsWith("bgra", StringComparison.Ordinal)
+            || format.StartsWith("argb", StringComparison.Ordinal)
+            || format.StartsWith("abgr", StringComparison.Ordinal);
     }
 
     private static double FrameRateFrom(TimeSpan frameDuration) =>

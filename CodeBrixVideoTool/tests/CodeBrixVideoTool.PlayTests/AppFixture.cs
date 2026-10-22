@@ -36,6 +36,8 @@ public sealed class AppFixture : SampleFixture<MainPage>
     public string PlainClip { get; private set; }
     // The same picture with two chapters and an English caption track.
     public string RichClip { get; private set; }
+    // The plain picture as a CodeBrix Mode 3 master: format version 1, flagged silent by intent.
+    public string MasterClip { get; private set; }
 
     protected override void Prepare()
     {
@@ -43,6 +45,7 @@ public sealed class AppFixture : SampleFixture<MainPage>
         Environment.SetEnvironmentVariable("CODEBRIXVIDEOTOOL_SMOKE", null);
         PlainClip = ClipWriter.Write(Path.Combine(DataDirectory, "plain.cbv"), false);
         RichClip = ClipWriter.Write(Path.Combine(DataDirectory, "rich.cbv"), true);
+        MasterClip = ClipWriter.Write(Path.Combine(DataDirectory, "plain.cbvmaster"), false, master: true);
     }
 
     // The application initializes OpenGL elements. These tests cover the no-OpenGL fallback, so the launch opts out;
@@ -178,7 +181,7 @@ public static class ClipWriter
     public const int FramesPerSecond = 5;
     public const int Seconds = 20;
 
-    public static string Write(string path, bool chaptersAndCaptions)
+    public static string Write(string path, bool chaptersAndCaptions, bool master = false)
     {
         var descriptor = new RawVideoDescriptor(Width, Height, 8, VideoPixelLayout.I420, VideoColorInfo.Unspecified);
         var frameDuration = TimeSpan.FromSeconds(1d / FramesPerSecond);
@@ -207,6 +210,8 @@ public static class ClipWriter
             Array.Fill(frame, (byte)128, luma, frame.Length - luma);
             muxer.WriteChunk(track, frame, frameDuration * index, frameDuration, true);
         }
+        // Silent by intent is a master-only flag, so it stamps the file version 1: the master form.
+        muxer.Silent = master;
         muxer.Complete();
         return path;
     }

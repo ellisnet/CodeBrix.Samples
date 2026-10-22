@@ -507,9 +507,10 @@ private static async Task<string> PickMediaFileAsync()
             picker.FileTypeFilter.Add(extension);
         }
 
-        picker.FileTypeFilter.Add(".mkv");
-        picker.FileTypeFilter.Add(".webm");
-        picker.FileTypeFilter.Add(".cbv");
+        foreach (var extension in MediaFormats.PlayableExtensions)
+        {
+            picker.FileTypeFilter.Add(extension);
+        }
 
         var file = await picker.PickSingleFileAsync();
         return file?.Path;

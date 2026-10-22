@@ -141,8 +141,11 @@ public sealed class SmokeRun
                 (profileShouldPass ? "expected to pass: " : "a standard MKV is expected not to pass: ") +
                 (outcome.ProfileVerdict ?? "(not checked)"));
 
+            //A master is encoded in process, so its "command" is a settings line naming the cq-level
+            //rather than an FFmpeg command line naming -crf. It is the same number on the same scale.
+            var betterRateFactor = options.Destination == MediaFormatKind.CodeBrixMaster ? "cq-level 24" : "-crf 24";
             Check("quality-reached-the-encoder",
-                outcome.Commands.Any(command => command.Contains("-crf 24", StringComparison.Ordinal)),
+                outcome.Commands.Any(command => command.Contains(betterRateFactor, StringComparison.Ordinal)),
                 "AV1 rate factor 24 is Better");
 
             CheckLastRunNotes(viewModel, outcome, options.Destination);
@@ -167,6 +170,13 @@ public sealed class SmokeRun
                 if (options.Destination == MediaFormatKind.CodeBrixMode2)
                 {
                     Check("mode2-audio-is-vorbis", produced.AudioCodec == "vorbis", produced.AudioCodec);
+                }
+
+                if (options.Destination == MediaFormatKind.CodeBrixMaster)
+                {
+                    Check("mode3-audio-is-flac", produced.AudioCodec == "flac", produced.AudioCodec);
+                    Check("mode3-is-detected-as-a-master", produced.Format == MediaFormatKind.CodeBrixMaster,
+                        produced.Format.ToString());
                 }
             }
 
@@ -258,8 +268,11 @@ public sealed class SmokeRun
 
         Fact("exportOutput", outcome.OutputPath);
         Fact("exportBytes", outcome.SizeInBytes);
+        //A master goes out through the authoring library's exporter, whose plan line says "cq 17" where
+        //the FFmpeg export's command line says "-crf 17": the same x264 rate factor either way.
+        var betterRateFactor = options.Destination == MediaFormatKind.CodeBrixMaster ? "cq 17" : "-crf 17";
         Check("export-quality-reached-the-encoder",
-            outcome.Commands.Any(command => command.Contains("-crf 17", StringComparison.Ordinal)),
+            outcome.Commands.Any(command => command.Contains(betterRateFactor, StringComparison.Ordinal)),
             "H.264 rate factor 17 is Better");
 
         //The list add happens off the conversion-finished event, so give it a moment to land.

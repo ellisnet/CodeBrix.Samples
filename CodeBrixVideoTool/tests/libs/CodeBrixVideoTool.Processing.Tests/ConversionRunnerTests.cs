@@ -38,7 +38,8 @@ public class ConversionRunnerTests
     [InlineData(MediaFormatKind.WebM)]
     [InlineData(MediaFormatKind.CodeBrixMode1)]
     [InlineData(MediaFormatKind.CodeBrixMode2)]
-    public async Task an_import_writes_every_one_of_the_four_formats(MediaFormatKind destination)
+    [InlineData(MediaFormatKind.CodeBrixMaster)]
+    public async Task an_import_writes_every_one_of_the_five_formats(MediaFormatKind destination)
     {
         //Arrange
         var output = Path.Combine(media.Root, "import-" + destination + MediaFormats.Extension(destination));

@@ -635,9 +635,11 @@ model. It falls back to the extension when the file cannot be read.
 ```csharp
 // From CodeBrix.Samples/CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Formats/MediaFormats.cs
 /// <remarks>
-/// A <c>.cbv</c> file is Mode 2 when it starts with the ASCII bytes "CBVF" and Mode 1 when it
-/// starts with the EBML magic. Nothing else about either file is consulted, which is exactly how
-/// the playback core picks its reader.
+/// A <c>.cbv</c> or <c>.cbvmaster</c> file is Mode 1 when it starts with the EBML magic, and the
+/// bespoke container when it starts with the ASCII bytes "CBVF": Mode 2 at format version 0 and
+/// Mode 3, the master form, at version 1. Nothing else about the file is consulted, which is exactly
+/// how the playback core picks its reader. The extension is only ever a hint, so a master file named
+/// <c>.cbv</c> is still a master.
 /// </remarks>
 public static MediaFormatKind Detect(string path)
 {
@@ -645,7 +647,7 @@ public static MediaFormatKind Detect(string path)
     var extension = Path.GetExtension(path).ToLowerInvariant();
     var sniffed = SniffSignature(path);
 
-    if (extension == ".cbv")
+    if (extension is ".cbv" or ".cbvmaster")
     {
         return sniffed == MediaFormatKind.Unknown ? MediaFormatKind.Unknown : sniffed;
     }
@@ -657,18 +659,28 @@ private static MediaFormatKind SniffSignature(string path)
     try
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        Span<byte> first = stackalloc byte[4];
-        if (stream.Read(first) < 4)
+
+        //The four-byte magic, then - in the bespoke container - its u16 little-endian format version.
+        Span<byte> first = stackalloc byte[6];
+        var read = stream.ReadAtLeast(first, first.Length, false);
+        if (read < 4)
         {
             return MediaFormatKind.Unknown;
         }
 
         if (CbvReader.IsCbv(first))
         {
-            return MediaFormatKind.CodeBrixMode2;
+            if (read < first.Length)
+            {
+                return MediaFormatKind.Unknown;
+            }
+
+            return BinaryPrimitives.ReadUInt16LittleEndian(first[4..]) >= CbvFormat.MasterVersion
+                ? MediaFormatKind.CodeBrixMaster
+                : MediaFormatKind.CodeBrixMode2;
         }
 
-        return first.SequenceEqual(CbvFormat.EbmlMagic) ? MediaFormatKind.CodeBrixMode1 : MediaFormatKind.Unknown;
+        return first[..4].SequenceEqual(CbvFormat.EbmlMagic) ? MediaFormatKind.CodeBrixMode1 : MediaFormatKind.Unknown;
     }
     catch (IOException)
     {
@@ -686,7 +698,15 @@ private static MediaFormatKind SniffSignature(string path)
 
 **Sharp edges.**
 - The playback library publishes both the test and the magic constant, so the
-  application does not hard-code signature bytes.
+  application does not hard-code signature bytes. It publishes the version
+  constant too (`CbvFormat.MasterVersion`), which is what tells the two bespoke
+  formats apart: they share a magic and differ only in the version after it.
+- Compare the version with `>=` rather than `==`, so a later version of the
+  master form is still recognised as one; the reader refuses a version it cannot
+  read with a message of its own.
+- `ReadAtLeast(..., false)` rather than `Read`: a single `Read` may legally return
+  fewer bytes than are there, and a bespoke header cut short before its version
+  is unknown, not Mode 2.
 - A file whose signature matches neither expectation is unknown and is refused,
   rather than being trusted because of its extension.
 
@@ -713,17 +733,21 @@ var request = new VideoAuthoringRequest
     ChaptersPath = sidecars.ChaptersPath,
     CancellationToken = cancellationToken,
 
-    //The bespoke CBVF container is written by the muxer in the playback core; the other
-    //three are written by FFmpeg's own WebM and Matroska muxers.
-    Flavour = plan.Destination == MediaFormatKind.CodeBrixMode2
-        ? VideoAuthoringFlavour.Bespoke
-        : VideoAuthoringFlavour.WebMProfile,
+    //The bespoke CBVF container is written by the muxer in the playback core - at format
+    //version 1, the master form, for Mode 3 - and the other three by FFmpeg's own WebM and
+    //Matroska muxers.
+    Flavour = plan.Destination switch
+    {
+        MediaFormatKind.CodeBrixMode2 => VideoAuthoringFlavour.Bespoke,
+        MediaFormatKind.CodeBrixMaster => VideoAuthoringFlavour.Master,
+        _ => VideoAuthoringFlavour.WebMProfile,
+    },
 
     Container = plan.Destination == MediaFormatKind.Matroska
         ? AuthoringContainerFormat.Matroska
         : AuthoringContainerFormat.WebM,
 
-    //Only the two .cbv flavours are meant to satisfy the streamable profile. A standard MKV
+    //Only the three CodeBrix modes are meant to satisfy the streamable profile. A standard MKV
     //is checked and reported on, but its failures are not this application's business.
     CuesToFront = plan.Destination != MediaFormatKind.Matroska,
     ValidateProfile = true,
@@ -736,10 +760,19 @@ request.Video.FrameSize = plan.IsResized
 request.Video.SpeedPreset = Av1SpeedPreset;
 request.Video.ConstantRateFactor = Av1RateFactor(plan.Quality);
 
+if (plan.Destination == MediaFormatKind.CodeBrixMaster)
+{
+    // ... a master is encoded in process; alpha is carried whenever the engine finds it ...
+    request.Video.Alpha = AuthoringAlphaMode.Auto;
+}
+
 request.Audio.Include = plan.Source.HasAudio;
-request.Audio.Codec = plan.AudioCodec == TargetAudioCodec.Vorbis
-    ? AuthoringAudioCodec.LibVorbis
-    : AuthoringAudioCodec.LibOpus;
+request.Audio.Codec = plan.AudioCodec switch
+{
+    TargetAudioCodec.Vorbis => AuthoringAudioCodec.LibVorbis,
+    TargetAudioCodec.Flac => AuthoringAudioCodec.Flac,
+    _ => AuthoringAudioCodec.LibOpus,
+};
 // ...
 foreach (var caption in sidecars.Captions)
 {
@@ -760,6 +793,9 @@ public static TargetAudioCodec AudioCodecFor(MediaFormatKind kind) => kind switc
     //The hard invariant: a bespoke CBVF file this application writes carries Vorbis, never Opus.
     MediaFormatKind.CodeBrixMode2 => TargetAudioCodec.Vorbis,
 
+    //Its master form is lossless: FLAC is the only codec a Mode 3 file takes.
+    MediaFormatKind.CodeBrixMaster => TargetAudioCodec.Flac,
+
     _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "There is no audio codec for an unrecognised format."),
 };
 ```
@@ -770,17 +806,26 @@ public static TargetAudioCodec AudioCodecFor(MediaFormatKind kind) => kind switc
 `CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Formats/MediaFormatKind.cs`
 
 **Sharp edges.**
-- The two container modes, as the code names them. Mode 1 writes a `.cbv` that is
-  a WebM constrained to the streamable profile - AV1 video, Opus audio, cues in
+- The three CodeBrix modes, as the code names them. Mode 1 writes a `.cbv` that
+  is a WebM constrained to the streamable profile - AV1 video, Opus audio, cues in
   front of the first cluster. Mode 2 writes a `.cbv` in the bespoke container -
   AV1 video, Vorbis audio, every index entry and every caption cue ahead of the
-  media data. The codec table calls the Vorbis choice "the hard invariant".
+  media data. Mode 3 writes a `.cbvmaster`: the bespoke container at format
+  version 1, with FLAC audio and, when the source has an alpha channel, an
+  alpha-plane track beside the picture. The codec table calls the Vorbis choice
+  "the hard invariant"; FLAC is the only codec a master takes.
+- A master is encoded IN PROCESS by the authoring library's own AV1 and FLAC
+  encoder packages (the AV1 one is the libaom reference encoder, not SVT-AV1), so
+  no particular encoder has to be in the FFmpeg build - but its source is still
+  decoded by the registered video-processing engine. The same rate factor means
+  the same 0-63 scale to both encoders without giving identical quality.
 - Audio sample rate is set per codec, and the reason is recorded in the code: one
   encoder's bit-rate mode opens only inside a band that depends on both the sample
   rate and the channel count, so the application uses its quality path instead;
-  the other is always resampled to its own internal rate.
+  the other is always resampled to its own internal rate; and lossless FLAC keeps
+  the source's own rate, because resampling would be the one lossy step.
 - The cue policy is on for everything except the plain standard container, and
-  failing the profile check is fatal only for the two application formats - the
+  failing the profile check is fatal only for the three application formats - the
   standard container is checked and reported on but is expected to fail, and that
   failure is not an error.
 - The authoring library is synchronous, so the pass runs on a worker thread with
@@ -894,7 +939,9 @@ catch (OperationCanceledException)
 ### Demultiplex a bespoke container and remux it so an external tool can read it
 
 **When you want this.** Your own container holds perfectly ordinary elementary
-streams, and you want to hand them to a tool that cannot open the container.
+streams, and you want to hand them to a tool that cannot open the container. The
+sample's extractor handles both versions of its bespoke container: Mode 2, and
+the Mode 3 master form with its FLAC sound and alpha-plane track.
 
 **The MVVM shape.** A service class the runner uses as its first stage; the view
 model never knows it happened beyond one note in the run notes and one sentence in
@@ -908,7 +955,8 @@ using (var reader = MediaContainers.Open(source.Path))
 {
     if (reader is not CbvReader) { /* ... refuse ... */ }
 
-    var video = reader.Tracks.FirstOrDefault(t => t.Kind == MediaTrackKind.Video)
+    //The picture, never a master's alpha plane: that is a second video track beside it.
+    var video = reader.Tracks.FirstOrDefault(t => t.Kind == MediaTrackKind.Video && !t.IsAlphaPlane)
         ?? throw new VideoToolProcessingException($"'{source.FileName}' carries no video track.");
 
     if (!string.Equals(video.CodecId, VideoCodecIds.Av1, StringComparison.OrdinalIgnoreCase))
@@ -917,30 +965,59 @@ using (var reader = MediaContainers.Open(source.Path))
             $"'{source.FileName}' carries '{video.CodecId}' video; only AV1 can be re-wrapped into IVF.");
     }
 
+    hasAlphaPlane = reader.Tracks.Any(t => t.IsAlphaPlane);
     var audio = reader.Tracks.FirstOrDefault(t => t.Kind == MediaTrackKind.Audio);
 
     using var ivf = IvfWriter.CreateAv1(ivfPath, video.Width, video.Height);
-    var ogg = audio is null ? null : CreateAudioWriter(audio, oggPath, source.FileName);
+    if (audio is not null)
+    {
+        audioPath = Path.Combine(workingFolder, AudioFileNameFor(audio));
+    }
+
+    var audioWriter = audio is null ? null : CreateAudioWriter(audio, audioPath, source.FileName);
 
     try
     {
-        Demultiplex(reader, video.Id, audio?.Id ?? -1, ivf, ogg, cancellationToken,
+        Demultiplex(reader, video.Id, audio?.Id ?? -1, ivf, audioWriter, cancellationToken,
             out videoFrames, out audioPackets);
 
         ivf.Complete();
-        ogg?.Complete();
+        audioWriter?.Complete();
     }
     finally
     {
-        ogg?.Dispose();
+        audioWriter?.Dispose();
     }
 
     // ...
     sidecars = SidecarExtractor.ExtractFromReader(reader, workingFolder);
 }
 
-await RemuxAsync(ivfPath, hasAudio ? oggPath : null, intermediatePath, cancellationToken)
+await RemuxAsync(ivfPath, hasAudio ? audioPath : null, intermediatePath, cancellationToken)
     .ConfigureAwait(false);
+```
+
+```csharp
+// From CodeBrix.Samples/CodeBrixVideoTool/src/libs/CodeBrixVideoTool.Processing/Containers/Mode2Extractor.cs
+//FLAC needs no Ogg around it: a FLAC stream is its header and then its frames, end to end.
+private static string AudioFileNameFor(MediaTrackInfo audio) =>
+    string.Equals(audio.CodecId, VideoCodecIds.Flac, StringComparison.OrdinalIgnoreCase) ? "audio.flac" : "audio.ogg";
+
+// ... in FlacStreamWriter, the master's sound: the stream header once, then every packet as it is ...
+public static FlacStreamWriter Create(string path, ReadOnlySpan<byte> streamHeader, string fileName)
+{
+    if (!streamHeader.StartsWith(CbvFormat.FlacMarker))
+    {
+        throw new VideoToolProcessingException(
+            $"'{fileName}' carries FLAC audio whose setup data is not a FLAC stream header, so it cannot be written out for FFmpeg.");
+    }
+
+    var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+    stream.Write(streamHeader);
+    return new FlacStreamWriter(stream);
+}
+
+public void WritePacket(ReadOnlySpan<byte> packet, TimeSpan endTimestamp) => stream.Write(packet);
 ```
 
 ```csharp
@@ -973,7 +1050,7 @@ var succeeded = await arguments
     .OutputToFile(outputPath, true, options =>
     {
         options.SelectStream(0, 0, Channel.Video);
-        if (oggPath is not null)
+        if (audioPath is not null)
         {
             options.SelectStream(0, 1, Channel.Audio);
         }
@@ -999,6 +1076,15 @@ var succeeded = await arguments
 - The re-wrapping uses the playback library's own elementary-stream writers - the
   same two containers the authoring library writes when it builds a bespoke file,
   used here in the opposite direction.
+- FLAC needs no writer at all. A FLAC track's codec-private data is a FLAC stream
+  header ("fLaC" and the metadata blocks, STREAMINFO first) and each packet is
+  exactly one complete FLAC frame, so header then packets, end to end, is a FLAC
+  file; the Ogg path's lookahead is harmless to it, because every frame states its
+  own position.
+- A master's alpha plane is a second VIDEO track, so "the first video track" is
+  not the right test for the picture; filter on `IsAlphaPlane`. The alpha plane is
+  not carried into the intermediate, because every destination this route leads
+  to is opaque, and the extraction records that so the run notes can say so.
 - The remux copies codecs: nothing is decoded and nothing is re-encoded, so from
   the intermediate onwards the conversion is an ordinary one.
 - The writers throw when the codec-private data is not what they expect; the

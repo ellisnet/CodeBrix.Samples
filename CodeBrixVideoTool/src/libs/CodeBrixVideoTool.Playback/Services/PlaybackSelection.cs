@@ -37,7 +37,7 @@ public static class PlaybackSelection
     {
         ArgumentNullException.ThrowIfNull(item);
         return $"{MediaFormats.DisplayName(item.Format)} is not played in this application - " +
-               "import it to one of the four CodeBrix formats first.";
+               "import it to one of the five supported formats first.";
     }
 
     /// <summary>Builds the rows of the chapter drop-down.</summary>

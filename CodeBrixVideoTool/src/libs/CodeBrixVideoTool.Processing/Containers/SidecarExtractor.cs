@@ -22,7 +22,7 @@ namespace CodeBrixVideoTool.Processing.Containers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The four supported formats are all read by the playback core's own container readers, which hand
+/// The five supported formats are all read by the playback core's own container readers, which hand
 /// over chapters and cues as objects and need no external tool. Only the <c>.mp4</c> family goes
 /// through FFmpeg, and only for its text caption streams: an image-based caption track has no WebVTT
 /// form at all and is reported rather than silently lost.

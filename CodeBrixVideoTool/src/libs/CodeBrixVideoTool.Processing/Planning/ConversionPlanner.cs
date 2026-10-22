@@ -24,7 +24,8 @@ public static class ConversionPlanner
     /// <returns>The settled plan.</returns>
     /// <exception cref="ArgumentNullException">The source is null.</exception>
     /// <exception cref="VideoToolProcessingException">
-    /// The conversion is not one this application offers, or the output would overwrite the source.
+    /// The conversion is not one this application offers, the output would overwrite the source, or a
+    /// smaller size was asked of a conversion that keeps its source's size.
     /// </exception>
     public static ConversionPlan Create(
         SourceMediaInfo source,
@@ -59,6 +60,13 @@ public static class ConversionPlanner
         if (PathsMatch(source.Path, outputPath))
         {
             throw new VideoToolProcessingException("A conversion cannot write over the file it is reading.");
+        }
+
+        if (resolution is { IsOriginal: false } && !MediaFormats.CanResize(source.Format, destination))
+        {
+            throw new VideoToolProcessingException(
+                $"{MediaFormats.DisplayName(source.Format)} is exported to {MediaFormats.DisplayName(destination)} " +
+                "at its own size, so a smaller size cannot be chosen for it.");
         }
 
         var chosen = resolution ?? ResolutionOption.Original(
@@ -99,11 +107,15 @@ public static class ConversionPlanner
         QualityLevel quality)
     {
         var steps = new List<string>();
+        var masterExport = source.Format == MediaFormatKind.CodeBrixMaster && destination == MediaFormatKind.Mp4;
 
-        if (source.Format == MediaFormatKind.CodeBrixMode2)
+        if (MediaFormats.IsBespokeContainer(source.Format) && !masterExport)
         {
-            steps.Add("Demultiplex the bespoke CBVF container, re-wrap its AV1 stream in IVF and its " +
-                      "audio stream in Ogg, and mux those into one intermediate file without re-encoding.");
+            steps.Add(source.Format == MediaFormatKind.CodeBrixMaster
+                ? "Demultiplex the bespoke CBVF master, re-wrap its AV1 picture in IVF and write its FLAC " +
+                  "sound out as a FLAC stream, and mux those into one intermediate file without re-encoding."
+                : "Demultiplex the bespoke CBVF container, re-wrap its AV1 stream in IVF and its " +
+                  "audio stream in Ogg, and mux those into one intermediate file without re-encoding.");
         }
 
         if (source.CaptionTrackCount > 0 || source.ChapterCount > 0)
@@ -125,9 +137,41 @@ public static class ConversionPlanner
             ? $"{audioCodec} audio downmixed to stereo (this application writes mono or stereo audio only)"
             : $"{audioCodec} audio";
 
-        steps.Add(destination == MediaFormatKind.Mp4
-            ? $"Encode H.264 video {size} and AAC audio into an MP4 file, at {quality} quality."
-            : $"Encode AV1 video {size} and {sound} into {MediaFormats.DisplayName(destination)}, at {quality} quality.");
+        if (masterExport)
+        {
+            //The exporter decodes the master with the application's own decoders and composites it, so
+            //this is one pass with no intermediate; the captions and chapters go in afterwards.
+            steps.Add(source.HasAlpha
+                ? $"Decode the master, composite its picture over 50% grey by its alpha plane, and encode " +
+                  $"H.264 video {size} and AAC audio into an MP4 file, at {quality} quality."
+                : $"Decode the master and encode H.264 video {size} and AAC audio into an MP4 file, at {quality} quality.");
+
+            if (source.CaptionTrackCount > 0 || source.ChapterCount > 0)
+            {
+                steps.Add("Add the caption tracks and chapters to the MP4 without re-encoding.");
+            }
+        }
+        else if (destination == MediaFormatKind.Mp4)
+        {
+            steps.Add($"Encode H.264 video {size} and AAC audio into an MP4 file, at {quality} quality.");
+        }
+        else if (destination == MediaFormatKind.CodeBrixMaster)
+        {
+            var picture = source.HasAlpha
+                ? $"AV1 video {size} with its alpha channel as an alpha-plane track"
+                : $"AV1 video {size} (with an alpha-plane track if the source turns out to carry one)";
+            var lossless = source.HasAudio ? $" and lossless {sound}" : string.Empty;
+            steps.Add($"Encode {picture}{lossless} into {MediaFormats.DisplayName(destination)}, at {quality} quality.");
+        }
+        else
+        {
+            steps.Add($"Encode AV1 video {size} and {sound} into {MediaFormats.DisplayName(destination)}, at {quality} quality.");
+        }
+
+        if (source.HasAlpha && !MediaFormats.CarriesAlpha(destination) && !masterExport)
+        {
+            steps.Add($"Leave the alpha channel behind: {MediaFormats.DisplayName(destination)} is opaque.");
+        }
 
         if (MediaFormats.IsCodeBrixContainer(destination))
         {

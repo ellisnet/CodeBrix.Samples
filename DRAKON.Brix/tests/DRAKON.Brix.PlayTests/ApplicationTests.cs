@@ -206,7 +206,8 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
         await Fixture.WaitForTclAsync("wm title .", "Lunch.drn - DRAKON Editor");
         Fixture.Application.FilePickers.SaveFileRequestCount.Should().Be(1);
         var header = new byte[15];
-        using (var stream = File.OpenRead(target)) stream.ReadExactly(header);
+        // Save as reopens the new file as the live document, so its SQLite connection still holds it read/write.
+        using (var stream = new FileStream(target, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) stream.ReadExactly(header);
         Encoding.ASCII.GetString(header).Should().Be("SQLite format 3");
         (await Fixture.TclAsync($"llength [{DiagramList} children {{}}]")).Should().Be("4");
     }

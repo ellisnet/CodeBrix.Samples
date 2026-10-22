@@ -287,4 +287,97 @@ public class ConversionPlannerTests
         plan.Quality.Should().Be(quality);
         plan.Steps.Should().Contain(s => s.Contains($"at {quality} quality"));
     }
+
+    [Fact]
+    public void an_mp4_source_to_a_master_is_an_import_that_writes_flac()
+    {
+        //Arrange
+        var source = Source(MediaFormatKind.Mp4);
+
+        //Act
+        var plan = ConversionPlanner.Create(source, MediaFormatKind.CodeBrixMaster, "/tmp/out.cbvmaster", null);
+
+        //Assert
+        plan.ActionVerb.Should().Be("Import");
+        plan.AudioCodec.Should().Be(TargetAudioCodec.Flac);
+        plan.RequiresMode2Extraction.Should().BeFalse();
+        plan.ExportsThroughVideoExporter.Should().BeFalse();
+        plan.Steps.Should().Contain(s => s.Contains("lossless Flac audio"));
+        plan.Steps.Should().Contain(s => s.Contains("streamable profile"));
+    }
+
+    [Fact]
+    public void a_master_source_to_mode2_is_demultiplexed_first()
+    {
+        //Arrange
+        var source = Source(MediaFormatKind.CodeBrixMaster);
+
+        //Act
+        var plan = ConversionPlanner.Create(source, MediaFormatKind.CodeBrixMode2, "/tmp/out.cbv", null);
+
+        //Assert
+        plan.RequiresMode2Extraction.Should().BeTrue();
+        plan.Steps.First().Should().Contain("FLAC stream");
+    }
+
+    [Fact]
+    public void a_master_exported_to_mp4_goes_through_the_exporter_and_is_not_demultiplexed()
+    {
+        //Arrange
+        var source = Source(MediaFormatKind.CodeBrixMaster);
+        source.HasAlpha = true;
+
+        //Act
+        var plan = ConversionPlanner.Create(source, MediaFormatKind.Mp4, "/tmp/out.mp4", null);
+
+        //Assert
+        plan.ActionVerb.Should().Be("Export");
+        plan.ExportsThroughVideoExporter.Should().BeTrue();
+        plan.RequiresMode2Extraction.Should().BeFalse();
+        plan.DropsAlpha.Should().BeFalse();
+        plan.Steps.Should().Contain(s => s.Contains("composite its picture over 50% grey"));
+    }
+
+    [Fact]
+    public void a_master_exported_to_mp4_refuses_a_smaller_size()
+    {
+        //Arrange
+        var source = Source(MediaFormatKind.CodeBrixMaster);
+        var rung = ResolutionLadder.Build(source.Width, source.Height).Skip(1).First();
+
+        //Act
+        var act = () => ConversionPlanner.Create(source, MediaFormatKind.Mp4, "/tmp/out.mp4", rung);
+
+        //Assert
+        act.Should().Throw<VideoToolProcessingException>();
+    }
+
+    [Fact]
+    public void an_alpha_source_keeps_its_alpha_only_in_a_master()
+    {
+        //Arrange
+        var source = Source(MediaFormatKind.Mp4);
+        source.HasAlpha = true;
+
+        //Act
+        var master = ConversionPlanner.Create(source, MediaFormatKind.CodeBrixMaster, "/tmp/out.cbvmaster", null);
+        var mode2 = ConversionPlanner.Create(source, MediaFormatKind.CodeBrixMode2, "/tmp/out.cbv", null);
+
+        //Assert
+        master.KeepsAlpha.Should().BeTrue();
+        master.DropsAlpha.Should().BeFalse();
+        mode2.KeepsAlpha.Should().BeFalse();
+        mode2.DropsAlpha.Should().BeTrue();
+        mode2.Steps.Should().Contain(s => s.Contains("Leave the alpha channel behind"));
+    }
+
+    [Fact]
+    public void a_master_is_suggested_a_cbvmaster_name()
+    {
+        //Act
+        var name = ConversionPlanner.SuggestOutputFileName(Source(MediaFormatKind.Mp4), MediaFormatKind.CodeBrixMaster);
+
+        //Assert
+        name.Should().Be("example.cbvmaster");
+    }
 }

@@ -17,4 +17,10 @@ public enum TargetAudioCodec
 
     /// <summary>AAC - the <c>.mp4</c> export, for the widest possible compatibility.</summary>
     Aac = 2,
+
+    /// <summary>
+    /// FLAC - CodeBrix Mode 3 (the master form), always. Lossless, and the only codec a master file
+    /// takes.
+    /// </summary>
+    Flac = 3,
 }

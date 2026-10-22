@@ -129,4 +129,24 @@ public class MediaProbeTests
         //Assert
         await act.Should().ThrowAsync<VideoToolProcessingException>();
     }
+
+    [Theory]
+    [InlineData("yuva420p", true)]
+    [InlineData("yuva444p10le", true)]
+    [InlineData("rgba", true)]
+    [InlineData("argb", true)]
+    [InlineData("gbrap", true)]
+    [InlineData("ya8", true)]
+    [InlineData("yuv420p", false)]
+    [InlineData("rgb24", false)]
+    [InlineData("gray", false)]
+    [InlineData(null, false)]
+    public void a_pixel_format_with_an_alpha_channel_is_recognised(string pixelFormat, bool expected)
+    {
+        //Act
+        var hasAlpha = MediaProbe.HasAlphaChannel(pixelFormat);
+
+        //Assert
+        hasAlpha.Should().Be(expected);
+    }
 }

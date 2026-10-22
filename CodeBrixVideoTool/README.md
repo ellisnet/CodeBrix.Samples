@@ -13,15 +13,28 @@ file is coming from and where it is going. A progress bar and a live Cancel
 appear while the conversion runs, and when it finishes the result joins the file
 list as a new source and the panel prints the notes the run left behind.
 
-The application works with four container formats, all of them carrying AV1
+The application works with five container formats, all of them carrying AV1
 video: standard Matroska (`.mkv`), standard WebM (`.webm`), CodeBrix Mode 1 (a
-`.cbv` file that is a WebM constrained to the streamable profile) and CodeBrix
-Mode 2 (a `.cbv` file in the bespoke CBVF container). It also imports from and
-exports to the `.mp4` family, which it never plays, because the in-application
-player decodes AV1 and nothing else. It is the reference for hosting the
-CodeBrix.Platform VideoPlayer add-in in a page and driving it from a view model,
-for playing and authoring CodeBrix `.cbv` video, and for running long FFmpeg
-work with progress and cancellation from a SimpleViewModel.
+`.cbv` file that is a WebM constrained to the streamable profile), CodeBrix
+Mode 2 (a `.cbv` file in the bespoke CBVF container) and CodeBrix Mode 3 (a
+`.cbvmaster` file: the same bespoke container in its master form, with an
+optional alpha-plane track for real transparency and lossless FLAC sound). It
+imports to, transcodes between, exports from and plays all five. It also imports
+from and exports to the `.mp4` family, which it never plays, because the
+in-application player decodes AV1 and nothing else. It is the reference for
+hosting the CodeBrix.Platform VideoPlayer add-in in a page and driving it from a
+view model, for playing and authoring CodeBrix `.cbv` and `.cbvmaster` video,
+and for running long FFmpeg work with progress and cancellation from a
+SimpleViewModel.
+
+| Format | Extension | Container | Video | Audio |
+| --- | --- | --- | --- | --- |
+| Matroska | `.mkv` | Matroska | AV1 | Opus |
+| WebM | `.webm` | WebM | AV1 | Opus |
+| CodeBrix Mode 1 | `.cbv` | WebM, streamable profile, cues in front | AV1 | Opus |
+| CodeBrix Mode 2 | `.cbv` | bespoke CBVF, format version 0 | AV1 | Vorbis |
+| CodeBrix Mode 3 (master) | `.cbvmaster` | bespoke CBVF, format version 1 | AV1, plus an AV1 alpha plane when the source has alpha | FLAC (lossless) |
+| MP4 (import and export only) | `.mp4` family | MP4 | H.264 | AAC |
 
 ## What this sample shows a CodeBrix.Platform developer
 
@@ -34,7 +47,8 @@ work with progress and cancellation from a SimpleViewModel.
 - Find out what is inside a media file through an interface the view model
   resolves, with two routes behind it:
   [Probe a media file behind an interface the view model resolves](../BLUEPRINTS-MediaAndVision.md#probe-a-media-file-behind-an-interface-the-view-model-resolves).
-- Write CodeBrix `.cbv` video in either container mode from a plan the view
+- Write CodeBrix video in any of its three modes - including the `.cbvmaster`
+  master form, with its alpha channel and lossless sound - from a plan the view
   model settled first:
   [Author a cbv file in either container mode from a settled plan](../BLUEPRINTS-MediaAndVision.md#author-a-cbv-file-in-either-container-mode-from-a-settled-plan).
 - Build an FFmpeg command line - inputs, stream selection, codecs, filters,
@@ -195,13 +209,18 @@ All four `Program.cs` files are the same but for the head call; each one calls
 - **FFmpeg and ffprobe on the path.** The Processing library runs them through
   CodeBrix.VideoProcessing, and `MediaProbe` describes them as the only external
   process this application ever starts. They are needed to probe anything that
-  is not a `.cbv` file, to run any conversion at all, to remux the intermediate
-  on the Mode 2 route, to pull a caption track out of an `.mp4` as WebVTT, and
-  to generate the synthetic clips the tests and the scripted run use.
-- **What still works without them.** A `.cbv` file - either mode - is read
-  entirely by the playback core's own container readers, so it opens, lists and
-  plays with no external process; the window, the file list, the player, the
-  transport, the chapter and caption drop-downs and the theme are all unaffected.
+  is not a CodeBrix file, to run any conversion at all (a Mode 3 master is
+  encoded in process, but its source is still decoded by the FFmpeg engine, and
+  its MP4 export is written through it), to remux the intermediate on the Mode 2
+  and Mode 3 routes, to pull a caption track out of an `.mp4` as WebVTT, and to
+  generate the synthetic clips the tests and the scripted run use. No particular
+  encoder needs to be in the FFmpeg build for a master: the AV1 and FLAC
+  encoders it uses travel inside the authoring library's own packages.
+- **What still works without them.** A `.cbv` file - either mode - and a
+  `.cbvmaster` file are read entirely by the playback core's own container
+  readers, so they open, list and play with no external process; the window, the
+  file list, the player, the transport, the chapter and caption drop-downs and
+  the theme are all unaffected.
   There is no availability check anywhere in the application: a missing tool
   surfaces as the exception the library throws, `MediaProbe` restates it as a
   `VideoToolProcessingException` naming the file, and the view model puts that
@@ -210,7 +229,8 @@ All four `Program.cs` files are the same but for the head call; each one calls
   sentence in the status bar rather than in a crash.
 - No accounts, tokens, hardware, downloaded assets or data you have to supply.
   The AV1 and Opus decoders arrive as native libraries with the application's own
-  packages and need nothing installed.
+  packages and need nothing installed; Vorbis and FLAC are decoded by the
+  playback core's own managed audio library.
 
 ### Running a head
 
@@ -233,7 +253,7 @@ as it always does.
 
 | Variable | Meaning |
 | --- | --- |
-| `CODEBRIXVIDEOTOOL_SMOKE` | The destination to script: `mode1`, `webm`, `mkv` or `matroska`, or anything else for Mode 2 |
+| `CODEBRIXVIDEOTOOL_SMOKE` | The destination to script: `mode1`, `webm`, `mkv` or `matroska`, `mode3` or `master`, or anything else for Mode 2 |
 | `CODEBRIXVIDEOTOOL_SMOKE_OUT` | A working folder; a temporary one is made when it is not given |
 | `CODEBRIXVIDEOTOOL_SMOKE_KEEP` | `1` or `true` to keep the files it wrote |
 | `CODEBRIXVIDEOTOOL_SMOKE_HOLD` | Seconds to leave the window up, clamped to 0-300 |
@@ -243,12 +263,17 @@ as it always does.
 Two test projects mirror the two libraries. `CodeBrixVideoTool.Playback.Tests`
 covers the codec registration, the chapter and caption row models and every rule
 in `PlaybackSelection`. `CodeBrixVideoTool.Processing.Tests` covers the format
-policy, the resolution ladder, the planner, the probe against real generated
-media, the runner end to end, and the view model's static outcome-description
-rule. `CodeBrixVideoTool.PlayTests` drives the real page, view models and player
-element through CodeBrix.Platform.PlayTest, with the probe, the runner and the
-tool check replaced through the `App(Action<IServiceCollection>)` overload; it
-needs no FFmpeg (see its own `README.md`).
+policy (including telling Mode 2 from Mode 3 by the container's format version,
+never by the extension), the resolution ladder, the planner, the probe against
+real generated media, the runner end to end - Mode 3 imports with and without
+alpha, a master transcoded back out with its alpha left behind, and a master
+exported to MP4 with and without compositing - and the view model's static
+outcome and route rules. `CodeBrixVideoTool.PlayTests` drives the real page,
+view models and player element through CodeBrix.Platform.PlayTest, with the
+probe, the runner and the tool check replaced through the
+`App(Action<IServiceCollection>)` overload; it opens and plays a `.cbvmaster`
+in the real player as well as the two `.cbv` clips, and needs no FFmpeg (see
+its own `README.md`).
 
 `global.json` in this folder does one thing: it selects the
 Microsoft.Testing.Platform runner. Each test csproj sets the same thing again
@@ -277,9 +302,14 @@ needs a running application host.
 
 The Processing tests need FFmpeg and ffprobe: the shared fixture generates an
 MP4, a WebVTT file and an FFmpeg metadata file, muxes them into a "rich" MP4 with
-a caption track and chapters, imports that to a Mode 2 and a Mode 1 file, and
-probes all three before the first test runs. No network, no GPU, and no media
-files in the repository.
+a caption track and chapters, and generates a QuickTime clip whose picture has an
+alpha channel (FFmpeg's test pattern inside a fully transparent frame). It
+imports the rich MP4 to a Mode 2, a Mode 1 and a Mode 3 file and the alpha clip
+to a second Mode 3 file, and probes them all before the first test runs. The
+project references the AV1 decoder package and the fixture registers it, because
+a master's MP4 export decodes with whatever the process registered, exactly as
+the application does at start-up. No network, no GPU, and no media files in the
+repository.
 
 ## How the projects and folders are organized
 
@@ -309,19 +339,19 @@ CodeBrixVideoTool/
     CodeBrixVideoTool.Win32Skia/          Head: Windows Win32
     libs/
       CodeBrixVideoTool.Playback/         The player half
-        Services/PlaybackCodecs.cs        RegisterOnce() for the AV1 and Opus decoders
+        Services/PlaybackCodecs.cs        RegisterOnce() for the AV1 and Opus decoders (Vorbis and FLAC are built in)
         Services/IVideoPlayerSurface.cs   What the view model needs from the player element
         Services/PlaybackSelection.cs     The player half's rules, as plain static methods
         Models/                           One row of the chapter drop-down, one of the caption drop-down
         ViewModels/PlaybackViewModel.cs   The observable wrapper over PlaybackSelection
       CodeBrixVideoTool.Processing/       The conversion half
-        Formats/                          The five container shapes and every policy about them
+        Formats/                          The six container shapes and every policy about them
         Probing/                          IMediaProbe and the two probing routes
         Resolution/                       The resolution ladder
         Planning/                         ConversionPlan and ConversionPlanner
         Operations/                       IConversionRunner, the runner, progress, outcome, output bridge
-        Containers/                       Mode 2 demultiplexing, sidecar extraction, WebVTT writing
-        Samples/SampleClipFactory.cs      Synthetic clips for the tests and the scripted run
+        Containers/                       CBVF (Mode 2 and Mode 3) demultiplexing, sidecar extraction, WebVTT writing
+        Samples/SampleClipFactory.cs      Synthetic clips (one with an alpha channel) for the tests and the scripted run
         ViewModels/ConversionViewModel.cs The operation panel
         VideoToolProcessingException.cs   The one application exception
   tests/
@@ -360,9 +390,9 @@ generated per-head resources class collide across assemblies.
 | CodeBrix.Platform.VideoPlayer add-in | The `VideoPlayer` element the page hosts, with its source, position, duration, volume, mute, chapter and caption-track properties, `SeekToChapter()`, and its `MediaOpened`, `PlaybackEnded`, `MediaFailed` and `ChapterChanged` events | referenced once in `src/CodeBrixVideoTool.Core`; used in `src/CodeBrixVideoTool.UI/Views/MainPage.xaml` and `MainPage.xaml.cs` |
 | CodeBrix.Platform.Fonts.Roboto | The application font, plus the Noto fallback faces | `src/CodeBrixVideoTool.Core`, `src/CodeBrixVideoTool.UI/App.xaml`, `App.xaml.cs` |
 | CodeBrix.Platform UI toolkit converters | `BoolToObjectConverter`, declared in the page's resources to dim the row of a file the player cannot open | `src/CodeBrixVideoTool.UI/Views/MainPage.xaml` |
-| CodeBrix.VideoPlayback | The playback core: container opening and readers, the CBVF format constants, the IVF and Ogg writers, caption files, chapter metadata, codec identifiers and the streamable-profile report | both `src/libs` projects; `Probing/MediaProbe.cs`, `Formats/MediaFormats.cs`, `Containers/`, `Playback/Services/`, `Playback/Models/` |
-| CodeBrix.VideoPlayback.Authoring | Writes all four supported formats from one authoring request naming the flavor, container, frame size, speed preset, rate factor, audio codec and caption inputs | `src/libs/CodeBrixVideoTool.Processing/Operations/ConversionRunner.cs` |
-| CodeBrix.VideoPlayback.Dav1d | The AV1 decoder, turned on by the application at start-up - the application's dependency, not the add-in's | `src/libs/CodeBrixVideoTool.Playback/Services/PlaybackCodecs.cs` |
+| CodeBrix.VideoPlayback | The playback core: container opening and readers (both CBVF versions, alpha-plane tracks included), the CBVF format constants, the IVF and Ogg writers, caption files, chapter metadata, codec identifiers and the streamable-profile report; through its audio dependency it also decodes Vorbis and a master's FLAC | both `src/libs` projects; `Probing/MediaProbe.cs`, `Formats/MediaFormats.cs`, `Containers/`, `Playback/Services/`, `Playback/Models/` |
+| CodeBrix.VideoPlayback.Authoring | Writes all five supported formats from one authoring request naming the flavor (WebM profile, bespoke or master), container, frame size, speed preset, rate factor, audio codec, alpha mode and caption inputs; its `VideoExporter` writes a Mode 3 master out to MP4, compositing any alpha over a backdrop | `src/libs/CodeBrixVideoTool.Processing/Operations/ConversionRunner.cs` |
+| CodeBrix.VideoPlayback.Dav1d | The AV1 decoder, turned on by the application at start-up - the application's dependency, not the add-in's. It decodes a master's alpha plane too, and the authoring library's exporter decodes with it | `src/libs/CodeBrixVideoTool.Playback/Services/PlaybackCodecs.cs` |
 | CodeBrix.Audio.Opus | The Opus decoder, turned on beside it | `src/libs/CodeBrixVideoTool.Playback/Services/PlaybackCodecs.cs` |
 | CodeBrix.VideoProcessing | ffmpeg and ffprobe: the analysis call, the argument builder, `NotifyOnProgress()`, `NotifyOnError()` and `CancellableThrough()` | `Probing/MediaProbe.cs`, `Containers/Mode2Extractor.cs`, `Containers/SidecarExtractor.cs`, `Operations/ConversionRunner.cs`, `Samples/SampleClipFactory.cs` |
 | SilverAssertions | The assertion style in every test project | the projects under `tests/` |
@@ -433,21 +463,25 @@ the playback session's registries, so it plays them with no change and no
 reference of its own. The same remarks record that there is deliberately no
 module initializer doing this, because that would work in a debug build and
 silently not run in a trimmed publish - and which decoder is needed where: AV1
-is not optional, since all four supported formats carry it, while Opus is needed
-for WebM, Matroska and Mode 1, Mode 2 carrying Vorbis, which the playback core
-decodes itself. See
+is not optional, since all five supported formats carry it (a Mode 3 master's
+alpha plane is a monochrome AV1 stream as well), while Opus is needed for WebM,
+Matroska and Mode 1, Mode 2 carrying Vorbis and Mode 3 carrying FLAC, both of
+which the playback core decodes itself. The same registrations serve the
+authoring library's exporter, which decodes a master with whatever the
+application registered rather than referencing a decoder of its own. See
 [Turn on extra media codecs once at startup](../BLUEPRINTS-AppStructureAndStartup.md#turn-on-extra-media-codecs-once-at-startup).
 
 
 ### The video-processing engine the application registers
 
 `App`'s constructor also calls `CodeBrixVideoProcessing.Register()`, right after the
-decoders. The authoring library that writes every `.cbv` decodes its source through
-whichever video-processing engine the process has registered, and refuses with a
-message naming that call when there is none; on the desktop the engine is the FFmpeg
-one. The call is idempotent and does not look for the executables, so a machine
-without FFmpeg still starts and still gets the missing-FFmpeg dialog on the first
-Open. The processing tests' media fixture makes the same call before it imports.
+decoders. The authoring library that writes every `.cbv` and `.cbvmaster` decodes its
+source through whichever video-processing engine the process has registered, and
+refuses with a message naming that call when there is none; on the desktop the engine
+is the FFmpeg one. Its exporter writes a master's MP4 through the same engine. The
+call is idempotent and does not look for the executables, so a machine without FFmpeg
+still starts and still gets the missing-FFmpeg dialog on the first Open. The
+processing tests' media fixture makes the same call before it imports.
 
 ### One page, one data context, two child view models
 
@@ -471,10 +505,22 @@ bar shows both `StatusText` properties in two columns. See
 runs and any failure becomes one sentence in the status bar. `MediaProbe` picks
 between two routes and its remarks say why: ffprobe cannot read the bespoke CBVF
 container at all and would only see a Mode 1 file as an ordinary WebM, so a
-`.cbv` file is read by the playback core's container readers and everything else
-goes to ffprobe.
+`.cbv` or `.cbvmaster` file is read by the playback core's container readers and
+everything else goes to ffprobe.
 
-Two intake rules in `MediaProbe` are worth reading for how far downstream design
+Telling the formats apart never trusts the extension. `MediaFormats.Detect()`
+reads the first six bytes: the EBML magic makes a file Mode 1, the ASCII bytes
+"CBVF" make it the bespoke container, and the little-endian format version right
+after them decides between Mode 2 (version 0) and Mode 3 (version 1). A master
+named `.cbv` is still listed as a master, which is exactly how the playback core
+picks its reader. Both routes also say whether the picture has an alpha channel:
+the container reader by whether a master carries an alpha-plane track - a second
+video track that is never mistaken for the picture - and ffprobe by the pixel
+format (`MediaProbe.HasAlphaChannel()`, the same reading the authoring library
+makes when a master is written with its alpha left to Auto). The list's one-line
+summary says "with alpha" when it is there.
+
+Two more intake rules in `MediaProbe` are worth reading for how far downstream design
 reaches back: a file with no video track is refused, and so is one that does not
 state a duration, "so its progress could not be reported and it is refused" -
 that is the progress design refusing an input it could not report honestly on.
@@ -490,8 +536,10 @@ and
 Nothing about a conversion is decided while it is running.
 `ConversionPlanner.Create()` validates the request and returns an immutable
 `ConversionPlan` carrying every derived answer - the audio and video codecs, the
-channel count, whether the source needs demultiplexing first, whether this is a
-resize - together with a human-readable list of the steps. The view model
+channel count, whether the source needs demultiplexing first, whether a master
+goes out through the exporter, whether an alpha channel is kept or left behind,
+whether this is a resize - together with a human-readable list of the steps. The
+view model
 catches one exception type from it and puts the message on screen. Read
 `Planning/ConversionPlanner.cs` and `Planning/ConversionPlan.cs` first, then
 `Operations/ConversionRunner.cs`, and notice that everything the runner branches
@@ -532,16 +580,22 @@ and
 
 ### Stage one: preparing a source before anything is encoded
 
-FFmpeg cannot open the bespoke CBVF container, so a Mode 2 source is
-demultiplexed first. `Containers/Mode2Extractor.cs` opens the file with the
-playback core's reader, checks that the video track really is AV1, writes the
-video into an IVF file and the audio into an Ogg file using the playback core's
-own writers - the same two containers the authoring library writes when it
-builds a bespoke file, used here in the opposite direction - and then remuxes
-them into a Matroska intermediate with a copy codec. Nothing is decoded and
-nothing is re-encoded, so from the intermediate onwards a Mode 2 conversion is
-an ordinary conversion; the view model learns of it only through one note in the
-run notes and one sentence in the route line.
+FFmpeg cannot open the bespoke CBVF container, so a Mode 2 or Mode 3 source is
+demultiplexed first. `Containers/Mode2Extractor.cs` (named for the format it was
+first written for; it reads both CBVF versions) opens the file with the playback
+core's reader, picks the picture track - never a master's alpha plane - and
+checks that it really is AV1, then writes the video into an IVF file and Vorbis
+or Opus sound into an Ogg file using the playback core's own writers - the same
+two containers the authoring library writes when it builds a bespoke file, used
+here in the opposite direction. A master's FLAC needs no wrapper at all: the
+track's codec-private data is a FLAC stream header and each packet is one
+complete FLAC frame, so written end to end they are a `.flac` file. The streams
+are then remuxed into a Matroska intermediate with a copy codec. Nothing is
+decoded and nothing is re-encoded, so from the intermediate onwards the
+conversion is an ordinary conversion; the view model learns of it only through
+one note in the run notes and one sentence in the route line. A master's alpha
+plane is the one thing left behind on this route, because every destination it
+leads to is opaque, and the run notes say so.
 
 Two pitfalls are recorded in the code. A packet's data is borrowed from the
 reader and is gone on the next read, so a packet held for lookahead has to be
@@ -552,7 +606,7 @@ of that. See
 
 The authoring library takes captions and chapters only as separate input files,
 which is the whole reason `Containers/SidecarExtractor.cs` exists. It has two
-routes - the container reader for the four supported formats, ffmpeg for the
+routes - the container reader for the five supported formats, ffmpeg for the
 `.mp4` family - and produces one value the runner hands on, with anything that
 could not be carried across turned into a sentence in the notes that reaches the
 operation panel. A Matroska or WebM file interleaves its subtitle cues with the
@@ -577,11 +631,16 @@ application does not offer.
 
 The resolution ladder is worth reading on its own. A rung names the **short**
 side, so landscape and portrait sources are both measured sensibly, and every
-dimension is made even, because all four supported formats carry AV1 in 4:2:0,
+dimension is made even, because all five supported formats carry AV1 in 4:2:0,
 whose chroma planes are half-size in each direction and which has no
 representation for an odd dimension. Rungs are offered strictly below the
 source's short side, so a source already at a standard size is not offered its
-own size again. See
+own size again. The ladder is rebuilt whenever the destination changes, not only
+when the source does, because one conversion cannot change the size at all: a
+master exported to MP4 is offered its own size and nothing else
+(`MediaFormats.CanResize()`), and the planner refuses a smaller rung for it. A
+rung a person picked survives a change of destination whenever the new ladder
+still offers it. See
 [Offer only the choices that make sense for the current selection](../BLUEPRINTS-MVVM.md#offer-only-the-choices-that-make-sense-for-the-current-selection)
 and
 [Build a resolution ladder keyed on the short side with even dimensions](../BLUEPRINTS-MediaAndVision.md#build-a-resolution-ladder-keyed-on-the-short-side-with-even-dimensions).
@@ -600,17 +659,68 @@ that the comparison inputs had to be re-timestamped by frame index first because
 a one-frame slip swamps everything a rate factor does. See
 [Move one encoder knob and pin everything else](../BLUEPRINTS-MediaAndVision.md#move-one-encoder-knob-and-pin-everything-else).
 
-The authoring side of the same file is where the two `.cbv` modes are defined in
-code: Mode 1 is the WebM-profile flavor writing a `.cbv` that is a WebM
-constrained to the streamable profile with Opus audio, and Mode 2 is the bespoke
-flavor writing CBVF with Vorbis audio. `MediaFormats.AudioCodecFor()` calls
-that Vorbis choice the hard invariant: a bespoke CBVF file this application
-writes carries Vorbis, never Opus. Only the two `.cbv` modes are meant to satisfy
-the streamable profile; a standard MKV is checked and reported on, and its
-failure is expected rather than an error. See
+The authoring side of the same file is where the three CodeBrix modes are
+defined in code: Mode 1 is the WebM-profile flavor writing a `.cbv` that is a
+WebM constrained to the streamable profile with Opus audio, Mode 2 is the
+bespoke flavor writing CBVF with Vorbis audio, and Mode 3 is the master flavor
+writing CBVF at format version 1 with FLAC audio and, when the source has one, an
+alpha-plane track. `MediaFormats.AudioCodecFor()` calls the Vorbis choice the
+hard invariant: a Mode 2 file this application writes carries Vorbis, never
+Opus; and FLAC is the only codec a master takes. Only the three CodeBrix modes
+are meant to satisfy the streamable profile, and a file that does not is a
+failed conversion; a standard MKV is checked and reported on, and its failure is
+expected rather than an error. See
 [Author a cbv file in either container mode from a settled plan](../BLUEPRINTS-MediaAndVision.md#author-a-cbv-file-in-either-container-mode-from-a-settled-plan)
 and
 [Export an mp4 with FFmpeg through the CodeBrix VideoProcessing library](../BLUEPRINTS-MediaAndVision.md#export-an-mp4-with-ffmpeg-through-the-codebrix-videoprocessing-library).
+
+### CodeBrix Mode 3: the master form
+
+A `.cbvmaster` file is the bespoke CBVF container at format version 1: the
+picture as AV1, an optional alpha-plane track beside it - the picture's alpha
+channel as a monochrome, full-range AV1 stream of the same size, in lock step
+with it - and lossless FLAC sound. It is the format to keep a finished piece of
+video in when it has transparency, or when its sound should not lose anything.
+Every route to and from it goes through the same plan, runner and panel as the
+other formats; what differs is decided in `MediaFormats`, `ConversionPlan` and
+`ConversionRunner`, and is said in the route line and the run notes.
+
+- **Importing or transcoding to Mode 3.** The runner asks the authoring library
+  for `VideoAuthoringFlavour.Master`. A master is encoded IN PROCESS: the source
+  is decoded by the registered FFmpeg engine (after the same Mode 2
+  demultiplexing as any other conversion when the source is a Mode 2 file), the
+  picture and alpha plane are encoded by the AV1 encoder package - the reference
+  encoder FFmpeg calls libaom-av1, not SVT-AV1 - and the sound by the FLAC
+  encoder package, at 16 bits and the source's own sample rate, capped at stereo
+  like every other format this application writes. `Video.Alpha` is left to
+  `Auto`, so alpha is carried exactly when the engine finds the source has it -
+  a ProRes 4444, PNG or QuickTime Animation `.mov` with an alpha channel, for
+  example - and the run notes say so either way. The quality stops move the same
+  rate factor; they were calibrated on SVT-AV1, so on a master they are close
+  rather than identical.
+- **Transcoding a master to another format.** The master is demultiplexed into a
+  Matroska intermediate (its FLAC written out as a plain FLAC stream) and
+  converted from there. The other four formats are opaque, so the alpha plane is
+  left behind and the run notes say so; the colour under fully transparent
+  pixels is whatever the master stored there, which the authoring library fills
+  with the nearest visible colour when it writes a master.
+- **Exporting a master to MP4.** This route does not use the FFmpeg export pass.
+  The authoring library's `VideoExporter` reads the master itself, decodes the
+  picture, the alpha plane and the FLAC sound with the decoders the application
+  registered at start-up, composites the picture over 50% grey by its alpha -
+  an MP4 has no transparency to carry it in - and writes H.264 and AAC through
+  the registered engine at the same quality stops as every other export. The
+  exporter always writes the source's own size, so a smaller size is not
+  offered for this pair. It also carries no captions or chapters, so when the
+  master has any, a second, copy-only FFmpeg pass adds them as MP4 timed text
+  and chapter metadata, exactly as the ordinary export writes them, and the
+  exporter's own "they were left out" note is dropped from the run notes.
+- **Playing a master.** The player opens a `.cbvmaster` with no extra package:
+  the alpha plane decodes through the same AV1 decoder as the picture, the
+  playback session pairs each alpha frame with its picture frame, and FLAC is
+  decoded by the managed audio core. A master flagged silent by intent plays
+  like any file without sound. The open dialog lists `.cbvmaster` beside the
+  other playable extensions, from `MediaFormats.PlayableExtensions`.
 
 ### Two bridges, and what the view model does when a head cannot supply one
 

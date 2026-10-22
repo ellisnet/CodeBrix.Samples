@@ -1176,8 +1176,9 @@ public static class PlaybackCodecs
 
 ```csharp
 // From CodeBrix.Samples/CodeBrixVideoTool/src/CodeBrixVideoTool.UI/App.xaml.cs
-//Turn on AV1 video and Opus audio, once. Every one of the four formats this application
-//writes carries AV1, so nothing plays at all without the first of these.
+//Turn on AV1 video and Opus audio, once. Every one of the five formats this application
+//writes carries AV1, so nothing plays at all without the first of these - and a Mode 3 master's
+//alpha plane is AV1 too. Its FLAC sound needs nothing: the audio core decodes FLAC itself.
 PlaybackCodecs.RegisterOnce();
 ```
 

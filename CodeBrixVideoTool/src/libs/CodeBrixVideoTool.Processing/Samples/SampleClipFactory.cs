@@ -72,6 +72,60 @@ public static class SampleClipFactory
     }
 
     /// <summary>
+    /// Writes a small QuickTime file whose picture has an ALPHA CHANNEL: FFmpeg's test pattern at half
+    /// size in the middle of a fully transparent frame, stored losslessly as RGBA PNG frames, with an
+    /// uncompressed tone. It is the kind of source a Mode 3 master is made from.
+    /// </summary>
+    /// <param name="path">The file to write, overwriting anything already there.</param>
+    /// <param name="width">The picture's width in pixels. Must be a multiple of four.</param>
+    /// <param name="height">The picture's height in pixels. Must be a multiple of four.</param>
+    /// <param name="duration">How long the clip runs.</param>
+    /// <param name="frameRate">The picture's frame rate.</param>
+    /// <param name="cancellationToken">Stops the generation.</param>
+    /// <returns>The path that was written.</returns>
+    /// <exception cref="VideoToolProcessingException">FFmpeg could not write the clip.</exception>
+    public static async Task<string> WriteAlphaMovAsync(
+        string path,
+        int width = 320,
+        int height = 240,
+        TimeSpan duration = default,
+        double frameRate = 25d,
+        CancellationToken cancellationToken = default)
+    {
+        var length = duration <= TimeSpan.Zero ? TimeSpan.FromSeconds(3) : duration;
+        //A fully transparent frame, the pattern at half size laid over its middle, and a tone.
+        var filterGraph = string.Join("; ",
+            string.Create(CultureInfo.InvariantCulture, $"color=c=black@0.0:size={width}x{height}:rate={frameRate},format=rgba[bg]"),
+            string.Create(CultureInfo.InvariantCulture, $"testsrc2=size={width / 2}x{height / 2}:rate={frameRate},format=rgba[fg]"),
+            string.Create(CultureInfo.InvariantCulture, $"[bg][fg]overlay=x={width / 4}:y={height / 4}:shortest=1[out0]"),
+            "sine=frequency=440:sample_rate=48000[out1]");
+
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path)));
+
+        var errors = new List<string>();
+        var succeeded = await FFMpegArguments
+            .FromFileInput(filterGraph, false, input => input.ForceFormat("lavfi"))
+            .OutputToFile(path, true, options => options
+                .WithDuration(length)
+                .WithVideoCodec("png")
+                .ForcePixelFormat("rgba")
+                .WithAudioCodec("pcm_s16le")
+                .ForceFormat("mov"))
+            .NotifyOnError(errors.Add)
+            .CancellableThrough(cancellationToken)
+            .ProcessAsynchronously(false)
+            .ConfigureAwait(false);
+
+        if (!succeeded || !File.Exists(path))
+        {
+            throw new VideoToolProcessingException(
+                "A sample clip with an alpha channel could not be generated. " + string.Join(" ", errors.TakeLast(5)));
+        }
+
+        return path;
+    }
+
+    /// <summary>
     /// Writes a small MP4 that carries a caption track and chapters as well as picture and sound -
     /// the kind of file an import has something to carry across.
     /// </summary>

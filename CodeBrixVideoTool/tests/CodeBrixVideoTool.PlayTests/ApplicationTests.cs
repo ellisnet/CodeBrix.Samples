@@ -95,6 +95,27 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
     }
 
     [Fact]
+    public async Task Opening_a_master_lists_it_as_mode3_plays_it_and_keeps_its_size_for_mp4()
+    {
+        await OpenClipAsync(Fixture.MasterClip);
+        await Expect(Row("plain.cbvmaster")).ToBeVisibleAsync();
+        await Expect(Page.GetByTestId("LibraryList").GetByText("Mode 3", new() { Exact = true })).ToBeVisibleAsync();
+        (await Page.EvaluateAsync(() => Fixture.Model.SelectedItem.Format)).Should().Be(MediaFormatKind.CodeBrixMaster);
+        await Button("Play").ClickAsync();
+        await WaitForPlayerAsync(player => player.FrameStatistics.Presented, presented => presented > 2, "presented frames");
+
+        // A master is never offered Mode 3 again, and goes out to MP4 at its own size only.
+        (await Page.EvaluateAsync(() => Fixture.Model.Conversion.Destinations.Any(d => d.Kind == MediaFormatKind.CodeBrixMaster)))
+            .Should().BeFalse();
+        await ChooseAsync("Destination", "MP4 (H.264 + AAC)");
+        (await Page.EvaluateAsync(() => Fixture.Model.Conversion.Resolutions.Count)).Should().Be(1);
+        await Expect(Page.GetByTestId("RouteText")).ToHaveTextAsync(
+            "Export plain.cbvmaster to MP4 (H.264 + AAC) at its own size. The master is decoded in process.");
+        await ChooseAsync("Destination", "CodeBrix Mode 2 .cbv (AV1 + Vorbis)");
+        await Expect(Page.GetByTestId("RouteText")).ToHaveTextAsync(new Regex("demultiplexed first"));
+    }
+
+    [Fact]
     public async Task Cancelled_open_picker_leaves_library_unchanged()
     {
         Fixture.Application.FilePickers.EnqueueOpenFile(null);
@@ -199,7 +220,7 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
         await Expect(Page.GetByTestId("LibraryList").GetByText("MP4", new() { Exact = true })).ToBeVisibleAsync();
         await Expect(Page.GetByText("This file is not played here", new() { Exact = true })).ToBeVisibleAsync();
         await Expect(Page.GetByTestId("PlaybackStatus")).ToHaveTextAsync(
-            "MP4 (H.264 + AAC) is not played in this application - import it to one of the four CodeBrix formats first.");
+            "MP4 (H.264 + AAC) is not played in this application - import it to one of the five supported formats first.");
         await Expect(Button("Play")).ToBeHiddenAsync();
         await Expect(Page.GetByTestId("ActionButton")).ToHaveTextAsync("Import");
         (await Page.EvaluateAsync(() => RowOpacity("phone.mp4"))).Should().Be(0.45);
@@ -230,6 +251,7 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
     [InlineData("Matroska .mkv (AV1 + Opus)", "Transcode", "Av1", "Opus")]
     [InlineData("WebM .webm (AV1 + Opus)", "Transcode", "Av1", "Opus")]
     [InlineData("CodeBrix Mode 1 .cbv (AV1 + Opus)", "Transcode", "Av1", "Opus")]
+    [InlineData("CodeBrix Mode 3 .cbvmaster (AV1 + alpha + FLAC)", "Transcode", "Av1", "Flac")]
     [InlineData("MP4 (H.264 + AAC)", "Export", "H264", "Aac")]
     public async Task Destination_choice_updates_action_label_codecs_and_route(
         string destination, string action, string video, string audio)
@@ -241,7 +263,7 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
         await Expect(Page.GetByRole(AriaRole.Option, new() { Name = "MP4 (H.264 + AAC)", Exact = true })).ToBeVisibleAsync();
         await Expect(Page.GetByRole(AriaRole.Option, new() { Name = "CodeBrix Mode 2 .cbv (AV1 + Vorbis)", Exact = true }))
             .ToHaveCountAsync(0);
-        (await Page.EvaluateAsync(() => Fixture.Model.Conversion.Destinations.Count)).Should().Be(4);
+        (await Page.EvaluateAsync(() => Fixture.Model.Conversion.Destinations.Count)).Should().Be(5);
         await Page.GetByRole(AriaRole.Option, new() { Name = destination, Exact = true }).ClickAsync();
         await Expect(Page.GetByTestId("Destination")).ToHaveValueAsync(destination);
         await Expect(Page.GetByTestId("ActionButton")).ToHaveTextAsync(action);
