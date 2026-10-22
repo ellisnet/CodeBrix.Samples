@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <!-- Builds tiny in-memory GLB models for the loader tests -->
-    <PackageReference Include="CodeBrix.Graphics3D.Gltf2.MitLicenseForever" Version="1.0.261.293" />
+    <PackageReference Include="CodeBrix.Graphics3D.Gltf2.MitLicenseForever" Version="1.0.290.996" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
     <!-- libSkiaSharp native for running bitmap tests on Linux (apps get it from the platform head) -->

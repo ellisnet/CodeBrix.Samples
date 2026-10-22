@@ -17,10 +17,10 @@
   <ItemGroup>
     <PackageReference Include="CodeBrix.NotionApi.MitLicenseForever" Version="1.0.275.146" />
     <PackageReference Include="CodeBrix.PdfDocCreate.MitLicenseForever" Version="1.0.285.692" />
-    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.285.619" />
-    <PackageReference Include="CodeBrix.VideoProcessing.MitLicenseForever" Version="1.0.285.792" />
+    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.290.858" />
+    <PackageReference Include="CodeBrix.VideoProcessing.MitLicenseForever" Version="1.0.290.1023" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.13" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
   </ItemGroup>
 
 </Project>
