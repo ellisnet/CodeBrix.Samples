@@ -20,6 +20,12 @@ internal class Program
         if (host is WpfHost wpfHost)
         {
             wpfHost.RenderSurfaceType = RenderSurfaceType.Software;
+
+            //Visualize Mode repaints continuously, and on this head every frame also re-composites
+            //  the whole window on the CPU - in a large window a frame can outlast the frame interval,
+            //  and at the default (RenderFirst) tier that starves keyboard and mouse input outright,
+            //  so the app stops responding. InputFair lets input interleave with the frames.
+            wpfHost.DispatcherScheduling = WpfDispatcherScheduling.InputFair;
         }
 
         host.Run();
