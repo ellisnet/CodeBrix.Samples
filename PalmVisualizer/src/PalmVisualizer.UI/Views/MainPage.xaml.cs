@@ -1,4 +1,3 @@
-using CodeBrix.Platform.GameEngine.Host.Rendering;
 using CodeBrix.Platform.Simple;
 using Microsoft.UI.Xaml.Controls;
 using PalmVisualizer.Camera;
@@ -7,10 +6,8 @@ using PalmVisualizer.ViewModels;
 
 namespace PalmVisualizer.Views;
 
-public sealed partial class MainPage : Page, IGameCanvasHost
+public sealed partial class MainPage : Page, IVisualizerCanvasHost
 {
-    private IManageGameCanvas _gameCanvasManager;
-
     //Where the preview renderer pulls frames from - the view model, seen as a frame source
     private IWebcamFrameSource _frameSource;
 
@@ -25,8 +22,10 @@ public sealed partial class MainPage : Page, IGameCanvasHost
         {
             //Give the view model's SimpleDialog helpers a XamlRoot to attach dialogs to
             (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
-            _gameCanvasManager = DataContext as IManageGameCanvas;
             _frameSource = DataContext as IWebcamFrameSource;
+
+            //The panel the visualizer sessions show their views in
+            (DataContext as IManageVisualizerCanvas)?.SetVisualizerCanvasHost(this);
 
             if (DataContext is ICanvasBridge canvasBridge)
             {
@@ -41,12 +40,8 @@ public sealed partial class MainPage : Page, IGameCanvasHost
         PreviewCanvas.PaintSurface += (_, e) =>
             _previewRenderer.Render(e.Surface, e.Info, _frameSource, mirror: true);
         PreviewCanvas.SizeChanged += (_, _) => PreviewCanvas.Invalidate();
-
-        //Fires once, at the canvas's first non-zero layout size - i.e. the first time
-        //  Visualize Mode is shown - which is when the engine can start
-        VisualizerCanvas.FirstStarted += (_, _) => _gameCanvasManager?.CanvasFirstStart(this);
     }
 
-    //The one thing the visualizer session needs from this page (see IGameCanvasHost)
-    GameSurfaceCanvas IGameCanvasHost.Canvas => VisualizerCanvas;
+    //The one thing a visualizer session needs from this page (see IVisualizerCanvasHost)
+    Panel IVisualizerCanvasHost.Container => VisualizerCanvas;
 }

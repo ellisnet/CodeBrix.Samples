@@ -1699,7 +1699,7 @@ private void SwitchCamera(CameraDevice camera)
 
 ```xml
 <!-- From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml -->
-<ComboBox MinWidth="280" VerticalAlignment="Center"
+<ComboBox a:AutomationProperties.AutomationId="CameraPicker" a:AutomationProperties.Name="Camera" MinWidth="280" VerticalAlignment="Center"
           ItemsSource="{d:Binding Cameras}"
           SelectedItem="{d:Binding SelectedCamera, Mode=TwoWay}"
           IsEnabled="{d:Binding IsCameraMode}" />

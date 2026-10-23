@@ -21,9 +21,7 @@ layering and tempo change without pitch change, ducking in both its fire-and-for
 and its held-handle form, stingers, playlists, marker jump points, and a global pause
 that suspends the music and freezes the fades together. It is also a reference for
 running the engine inside an ordinary XAML page rather than a game shell, and for an
-application that builds the binary inputs it needs instead of shipping them. A
-sibling application here, PalmVisualizer, runs the same engine for its rendering
-rather than its audio.
+application that builds the binary inputs it needs instead of shipping them.
 
 ## What this sample shows a CodeBrix.Platform developer
 

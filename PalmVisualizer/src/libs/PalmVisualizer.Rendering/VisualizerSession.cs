@@ -1,129 +1,126 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Threading;
-using CodeBrix.Platform.GameEngine;
-using CodeBrix.Platform.GameEngine.Host.Rendering;
-using CodeBrix.Platform.GameEngine.Rendering;
-using CodeBrix.Platform.GameEngine.Rendering.Backbuffers;
+using System.Diagnostics;
+using Microsoft.UI.Xaml;
 
 namespace PalmVisualizer.Rendering;
 
 /// <summary>
-/// The Visualize Mode scene: runs the game engine (GpuRendering-OpenGL GPU rendering by default, so the
-/// SkSL shader executes on the GPU) into a <see cref="GameSurfaceCanvas"/> and fills it with
-/// the palm-reactive <see cref="EtherealBackdrop"/> - no stats overlay, just the moving
-/// color. The hosting application feeds palm positions in through
-/// <see cref="UpdatePalms"/> (from any thread) and pauses the whole visual with
-/// <see cref="Pause"/>/<see cref="Resume"/> while the user is back at Camera Mode.
-/// Set the environment variable <c>PALMVISUALIZER_USE_CPU=1</c> to run the identical scene
-/// on the CpuRendering (CPU) render path.
+/// What every visualizer session shares, whichever visual it shows and whichever graphics API
+/// draws it: the lifecycle <see cref="IVisualizerSession"/> declares, the palm attractors, and
+/// the visual's clock - which stops while the session is paused, so the pause is invisible to
+/// the visual. A subclass supplies the view that draws the visual and pauses it.
 /// </summary>
-public sealed class VisualizerSession : IVisualizerSession
+public abstract class VisualizerSession : IVisualizerSession
 {
-    private readonly GameSurfaceCanvas _canvas;
-    private readonly PalmAttractorField _attractorField = new PalmAttractorField();
-
-    private RenderSurfaceHost<BackbufferBase> _renderSurface;
-    private EtherealBackdrop _backdrop;
+    private readonly IVisualizerCanvasHost _host;
+    private readonly Stopwatch _clock = new();
+    private FrameworkElement _view;
+    private bool _isPaused;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="VisualizerSession"/> class.
     /// </summary>
-    /// <param name="canvas">The render surface to draw into.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="canvas"/> is null.</exception>
-    public VisualizerSession(GameSurfaceCanvas canvas)
+    /// <param name="kind">The visualizer this session shows.</param>
+    /// <param name="host">The page whose panel the view is shown in.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="host"/> is null,
+    /// or when the host has no panel yet.</exception>
+    protected VisualizerSession(VisualizerKind kind, IVisualizerCanvasHost host)
     {
-        _canvas = canvas ?? throw new ArgumentNullException(nameof(canvas));
+        _host = host ?? throw new ArgumentNullException(nameof(host));
+        if (host.Container == null) { throw new ArgumentNullException(nameof(host), "The host has no panel to show the visualizer in."); }
+
+        Kind = kind;
     }
 
-    /// <summary>Indicates whether <see cref="Start"/> has run.</summary>
+    /// <inheritdoc />
+    public VisualizerKind Kind { get; }
+
+    /// <inheritdoc />
     public bool IsStarted { get; private set; }
 
-    /// <summary>
-    /// Starts the engine and builds the shader scene. Must be called on the UI thread once
-    /// the canvas has a non-zero size (its <c>FirstStarted</c> event), and only once per
-    /// process - use <see cref="Pause"/>/<see cref="Resume"/> to leave and re-enter
-    /// Visualize Mode.
-    /// </summary>
+    /// <inheritdoc />
+    public event EventHandler<VisualizerProblemEventArgs> Problem;
+
+    /// <summary>The palm attractors the visual reads; thread-safe.</summary>
+    protected PalmAttractorField AttractorField { get; } = new();
+
+    /// <summary>The name the dropdown shows for this visualizer, for status-line messages.</summary>
+    protected string DisplayName => VisualizerOption.For(Kind).DisplayName;
+
+    /// <summary>The visual's clock, in seconds; it does not advance while the session is paused.</summary>
+    protected float ElapsedSeconds => (float)_clock.Elapsed.TotalSeconds;
+
+    /// <inheritdoc />
     public void Start()
     {
         if (IsStarted) { return; }
 
-        //GpuRendering-OpenGL (GPU) by default; must be chosen before the first access to Host. The
-        //  render resolution tracks the window (no SetRenderResolution) - the shader
-        //  scene is resolution-independent.
-        _canvas.UseGpuRendering = Environment.GetEnvironmentVariable("PALMVISUALIZER_USE_CPU") != "1";
-
-        _renderSurface = _canvas.Host;
-        _renderSurface.ViewManager.ConfigureSingleFullView();
-
-        Engine.Instance.Start(SynchronizationContext.Current);
-        Engine.Instance.Configuration.TargetFPS = 60;
-
-        var adapter = _renderSurface.RenderSurfaceAdapter;
-        var view = _renderSurface.ViewManager.Views[0];
-
-        _backdrop = new EtherealBackdrop(_renderSurface, view,
-            new Rectangle(0, 0, adapter.Width, adapter.Height), _attractorField);
-        _backdrop.ZOrder = 0;
-
-        //The render resolution tracks the window, so follow adapter resizes
-        adapter.Resized += OnAdapterResized;
-
+        _view = CreateView();
+        _host.Container.Children.Add(_view);
+        _isPaused = false;
+        _clock.Start();
         IsStarted = true;
     }
 
-    /// <summary>
-    /// Parks the visual at ~zero cost (the global engine pause) while the user is back at
-    /// Camera Mode, releasing every palm attractor so a later <see cref="Resume"/> starts
-    /// from the undisturbed visual. Safe to call when not started or already paused.
-    /// </summary>
+    /// <inheritdoc />
     public void Pause()
     {
-        if (!IsStarted || Engine.Instance.IsPaused) { return; }
+        if (!IsStarted || _isPaused) { return; }
 
-        _attractorField.Reset();
-        Engine.Instance.Pause();
+        _isPaused = true;
+        AttractorField.Reset();
+        _clock.Stop();
+        SetViewPaused(true);
     }
 
-    /// <summary>
-    /// Wakes the visual after a <see cref="Pause"/> - the pause is invisible to engine
-    /// time, so the colors resume mid-motion. Safe to call when not started or not paused.
-    /// </summary>
+    /// <inheritdoc />
     public void Resume()
     {
-        if (!IsStarted || !Engine.Instance.IsPaused) { return; }
+        if (!IsStarted || !_isPaused) { return; }
 
-        Engine.Instance.Resume();
+        _isPaused = false;
+        _clock.Start();
+        SetViewPaused(false);
     }
 
-    /// <summary>
-    /// Sets the open palms currently attracting the visual. Positions are normalized 0..1
-    /// across the visual (already mirrored by the caller when the user is watching a
-    /// mirror-style view); palms keep their <see cref="PalmAttractor.Id"/> from update to
-    /// update so their influence follows them. Safe to call from any thread - tracking
-    /// results are fed straight in from the vision worker.
-    /// </summary>
-    /// <param name="palms">The attracting palms; empty (or null) releases them all, letting
-    /// the visual melt back to its undisturbed motion.</param>
-    public void UpdatePalms(IReadOnlyList<PalmAttractor> palms) => _attractorField.SetTargets(palms);
+    /// <inheritdoc />
+    public void UpdatePalms(IReadOnlyList<PalmAttractor> palms) => AttractorField.SetTargets(palms);
 
-    /// <summary>
-    /// Stops the engine. Call when the hosting page is closing.
-    /// </summary>
+    /// <inheritdoc />
     public void Stop()
     {
         if (!IsStarted) { return; }
 
-        _renderSurface.RenderSurfaceAdapter.Resized -= OnAdapterResized;
-        Engine.Instance.Stop();
+        //Cleared first, so whatever the view raises while it unloads (a WebGPU view reports its
+        //  device going away) is recognized as the stop rather than a problem
         IsStarted = false;
+        _clock.Stop();
+
+        //Leaving the visual tree is what releases the view's GPU context or device
+        _host.Container.Children.Remove(_view);
+        _view = null;
+        OnStopped();
     }
 
-    private void OnAdapterResized(RenderSurfaceAdapterResizedEventArgs args)
+    /// <summary>Creates the view that draws the visual; called once, by <see cref="Start"/>.</summary>
+    /// <returns>The view, which the session puts into the host's panel.</returns>
+    protected abstract FrameworkElement CreateView();
+
+    /// <summary>Pauses or resumes the view's frames.</summary>
+    /// <param name="paused"><see langword="true"/> to stop drawing frames; <see langword="false"/> to resume.</param>
+    protected abstract void SetViewPaused(bool paused);
+
+    /// <summary>Releases what the subclass created, after the view has left the panel.</summary>
+    protected virtual void OnStopped() { }
+
+    /// <summary>Raises <see cref="Problem"/> - only while the session is running.</summary>
+    /// <param name="message">What went wrong, worded for the status line.</param>
+    protected void ReportProblem(string message)
     {
-        if (_backdrop != null)
-            _backdrop.ScreenBounds = new Rectangle(0, 0, args.NewWidth, args.NewHeight);
+        if (IsStarted)
+        {
+            Problem?.Invoke(this, new VisualizerProblemEventArgs(message));
+        }
     }
 }

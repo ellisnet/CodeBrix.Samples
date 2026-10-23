@@ -48,7 +48,14 @@ conventions the code blocks follow.
 - [Drive strokes in normalized image coordinates from a sensor](#drive-strokes-in-normalized-image-coordinates-from-a-sensor)
 - [Keep a mirrored preview and a mirrored drawing consistent](#keep-a-mirrored-preview-and-a-mirrored-drawing-consistent)
 - [Draw a brush sized cursor over a rendered drawing session](#draw-a-brush-sized-cursor-over-a-rendered-drawing-session)
-- [Draw an animated SkSL shader as a game engine direct drawing](#draw-an-animated-sksl-shader-as-a-game-engine-direct-drawing)
+- [Draw an animated SkSL shader onto a GPU or raster Skia canvas](#draw-an-animated-sksl-shader-onto-a-gpu-or-raster-skia-canvas)
+- [Rasterize Skia frames on the GPU with SkiaGpuContext and present them on an SKXamlCanvas](#rasterize-skia-frames-on-the-gpu-with-skiagpucontext-and-present-them-on-an-skxamlcanvas)
+- [Draw a scene with WebGpuRenderView and raw WGSL](#draw-a-scene-with-webgpurenderview-and-raw-wgsl)
+- [Run a WebGPU compute pass over ping-ponged storage buffers before the render pass](#run-a-webgpu-compute-pass-over-ping-ponged-storage-buffers-before-the-render-pass)
+- [Ray-march an SDF solid in a full-screen WGSL fragment shader](#ray-march-an-sdf-solid-in-a-full-screen-wgsl-fragment-shader)
+- [Draw many instanced quads over a full-screen backdrop in one WebGPU render pass](#draw-many-instanced-quads-over-a-full-screen-backdrop-in-one-webgpu-render-pass)
+- [Compute a frame once and let two graphics APIs draw it](#compute-a-frame-once-and-let-two-graphics-apis-draw-it)
+- [Let a rendering session put its own view into the page's panel](#let-a-rendering-session-put-its-own-view-into-the-pages-panel)
 - [Smooth worker rate data into frame rate animation](#smooth-worker-rate-data-into-frame-rate-animation)
 - [Keep a pipeline and a renderer decoupled by a normalized seam](#keep-a-pipeline-and-a-renderer-decoupled-by-a-normalized-seam)
 - [Offer a CPU fallback for a GPU rendering path behind one switch](#offer-a-cpu-fallback-for-a-gpu-rendering-path-behind-one-switch)
@@ -885,6 +892,16 @@ public RenderEngineKind SelectedRenderEngine
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/Display/IModelRenderEngineSelector.cs`
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/ViewModels/MainViewModel.cs`
 `PolyHavenBrowser_viewer_only/src/PolyHavenBrowser.Core/Display/RENDERING-PIPELINE.md`
+
+**Also shown by.**
+`PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs` and
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/VisualizerOption.cs` (a
+header dropdown of five visualizers: one visual, Ethereal, through WebGPU - listed
+first, and the default - or through GPU Skia, and three more drawn only with WebGPU;
+the options carry their own display names, and the `SelectedVisualizer` setter stops
+the current session and, while the visual is showing, starts one for the new choice
+at once - see
+[Let a rendering session put its own view into the page's panel](#let-a-rendering-session-put-its-own-view-into-the-pages-panel))
 
 **Sharp edges.**
 - The selector replaces the older shape of registering one fixed engine factory in
@@ -2504,28 +2521,24 @@ public void RenderMainCanvas(SKSurface surface, SKImageInfo info)
   decision belongs on the view model, not in the paint handler; the bridge carries
   the surface into the view model rather than carrying the state out.
 
-### Draw an animated SkSL shader as a game engine direct drawing
+### Draw an animated SkSL shader onto a GPU or raster Skia canvas
 
 **When you want this.** A full-surface procedural visual - a plasma, a gradient
-field, a starfield - that runs on the GPU when one is available and on the CPU
-when it is not, with per-frame parameters coming from application state.
+field, a starfield - that runs on the GPU when the canvas it is drawn onto is
+GPU-backed and on the CPU when it is not, with per-frame parameters coming from
+application state.
 
-**The MVVM shape.** A `DirectDrawingBase` subclass owns the shader source,
-compiles it once in its constructor, and reads its per-frame inputs from a
-thread-safe state object handed in at construction. It never talks to the view
-model.
+**The MVVM shape.** A renderer class in a headless library owns the shader source,
+compiles it once in its constructor, and draws one frame from a state object it is
+handed per call. It knows no view, no view model and no graphics API beyond Skia;
+whoever owns the canvas decides whether that canvas lives on the GPU.
 
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealBackdrop.cs
-public sealed class EtherealBackdrop : DirectDrawingBase
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealSkiaRenderer.cs
+public sealed class EtherealSkiaRenderer : IDisposable
 {
-    private const int StarCount = 220;
-
-    //How far (as a fraction of the shorter screen edge) a palm's pull reaches the stars
-    private const float StarPullRadiusFraction = 0.38f;
-
     //The base plasma is three interfering waves plus a slow radial swirl, palette-cycled;
     //  each palm adds a coordinate warp (pull + vortex), inward-drifting color rings, and
     //  a soft glow. With all palm strengths at zero every palm term vanishes and the
@@ -2534,7 +2547,7 @@ public sealed class EtherealBackdrop : DirectDrawingBase
 uniform float iTime;
 uniform float2 iResolution;
 uniform float3 iPalm0;
-// ... iPalm1..iPalm3
+// ... iPalm1..iPalm3, and the pullAt / warpAt / rippleAt helpers
 
 half4 main(float2 fragCoord) {
     float2 uv = fragCoord / iResolution;
@@ -2543,105 +2556,910 @@ half4 main(float2 fragCoord) {
     // ... three interfering waves, a radial swirl, and the palm warp/ripple/glow terms
     return half4(half3(col), 1.0);
 }";
-    // ...
-    public EtherealBackdrop(RenderSurfaceHostBase renderSurfaceHost, View view, Rectangle screenBounds,
-        PalmAttractorField attractorField)
-        : base(renderSurfaceHost, DirectDrawingMode.View, null, view, screenBounds, null, "ethereal-backdrop")
-    {
-        _attractorField = attractorField ?? throw new ArgumentNullException(nameof(attractorField));
-        _effect = CreateEffect();
-        _uniforms = new SKRuntimeEffectUniforms(_effect);
-        // ... allocate the reused per-frame buffers and the fixed star seeds
-    }
 
-    /// <summary>
-    /// Compiles the backdrop's SkSL shader (also exercised directly by the unit tests).
-    /// </summary>
-    /// <returns>The compiled runtime effect.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when the SkSL shader fails to compile.</exception>
+    private static readonly string[] PalmUniformNames = { "iPalm0", "iPalm1", "iPalm2", "iPalm3" };
+
+    private readonly SKRuntimeEffect _effect;
+    private readonly SKRuntimeEffectUniforms _uniforms;
+    private readonly SKPaint _plasmaPaint = new();
+    private readonly SKPaint _starPaint = new() { Color = SKColors.White, IsAntialias = true };
+
+    //Reused per-frame uniform buffers - Draw allocates nothing
+    private readonly float[][] _palmUniforms;
+    private readonly float[] _resolutionUniform = new float[2];
+    // ...
     internal static SKRuntimeEffect CreateEffect()
         => SKRuntimeEffect.CreateShader(EtherealSksl, out var errors)
             ?? throw new InvalidOperationException($"Ethereal shader failed to compile: {errors}");
-
-    /// <summary>
-    /// Marks the backdrop dirty every engine frame so the CpuRendering (CPU) dirty-rectangle path
-    /// keeps animating it; the GpuRendering-OpenGL (GPU) path re-renders the full surface each frame
-    /// regardless.
-    /// </summary>
-    /// <param name="tick">The current engine tick.</param>
-    public override void Update(long tick)
+    // ...
+    public void Draw(SKCanvas canvas, EtherealScene scene)
     {
-        base.Update(tick);
-        ForceRefresh();
-    }
-
-    /// <inheritdoc />
-    protected override void OnDraw(BackbufferBase backbuffer, RectangleF destRectScreen)
-    {
-        var canvas = backbuffer.Canvas;
         // ...
-        float time = (float)Engine.Instance.TotalSecondsEngineRunning;
-
-        //Advance the attractor smoothing by the frame's real delta (0 on the first frame;
-        //  clamped so a stall cannot make the field lurch)
-        float delta = _hasLastStepTime ? Math.Clamp(time - _lastStepTime, 0f, 0.1f) : 0f;
-        _lastStepTime = time;
-        _hasLastStepTime = true;
-        _attractorField.Step(delta);
-        _attractorField.CopyState(_palmState);
-
-        var rect = destRectScreen.ToSKRect();
-        float aspect = w / h;
-
         // 1) Plasma: one rect through the SkSL shader, with the palms as uniforms
-        //    (positions converted into the shader's aspect-corrected -1..1 space).
-        _uniforms["iTime"] = time;
+        _uniforms["iTime"] = scene.Time;
         _resolutionUniform[0] = w;
         _resolutionUniform[1] = h;
         _uniforms["iResolution"] = _resolutionUniform;
+        ReadOnlySpan<float> palms = scene.Palms;
         for (int k = 0; k < PalmAttractorField.MaxAttractors; k++)
         {
-            _palmUniforms[k][0] = ((_palmState[k * 3] * 2f) - 1f) * aspect;
-            _palmUniforms[k][1] = (_palmState[(k * 3) + 1] * 2f) - 1f;
-            _palmUniforms[k][2] = _palmState[(k * 3) + 2];
+            palms.Slice(k * EtherealScene.PalmStride, EtherealScene.PalmStride).CopyTo(_palmUniforms[k]);
             _uniforms[PalmUniformNames[k]] = _palmUniforms[k];
         }
         using (var shader = _effect.ToShader(_uniforms))
         {
             _plasmaPaint.Shader = shader;
-            canvas.DrawRect(rect, _plasmaPaint);
+            canvas.DrawRect(new SKRect(0f, 0f, w, h), _plasmaPaint);
             _plasmaPaint.Shader = null;
         }
-        // ... then the starfield, drawn with ordinary canvas calls over the shaded rect
+
+        // 2) Starfield: white discs whose brightness is the alpha the scene computed
+        ReadOnlySpan<float> stars = scene.Stars;
+        for (int i = 0; i < EtherealScene.StarCount; i++)
+        {
+            int s = i * EtherealScene.StarStride;
+            _starPaint.Color = SKColors.White.WithAlpha((byte)(stars[s + 3] * 255f));
+            canvas.DrawCircle(stars[s], stars[s + 1], stars[s + 2], _starPaint);
+        }
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/EtherealSkiaRendererTests.cs
+//Act / Assert - setting an unknown uniform name throws, so this passing proves
+//  every uniform the renderer sets per frame exists in the compiled shader
+var uniforms = new SKRuntimeEffectUniforms(effect)
+{
+    ["iTime"] = 1.5f,
+    ["iResolution"] = new[] { 640f, 360f },
+    ["iPalm0"] = new[] { 0.5f, 0.0f, 1.0f },
+    ["iPalm1"] = new[] { 0f, 0f, 0f },
+    ["iPalm2"] = new[] { 0f, 0f, 0f },
+    ["iPalm3"] = new[] { 0f, 0f, 0f },
+};
+```
+
+**Where to look.**
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealSkiaRenderer.cs`
+`PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/EtherealSkiaRendererTests.cs`
+
+**Sharp edges.**
+- Drawn onto a GPU-backed canvas the shader executes on the GPU; drawn onto a
+  raster canvas Skia evaluates the same shader on the CPU. The renderer does not
+  know which, and should not - see
+  [Rasterize Skia frames on the GPU with SkiaGpuContext and present them on an SKXamlCanvas](#rasterize-skia-frames-on-the-gpu-with-skiagpucontext-and-present-them-on-an-skxamlcanvas).
+- The draw allocates nothing: the uniform arrays and both paints are fields
+  created once. Only the shader produced per frame is transient, and it is disposed
+  by its `using`.
+- Design the shader so a zeroed parameter set reduces it exactly to the
+  undisturbed visual. Every parameterized term is multiplied by its own strength,
+  so at zero the scene is the plain background - that is what makes the visual
+  melt back instead of snapping.
+- Take time from a clock that stops while the visual is paused, not from
+  wall-clock time, so a pause does not make the animation jump; here the clock is
+  part of the frame state the renderer is handed.
+- Setting an unknown uniform name throws, which the test suite turns into a
+  guarantee: one test sets every uniform the renderer sets, so a renamed uniform
+  fails the test run rather than rendering black. The compile step is an
+  `internal static` factory for the same reason - the tests call it directly.
+
+### Rasterize Skia frames on the GPU with SkiaGpuContext and present them on an SKXamlCanvas
+
+**When you want this.** Your SkiaSharp drawing is heavy enough - a full-screen
+shader, thousands of primitives - that the raster backend cannot keep up, but the
+result still has to be ordinary XAML content that clips, overlaps and lays out like
+any other element, on every head.
+
+**The MVVM shape.** A self-contained `SKXamlCanvas` subclass in a library. A UI-thread
+timer drives it; each tick draws one frame into an off-screen GPU surface from the
+platform's backend-neutral `SkiaGpuContext` (Graphics3DGL: OpenGL or OpenGL ES on
+every head except macOS, where it is Metal), reads it back once, and invalidates the
+canvas, whose paint handler presents the copy. Callers handle one `RenderFrame`
+event and draw on the canvas it hands them. Nothing above it knows a GPU is
+involved.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/SkiaGpuCanvas.cs
+public SkiaGpuCanvas()
+{
+    _timer = new DispatcherTimer { Interval = FrameInterval(_targetFrameRate) };
+    _timer.Tick += (_, _) => RenderOneFrame();
+
+    PaintSurface += OnPaintSurface;
+    Loaded += (_, _) => UpdateTimer();
+    Unloaded += (_, _) =>
+    {
+        _timer.Stop();
+        ReleaseGpu();
+    };
+}
+// ...
+private void RenderOneFrame()
+{
+    double scale = XamlRoot?.RasterizationScale ?? 1.0;
+    int width = (int)Math.Round(ActualWidth * scale);
+    int height = (int)Math.Round(ActualHeight * scale);
+    if (width <= 0 || height <= 0 || RenderFrame == null) { return; }
+    // ...
+        if (UseGpu && EnsureGpu())
+        {
+            using (_gpu.BeginFrame())
+            {
+                if (_gpuSurface == null || _gpuSurfaceInfo.Width != width || _gpuSurfaceInfo.Height != height)
+                {
+                    _gpuSurface?.Dispose();
+                    _gpuSurface = SKSurface.Create(_gpu.GrContext, false, info)
+                        ?? throw new InvalidOperationException($"Could not create a {width}x{height} GPU surface.");
+                    _gpuSurfaceInfo = info;
+                }
+
+                DrawFrame(_gpuSurface.Canvas, info, scale);
+                _gpuSurface.Flush();
+
+                //The one GPU -> processor copy per frame (needs the context current)
+                if (!_gpuSurface.ReadPixels(info, _frame.GetPixels(), _frame.RowBytes, 0, 0))
+                {
+                    Debug.WriteLine("SkiaGpuCanvas: the GPU frame could not be read back.");
+                    return;
+                }
+            }
+        }
+    // ...
+    Invalidate();
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/SkiaGpuCanvas.cs
+//Creates the GPU context once the canvas is in a window; false means draw on the CPU
+private bool EnsureGpu()
+{
+    if (_gpuInitAttempted) { return _gpuAvailable; }
+
+    //TryCreate needs a live XamlRoot; before that, draw this frame on the CPU and retry
+    if (!IsLoaded || XamlRoot == null) { return false; }
+
+    _gpuInitAttempted = true;
+    string reason;
+    try
+    {
+        if (SkiaGpuContext.TryCreate(XamlRoot, out _gpu))
+        {
+            _gpuAvailable = true;
+            Debug.WriteLine($"SkiaGpuCanvas: GPU rendering initialized (backend: {_gpu.Backend}).");
+            return true;
+        }
+        reason = "this head provides no GPU context";
+    }
+    // ...
+}
+```
+
+The consumer only draws:
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealOpenGLSession.cs
+_canvas.RenderFrame += (_, e) =>
+{
+    _scene.Advance(ElapsedSeconds, e.Info.Width, e.Info.Height, e.PixelScale);
+    _renderer.Draw(e.Canvas, _scene);
+};
+```
+
+**Where to look.**
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/SkiaGpuCanvas.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealOpenGLSession.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/PalmVisualizer.Rendering.csproj`
+(the Graphics3DGL package reference that supplies `SkiaGpuContext`)
+
+**Sharp edges.**
+- Frames are drawn at the canvas's physical pixel size (layout size times the
+  rasterization scale), so presenting one is a 1:1 copy; it is only rescaled
+  between a resize and the next frame.
+- Every GPU call - creating the surface, drawing, flushing, reading back - happens
+  inside one `BeginFrame()` scope on the UI thread, because that scope is what makes
+  the context current.
+- The read-back is synchronous: the UI thread waits for the GPU to finish each
+  frame. A dispatcher timer means a frame that overruns the interval only delays the
+  next tick - frame rate is lost, never a backlog built up - but on a head that
+  also re-composites the window on the CPU this path can cost more than it saves;
+  the WebGPU path in
+  [Draw a scene with WebGpuRenderView and raw WGSL](#draw-a-scene-with-webgpurenderview-and-raw-wgsl)
+  overlaps its copy with the next frame instead.
+- `SkiaGpuContext.TryCreate` needs a live `XamlRoot`. Until the canvas is loaded the
+  frame is drawn on the CPU and the attempt is retried on the next frame.
+- The context is released on `Unloaded`, while the window still exists (GL
+  teardown needs it), and the surface is disposed inside a frame scope first. Taking
+  the canvas out of the visual tree is therefore how its owner releases the GPU.
+
+### Draw a scene with WebGpuRenderView and raw WGSL
+
+**When you want this.** You want a GPU-rendered visual that goes through WebGPU -
+Direct3D 12 or Vulkan on Windows, Vulkan on Linux, Metal on macOS, whichever the
+WebGPU engine picks - written in WGSL against the raw binding, with no shader
+toolchain and no per-API code of your own.
+
+**The MVVM shape.** The platform's `WebGpuRenderView` element owns the device and
+the frame loop; your code is an `IWebGpuRenderer` handed to it. The renderer creates
+its pipelines when the view reports a device and releases them when the device goes
+away, and records one render pass per frame into the encoder the frame carries. A
+small helper owns one WGSL draw: module, pipeline and uniform buffer. When several
+visuals use WebGPU, one abstract session creates the view for all of them and each
+subclass supplies only its renderer.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/WebGpuVisualizerSession.cs
+protected abstract IWebGpuRenderer CreateRenderer(Func<float> clock, Func<double> pixelScale, TextureFormat format);
+
+/// <inheritdoc />
+protected sealed override FrameworkElement CreateView()
+{
+    _view = new WebGpuRenderView { TargetFrameRate = 60 };
+    _renderer = CreateRenderer(() => ElapsedSeconds, () => _view?.PixelScale ?? 1.0, _view.PreferredFormat);
+    _view.Renderer = _renderer;
+
+    //Raised on the frame's thread (the UI thread) - and, during Stop, for the unload, which
+    //  ReportProblem ignores because the session is no longer started
+    _view.DeviceLost += (_, e) => ReportProblem($"{DisplayName} has no WebGPU device: {e.Reason}");
+    return _view;
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealWebGpuSession.cs
+public sealed class EtherealWebGpuSession : WebGpuVisualizerSession
+{
+    // ...
+    public EtherealWebGpuSession(IVisualizerCanvasHost host) : base(VisualizerKind.EtherealWebGpu, host) { }
+
+    /// <inheritdoc />
+    protected override IWebGpuRenderer CreateRenderer(Func<float> clock, Func<double> pixelScale, TextureFormat format)
+        => new EtherealWebGpuRenderer(new EtherealScene(AttractorField), clock, pixelScale, format);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealWebGpuRenderer.cs
+public void OnDeviceReady(IWebGpuDeviceSource device)
+{
+    ReleasePasses();
+    _plasma = new WgslPass(device.Device, device.Queue, PlasmaWgsl, _format, PlasmaFloats * sizeof(float), premultipliedBlend: false);
+    _stars = new WgslPass(device.Device, device.Queue, StarsWgsl, _format, StarsFloats * sizeof(float), premultipliedBlend: true);
+}
+
+/// <inheritdoc />
+public unsafe void OnRender(WebGpuFrame frame)
+{
+    if (_plasma == null || _stars == null) { return; }
+    // ... fill the two reused uniform blocks from the scene
+    _plasma.WriteUniforms(_plasmaUniforms);
+    _stars.WriteUniforms(_starsUniforms);
+
+    // One pass: the plasma covers every pixel, then the stars blend over it
+    var attachment = new RenderPassColorAttachment
+    {
+        View = frame.TextureView,
+        DepthSlice = Constants.DepthSliceUndefined,
+        LoadOp = LoadOp.Load,
+        StoreOp = StoreOp.Store,
+    };
+    var descriptor = new RenderPassDescriptor { ColorAttachmentCount = 1, ColorAttachments = &attachment };
+    RenderPassEncoder pass = Wgpu.CommandEncoderBeginRenderPass(frame.Encoder, &descriptor);
+    _plasma.Record(pass, 3, 1);
+    _stars.Record(pass, 6, EtherealScene.StarCount);
+    Wgpu.RenderPassEncoderEnd(pass);
+    Wgpu.RenderPassEncoderRelease(pass);
+}
+
+/// <inheritdoc />
+public void OnDeviceLost(string reason) => ReleasePasses();
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/WgslPass.cs
+/// <summary>
+/// One WGSL draw, with nothing but the raw CodeBrix.WebGpu.Native binding: a shader module
+/// with a "vs" and an "fs" entry point, a render pipeline for the view's colour format (its
+/// layout derived from the shader), and one uniform buffer bound at group 0, binding 0. Created
+/// in the view's DeviceReady and released at DeviceLost; the device and queue stay the view's.
+/// </summary>
+internal sealed unsafe class WgslPass : IDisposable
+// ...
+public void Record(RenderPassEncoder pass, uint vertexCount, uint instanceCount)
+{
+    Wgpu.RenderPassEncoderSetPipeline(pass, _pipeline);
+    Wgpu.RenderPassEncoderSetBindGroup(pass, 0, _bindGroup, 0, null);
+    Wgpu.RenderPassEncoderDraw(pass, vertexCount, instanceCount, 0, 0);
+}
+```
+
+The full-screen pass needs no vertex buffer, and the stars need none either: each
+star is an instance whose quad corners come from the vertex index and whose
+position, radius and alpha come from the uniform block:
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealWebGpuRenderer.cs
+@vertex fn vs(@builtin(vertex_index) index: u32) -> @builtin(position) vec4<f32> {
+    // One triangle that covers the whole target
+    var corners = array<vec2<f32>, 3>(vec2<f32>(-1.0, -1.0), vec2<f32>(3.0, -1.0), vec2<f32>(-1.0, 3.0));
+    return vec4<f32>(corners[index], 0.0, 1.0);
+}
+```
+
+**Where to look.**
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/WebGpuVisualizerSession.cs` and
+`EtherealWebGpuSession.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealWebGpuRenderer.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/WgslPass.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/PalmVisualizer.Rendering.csproj`
+(the WebGpu package reference, and `AllowUnsafeBlocks` for the descriptor pointers)
+`PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/EtherealWebGpuRendererTests.cs`
+
+**Sharp edges.**
+- Pipelines belong to a device, so they are built in `OnDeviceReady` and released in
+  `OnDeviceLost`; `OnDeviceReady` releases any previous set first, so a second
+  device report never leaks a pipeline. The renderer never releases the device or
+  the queue - the view owns those.
+- The view's `Continuous` driver runs the frames on the UI thread. On the Skia heads
+  the view presents through its Readback path, which reads each frame back one frame
+  behind, so the copy overlaps the next frame's GPU work instead of stalling the UI
+  thread the way a synchronous read-back does.
+- Read `PreferredFormat` from the view and build every pipeline's colour target
+  for it.
+- The uniform blocks are reused arrays and the layouts are written to match the
+  WGSL structs exactly, including padding (`time, pad, resolution`, then `vec4`
+  per palm). WGSL compiles only on a device, at run time, so a unit test pins what
+  the C# side writes to what the shader declares - array lengths, entry-point names,
+  the binding - instead.
+- WGSL leaves `smoothstep` undefined when the low edge is above the high edge, which
+  SkSL tolerates; a port written out by hand has to spell that case out, and the
+  shader says so in a comment where it does.
+- When no device can be had the view raises `DeviceLost` with a reason; surface it
+  to the user rather than leaving a blank panel.
+
+### Run a WebGPU compute pass over ping-ponged storage buffers before the render pass
+
+**When you want this.** Your visual is a simulation - waves, a fluid, a reaction -
+whose state has to live on the GPU and advance every frame, and the frame's picture
+is drawn from that state. You want both steps in the same frame of a
+`WebGpuRenderView`, with no read-back to the CPU in between.
+
+**The MVVM shape.** Not a view-model concern: the `IWebGpuRenderer` owns it. The
+state is two storage buffers. Two bind groups, built once when the device is ready,
+swap their roles - one reads buffer A as the current state and overwrites buffer B,
+the other the reverse - and each frame's encoder records a compute pass that
+dispatches the step an even number of times, then a render pass that reads the
+buffer the last step wrote. Small helpers create the compute pipeline from a WGSL
+entry point and bind any number of buffers at consecutive bindings.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/RippleWebGpuRenderer.cs
+@group(0) @binding(0) var<uniform> sim: Simulation;
+@group(0) @binding(1) var<storage, read> current: array<f32>;
+@group(0) @binding(2) var<storage, read_write> previous: array<f32>;
+// ...
+@compute @workgroup_size(16, 16)
+fn step(@builtin(global_invocation_id) id: vec3<u32>) {
+    let w = u32(sim.size.x);
+    let h = u32(sim.size.y);
+    if (id.x >= w || id.y >= h) { return; }
+    let i = id.y * w + id.x;
+    // ...
+    // The wave equation, one leapfrog step: the previous heights become the next ones
+    var next = 2.0 * c - previous[i] + sim.weights.x * (l + r - 2.0 * c) + sim.weights.y * (u + d - 2.0 * c);
+    next = next * sim.damping;
+    // ...
+    previous[i] = next;
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/RippleWebGpuRenderer.cs
+_simulation = WgslGpu.CreateComputePipeline(gpu, _simulationModule);
+_surface = WgslGpu.CreateRenderPipeline(gpu, _surfaceModule, _format);
+// ...
+_heightsA = WgslGpu.CreateBuffer(gpu, BufferUsage.Storage, HeightBytes);
+_heightsB = WgslGpu.CreateBuffer(gpu, BufferUsage.Storage, HeightBytes);
+
+//A step reads one buffer as the current heights and overwrites the other (the previous
+//  heights) with the next ones; the two groups alternate the roles
+BindGroupLayout stepLayout = Wgpu.ComputePipelineGetBindGroupLayout(_simulation, 0);
+int simulationBytes = SimulationFloats * sizeof(float);
+_stepFromA = WgslGpu.CreateBindGroup(gpu, stepLayout, new[] { (_simulationBuffer, simulationBytes), (_heightsA, HeightBytes), (_heightsB, HeightBytes) });
+_stepFromB = WgslGpu.CreateBindGroup(gpu, stepLayout, new[] { (_simulationBuffer, simulationBytes), (_heightsB, HeightBytes), (_heightsA, HeightBytes) });
+Wgpu.BindGroupLayoutRelease(stepLayout);
+
+BindGroupLayout surfaceLayout = Wgpu.RenderPipelineGetBindGroupLayout(_surface, 0);
+_surfaceGroup = WgslGpu.CreateBindGroup(gpu, surfaceLayout, new[] { (_surfaceBuffer, SurfaceFloats * sizeof(float)), (_heightsA, HeightBytes) });
+Wgpu.BindGroupLayoutRelease(surfaceLayout);
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/RippleWebGpuRenderer.cs
+// 1) Advance the waves
+var computeDescriptor = new ComputePassDescriptor();
+ComputePassEncoder compute = Wgpu.CommandEncoderBeginComputePass(frame.Encoder, &computeDescriptor);
+Wgpu.ComputePassEncoderSetPipeline(compute, _simulation);
+for (int step = 0; step < StepsPerFrame; step++)
+{
+    Wgpu.ComputePassEncoderSetBindGroup(compute, 0, step % 2 == 0 ? _stepFromA : _stepFromB, 0, null);
+    Wgpu.ComputePassEncoderDispatchWorkgroups(compute,
+        (uint)((GridWidth + WorkgroupSize - 1) / WorkgroupSize), (uint)((GridHeight + WorkgroupSize - 1) / WorkgroupSize), 1);
+}
+Wgpu.ComputePassEncoderEnd(compute);
+Wgpu.ComputePassEncoderRelease(compute);
+
+// 2) Shade the water
+// ... a render pass: one full-screen triangle whose fragment shader reads _heightsA
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/WgslGpu.cs
+/// <summary>A compute pipeline running the module's "step" entry point.</summary>
+public static ComputePipeline CreateComputePipeline(Device device, ShaderModule module)
+{
+    fixed (byte* step = "step"u8)
+    {
+        var descriptor = new ComputePipelineDescriptor
+        {
+            Compute = new ComputeState { Module = module, EntryPoint = WgpuString.FromPinned(step, 4) },
+        };
+        return Wgpu.DeviceCreateComputePipeline(device, &descriptor);
     }
 }
 ```
 
 **Where to look.**
-`PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealBackdrop.cs`
-`PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/EtherealBackdropTests.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/RippleWebGpuRenderer.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/WgslGpu.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/RippleRain.cs`
+`PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/RippleTests.cs`
 
 **Sharp edges.**
-- The update override forces a refresh every frame. The CPU render path uses dirty
-  rectangles and would otherwise stop animating; the GPU path re-renders the whole
-  surface anyway.
-- Because it is an ordinary direct drawing, on the GPU path the draw runs on the
-  GL thread with the graphics context current, so the shader executes on the GPU;
-  on the CPU path Skia's raster backend evaluates the same shader.
-- The draw allocates nothing: the uniform arrays, the state buffer, both paints
-  and the seed arrays are fields created once. Only the shader produced per frame
-  is transient, and it is disposed by its `using`.
-- Seed any randomness at construction, so an undisturbed frame is a pure function
-  of engine time and is reproducible.
-- Design the shader so a zeroed parameter set reduces it exactly to the
-  undisturbed visual. Every parameterized term is multiplied by its own strength,
-  so at zero the scene is the plain background - that is what makes the visual
-  melt back instead of snapping.
-- Take time from the engine's own running total, not from wall-clock time, so a
-  pause does not make the animation jump.
-- Setting an unknown uniform name throws, which the test suite turns into a
-  guarantee: one test sets every uniform the drawing sets, so a renamed uniform
-  fails the test run rather than rendering black.
+- Use an even number of steps per frame, so the newest state always ends up back in
+  the buffer the render pass's bind group reads; with an odd count the picture would
+  alternate between two states.
+- The leapfrog wave step needs only two buffers: it reads the current heights and
+  overwrites the previous ones with the next, because each cell's previous value is
+  read once, by the invocation that replaces it.
+- Derive the bind group layouts from the pipelines (`...GetBindGroupLayout(pipeline, 0)`)
+  and release each layout once the bind groups exist; the bind groups hold what they
+  need.
+- WebGPU creates every buffer zero-filled, so a still surface needs no upload; the
+  simulation's storage buffers are never written from the CPU at all.
+- Dispatch whole workgroups and bounds-check in the shader (`if (id.x >= w || id.y >= h)`),
+  because the grid need not be a multiple of the workgroup size.
+- Keep the step stable: the renderer computes the two axis weights so their sum is
+  half the stability limit, and splits them by the cells' shape in the view so the
+  waves travel equally fast across and down.
+- The compute pass and the render pass go into the same command encoder the frame
+  carries, so the GPU orders them and nothing waits on the CPU.
+- Everything the renderer creates is released in `OnDeviceLost` and `Dispose` - every
+  bind group, buffer, pipeline and module - and never the device or the queue. The
+  helper also sets no labels, and its class comment says why.
+- WGSL compiles only on a device. The unit tests pin the source text instead: the
+  `step` compute entry point, the two storage bindings, and uniform arrays sized to
+  every palm and every drop a frame can carry.
+
+### Ray-march an SDF solid in a full-screen WGSL fragment shader
+
+**When you want this.** One 3D object - an emblem, a logo, a crystal - should be drawn
+solid, lit and turning, over a 2D background, without meshes, a depth buffer or a 3D
+engine: one full-screen triangle and a fragment shader.
+
+**The MVVM shape.** Not a view-model concern. The renderer computes, per frame on the
+CPU, where the object is, how large, and the rotation from view space into the
+object's own space, and writes them into one uniform block. The fragment shader
+draws the background, then marches a ray per pixel through a signed distance
+function of the object, and shades the hit with a normal from the distance
+function's gradient.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/HolyInannaWebGpuRenderer.cs
+// The star as a solid: its shape extruded, each ray ridged along its middle, the centre raised
+fn solid(p: vec3<f32>) -> f32 {
+    let d2 = starDistance(p.xy);
+    let thickness = 0.035 + 0.55 * min(max(-d2, 0.0), 0.22) + 0.10 * (1.0 - smoothstep(0.0, 0.26, length(p.xy)));
+    let dz = abs(p.z) - thickness;
+    return (min(max(d2, dz), 0.0) + length(max(vec2<f32>(d2, dz), vec2<f32>(0.0)))) * 0.8;
+}
+// ...
+if (reach < 1.08) {
+    let origin = toStar(vec3<f32>(s, 2.0));
+    let ray = toStar(vec3<f32>(0.0, 0.0, -1.0));
+    var travelled = 0.0;
+    var hit = false;
+    var closest = 1000.0;
+    var closestAt = 0.0;
+    for (var i = 0; i < 80; i = i + 1) {
+        let d = solid(origin + ray * travelled);
+        if (d < closest) {
+            closest = d;
+            closestAt = travelled;
+        }
+        if (d < 0.0015) {
+            hit = true;
+            break;
+        }
+        travelled = travelled + max(d, 0.004);
+        if (travelled > 4.0) { break; }
+    }
+
+    // Antialiased edge: a near miss still covers part of the pixel
+    let coverage = select(1.0 - smoothstep(0.0, 1.5 / radius, closest), 1.0, hit);
+    if (coverage > 0.0) {
+        let at = select(closestAt, travelled, hit);
+        col = mix(col, shadeStar(origin + ray * at), coverage);
+    }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/HolyInannaWebGpuRenderer.cs
+/// <summary>
+/// Writes the rotation from view space into the star's own space as three rows of four
+/// floats (the fourth unused). The star is turned by its spin about its own axis, then
+/// tilted about the view's vertical and horizontal axes: view = Rx(tiltX) Ry(tiltY) Rz(spin)
+/// star, so view-to-star is that matrix transposed.
+/// </summary>
+internal static void WriteViewToStar(Span<float> rows, float tiltX, float tiltY, float spin)
+```
+
+**Where to look.**
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/HolyInannaWebGpuRenderer.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/HolyInannaMotion.cs`
+`PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/HolyInannaTests.cs`
+
+**Sharp edges.**
+- Extrude a 2D signed distance into 3D with the standard intersection of the shape's
+  distance and a slab (`max(d2, dz)` inside, the length of the positive parts
+  outside), and vary the slab's thickness with the 2D distance to get ridges and a
+  raised centre for nothing.
+- A thickness that changes with position makes the field only approximately a
+  distance, so scale it down (`* 0.8`) and the march stays conservative.
+- March only where the object can be (`reach < 1.08`); every other pixel costs the
+  background alone.
+- Keep the closest approach along the ray. A near miss within a pixel and a half then
+  becomes partial coverage, which antialiases the silhouette with no multisampling.
+- Rotate the ray into the object's space rather than the object into the view: the
+  CPU writes one view-to-object matrix as three `vec4` rows, so the distance function
+  stays in object coordinates and is never transformed per sample. The tests check
+  the matrix is a rotation, and that an untilted object only spins about the line of
+  sight.
+- Take the normal from four extra distance samples on a tetrahedron (`k.xyy`,
+  `k.yyx`, `k.yxy`, `k.xxx`) and rotate it back into view space for lighting.
+- Decide the object's motion on the CPU, in a class a unit test can step. Holy
+  Inanna's star keeps to a wandering path of its own; the palms can draw it at most
+  `MaxPalmPull` off that path and only over seconds, and their activity eases its
+  size between `CalmScale` and `ActiveScale` - by design the palms influence the star
+  and never disturb it, and the tests pin those limits.
+
+### Draw many instanced quads over a full-screen backdrop in one WebGPU render pass
+
+**When you want this.** A visual is a background plus many small shaded objects -
+crystals, sparks, labels - each with its own position, size, colour and phase, and you
+want them in one render pass with no vertex buffers, no per-object draw calls and
+correct translucency over the background.
+
+**The MVVM shape.** Not a view-model concern. A CPU-side model of the objects (here a
+seeded `CrystalGarden`) writes them, a fixed number of floats each, into one reused
+uniform block after a small header. Two pipelines share that block: a full-screen
+backdrop that replaces what is in the target, then an instanced quad pipeline whose
+vertex shader reads its object by `instance_index` and whose fragment shader returns
+premultiplied colour, blended over the backdrop. One draw call each, in the same pass.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/CrystalsWebGpuRenderer.cs
+struct Garden {
+    resolution: vec2<f32>,
+    time: f32,
+    activity: f32,
+    count: f32,
+    pad0: f32,
+    pad1: f32,
+    pad2: f32,
+    palms: array<vec4<f32>, 4>,
+    crystals: array<vec4<f32>, 288>,
+};
+@group(0) @binding(0) var<uniform> g: Garden;
+// ...
+@vertex fn vs(@builtin(vertex_index) vertex: u32, @builtin(instance_index) instance: u32) -> CrystalVertex {
+    let a = g.crystals[instance * 3u];
+    let b = g.crystals[instance * 3u + 1u];
+    var corners = array<vec2<f32>, 6>(
+        vec2<f32>(-1.0, 0.0), vec2<f32>(1.0, 0.0), vec2<f32>(-1.0, 1.0),
+        vec2<f32>(-1.0, 1.0), vec2<f32>(1.0, 0.0), vec2<f32>(1.0, 1.0));
+    let c = corners[vertex];
+    let pad = b.x * MARGIN;
+
+    // The crystal's own frame, in pixels: x across its axis, y along it from the base
+    let local = vec2<f32>(c.x * (b.x + pad), mix(-pad, a.w + pad, c.y));
+    let along = vec2<f32>(cos(a.z), sin(a.z));
+    let across = vec2<f32>(-along.y, along.x);
+    let pixel = a.xy + along * local.y + across * local.x;
+    // ...
+}
+// ...
+// Premultiplied: the glass covers what is behind it; the light only adds
+return vec4<f32>(col * alpha + light, alpha);
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/CrystalsWebGpuRenderer.cs
+_backdrop = WgslGpu.CreateRenderPipeline(gpu, _backdropModule, _format);
+_crystals = WgslGpu.CreateRenderPipeline(gpu, _crystalModule, _format, premultipliedBlend: true);
+_gardenBuffer = WgslGpu.CreateBuffer(gpu, BufferUsage.Uniform | BufferUsage.CopyDst, GardenFloats * sizeof(float));
+
+// The two pipelines' layouts are each derived from their own shader, so each gets its
+//  own bind group - both over the one uniform buffer
+// ...
+RenderPassEncoder pass = Wgpu.CommandEncoderBeginRenderPass(frame.Encoder, &descriptor);
+Wgpu.RenderPassEncoderSetPipeline(pass, _backdrop);
+Wgpu.RenderPassEncoderSetBindGroup(pass, 0, _backdropGroup, 0, null);
+Wgpu.RenderPassEncoderDraw(pass, 3, 1, 0, 0);
+if (count > 0)
+{
+    Wgpu.RenderPassEncoderSetPipeline(pass, _crystals);
+    Wgpu.RenderPassEncoderSetBindGroup(pass, 0, _crystalGroup, 0, null);
+    Wgpu.RenderPassEncoderDraw(pass, 6, (uint)count, 0, 0);
+}
+Wgpu.RenderPassEncoderEnd(pass);
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/WgslGpu.cs
+public static RenderPipeline CreateRenderPipeline(Device device, ShaderModule module, TextureFormat format, bool premultipliedBlend = false)
+{
+    fixed (byte* vs = "vs"u8)
+    fixed (byte* fs = "fs"u8)
+    {
+        //Premultiplied source-over: out = src + dst * (1 - src.a)
+        var over = new BlendComponent { Operation = BlendOperation.Add, SrcFactor = BlendFactor.One, DstFactor = BlendFactor.OneMinusSrcAlpha };
+        var blend = new BlendState { Color = over, Alpha = over };
+        var target = new ColorTargetState { Format = format, WriteMask = ColorWriteMask.All, Blend = premultipliedBlend ? &blend : null };
+        // ...
+    }
+}
+```
+
+**Where to look.**
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/CrystalsWebGpuRenderer.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/CrystalGarden.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/WgslGpu.cs`
+`PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/CrystalsTests.cs`
+
+**Also shown by.**
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealWebGpuRenderer.cs` (the
+same shape with two `WgslPass` draws: a full-screen plasma, then every star as an
+instanced, antialiased quad blended over it - see
+[Draw a scene with WebGpuRenderView and raw WGSL](#draw-a-scene-with-webgpurenderview-and-raw-wgsl))
+
+**Sharp edges.**
+- Make the per-object stride a whole number of `vec4`s (three here), because a WGSL
+  uniform array of `vec4<f32>` is what lays out with no padding surprises; the tests
+  pin the stride and the array length to the C# constants.
+- A uniform array has a fixed length, so the model has a fixed capacity (96 crystals,
+  288 vectors) and the draw passes the live count as the instance count. When the
+  garden is full it starts its oldest crystal fading rather than refusing to grow.
+- Write the objects oldest first, so the newest are drawn last and therefore on top.
+- Size each quad to the object plus a margin for its glow, and do the shape in the
+  fragment shader from the quad's local coordinates (a signed distance to the
+  outline), which antialiases the edge for free.
+- Premultiplied source-over (`One`, `OneMinusSrcAlpha`) lets one output do two
+  things: colour times alpha covers what is behind it, and anything added with zero
+  alpha - a glow, a sparkle - only adds light.
+- Two pipelines whose layouts are derived from their own shaders need their own
+  bind groups, even over the same buffer; build both when the device is ready and
+  release them, the buffer, the pipelines and the modules when it goes away.
+- Pass the flat `index` to the fragment shader with `@interpolate(flat)`, so each
+  fragment reads its own object's data rather than an interpolated index.
+
+### Compute a frame once and let two graphics APIs draw it
+
+**When you want this.** The same visual is offered through two graphics APIs - a
+GPU Skia path and a WebGPU path, say - and the two must stay the same picture rather
+than drift apart as each is tuned.
+
+**The MVVM shape.** One API-neutral scene class computes everything per frame that
+is not a shader: animation state, positions, sizes, brightness, the shader's
+uniforms in shader space. It exposes them as flat spans with documented strides.
+Each renderer advances the scene once per frame on its rendering thread and only
+copies the spans into its own API's buffers.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealScene.cs
+/// <summary>
+/// The Ethereal visual's state for one frame, independent of the graphics API that draws it:
+/// the palm attractors as the plasma shader reads them, and every star's position, size and
+/// brightness. Both renderers - <see cref="EtherealSkiaRenderer"/> (Ethereal - OpenGL) and
+/// <see cref="EtherealWebGpuRenderer"/> (Ethereal - WebGPU) - draw from the same scene, which
+/// is what makes the two versions the same visual. Call <see cref="Advance"/> once per
+/// rendered frame, on the thread that renders, then read the spans.
+/// </summary>
+public sealed class EtherealScene
+{
+    /// <summary>The number of stars in the starfield.</summary>
+    public const int StarCount = 220;
+
+    /// <summary>The floats per palm in <see cref="Palms"/>: shader-space x, y, and strength.</summary>
+    public const int PalmStride = 3;
+
+    /// <summary>The floats per star in <see cref="Stars"/>: center x, center y, radius (pixels), and alpha 0..1.</summary>
+    public const int StarStride = 4;
+    // ...
+    public void Advance(float time, float width, float height, float pixelScale)
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealWebGpuRenderer.cs
+_scene.Advance(_clock(), width, height, (float)_pixelScale());
+// ...
+// The stars' block: resolution, then the stars exactly as the scene lays them out
+_starsUniforms[0] = width;
+_starsUniforms[1] = height;
+_scene.Stars.CopyTo(_starsUniforms.AsSpan(4));
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/EtherealWebGpuRendererTests.cs
+[Fact]
+public void The_stars_shader_holds_every_star_of_the_scene()
+{
+    EtherealWebGpuRenderer.StarsWgsl.Should().Contain($"items: array<vec4<f32>, {EtherealScene.StarCount}>");
+    EtherealScene.StarStride.Should().Be(4);
+}
+```
+
+**Where to look.**
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealScene.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealSkiaRenderer.cs` and
+`EtherealWebGpuRenderer.cs`
+`PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/EtherealSceneTests.cs` and
+`EtherealWebGpuRendererTests.cs`
+
+**Sharp edges.**
+- Lay the spans out the way the less forgiving API wants them. The star stride is
+  four floats because that is one `vec4` in a WGSL uniform array, so the WebGPU
+  renderer copies the whole span in one call; the Skia renderer reads the same four
+  floats per `DrawCircle`.
+- Convert into shader space once, in the scene, so neither renderer repeats the
+  aspect correction - and a test can assert it without either API.
+- What only a shader can compute stays in the shaders, and the two shaders are then
+  a line-for-line port of each other. Say so in both classes' comments: a change to
+  one belongs in the other.
+- Seed any randomness at construction and take time as a parameter, so an
+  undisturbed frame is a pure function of time; the scene tests compare a fresh
+  scene with one that has been running and expect identical stars.
+- The scene allocates nothing per frame and is not thread-safe; it is advanced on
+  the thread that renders. Cross-thread input reaches it through a thread-safe
+  field it reads (see
+  [Smooth worker rate data into frame rate animation](#smooth-worker-rate-data-into-frame-rate-animation)).
+
+### Let a rendering session put its own view into the page's panel
+
+**When you want this.** The user can choose between renderers that each need a
+different view element - a Skia canvas for one, a WebGPU view for another - and
+switching must release the outgoing renderer's GPU context or device, with neither
+the page nor the view model naming a view type.
+
+**The MVVM shape.** The rendering library declares a one-property host interface:
+the panel a session's view goes into. The page implements it explicitly and hands
+itself to the view model when the data context arrives. A factory builds a session
+for the chosen kind; the session creates its view in `Start()`, adds it to the
+panel, and removes it in `Stop()` - and leaving the visual tree is what releases the
+view's GPU resources.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/IVisualizerCanvasHost.cs
+public interface IVisualizerCanvasHost
+{
+    /// <summary>
+    /// The panel a session adds its view to when it starts and removes it from when it stops.
+    /// Only one session's view is in it at a time.
+    /// </summary>
+    Panel Container { get; }
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs
+//The panel the visualizer sessions show their views in
+(DataContext as IManageVisualizerCanvas)?.SetVisualizerCanvasHost(this);
+// ...
+//The one thing a visualizer session needs from this page (see IVisualizerCanvasHost)
+Panel IVisualizerCanvasHost.Container => VisualizerCanvas;
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/VisualizerSession.cs
+public void Start()
+{
+    if (IsStarted) { return; }
+
+    _view = CreateView();
+    _host.Container.Children.Add(_view);
+    _isPaused = false;
+    _clock.Start();
+    IsStarted = true;
+}
+// ...
+public void Stop()
+{
+    if (!IsStarted) { return; }
+
+    //Cleared first, so whatever the view raises while it unloads (a WebGPU view reports its
+    //  device going away) is recognized as the stop rather than a problem
+    IsStarted = false;
+    _clock.Stop();
+
+    //Leaving the visual tree is what releases the view's GPU context or device
+    _host.Container.Children.Remove(_view);
+    _view = null;
+    OnStopped();
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs
+private void SwitchVisualizer()
+{
+    //A session draws one visualizer for its whole life: switching replaces it. In Camera
+    //  Mode that is all - the next "Visualize!" starts the new choice
+    StopVisualizer();
+    if (IsVisualizeMode)
+    {
+        _reportedOpenPalmCount = 0;
+        StartVisualizer();
+        StatusText = OpenPalmPrompt;
+    }
+}
+```
+
+**Where to look.**
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/IVisualizerCanvasHost.cs`,
+`IVisualizerSession.cs`, `VisualizerSessionFactory.cs`, `VisualizerSession.cs` and
+`WebGpuVisualizerSession.cs`
+`PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs` and
+`Views/MainPage.xaml`
+`PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`
+`PalmVisualizer/tests/PalmVisualizer.PlayTests/AppFixture.cs`
+
+**Sharp edges.**
+- The panel is a plain `Grid` in the XAML. The page names no renderer type, so a new
+  visual needs a kind, a dropdown option, a session class and a factory case, nothing
+  else - PalmVisualizer's Ripple, Holy Inanna and Crystals visualizers were added
+  exactly that way.
+- Put the lifecycle in one abstract base (`VisualizerSession`) and the per-API view in a
+  second (`WebGpuVisualizerSession`), so a WebGPU visual's own session is a constructor
+  and a one-line `CreateRenderer`. The base takes its status-line name from the option
+  list (`VisualizerOption.For(Kind).DisplayName`), so a problem message names the
+  visualizer the user picked.
+- A session draws one renderer for its whole life. Choosing another replaces the
+  session; pause and resume are for leaving and re-entering the screen, not for
+  switching.
+- Clear the started flag before removing the view. A WebGPU view reports its device
+  going away as it unloads, and the session must recognize that as its own stop
+  rather than report a problem.
+- The session's clock is a `Stopwatch` that stops while the session is paused, so a
+  pause is invisible to the visual.
+- Because the view is created in `Start()`, a fake session that never calls it never
+  builds a GPU view - which is what lets UI tests run on a head with no GPU and no
+  WebGPU provider.
 
 ### Smooth worker rate data into frame rate animation
 
@@ -2790,7 +3608,7 @@ translate.
 /// coordinates. This is the whole seam between the vision pipeline and the rendering:
 /// the consumer maps whatever it tracks into these points (mirroring the X coordinate
 /// when the user watches a mirror-style view) and hands them to
-/// <see cref="VisualizerSession.UpdatePalms"/>.
+/// <see cref="IVisualizerSession.UpdatePalms"/>.
 /// </summary>
 public readonly struct PalmAttractor
 {
@@ -2823,12 +3641,13 @@ public readonly struct PalmAttractor
 
 ```csharp
 // From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/VisualizerSession.cs
-public void UpdatePalms(IReadOnlyList<PalmAttractor> palms) => _attractorField.SetTargets(palms);
+public void UpdatePalms(IReadOnlyList<PalmAttractor> palms) => AttractorField.SetTargets(palms);
 ```
 
 **Where to look.**
 `PalmVisualizer/src/libs/PalmVisualizer.Rendering/PalmAttractor.cs`
-`PalmVisualizer/src/libs/PalmVisualizer.Rendering/VisualizerSession.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/IVisualizerSession.cs` and
+`VisualizerSession.cs`
 
 **Sharp edges.**
 - Normalized coordinates, not pixels, so a window resize needs no re-mapping
@@ -2848,39 +3667,72 @@ public void UpdatePalms(IReadOnlyList<PalmAttractor> palms) => _attractorField.S
 runnable on the CPU path for a head, a machine or a test that cannot use one, and
 you want the two to be the same scene rather than two code paths.
 
-**The MVVM shape.** One property on the canvas, set once before the surface is
-touched, chosen from an environment variable so no rebuild is needed. The drawing
-code is identical either way.
+**The MVVM shape.** One property on the canvas, set once before the first frame,
+chosen from an environment variable so no rebuild is needed. The same property is
+what the canvas falls back to on its own when the head cannot give it a GPU
+context, and it says so through an event. The drawing code is identical either
+way.
 
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/VisualizerSession.cs
-/// Set the environment variable <c>PALMVISUALIZER_USE_CPU=1</c> to run the identical scene
-/// on the CpuRendering (CPU) render path.
-
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealOpenGLSession.cs
+/// <summary>
+/// "Ethereal - OpenGL": the Ethereal scene drawn by <see cref="EtherealSkiaRenderer"/> on a
+/// <see cref="SkiaGpuCanvas"/> - GPU-accelerated Skia through the platform's
+/// <c>SkiaGpuContext</c>, which is OpenGL (or OpenGL ES) on every head except macOS, where it
+/// is Metal. Without a GPU context the same frames are drawn on the CPU and
+/// <see cref="IVisualizerSession.Problem"/> says so. Set the environment variable
+/// <c>PALMVISUALIZER_USE_CPU=1</c> to draw on the CPU deliberately.
+/// </summary>
 // ...
+_canvas = new SkiaGpuCanvas
+{
+    UseGpu = Environment.GetEnvironmentVariable("PALMVISUALIZER_USE_CPU") != "1",
+    TargetFrameRate = 60,
+};
+// ...
+_canvas.GpuUnavailable += (_, reason) =>
+    ReportProblem($"Ethereal - OpenGL is drawing on the CPU: {reason}.");
+```
 
-//GpuRendering-OpenGL (GPU) by default; must be chosen before the first access to Host. The
-//  render resolution tracks the window (no SetRenderResolution) - the shader
-//  scene is resolution-independent.
-_canvas.UseGpuRendering = Environment.GetEnvironmentVariable("PALMVISUALIZER_USE_CPU") != "1";
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/SkiaGpuCanvas.cs
+if (UseGpu && EnsureGpu())
+{
+    // ... draw into the GPU surface and read it back
+}
+else
+{
+    using var surface = SKSurface.Create(info, _frame.GetPixels(), _frame.RowBytes);
+    DrawFrame(surface.Canvas, info, scale);
+}
 ```
 
 **Where to look.**
-`PalmVisualizer/src/libs/PalmVisualizer.Rendering/VisualizerSession.cs`
-`PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/EtherealBackdropTests.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealOpenGLSession.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/SkiaGpuCanvas.cs`
+`PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/EtherealSkiaRendererTests.cs`
+
+**Also shown by.**
+`BrixInvaders/src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs`
+(`UseGpuTier()` and `PrepareCanvas`: the engine canvas's `UseGpuRendering` is set
+from `BRIXINVADERS_USE_CPU` before the first access to the canvas's host, because
+the render tier cannot change once the engine's scene pipeline exists)
 
 **Sharp edges.**
-- The choice must be made before the canvas's host is read for the first time.
+- The choice must be made before the first frame; on an engine canvas, before the
+  canvas's host is read for the first time.
 - The default is the negative test, so an unset or garbage value keeps the GPU
   path.
-- The two paths differ in one respect the drawing has to handle: the CPU path uses
-  dirty rectangles, which is why the update override forces a refresh
-  unconditionally.
+- The CPU frame goes into the same processor-memory bitmap the GPU frame is read
+  back into, so presenting it is the same code either way.
+- A head that cannot provide a GPU context gets the CPU path without the switch,
+  and the event's reason reaches the status line, so a slow frame rate on such a
+  head is explained rather than mysterious.
 - Because the fallback is Skia's raster backend, the same shader can be tested
-  headlessly on a raster surface with no engine and no window, which is exactly
-  what the shader tests do.
+  headlessly on a raster surface with no window and no GPU, which is exactly what
+  the shader tests do.
 
 ### Choose the render resolution from the zoom level
 

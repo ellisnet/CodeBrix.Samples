@@ -2,9 +2,9 @@
 
 These recipes cover four things. The first is hosting the CodeBrix.Platform
 GameEngine loop inside an ordinary page: handing the view model a game canvas
-once it has a real, non-zero layout size, and owning the engine lifecycle in a
-session class so the loop can start, pause, resume and stop as the user moves
-around the UI without tearing the scene down and rebuilding it. The second is
+once it has a real, non-zero layout size, and owning the engine lifecycle in one
+library class so the loop can start, pause, resume and stop without anything
+else in the application touching the engine. The second is
 the engine's music system: pinning the audio device format before anything
 plays, handing a track the beat grid it cannot derive and letting the files
 that carry their own speak for themselves, landing a transition on the next
@@ -74,9 +74,9 @@ conventions the code blocks follow.
 
 ## Related blueprints
 
-- [BLUEPRINTS-PlatformServices.md](BLUEPRINTS-PlatformServices.md) - the one-method bridge interface a page implements to hand its game canvas host to its view model
+- [BLUEPRINTS-PlatformServices.md](BLUEPRINTS-PlatformServices.md) - the small bridge interface a page uses to hand its game canvas to its view model and read the running object back
 - [BLUEPRINTS-GraphicsAndRendering.md](BLUEPRINTS-GraphicsAndRendering.md) - drawing on Skia canvases outside the engine loop, and gating or falling back when a GPU backend is unavailable
-- [BLUEPRINTS-MVVM.md](BLUEPRINTS-MVVM.md) - the commands and Dispose path that drive the session class
+- [BLUEPRINTS-MVVM.md](BLUEPRINTS-MVVM.md) - the view model that builds the engine-owning class around the canvas and holds it
 - [BLUEPRINTS-ProjectLayoutAndPackaging.md](BLUEPRINTS-ProjectLayoutAndPackaging.md) - writing the audio, instrument and stems assets the music system plays from arithmetic on first run, rather than committing them
 - [BLUEPRINTS-Testing.md](BLUEPRINTS-Testing.md) - the opt-in walkthrough that checks the music system's audible-only behavior from inside the shipped library, and the throwaway settings store a game's tests and unattended runs use
 - [BLUEPRINTS-SettingsAndPersistence.md](BLUEPRINTS-SettingsAndPersistence.md) - the application-named facade a game keeps its settings and high scores behind
@@ -89,256 +89,207 @@ conventions the code blocks follow.
 
 **When you want this.** You want the CodeBrix.Platform GameEngine loop rendering
 inside an ordinary page, and the engine can only be started against a surface that
-already has a non-zero size - which, for a canvas that starts hidden, is the first
-time it is shown.
+already has a non-zero size - which is not yet true while the page is being
+constructed or loaded.
 
-**The MVVM shape.** The view model declares an interface with one method, and the
-page implements a second interface whose only member is the canvas. The page
-forwards the canvas's first-started event in a single line, handing itself over as
-that host; the view model asks a registered factory for a session built around the
-host and starts it. No engine code lives in the code-behind, and no view type
-appears anywhere in the view model.
+**The MVVM shape.** The view model declares a small interface whose one method takes
+the started canvas, and which here also hands the running object back. The page
+forwards the canvas's first-started event in a single line through that interface;
+the view model builds the library class that owns the engine around the canvas and
+starts it. No engine code lives in the code-behind.
 
 **Code.**
 
 ```csharp
-// From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs
+// From CodeBrix.Samples/GameEngineMusicDemo/src/GameEngineMusicDemo.Core/ViewModels/MainViewModel.cs
 /// <summary>
-/// Lets the hosting page tell the view model when the visualizer's game canvas has its
-/// first real layout size - the engine can only start against a non-zero surface, which
-/// happens the first time Visualize Mode is shown.
+/// Lets the page hand the view model the game canvas once it has a size, and read back the demo the
+/// view model starts against it, so the page never names the view model's concrete type.
 /// </summary>
 public interface IManageGameCanvas
 {
-    /// <summary>Called once, on the UI thread, at the canvas's FirstStarted event.</summary>
-    /// <param name="host">The page that owns the game canvas the visualizer renders into.</param>
-    void CanvasFirstStart(IGameCanvasHost host);
+    /// <summary>
+    /// The running demo, or null before the canvas has started. The page reads this rather than
+    /// binding to it, so it needs no change notification.
+    /// </summary>
+    GameEngineMusicDemoGame Demo { get; }
+
+    /// <summary>Called once, when the canvas has started for the first time.</summary>
+    /// <param name="canvas">The started canvas.</param>
+    void CanvasFirstStart(GameSurfaceCanvas canvas);
 }
 ```
 
-The host interface lives in the rendering library, beside the session it feeds: one
-get-only `Canvas` property, which the page implements explicitly so the property
-does not join its public surface. That is the whole seam, and it is why the view
-model can name the host without naming a control.
+The page captures the interface in its data-context-changed handler, which it
+subscribes before `InitializeComponent()`, and forwards the canvas's event in one
+line after it:
 
 ```csharp
-// From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs
-//Fires once, at the canvas's first non-zero layout size - i.e. the first time
-//  Visualize Mode is shown - which is when the engine can start
-VisualizerCanvas.FirstStarted += (_, _) => _gameCanvasManager?.CanvasFirstStart(this);
-// ...
-//The one thing the visualizer session needs from this page (see IGameCanvasHost)
-GameSurfaceCanvas IGameCanvasHost.Canvas => VisualizerCanvas;
+// From CodeBrix.Samples/GameEngineMusicDemo/src/GameEngineMusicDemo.UI/Views/MainPage.xaml.cs
+DataContextChanged += (_, _) =>
+{
+    //Give the view model's SimpleDialog helpers a XamlRoot to attach dialogs to
+    (DataContext as IXamlRootGetter)?.SetXamlRootGetter(() => XamlRoot);
+
+    //Through the interface the view model implements, never through its concrete type
+    _gameCanvasManager = DataContext as IManageGameCanvas;
+};
+
+this.InitializeComponent();
+
+GameCanvas.FirstStarted += (_, _) => _gameCanvasManager?.CanvasFirstStart(GameCanvas);
 ```
 
 ```csharp
-// From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs
-public void CanvasFirstStart(IGameCanvasHost host)
+// From CodeBrix.Samples/GameEngineMusicDemo/src/GameEngineMusicDemo.Core/ViewModels/MainViewModel.cs
+/// <inheritdoc/>
+public GameEngineMusicDemoGame Demo { get; private set; }
+
+/// <inheritdoc/>
+public void CanvasFirstStart(GameSurfaceCanvas canvas)
 {
-    //UI thread, the first time Visualize Mode is shown with a real size: build the
-    //  shader scene and start the engine. Later mode switches pause and resume it.
-    _visualizerSession = _sessionFactory.CreateSession(host);
-    _visualizerSession.Start();
+    Demo = new GameEngineMusicDemoGame(canvas);
+    Demo.Start();
 }
 ```
 
 ```xml
-<!-- From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml -->
+<!-- From CodeBrix.Samples/GameEngineMusicDemo/src/GameEngineMusicDemo.UI/Views/MainPage.xaml -->
 xmlns:game="clr-namespace:CodeBrix.Platform.GameEngine.Host.Rendering;assembly=CodeBrix.Platform.GameEngine.Host"
 ...
-<game:GameSurfaceCanvas x:Name="VisualizerCanvas"
-                        Visibility="{d:Binding IsCameraMode, Converter={StaticResource VisibleWhenFalse}}" />
+<!-- The engine is genuinely running and drawing the music system's state, so the pause
+     control below demonstrates the real contract rather than a simulation of it. -->
+<game:GameSurfaceCanvas x:Name="GameCanvas" Grid.Column="0" />
 ```
 
 **Where to look.**
-`PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`
-`PalmVisualizer/src/libs/PalmVisualizer.Rendering/IGameCanvasHost.cs` and
-`IVisualizerSessionFactory.cs`
-`PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml.cs` and
+`GameEngineMusicDemo/src/GameEngineMusicDemo.Core/ViewModels/MainViewModel.cs`
+`GameEngineMusicDemo/src/GameEngineMusicDemo.UI/Views/MainPage.xaml.cs` and
 `Views/MainPage.xaml`
+`GameEngineMusicDemo/src/libs/GameEngineMusicDemo.Game/GameEngineMusicDemoGame.cs`
 
 **Also shown by.**
 `BrixInvaders/src/BrixInvaders.Core/ViewModels/MainViewModel.cs` and
-`BrixInvaders/src/BrixInvaders.UI/Views/MainPage.xaml.cs` (the page hands over
-the canvas itself rather than itself as a host, because the view model must
-choose the render tier and pin the render resolution before anything reads the
-canvas's host, and the view model then builds the game host directly rather than
-through a factory - see
-[Build a game host's seams in the view model and close the application from its quit event](BLUEPRINTS-MVVM.md#build-a-game-hosts-seams-in-the-view-model-and-close-the-application-from-its-quit-event))
+`BrixInvaders/src/BrixInvaders.UI/Views/MainPage.xaml.cs` (the same one-line
+forward, followed by a deferred keyboard-focus hand-off to the canvas; the view
+model chooses the render tier and pins the render resolution before anything reads
+the canvas's host, and then builds the game host with its seams - see
+[Build a game host's seams in the view model and close the application from its quit event](BLUEPRINTS-MVVM.md#build-a-game-hosts-seams-in-the-view-model-and-close-the-application-from-its-quit-event)),
+`GoddessTempleDiscovery/src/GoddessTempleDiscovery.Core/ViewModels/MainViewModel.cs`
+and `GoddessTempleDiscovery/src/GoddessTempleDiscovery.UI/Views/MainPage.xaml.cs`
+(the same forward and focus hand-off)
 
 **Sharp edges.**
-- The first-started event fires once. Starting the engine from the page's loaded
-  event, or from the command that switches modes, would run against a zero-sized
-  surface.
-- The order inside the command matters: making the canvas visible - which is what
-  raises the event the first time - comes before resuming the session, and the
-  resume is null-safe because on the first pass the session does not exist yet.
-- The method takes the host page rather than the canvas, so the canvas type is named
-  only inside the rendering library; the session itself is built by a factory the
-  view model resolves, which keeps a view-bound object out of the view model's
-  constructor.
-- The page captures the interface in its data-context-changed handler and calls it
-  null-safely.
+- The first-started event fires once, at the canvas's first non-zero layout size.
+  Starting the engine from the page's constructor or its loaded event would run
+  against a zero-sized surface.
+- Subscribe to the data-context change before `InitializeComponent()`, because
+  `InitializeComponent()` may be what sets the data context; call the captured
+  interface null-safely, so a design-time data context simply does nothing.
+- Anything that must be decided before the canvas's host is read for the first
+  time - the render tier, a pinned render resolution - belongs inside this method,
+  before the engine-owning object is built.
+- Reading the running object back through the same interface lets the page's
+  control handlers reach it without naming the view model type. Every handler is
+  reachable before the canvas has started, so each one calls it null-conditionally.
 
 ### Run and pause a game engine session inside a page
 
-**When you want this.** The engine loop should run while one part of the UI is on
-screen and cost nothing while the user is elsewhere, without tearing the scene
-down and rebuilding it.
+**When you want this.** The engine loop should run inside one page for as long as
+the page is up, a control on the page should be able to pause and resume it, and
+nothing else in the application should have to know that the engine singleton
+exists.
 
-**The MVVM shape.** A session class owns the engine lifecycle and exposes start,
-pause, resume, stop and a thread-safe data-in method, all of them on an interface
-the rendering library declares. The view model holds the session as that
-interface, built for it by a registered factory, and calls those members from its
-commands and from `Dispose()`. Nothing else touches the engine instance.
+**The MVVM shape.** One library class owns the whole engine lifecycle: `Start()`, a
+pause toggle with an `IsPaused` read-back, and `Stop()`. The view model builds and
+starts it at the canvas's first real layout size (see
+[Hand the view model a game canvas at its first real layout size](#hand-the-view-model-a-game-canvas-at-its-first-real-layout-size))
+and holds it; the page's controls reach it through the view model's interface. No
+other application code touches `Engine.Instance`.
 
 **Code.**
 
+`Start()` is quoted in full in
+[Pin the audio device format before anything plays](#pin-the-audio-device-format-before-anything-plays):
+it takes the canvas's render-surface host, configures a single full view and starts
+the engine on the current synchronization context. The rest of the lifecycle sits
+beside it:
+
 ```csharp
-// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/VisualizerSession.cs
-public void Start()
-{
-    if (IsStarted) { return; }
+// From CodeBrix.Samples/GameEngineMusicDemo/src/libs/GameEngineMusicDemo.Game/GameEngineMusicDemoGame.cs
+/// <summary>Whether the engine is currently paused.</summary>
+public bool IsPaused => Engine.Instance.IsPaused;
 
-    //GpuRendering-OpenGL (GPU) by default; must be chosen before the first access to Host. The
-    //  render resolution tracks the window (no SetRenderResolution) - the shader
-    //  scene is resolution-independent.
-    _canvas.UseGpuRendering = Environment.GetEnvironmentVariable("PALMVISUALIZER_USE_CPU") != "1";
-
-    _renderSurface = _canvas.Host;
-    _renderSurface.ViewManager.ConfigureSingleFullView();
-
-    Engine.Instance.Start(SynchronizationContext.Current);
-    Engine.Instance.Configuration.TargetFPS = 60;
-
-    var adapter = _renderSurface.RenderSurfaceAdapter;
-    var view = _renderSurface.ViewManager.Views[0];
-
-    _backdrop = new EtherealBackdrop(_renderSurface, view,
-        new Rectangle(0, 0, adapter.Width, adapter.Height), _attractorField);
-    _backdrop.ZOrder = 0;
-
-    //The render resolution tracks the window, so follow adapter resizes
-    adapter.Resized += OnAdapterResized;
-
-    IsStarted = true;
-}
-
-/// <summary>
-/// Parks the visual at ~zero cost (the global engine pause) while the user is back at
-/// Camera Mode, releasing every palm attractor so a later <see cref="Resume"/> starts
-/// from the undisturbed visual. Safe to call when not started or already paused.
-/// </summary>
-public void Pause()
-{
-    if (!IsStarted || Engine.Instance.IsPaused) { return; }
-
-    _attractorField.Reset();
-    Engine.Instance.Pause();
-}
-
-/// <summary>
-/// Wakes the visual after a <see cref="Pause"/> - the pause is invisible to engine
-/// time, so the colors resume mid-motion. Safe to call when not started or not paused.
-/// </summary>
-public void Resume()
-{
-    if (!IsStarted || !Engine.Instance.IsPaused) { return; }
-
-    Engine.Instance.Resume();
-}
 // ...
+
+public void TogglePause()
+{
+    if (Engine.Instance.IsPaused)
+    {
+        Engine.Instance.Resume();
+    }
+    else
+    {
+        _readout?.SetText(BuildReadout(pausing: true));
+        Engine.Instance.Pause();
+    }
+}
+
+/// <summary>Stops the engine and tears the music system down. Call when the page is closing.</summary>
 public void Stop()
 {
-    if (!IsStarted) { return; }
+    ReleaseHeldDuck();
+    MusicManager.Instance.Dispose();
 
-    _renderSurface.RenderSurfaceAdapter.Resized -= OnAdapterResized;
+    _stems?.Dispose();
+    _songStems?.Dispose();
+    _midiTrack?.Dispose();
+    _samplerTrack?.Dispose();
+    _trackA?.Dispose();
+    _trackB?.Dispose();
+
     Engine.Instance.Stop();
-    IsStarted = false;
-}
-
-private void OnAdapterResized(RenderSurfaceAdapterResizedEventArgs args)
-{
-    if (_backdrop != null)
-        _backdrop.ScreenBounds = new Rectangle(0, 0, args.NewWidth, args.NewHeight);
+    AudioSystem.Shutdown();
 }
 ```
 
 ```csharp
-// From CodeBrix.Samples/PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs
-private Task DoVisualize()
-{
-    if (!CanVisualize()) { return Task.CompletedTask; }
+// From CodeBrix.Samples/GameEngineMusicDemo/src/GameEngineMusicDemo.UI/Views/MainPage.xaml.cs
+// Null until the canvas has started, and every handler below is reachable before then.
+private GameEngineMusicDemoGame Demo => _gameCanvasManager?.Demo;
 
-    //Starting the tracker is what loads the models, on its own worker thread
-    _tracker.Start();
-    _reportedOpenPalmCount = 0;
+// ...
 
-    //Showing the game canvas gives it its first real layout size, which raises its
-    //  FirstStarted -> CanvasFirstStart the first time through; on later entries the
-    //  engine is merely paused from Camera Mode, so wake it back up
-    IsCameraMode = false;
-    _visualizerSession?.Resume();
-
-    StatusText = "Show the camera your open palm - the colors will gather toward it.";
-    return Task.CompletedTask;
-}
-
-#endregion
-
-#region BackCommand
-
-private SimpleCommand _backCommand;
-public SimpleCommand BackCommand =>
-    (_backCommand ??= new SimpleCommand(CanGoBack, DoGoBack));
-
-private bool CanGoBack() => IsVisualizeMode;
-
-private Task DoGoBack()
-{
-    if (!CanGoBack()) { return Task.CompletedTask; }
-
-    _tracker?.Stop();
-    _visualizerSession?.Pause();
-
-    IsCameraMode = true;
-    InvalidatePreviewCanvas?.Invoke();
-    StatusText = SelectedCamera != null
-        ? $"Live: {SelectedCamera.FriendlyName}"
-        : "Select a camera.";
-    return Task.CompletedTask;
-}
+private void OnTogglePause(object sender, object e) => Demo?.TogglePause();
 ```
 
 **Where to look.**
-`PalmVisualizer/src/libs/PalmVisualizer.Rendering/VisualizerSession.cs` and
-`IVisualizerSession.cs`
-`PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs`
+`GameEngineMusicDemo/src/libs/GameEngineMusicDemo.Game/GameEngineMusicDemoGame.cs`
+`GameEngineMusicDemo/src/GameEngineMusicDemo.Core/ViewModels/MainViewModel.cs`
+`GameEngineMusicDemo/src/GameEngineMusicDemo.UI/Views/MainPage.xaml.cs`
+`GameEngineMusicDemo/tests/GameEngineMusicDemo.PlayTests/AppFixture.cs` (the
+fixture un-pauses the demo between tests and calls `Stop()` when it is disposed)
 
 **Also shown by.**
 `BrixInvaders/src/libs/BrixInvaders.Game/Hosting/BrixInvadersGameHost.cs` (the
-whole engine paused while the window is minimized rather than while a mode is
-left, by the engine's `GameWindowLifecycle` - see
+whole engine paused while the window is minimized rather than from a control, by
+the engine's `GameWindowLifecycle` - see
 [Pause the engine while the window is minimized with GameWindowLifecycle and come back to the game's pause menu](BLUEPRINTS-GameEngine.md#pause-the-engine-while-the-window-is-minimized-with-gamewindowlifecycle-and-come-back-to-the-games-pause-menu))
 
 **Sharp edges.**
-- The GPU-or-CPU choice must be made before the first access to the canvas's host;
-  reading the host first locks the choice in.
-- The engine is started with the current synchronization context, so it must be
-  called on the UI thread - which is guaranteed here because it runs from the
+- The engine is started with the current synchronization context, so `Start()`
+  must run on the UI thread - which it does, because it is called from the
   canvas's first-started event.
-- Starting is once per process. Use pause and resume to leave and re-enter the
-  mode; every one of the four methods is guarded by the started flag and by the
-  engine's own paused flag, so double calls are harmless.
-- The pause is invisible to engine time, so a resumed scene picks up mid-motion.
-  Resetting the scene's input state on pause is what makes it resume undisturbed
-  rather than with stale input still acting on it.
-- Configuring a single full view plus a zero draw order is the whole scene graph
-  here; the backdrop fills the one view.
-- Subscribe to the render adapter's resize event and update the drawing's screen
-  bounds; the render resolution tracks the window because the resolution is
-  deliberately not pinned.
-- Stopping unsubscribes the resize handler before stopping the engine.
+- Starting is once per page. Pausing and resuming is the engine's own global pause,
+  so the toggle asks the engine for its state rather than keeping a flag of its own
+  that could drift from it.
+- The engine cycle parks while paused, so anything that must be on screen during
+  the pause is written before `Pause()` is called, not after - see
+  [Write a pause overlay onto the engine's final forced frame](#write-a-pause-overlay-onto-the-engines-final-forced-frame).
+- `Stop()` releases what the music system holds before it stops the engine, and
+  shuts the audio system down last.
+- Expose the paused state as a read-only property that forwards to the engine;
+  the sample's PlayTests fixture reads it to un-pause the demo between tests.
 
 ## The music system
 
@@ -2350,7 +2301,7 @@ minimizing the window should stop the game, its sound and its music at once, and
 restoring it should show the game's own pause menu - not throw the player straight
 back into play - with the keyboard working again after the window is activated. [Run and pause a game engine session inside a
 page](BLUEPRINTS-GameEngine.md#run-and-pause-a-game-engine-session-inside-a-page)
-pauses the engine as the user moves between parts of the UI; this recipe pauses it
+pauses the engine from a control on the page; this recipe pauses it
 for the window, and hands the moment over to the game's own pause.
 
 **The MVVM shape.** Not a view-model concern. The App hands its window to the

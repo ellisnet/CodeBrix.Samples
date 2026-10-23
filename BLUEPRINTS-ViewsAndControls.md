@@ -1308,13 +1308,14 @@ xmlns:c="clr-namespace:CodeBrix.Platform.UI.Converters;assembly=CodeBrix.Platfor
 </Page.Resources>
 
 <!-- The main viewer: the mirrored live preview in Camera Mode; the palm-reactive
-     shader visual in Visualize Mode -->
+     visualizer in Visualize Mode - the running visualizer session puts its own view
+     into the VisualizerCanvas panel -->
 <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Background="Black">
     <Grid>
-        <camera:CameraCanvas x:Name="PreviewCanvas"
+        <camera:CameraCanvas x:Name="PreviewCanvas" a:AutomationProperties.AutomationId="PreviewCanvas"
                              Visibility="{d:Binding IsCameraMode, Converter={StaticResource VisibleWhenTrue}}" />
-        <game:GameSurfaceCanvas x:Name="VisualizerCanvas"
-                                Visibility="{d:Binding IsCameraMode, Converter={StaticResource VisibleWhenFalse}}" />
+        <Grid x:Name="VisualizerCanvas" a:AutomationProperties.AutomationId="VisualizerCanvas"
+              Visibility="{d:Binding IsCameraMode, Converter={StaticResource VisibleWhenFalse}}" />
     </Grid>
 </Border>
 
@@ -1331,7 +1332,7 @@ xmlns:c="clr-namespace:CodeBrix.Platform.UI.Converters;assembly=CodeBrix.Platfor
     </StackPanel>
 </Grid>
 
-<TextBlock Grid.Row="3" Text="{d:Binding StatusText}" Margin="0,8,0,0" TextWrapping="Wrap" />
+<TextBlock Grid.Row="3" a:AutomationProperties.AutomationId="StatusText" Text="{d:Binding StatusText}" Margin="0,8,0,0" TextWrapping="Wrap" />
 ```
 
 **Where to look.**
@@ -1346,8 +1347,8 @@ xmlns:c="clr-namespace:CodeBrix.Platform.UI.Converters;assembly=CodeBrix.Platfor
 - A computed inverse property needs an explicit `NotifyPropertyChanged` from the
   setter it derives from, because `SetProperty` only raises for its own name.
 - Both visuals live in the same grid cell and are stacked, differing only in
-  visibility. That is what keeps a long-lived canvas alive - and its engine merely
-  paused - across mode switches.
+  visibility. That is what keeps a long-lived view alive - its rendering session
+  merely paused - across mode switches.
 - A control that should stay put is disabled rather than hidden
   (`IsEnabled="{d:Binding IsCameraMode}"`), so the layout does not shift.
 - Where the panes are more than two, computed `Visibility` properties on the view

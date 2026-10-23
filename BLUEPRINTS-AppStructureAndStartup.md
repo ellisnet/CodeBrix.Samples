@@ -1095,6 +1095,13 @@ internal class Program
   heads do not have; the type comes from that head's runtime package.
 - In most of these applications this is the only per-head behavioral difference
   in the whole solution.
+- An application that repaints continuously pays for every frame twice on this
+  head, because the software surface re-composites the whole window on the CPU. In
+  a large window a frame can outlast the frame interval, and at the default
+  scheduling tier that starves keyboard and mouse input. PalmVisualizer's
+  `Program.cs` therefore also sets
+  `wpfHost.DispatcherScheduling = WpfDispatcherScheduling.InputFair;` inside the
+  same guarded block, with a comment saying why.
 
 ### Keep Main synchronous and STA so an embedded WebView can start
 
@@ -1701,7 +1708,7 @@ does-it-exist fallback)
 ### Register a factory and let the view model ask it for what it owns
 
 **When you want this.** A view model has to end up owning an object that takes
-real work to build - a rendering session bound to a page's canvas, a comparison
+real work to build - a rendering session bound to a page's panel, a comparison
 that owns a rasterizer - and `new` in the constructor makes it untestable and
 makes the library it comes from non-substitutable.
 [Register library services with one AddXxx extension method](BLUEPRINTS-AppStructureAndStartup.md#register-library-services-with-one-addxxx-extension-method)
@@ -1720,19 +1727,20 @@ is not constructor time. The resolve falls back to the concrete factory with
 ```csharp
 // From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/IVisualizerSessionFactory.cs
 /// <summary>
-/// Builds the Visualize Mode scene for a page's game canvas. Registered with the
-/// dependency-injection container at startup and resolved by the view model, which then owns
-/// the session it is handed without knowing how one is made.
+/// Builds a Visualize Mode scene for a page. Registered with the dependency-injection
+/// container at startup and resolved by the view model, which then owns the session it is
+/// handed without knowing how one is made.
 /// </summary>
 public interface IVisualizerSessionFactory
 {
     /// <summary>
-    /// Creates the visualizer session that renders into the host's canvas. Call at the
-    /// canvas's first real layout size; the session is not started.
+    /// Creates a session for the chosen visualizer that will show its view in the host's
+    /// panel; the session is not started.
     /// </summary>
-    /// <param name="host">The page that owns the game canvas.</param>
+    /// <param name="kind">The visualizer to show.</param>
+    /// <param name="host">The page that owns the panel the visualizer is shown in.</param>
     /// <returns>The session, ready to be started.</returns>
-    IVisualizerSession CreateSession(IGameCanvasHost host);
+    IVisualizerSession CreateSession(VisualizerKind kind, IVisualizerCanvasHost host);
 }
 ```
 
@@ -1758,14 +1766,18 @@ _captureService = GetService<IWebcamCaptureService>() ?? new WebcamCaptureServic
 _tracker = GetService<IPalmTracker>() ?? new PalmTracker();
 _sessionFactory = GetService<IVisualizerSessionFactory>() ?? new VisualizerSessionFactory();
 
-// ... later, when the page's canvas has a real size:
+// ... later, when the user asks to see the visualizer the dropdown names:
 
-public void CanvasFirstStart(IGameCanvasHost host)
+private void StartVisualizer()
 {
-    //UI thread, the first time Visualize Mode is shown with a real size: build the
-    //  shader scene and start the engine. Later mode switches pause and resume it.
-    _visualizerSession = _sessionFactory.CreateSession(host);
-    _visualizerSession.Start();
+    var host = _visualizerHost;
+    var option = SelectedVisualizer;
+    if (host == null || option == null) { return; }
+
+    var session = _sessionFactory.CreateSession(option.Kind, host);
+    session.Problem += OnVisualizerProblem;
+    _visualizerSession = session;
+    session.Start();
 }
 ```
 
@@ -1810,9 +1822,10 @@ public static IServiceCollection AddPdfRender(this IServiceCollection services)
 - Transient and singleton are a statement about ownership. A renderer that owns a
   cache is transient because its holder disposes it; a stateless loader is a
   singleton.
-- Ask the factory at the moment the inputs exist. For anything tied to a canvas
-  that is the first real layout, which is why the call sits in the page-driven
-  method and not in the constructor.
+- Ask the factory at the moment the inputs exist. A session tied to the page's
+  panel and to the user's current choice can only be built once the page has handed
+  itself over and the user asks to see it, which is why the call sits in the command
+  path and not in the constructor.
 - `TryAdd` rather than `Add` in a library extension lets an application register
   its own implementation first and keeps a second call to the extension harmless.
 

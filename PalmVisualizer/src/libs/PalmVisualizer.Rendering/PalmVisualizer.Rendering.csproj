@@ -5,12 +5,22 @@
     <!-- Keep a distinct RootNamespace (not the app's "PalmVisualizer") so the transitive
          CodeBrix.Platform reference does not generate a duplicate GlobalStaticResources. -->
     <RootNamespace>PalmVisualizer.Rendering</RootNamespace>
+
+    <!-- The WebGPU renderer records commands through descriptor-struct pointers -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <!-- This library owns the CodeBrix.Platform.GameEngine reference (consumed as a NuGet
-       package - one package bundles both the engine core and the Host layer); the app's
-       .Core project depends on this library rather than referencing the engine directly. -->
+  <!-- This library owns the GPU references; the app's .Core project depends on this library
+       rather than referencing them directly. -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Platform.GameEngine.MitLicenseForever" Version="1.0.281.62" />
+    <!-- Ethereal - OpenGL: GPU-accelerated Skia through SkiaGpuContext (OpenGL/GLES on every
+         head except macOS, where it is Metal) -->
+    <PackageReference Include="CodeBrix.Platform.Graphics3DGL.ApacheLicenseForever" Version="1.0.291.1177" />
+
+    <!-- Ethereal - WebGPU: the WebGpuRenderView element and the raw WebGPU binding -->
+    <PackageReference Include="CodeBrix.Platform.WebGpu.ApacheLicenseForever" Version="1.0.291.1177" />
+
+    <!-- SKXamlCanvas - the surface the OpenGL visualizer presents its frames on -->
+    <PackageReference Include="CodeBrix.Platform.SkiaSharp.Views.MitLicenseForever" Version="4.153.1" />
   </ItemGroup>
 </Project>

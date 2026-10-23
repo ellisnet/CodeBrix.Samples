@@ -1041,7 +1041,7 @@ src/PalmVisualizer.UI/            .shproj + .projitems: App.xaml(.cs), Views/Mai
 src/PalmVisualizer.Core/          view models + helpers; owns the platform and font packages
 src/libs/PalmVisualizer.Camera/   capture + preview canvas       -> tests/libs/PalmVisualizer.Camera.Tests
 src/libs/PalmVisualizer.Vision/   palm tracking + models         -> tests/libs/PalmVisualizer.Vision.Tests
-src/libs/PalmVisualizer.Rendering/ engine session + shader scene -> tests/libs/PalmVisualizer.Rendering.Tests
+src/libs/PalmVisualizer.Rendering/ visualizer sessions + renderers -> tests/libs/PalmVisualizer.Rendering.Tests
 src/PalmVisualizer.<Head>/        one per head; imports the .projitems, references Core
 ```
 

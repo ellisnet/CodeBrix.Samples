@@ -8,7 +8,6 @@
     xmlns:local="using:PalmVisualizer.Views"
     xmlns:vm="clr-namespace:PalmVisualizer.ViewModels;assembly=PalmVisualizer.Core"
     xmlns:camera="clr-namespace:PalmVisualizer.Camera;assembly=PalmVisualizer.Camera"
-    xmlns:game="clr-namespace:CodeBrix.Platform.GameEngine.Host.Rendering;assembly=CodeBrix.Platform.GameEngine.Host"
     FontFamily="{StaticResource RobotoFont}"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -35,16 +34,20 @@
                       ItemsSource="{d:Binding Cameras}"
                       SelectedItem="{d:Binding SelectedCamera, Mode=TwoWay}"
                       IsEnabled="{d:Binding IsCameraMode}" />
+            <ComboBox a:AutomationProperties.AutomationId="VisualizerPicker" a:AutomationProperties.Name="Visualizer" MinWidth="220" VerticalAlignment="Center"
+                      ItemsSource="{d:Binding Visualizers}"
+                      SelectedItem="{d:Binding SelectedVisualizer, Mode=TwoWay}" />
         </StackPanel>
 
         <!-- The main viewer: the mirrored live preview in Camera Mode; the palm-reactive
-             shader visual in Visualize Mode -->
+             visualizer in Visualize Mode - the running visualizer session puts its own view
+             into the VisualizerCanvas panel -->
         <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Background="Black">
             <Grid>
                 <camera:CameraCanvas x:Name="PreviewCanvas" a:AutomationProperties.AutomationId="PreviewCanvas"
                                      Visibility="{d:Binding IsCameraMode, Converter={StaticResource VisibleWhenTrue}}" />
-                <game:GameSurfaceCanvas x:Name="VisualizerCanvas" a:AutomationProperties.AutomationId="VisualizerCanvas"
-                                        Visibility="{d:Binding IsCameraMode, Converter={StaticResource VisibleWhenFalse}}" />
+                <Grid x:Name="VisualizerCanvas" a:AutomationProperties.AutomationId="VisualizerCanvas"
+                      Visibility="{d:Binding IsCameraMode, Converter={StaticResource VisibleWhenFalse}}" />
             </Grid>
         </Border>
 

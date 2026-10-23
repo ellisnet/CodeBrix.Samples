@@ -22,24 +22,26 @@ public interface ICanvasBridge
 }
 
 /// <summary>
-/// Lets the hosting page tell the view model when the visualizer's game canvas has its
-/// first real layout size - the engine can only start against a non-zero surface, which
-/// happens the first time Visualize Mode is shown.
+/// Lets the hosting page hand the view model the page that shows the visualizer, so the view
+/// model can start a visualizer session in it without ever naming a view type.
 /// </summary>
-public interface IManageGameCanvas
+public interface IManageVisualizerCanvas
 {
-    /// <summary>Called once, on the UI thread, at the canvas's FirstStarted event.</summary>
-    /// <param name="host">The page that owns the game canvas the visualizer renders into.</param>
-    void CanvasFirstStart(IGameCanvasHost host);
+    /// <summary>Called once, on the UI thread, when the page and the view model are paired.</summary>
+    /// <param name="host">The page whose panel the visualizers are shown in.</param>
+    void SetVisualizerCanvasHost(IVisualizerCanvasHost host);
 }
 
 [Microsoft.UI.Xaml.Data.Bindable]
-public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas, IWebcamFrameSource
+public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageVisualizerCanvas, IWebcamFrameSource
 {
+    private const string OpenPalmPrompt = "Show the camera your open palm - the colors will gather toward it.";
+
     private readonly IVisualizerSessionFactory _sessionFactory;
 
     private IWebcamCaptureService _captureService;
     private IPalmTracker _tracker;
+    private IVisualizerCanvasHost _visualizerHost;
     private IVisualizerSession _visualizerSession;
 
     private byte[] _visionFrame;
@@ -151,7 +153,7 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas, 
                 if (IsCameraMode) { return; }
                 StatusText = openCount switch
                 {
-                    0 => "Show the camera your open palm - the colors will gather toward it.",
+                    0 => OpenPalmPrompt,
                     1 => "The colors are chasing your open palm - close your hand to set them free.",
                     _ => $"The colors are chasing {openCount} open palms - close your hands to set them free.",
                 };
@@ -203,6 +205,26 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas, 
             }
         }
     }
+
+    /// <summary>The visualizers the dropdown lists.</summary>
+    public IReadOnlyList<VisualizerOption> Visualizers => VisualizerOption.All;
+
+    /// <summary>
+    /// The visualizer Visualize Mode shows. Choosing another while it is showing switches the
+    /// visual at once; chosen in Camera Mode, it is the one the next "Visualize!" shows.
+    /// </summary>
+    public VisualizerOption SelectedVisualizer
+    {
+        get;
+        set
+        {
+            if (value != null && field != value)
+            {
+                SetProperty(ref field, value);
+                SwitchVisualizer();
+            }
+        }
+    } = VisualizerOption.All[0];
 
     [AffectsCommands(nameof(VisualizeCommand), nameof(BackCommand))]
     public bool IsCameraMode
@@ -290,14 +312,68 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas, 
         }
     }
 
-    #region | IManageGameCanvas implementation |
+    #region | IManageVisualizerCanvas implementation |
 
-    public void CanvasFirstStart(IGameCanvasHost host)
+    public void SetVisualizerCanvasHost(IVisualizerCanvasHost host) => _visualizerHost = host;
+
+    #endregion
+
+    #region | Visualizer sessions |
+
+    /// <summary>
+    /// Creates and starts a session for the selected visualizer (UI thread). Later mode
+    /// switches pause and resume it; choosing another visualizer stops it.
+    /// </summary>
+    private void StartVisualizer()
     {
-        //UI thread, the first time Visualize Mode is shown with a real size: build the
-        //  shader scene and start the engine. Later mode switches pause and resume it.
-        _visualizerSession = _sessionFactory.CreateSession(host);
-        _visualizerSession.Start();
+        var host = _visualizerHost;
+        var option = SelectedVisualizer;
+        if (host == null || option == null) { return; }
+
+        var session = _sessionFactory.CreateSession(option.Kind, host);
+        session.Problem += OnVisualizerProblem;
+        _visualizerSession = session;
+        session.Start();
+    }
+
+    /// <summary>
+    /// Stops the current session, if any (UI thread). The field is read into a local and
+    /// nulled first, so a tracking result arriving on the worker thread sees no session
+    /// rather than one that is stopping.
+    /// </summary>
+    private void StopVisualizer()
+    {
+        var session = _visualizerSession;
+        _visualizerSession = null;
+        if (session == null) { return; }
+
+        session.Problem -= OnVisualizerProblem;
+        session.Stop();
+    }
+
+    private void SwitchVisualizer()
+    {
+        //A session draws one visualizer for its whole life: switching replaces it. In Camera
+        //  Mode that is all - the next "Visualize!" starts the new choice
+        StopVisualizer();
+        if (IsVisualizeMode)
+        {
+            _reportedOpenPalmCount = 0;
+            StartVisualizer();
+            StatusText = OpenPalmPrompt;
+        }
+    }
+
+    private void OnVisualizerProblem(object sender, VisualizerProblemEventArgs e)
+    {
+        InvokeOnMainThread(() =>
+        {
+            //Only the visualizer the user is looking at reports
+            if (IsVisualizeMode && ReferenceEquals(sender, _visualizerSession))
+            {
+                StatusText = e.Message;
+            }
+        });
     }
 
     #endregion
@@ -320,13 +396,19 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas, 
         _tracker.Start();
         _reportedOpenPalmCount = 0;
 
-        //Showing the game canvas gives it its first real layout size, which raises its
-        //  FirstStarted -> CanvasFirstStart the first time through; on later entries the
-        //  engine is merely paused from Camera Mode, so wake it back up
+        //The first time through, start a session for the selected visualizer; on later
+        //  entries it is merely paused from Camera Mode, so wake it back up
         IsCameraMode = false;
-        _visualizerSession?.Resume();
+        if (_visualizerSession == null)
+        {
+            StartVisualizer();
+        }
+        else
+        {
+            _visualizerSession.Resume();
+        }
 
-        StatusText = "Show the camera your open palm - the colors will gather toward it.";
+        StatusText = OpenPalmPrompt;
         return Task.CompletedTask;
     }
 
@@ -377,9 +459,7 @@ public class MainViewModel : SimpleViewModel, ICanvasBridge, IManageGameCanvas, 
             _tracker = null;
         }
 
-        var session = _visualizerSession;
-        _visualizerSession = null;
-        session?.Stop();
+        StopVisualizer();
 
         if (_captureService != null)
         {

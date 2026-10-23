@@ -5,7 +5,7 @@ namespace PalmVisualizer.Rendering;
 /// coordinates. This is the whole seam between the vision pipeline and the rendering:
 /// the consumer maps whatever it tracks into these points (mirroring the X coordinate
 /// when the user watches a mirror-style view) and hands them to
-/// <see cref="VisualizerSession.UpdatePalms"/>.
+/// <see cref="IVisualizerSession.UpdatePalms"/>.
 /// </summary>
 public readonly struct PalmAttractor
 {

@@ -1,22 +1,34 @@
+using System;
 using System.Collections.Generic;
 
 namespace PalmVisualizer.Rendering;
 
 /// <summary>
-/// The Visualize Mode scene's lifecycle as its consumer drives it: start it once, park it
-/// while the user is elsewhere, wake it again, feed it palms from any thread, and stop it at
-/// teardown. Obtained from <see cref="IVisualizerSessionFactory"/>, so the view model that
-/// drives the scene never constructs an engine surface itself.
+/// The Visualize Mode scene's lifecycle as its consumer drives it: start it, park it while
+/// the user is elsewhere, wake it again, feed it palms from any thread, and stop it when the
+/// user picks another visualizer or the page closes. Obtained from
+/// <see cref="IVisualizerSessionFactory"/>, so the view model that drives the scene never
+/// constructs a view or a GPU context itself.
 /// </summary>
 public interface IVisualizerSession
 {
-    /// <summary>Indicates whether <see cref="Start"/> has run.</summary>
+    /// <summary>The visualizer this session shows.</summary>
+    VisualizerKind Kind { get; }
+
+    /// <summary>Indicates whether <see cref="Start"/> has run (and <see cref="Stop"/> has not).</summary>
     bool IsStarted { get; }
 
     /// <summary>
-    /// Starts the engine and builds the shader scene. Must be called on the UI thread once
-    /// the canvas has a non-zero size, and only once per process - use <see cref="Pause"/>
-    /// and <see cref="Resume"/> to leave and re-enter Visualize Mode.
+    /// Raised when the visualizer cannot render the way it was chosen to - no GPU context, so
+    /// it fell back to the CPU, or no WebGPU device at all. Raised on the UI thread; the
+    /// message is ready for the status line.
+    /// </summary>
+    event EventHandler<VisualizerProblemEventArgs> Problem;
+
+    /// <summary>
+    /// Puts the visualizer's view into the host's panel and starts rendering. Must be called
+    /// on the UI thread; a session starts once - use <see cref="Pause"/> and
+    /// <see cref="Resume"/> to leave and re-enter Visualize Mode.
     /// </summary>
     void Start();
 
@@ -28,8 +40,8 @@ public interface IVisualizerSession
     void Pause();
 
     /// <summary>
-    /// Wakes the visual after a <see cref="Pause"/>. Safe to call when not started or not
-    /// paused.
+    /// Wakes the visual after a <see cref="Pause"/>; the pause is invisible to the visual's
+    /// clock, so the colors resume mid-motion. Safe to call when not started or not paused.
     /// </summary>
     void Resume();
 
@@ -41,6 +53,20 @@ public interface IVisualizerSession
     /// <param name="palms">The attracting palms; empty (or null) releases them all.</param>
     void UpdatePalms(IReadOnlyList<PalmAttractor> palms);
 
-    /// <summary>Stops the engine. Call when the hosting page is closing.</summary>
+    /// <summary>
+    /// Stops rendering and takes the view out of the host's panel, releasing its GPU
+    /// resources. Call on the UI thread when switching visualizers or closing the page.
+    /// </summary>
     void Stop();
+}
+
+/// <summary>Provides data for the <see cref="IVisualizerSession.Problem"/> event.</summary>
+public sealed class VisualizerProblemEventArgs : EventArgs
+{
+    /// <summary>Initializes a new instance of the <see cref="VisualizerProblemEventArgs"/> class.</summary>
+    /// <param name="message">What went wrong, worded for the status line.</param>
+    public VisualizerProblemEventArgs(string message) => Message = message ?? string.Empty;
+
+    /// <summary>What went wrong, worded for the status line.</summary>
+    public string Message { get; }
 }

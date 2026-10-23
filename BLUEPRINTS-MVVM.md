@@ -1037,12 +1037,12 @@ private void OnTrackingUpdated(object sender, PalmTrackingEventArgs e)
             if (IsCameraMode) { return; }
             StatusText = openCount switch
             {
-            0 => "Show the camera your open palm - the colors will gather toward it.",
-            1 => "The colors are chasing your open palm - close your hand to set them free.",
-            _ => $"The colors are chasing {openCount} open palms - close your hands to set them free.",
-        };
-    });
-}
+                0 => OpenPalmPrompt,
+                1 => "The colors are chasing your open palm - close your hand to set them free.",
+                _ => $"The colors are chasing {openCount} open palms - close your hands to set them free.",
+            };
+        });
+    }
 }
 ```
 
@@ -1819,7 +1819,7 @@ page and would otherwise keep it alive through the view model)
 - Null the field before disposing the object
   (`var session = _paintSession; _paintSession = null; session?.Dispose();`), so a
   callback arriving mid-teardown sees null instead of a disposed object. The same
-  applies to an engine session: null it, then `Stop()` it.
+  applies to a rendering session: null it, then `Stop()` it.
 - Unsubscribe in both directions. The view model unsubscribes from each source,
   and the library classes null their own event before stopping
   (`TrackingUpdated = null; Stop();`), which guarantees no handler runs during

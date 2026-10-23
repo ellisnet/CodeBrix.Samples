@@ -16,7 +16,7 @@ using PalmVisualizer.Vision;
 namespace PalmVisualizer.PlayTests;
 
 // All three collaborators are fakes, registered before the launch page is built: no camera is enumerated or
-// opened, no model is loaded and the game engine is never started.
+// opened, no model is loaded and no visualizer view, GPU context or WebGPU device is ever created.
 public sealed class AppFixture : SampleFixture<MainPage>
 {
     private bool _keepSetup;
@@ -275,22 +275,25 @@ public sealed class SessionFactoryFixture : IVisualizerSessionFactory
         lock (_created) _created.Clear();
     }
 
-    public IVisualizerSession CreateSession(IGameCanvasHost host)
+    public IVisualizerSession CreateSession(VisualizerKind kind, IVisualizerCanvasHost host)
     {
-        var session = new SessionFixture(host);
+        var session = new SessionFixture(kind, host);
         lock (_created) _created.Add(session);
         return session;
     }
 }
 
-// Records the lifecycle calls and the palms; never starts the engine.
-public sealed class SessionFixture(IGameCanvasHost host) : IVisualizerSession
+// Records the lifecycle calls and the palms; never creates a view or touches the GPU.
+public sealed class SessionFixture(VisualizerKind kind, IVisualizerCanvasHost host) : IVisualizerSession
 {
     private readonly object _gate = new();
     private IReadOnlyList<PalmAttractor> _palms;
     private int _updates;
 
-    public IGameCanvasHost Host { get; } = host;
+    public event EventHandler<VisualizerProblemEventArgs> Problem;
+
+    public VisualizerKind Kind { get; } = kind;
+    public IVisualizerCanvasHost Host { get; } = host;
     public bool IsStarted { get; private set; }
     public int StartCount { get; private set; }
     public int PauseCount { get; private set; }
@@ -307,7 +310,14 @@ public sealed class SessionFixture(IGameCanvasHost host) : IVisualizerSession
 
     public void Pause() => PauseCount++;
     public void Resume() => ResumeCount++;
-    public void Stop() => StopCount++;
+    public void Stop()
+    {
+        StopCount++;
+        IsStarted = false;
+    }
+
+    // Stands in for a visualizer that cannot render as chosen (no GPU context, no WebGPU device).
+    public void RaiseProblem(string message) => Problem?.Invoke(this, new VisualizerProblemEventArgs(message));
 
     public void UpdatePalms(IReadOnlyList<PalmAttractor> palms)
     {

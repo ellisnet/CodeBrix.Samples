@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CodeBrix.Platform.PlayTest;
 using CodeBrix.Samples.PlayTests;
+using PalmVisualizer.Rendering;
 using PalmVisualizer.Views;
 using SilverAssertions;
 using SkiaSharp;
@@ -16,6 +17,7 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
 
     private Locator Status => Page.GetByTestId("StatusText");
     private Locator CameraPicker => Page.GetByTestId("CameraPicker");
+    private Locator VisualizerPicker => Page.GetByTestId("VisualizerPicker");
 
     [Fact]
     public async Task Startup_discovers_cameras_and_auto_selects_the_first()
@@ -121,6 +123,103 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
         Fixture.Sessions.Last.PauseCount.Should().Be(1);
         Fixture.Sessions.Last.ResumeCount.Should().Be(1);
         Fixture.Tracker.StartCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Visualizer_picker_lists_every_visualizer_and_defaults_to_ethereal_webgpu()
+    {
+        await Expect(VisualizerPicker).ToHaveValueAsync("Ethereal - WebGPU");
+        await Expect(VisualizerPicker).ToBeEnabledAsync();
+        (await Page.EvaluateAsync(() => Fixture.Model.Visualizers.Select(option => option.DisplayName).ToArray()))
+            .Should().Equal("Ethereal - WebGPU", "Ethereal - OpenGL", "Ripple - WebGPU", "Holy Inanna - WebGPU", "Crystals - WebGPU");
+        await VisualizeAsync();
+        Fixture.Sessions.Last.Kind.Should().Be(VisualizerKind.EtherealWebGpu);
+        await Expect(VisualizerPicker).ToBeEnabledAsync();
+    }
+
+    [Fact]
+    public async Task Choosing_a_visualizer_while_visualizing_replaces_the_session()
+    {
+        await VisualizeAsync();
+        var first = Fixture.Sessions.Last;
+        await SelectVisualizerAsync("Ethereal - OpenGL");
+        await Fixture.Application.WaitForAsync(() => Fixture.Sessions.Created.Count, count => count == 2,
+            description: "the OpenGL visualizer session");
+        first.StopCount.Should().Be(1);
+        var second = Fixture.Sessions.Last;
+        second.Kind.Should().Be(VisualizerKind.EtherealOpenGL);
+        second.StartCount.Should().Be(1);
+        (await Page.EvaluateAsync(() => ReferenceEquals(second.Host, Fixture.View))).Should().BeTrue();
+        await Expect(Status).ToHaveTextAsync(OpenPalmPrompt);
+
+        // Palms now reach the new session only
+        Fixture.Tracker.Raise(TrackerFixture.Palm(3, true, 0.5f, 0.5f));
+        second.UpdateCount.Should().Be(1);
+        first.UpdateCount.Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData("Ripple - WebGPU", VisualizerKind.RippleWebGpu)]
+    [InlineData("Holy Inanna - WebGPU", VisualizerKind.HolyInannaWebGpu)]
+    [InlineData("Crystals - WebGPU", VisualizerKind.CrystalsWebGpu)]
+    public async Task Each_new_visualizer_gets_a_session_of_its_own_kind(string name, VisualizerKind kind)
+    {
+        await VisualizeAsync();
+        var first = Fixture.Sessions.Last;
+        await SelectVisualizerAsync(name);
+        await Expect(VisualizerPicker).ToHaveValueAsync(name);
+        await Fixture.Application.WaitForAsync(() => Fixture.Sessions.Created.Count, count => count == 2,
+            description: "the newly chosen visualizer's session");
+        first.StopCount.Should().Be(1);
+        Fixture.Sessions.Last.Kind.Should().Be(kind);
+        Fixture.Sessions.Last.StartCount.Should().Be(1);
+        Fixture.Tracker.Raise(TrackerFixture.Palm(5, true, 0.25f, 0.5f));
+        Fixture.Sessions.Last.Palms.Should().HaveCount(1);
+        Fixture.Sessions.Last.Palms[0].X.Should().Be(0.75f);
+    }
+
+    [Fact]
+    public async Task A_visualizer_chosen_in_camera_mode_is_used_by_the_next_visualize()
+    {
+        await VisualizeAsync();
+        var first = Fixture.Sessions.Last;
+        await Button("Back").ClickAsync();
+        await Expect(Button("Visualize!")).ToBeEnabledAsync();
+        await SelectVisualizerAsync("Ethereal - OpenGL");
+        await Expect(VisualizerPicker).ToHaveValueAsync("Ethereal - OpenGL");
+
+        // The paused session is stopped at once; the new one waits for "Visualize!"
+        first.StopCount.Should().Be(1);
+        Fixture.Sessions.Created.Count.Should().Be(1);
+        await Expect(Status).ToHaveTextAsync("Live: Fake Cam A");
+
+        await Button("Visualize!").ClickAsync();
+        await Expect(Button("Back")).ToBeVisibleAsync();
+        await Fixture.Application.WaitForAsync(() => Fixture.Sessions.Created.Count, count => count == 2,
+            description: "the OpenGL visualizer session");
+        Fixture.Sessions.Last.Kind.Should().Be(VisualizerKind.EtherealOpenGL);
+        Fixture.Sessions.Last.StartCount.Should().Be(1);
+        Fixture.Sessions.Last.ResumeCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task A_visualizer_problem_is_shown_in_the_status_line()
+    {
+        await VisualizeAsync();
+        Fixture.Sessions.Last.RaiseProblem("Ethereal - WebGPU has no WebGPU device: no adapter was found.");
+        await Expect(Status).ToHaveTextAsync("Ethereal - WebGPU has no WebGPU device: no adapter was found.");
+    }
+
+    [Fact]
+    public async Task A_replaced_visualizer_can_no_longer_report_problems()
+    {
+        await VisualizeAsync();
+        var first = Fixture.Sessions.Last;
+        await SelectVisualizerAsync("Ethereal - OpenGL");
+        await Fixture.Application.WaitForAsync(() => Fixture.Sessions.Created.Count, count => count == 2,
+            description: "the OpenGL visualizer session");
+        first.RaiseProblem("Ethereal - WebGPU has no WebGPU device: stale.");
+        await Expect(Status).ToHaveTextAsync(OpenPalmPrompt);
     }
 
     [Fact]
@@ -256,7 +355,7 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
     private void PushFrame(int width = 16, int height = 12) => Fixture.Capture.PushFrame(
         CaptureFixture.SplitFrame(width, height, (200, 0, 0), (0, 0, 200)), width, height);
 
-    // A first frame enables Visualize; the session is created at the game canvas's first real layout size.
+    // A first frame enables Visualize; clicking it creates and starts the selected visualizer's session.
     private async Task VisualizeAsync()
     {
         await Expect(Status).ToHaveTextAsync("Live: Fake Cam A");
@@ -271,6 +370,12 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
     private async Task SelectCameraAsync(string name)
     {
         await CameraPicker.ClickAsync();
+        await Page.GetByRole(AriaRole.Option, new() { Name = name, Exact = true }).ClickAsync();
+    }
+
+    private async Task SelectVisualizerAsync(string name)
+    {
+        await VisualizerPicker.ClickAsync();
         await Page.GetByRole(AriaRole.Option, new() { Name = name, Exact = true }).ClickAsync();
     }
 }
