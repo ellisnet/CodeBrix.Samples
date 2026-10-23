@@ -15,7 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="SkiaSharp" Version="4.153.1" />
-    <PackageReference Include="CodeBrix.PolygonTools.MitLicenseForever" Version="1.0.252.1257" />
+    <PackageReference Include="CodeBrix.PolygonTools.MitLicenseForever" Version="1.0.290.843" />
   </ItemGroup>
 
   <!-- The Pango replacement. Host-free and XAML-free, over the same engine

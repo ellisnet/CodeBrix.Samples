@@ -11,7 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Pinta.Brix.Engine\Pinta.Brix.Engine.csproj" />
     <ProjectReference Include="..\Pinta.Brix.Tools\Pinta.Brix.Tools.csproj" />
-    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.284.1048" />
+    <PackageReference Include="CodeBrix.SkiaSvg.MitLicenseForever" Version="1.0.291.924" />
   </ItemGroup>
 
   <!-- The desktop heads: CodeBrix.Platform and its SkiaSharp.Views add-in -->

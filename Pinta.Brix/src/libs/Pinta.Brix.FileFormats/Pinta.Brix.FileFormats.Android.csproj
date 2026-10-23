@@ -22,7 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Pinta.Brix.Engine\Pinta.Brix.Engine.Android.csproj" />
     <!-- Codec coverage beyond SkiaSharp's encoders (BMP/GIF/TIFF/...) -->
-    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.285.619" />
+    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.290.858" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>
