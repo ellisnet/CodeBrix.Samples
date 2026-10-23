@@ -131,7 +131,7 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
         await Expect(VisualizerPicker).ToHaveValueAsync("Ethereal - WebGPU");
         await Expect(VisualizerPicker).ToBeEnabledAsync();
         (await Page.EvaluateAsync(() => Fixture.Model.Visualizers.Select(option => option.DisplayName).ToArray()))
-            .Should().Equal("Ethereal - WebGPU", "Ethereal - OpenGL", "Ripple - WebGPU", "Holy Inanna - WebGPU", "Crystals - WebGPU");
+            .Should().Equal("Ethereal - WebGPU", "Ethereal - OpenGL", "Ripple - WebGPU", "Holy Inanna - WebGPU", "Crystals - WebGPU", "Flowers - WebGPU");
         await VisualizeAsync();
         Fixture.Sessions.Last.Kind.Should().Be(VisualizerKind.EtherealWebGpu);
         await Expect(VisualizerPicker).ToBeEnabledAsync();
@@ -162,6 +162,7 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
     [InlineData("Ripple - WebGPU", VisualizerKind.RippleWebGpu)]
     [InlineData("Holy Inanna - WebGPU", VisualizerKind.HolyInannaWebGpu)]
     [InlineData("Crystals - WebGPU", VisualizerKind.CrystalsWebGpu)]
+    [InlineData("Flowers - WebGPU", VisualizerKind.FlowersWebGpu)]
     public async Task Each_new_visualizer_gets_a_session_of_its_own_kind(string name, VisualizerKind kind)
     {
         await VisualizeAsync();

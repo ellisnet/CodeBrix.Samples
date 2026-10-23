@@ -3,11 +3,16 @@
 SimpleCbxVideoPlayer is a one-page video player, for the desktop and Android, that grades the picture
 while it plays. The window holds
 two drop-downs along the top - which clip to play, and which render path to compose it on - a black picture
-area, a lookup-table panel down the right-hand side, a transport strip with Play, Pause, Stop, a scrub bar
+area (with a checkerboard behind any clip whose picture is transparent), a lookup-table panel down the
+right-hand side, a transport strip with Play, Pause, Stop, a scrub bar
 and a clock, and a status line along the bottom. The clips and the color lookup tables are carried by the
 application itself and copied to the folder it runs from, so it has something real to open the moment it
 starts. Ticking tables in the panel and pressing Play applies them to the picture as one composed grade,
 and a Bake button writes that same grade out as a single `.cube` file wherever you choose to put it.
+
+The clips come in five containers: standard Matroska and WebM, CodeBrix Video Mode1 and Mode2 (`.cbv`), and
+CodeBrix Video Mode3 (`.cbvmaster`) - the bespoke container's master form, with lossless FLAC sound and, in
+two of its clips, an alpha plane that gives the picture real transparency.
 
 It is this repository's reference for three things working together: demultiplexing a container and pacing
 decoded frames to a clock with CodeBrix.VideoPlayback, composing those frames onto a Skia canvas the
@@ -234,8 +239,8 @@ What the test projects need:
 
 | Test project | Covers | Needs |
 | --- | --- | --- |
-| `tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests` | Decoder registration, the transport controller, chain composition and change detection, the panel's enablement rules, the catalog and corpus scans against the real bundled files, the scripted-run command-line parser, the bake file-name rule, and the frame comparer | Native Skia, referenced by the test project because the render-path tests build a real presenter; the bundled corpus, linked into the test output so the catalog tests read the same files the application does. No window, no graphics device and no sound device |
-| `tests/SimpleCbxVideoPlayer.PlayTests` | The real page and view model driven through CodeBrix.Platform.PlayTest: the corpus line, the render path settling on the CPU canvas, the GPU-only failure message, the disabled lookup-table panel, Play, Pause, Stop, seeking, clip changes, the end of a clip, every container, drawn frames, portrait layout and theme - see its README | The bundled 720p clips. No window and no graphics device; a sound device plays the soundtracks when there is one |
+| `tests/libs/SimpleCbxVideoPlayer.SkiaVideo.Tests` | Decoder registration, the transport controller (including opening a real Mode3 master and drawing it, checkerboard and all, into an off-screen bitmap), the transparency checkerboard, chain composition and change detection, the panel's enablement rules, the catalog and corpus scans against the real bundled files, the scripted-run command-line parser, the bake file-name rule, and the frame comparer | Native Skia, referenced by the test project because the render-path tests build a real presenter; the bundled corpus, linked into the test output so the catalog tests read the same files the application does. No window, no graphics device and no sound device |
+| `tests/SimpleCbxVideoPlayer.PlayTests` | The real page and view model driven through CodeBrix.Platform.PlayTest: the corpus line, the render path settling on the CPU canvas, the GPU-only failure message, the disabled lookup-table panel, Play, Pause, Stop, seeking, clip changes, the end of a clip, every container, drawn frames, a transparent master drawn over the checkerboard in both orientations, portrait layout and theme - see its README | The bundled 720p clips and the two HD transparent masters. No window and no graphics device; a sound device plays the soundtracks when there is one |
 
 ## How the projects and folders are organized
 
@@ -318,10 +323,10 @@ project file. The Android head adds no code of its own beyond its application an
 | CodeBrix.Platform.Fonts.Roboto | Supplies Roboto as the application-wide default text font, and the Noto faces registered as fallbacks for scripts Roboto has no glyph for | `src/SimpleCbxVideoPlayer.Core/SimpleCbxVideoPlayer.Core.csproj`, `src/SimpleCbxVideoPlayer.UI/App.xaml`, `src/SimpleCbxVideoPlayer.UI/App.xaml.cs` |
 | CodeBrix.Platform.SkiaSharp.Views | Supplies `SKXamlCanvas`, the processor-side drawing surface the page declares in XAML and paints the frame into when there is no graphics device | `src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml`, `src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs` |
 | CodeBrix.Platform.Graphics3DGL | Supplies `SkiaGLCanvasElement`, which creates an offscreen OpenGL context and hands each paint a GPU-backed surface and the `GRContext` behind it. `SKXamlCanvas` cannot supply one, and that context is what makes the color grade possible on these heads | `src/SimpleCbxVideoPlayer.UI/Views/MainPage.xaml.cs`, `src/SimpleCbxVideoPlayer.Core/SimpleCbxVideoPlayer.Core.csproj` |
-| CodeBrix.VideoPlayback | The demultiplexers, the playback session and its clock, and the whole color-lookup-table engine: reading a `.cube` file, composing a chain of them into one table, and writing that table back out | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs`, `src/libs/SimpleCbxVideoPlayer.SkiaVideo/Effects/LutEffectFactory.cs` |
-| CodeBrix.VideoPlayback.Skia | The presenter: it takes decoded frames, applies the composed effect chain on the graphics device or converts on the processor, and blits the result into whatever Skia canvas the application owns | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs` |
-| CodeBrix.VideoPlayback.Dav1d | The AV1 decoder, registered once at start-up. Nothing in this family is discovered by reflection, so without this registration nothing in the corpus plays | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SkiaVideoRuntime.cs` |
-| CodeBrix.Audio.Opus | The Opus decoder, registered in the same call. The Matroska and WebM clips carry Opus soundtracks; the bespoke-container clips carry Vorbis, which needs no extra package | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SkiaVideoRuntime.cs` |
+| CodeBrix.VideoPlayback | The demultiplexers (Matroska, and both versions of the bespoke CBVF container), the playback session and its clock - which pairs a master's alpha plane with its picture frame by frame - and the whole color-lookup-table engine: reading a `.cube` file, composing a chain of them into one table, and writing that table back out. Through its audio dependency it also decodes Vorbis and a master's FLAC | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs`, `src/libs/SimpleCbxVideoPlayer.SkiaVideo/Effects/LutEffectFactory.cs` |
+| CodeBrix.VideoPlayback.Skia | The presenter: it takes decoded frames, applies the composed effect chain on the graphics device or converts on the processor, and blits the result into whatever Skia canvas the application owns - blending a transparent master's premultiplied frames over what the canvas already holds | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs` |
+| CodeBrix.VideoPlayback.Dav1d | The AV1 decoder, registered once at start-up. Nothing in this family is discovered by reflection, so without this registration nothing in the corpus plays. A master's alpha plane is a monochrome AV1 stream, decoded by the same package | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SkiaVideoRuntime.cs` |
+| CodeBrix.Audio.Opus | The Opus decoder, registered in the same call. The Matroska, WebM and Mode1 clips carry Opus soundtracks; the Mode2 clips carry Vorbis and the Mode3 clips lossless FLAC, neither of which needs an extra package | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SkiaVideoRuntime.cs` |
 | CodeBrix.Audio | The sound device on the desktop heads: the native audio backends for Linux, macOS and Windows behind the device-neutral audio core the playback packages use | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SimpleCbxVideoPlayer.SkiaVideo.csproj` |
 | CodeBrix.Audio.Android | The same sound device on the Android head, initialised once in the head's `MainApplication` | `src/libs/SimpleCbxVideoPlayer.SkiaVideo/SimpleCbxVideoPlayer.SkiaVideo.Android.csproj`, `src/SimpleCbxVideoPlayer.Android/MainApplication.cs` |
 | CodeBrix.Android | The Android implementation of the same framework, with the Android forms of the SkiaSharp.Views and Graphics3DGL add-ins; the Android head and `SimpleCbxVideoPlayer.Core.Android.csproj` reference these instead of the CodeBrix.Platform packages | `src/SimpleCbxVideoPlayer.Android/SimpleCbxVideoPlayer.Android.csproj`, `src/SimpleCbxVideoPlayer.Core/SimpleCbxVideoPlayer.Core.Android.csproj` |
@@ -465,7 +470,10 @@ installed build the copy came from, so an update copies again and an ordinary st
 
 What is offered is decided by a rule, not a list. `VideoCorpus` reads every sub-folder of the clip corpus
 except the ones it names, and offers every file whose extension this family can open, so a folder added
-tomorrow appears in the drop-down without a line of code changing. `LutCatalog` reads the generated tables
+tomorrow appears in the drop-down without a line of code changing. A folder of a new KIND of file is the
+one exception, and it costs one word: the `CodeBrix-Mode3` folder needed `.cbvmaster` added to
+`VideoCorpus.PlayableExtensions`, because a master is named for what it is even though the reader would
+recognise it by its first bytes under any name. `LutCatalog` reads the generated tables
 and then the found ones, searching recursively because the found ones keep a folder per upstream project,
 and reads each file's `TITLE` line without parsing the table behind it - a large table is a megabyte of
 numbers, and the full parse happens when a table is actually applied. Both classes are static, take a
@@ -476,6 +484,29 @@ folder and return a list, and are therefore tested against the real bundled file
 [Ship a data corpus as content items and find it under the application base directory](../BLUEPRINTS-ProjectLayoutAndPackaging.md#ship-a-data-corpus-as-content-items-and-find-it-under-the-application-base-directory)
 and
 [Offer a data folder by rule rather than by a hard-coded list](../BLUEPRINTS-DocumentsAndData.md#offer-a-data-folder-by-rule-rather-than-by-a-hard-coded-list).
+
+### Transparent video: a master's alpha over a checkerboard
+
+A CodeBrix Video Mode3 master (`.cbvmaster`) can carry an alpha plane beside its picture: the picture's
+alpha channel as a second, monochrome AV1 track, in lock step with the first. Playing one needs nothing the
+application did not already have. The playback session decodes both tracks with the one AV1 decoder and
+attaches each alpha frame to its picture frame; the Skia presenter composes PREMULTIPLIED colour with real
+opacity on both render paths and blends it over whatever the canvas already holds.
+
+That last part is the one the application has to answer for. The page clears its canvas to black for the
+letterbox bars, and a transparent pixel blended over black is indistinguishable from a black one - so a
+master's transparency would simply look like a dark picture. `VideoPlaybackController.Draw` therefore asks
+the session whether the open file has an alpha plane (`HasAlpha`) and, when it does, fills the picture's own
+rectangle with a `TransparencyBackdrop` checkerboard before the presenter draws. The rectangle comes from
+`SkiaVideoPresenter.ComputeDestinationRect` - the same letterbox arithmetic `Draw` itself uses - so the
+checkerboard lies exactly under the picture and the bars stay black. It is the convention every image and
+video editor uses for "nothing here", and it costs nothing for an opaque clip, which never draws it.
+
+The two transparent clips in the corpus, `CodeBrix-Mode3/landscape_hd_alpha.cbvmaster` and
+`portrait_hd_alpha.cbvmaster`, are the phone recordings behind a soft elliptical matte: opaque in the
+middle, fading to fully transparent at the ellipse's edge, and transparent in the corners. Read
+`src/libs/SimpleCbxVideoPlayer.SkiaVideo/Playback/TransparencyBackdrop.cs` and `Draw` in
+`src/libs/SimpleCbxVideoPlayer.SkiaVideo/VideoPlaybackController.cs`.
 
 ### The transport, the clock and the scrub bar
 

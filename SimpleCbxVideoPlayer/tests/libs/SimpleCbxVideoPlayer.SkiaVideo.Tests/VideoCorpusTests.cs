@@ -9,7 +9,7 @@ namespace SimpleCbxVideoPlayer.SkiaVideo.Tests;
 public class VideoCorpusTests
 {
     [Fact]
-    public void Scan_lists_the_four_playable_folders_and_leaves_out_mp4()
+    public void Scan_lists_the_five_playable_folders_and_leaves_out_mp4()
     {
         //Arrange
         using TempFolder temp = new TempFolder();
@@ -18,14 +18,16 @@ public class VideoCorpusTests
         temp.CreateFile(temp.CreateFolder("authoring", "WebM"), "landscape_hd.webm");
         temp.CreateFile(temp.CreateFolder("authoring", "CodeBrix-Mode1"), "landscape_hd.cbv");
         temp.CreateFile(temp.CreateFolder("authoring", "CodeBrix-Mode2"), "landscape_hd.cbv");
+        temp.CreateFile(temp.CreateFolder("authoring", "CodeBrix-Mode3"), "landscape_hd.cbvmaster");
         temp.CreateFile(temp.CreateFolder("authoring", "MP4"), "landscape_hd.mp4");
 
         //Act
         var items = VideoCorpus.Scan(authoring);
 
         //Assert
-        items.Count.Should().Be(4);
+        items.Count.Should().Be(5);
         items.Any(item => item.FolderName == "MP4").Should().BeFalse();
+        items.Any(item => item.FileName == "landscape_hd.cbvmaster").Should().BeTrue();
     }
 
     [Fact]
@@ -35,14 +37,14 @@ public class VideoCorpusTests
         using TempFolder temp = new TempFolder();
         var authoring = temp.CreateFolder("authoring");
         temp.CreateFile(temp.CreateFolder("authoring", "MKV"), "landscape_hd.mkv");
-        temp.CreateFile(temp.CreateFolder("authoring", "CodeBrix-Mode3"), "landscape_hd.cbv");
+        temp.CreateFile(temp.CreateFolder("authoring", "CodeBrix-Mode4"), "landscape_hd.cbv");
 
         //Act
         var items = VideoCorpus.Scan(authoring);
 
         //Assert
         items.Count.Should().Be(2);
-        items.Any(item => item.FolderName == "CodeBrix-Mode3").Should().BeTrue();
+        items.Any(item => item.FolderName == "CodeBrix-Mode4").Should().BeTrue();
     }
 
     [Fact]
@@ -93,19 +95,21 @@ public class VideoCorpusTests
     }
 
     [Fact]
-    public void IsPlayable_accepts_the_three_containers_and_nothing_else()
+    public void IsPlayable_accepts_the_four_extensions_and_nothing_else()
     {
         //Assert
         VideoCorpus.IsPlayable("a.mkv").Should().BeTrue();
         VideoCorpus.IsPlayable("a.WEBM").Should().BeTrue();
         VideoCorpus.IsPlayable("a.cbv").Should().BeTrue();
+        VideoCorpus.IsPlayable("a.cbvmaster").Should().BeTrue();
+        VideoCorpus.IsPlayable("a.CBVMASTER").Should().BeTrue();
         VideoCorpus.IsPlayable("a.mp4").Should().BeFalse();
         VideoCorpus.IsPlayable("a.ivf").Should().BeFalse();
         VideoCorpus.IsPlayable(null).Should().BeFalse();
     }
 
     [Fact]
-    public void Scan_of_the_real_corpus_finds_the_twenty_four_derived_files()
+    public void Scan_of_the_real_corpus_finds_the_thirty_two_derived_files()
     {
         //Arrange
         var root = SampleAssets.FindAssetsRoot();
@@ -115,11 +119,13 @@ public class VideoCorpusTests
         var items = VideoCorpus.Scan(SampleAssets.GetAuthoringFolder(root));
 
         //Assert
-        items.Count.Should().Be(24);
+        items.Count.Should().Be(32);
         items.Count(item => item.FolderName == "MKV").Should().Be(6);
         items.Count(item => item.FolderName == "WebM").Should().Be(6);
         items.Count(item => item.FolderName == "CodeBrix-Mode1").Should().Be(6);
         items.Count(item => item.FolderName == "CodeBrix-Mode2").Should().Be(6);
+        items.Count(item => item.FolderName == "CodeBrix-Mode3").Should().Be(8);
+        items.Where(item => item.FolderName == "CodeBrix-Mode3").Should().OnlyContain(item => item.FileName.EndsWith(".cbvmaster"));
         items.Any(item => item.FileName.EndsWith(".mp4")).Should().BeFalse();
     }
 }

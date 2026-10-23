@@ -1,10 +1,15 @@
 using CodeBrix.VideoPlayback.Color.Luts;
 using SilverAssertions;
 using SimpleCbxVideoPlayer.SkiaVideo;
+using SimpleCbxVideoPlayer.SkiaVideo.Assets;
 using SimpleCbxVideoPlayer.SkiaVideo.Effects;
 using SimpleCbxVideoPlayer.SkiaVideo.Playback;
+using SkiaSharp;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using Xunit;
 
 namespace SimpleCbxVideoPlayer.SkiaVideo.Tests;
@@ -245,4 +250,56 @@ public class VideoPlaybackControllerTests
         messages.Count.Should().Be(1);
         messages[0].Should().Contain("/no/such/file.mkv");
     }
+
+    [Theory]
+    [InlineData("landscape_hd_alpha.cbvmaster", true)]
+    [InlineData("landscape_hd.cbvmaster", false)]
+    public void a_master_reports_whether_it_has_alpha_and_draws_a_checkerboard_only_behind_one(string fileName, bool alpha)
+    {
+        //Arrange
+        var root = SampleAssets.FindAssetsRoot();
+        Assert.SkipWhen(root == null, "This test reads the application's own corpus, which is not beside the test assembly.");
+        SkiaVideoRuntime.Initialize();
+        var path = Path.Combine(SampleAssets.GetAuthoringFolder(root), "CodeBrix-Mode3", fileName);
+        using VideoPlaybackController controller = new VideoPlaybackController(playAudio: false);
+        controller.RenderPath = VideoRenderPathOption.Cpu;
+        using SKBitmap bitmap = new SKBitmap(new SKImageInfo(1920, 1080, SKColorType.Bgra8888, SKAlphaType.Premul));
+        using SKCanvas canvas = new SKCanvas(bitmap);
+
+        //Act - the paused session decodes its first frame ahead; draw until it has been composed.
+        var opened = controller.Open(path);
+        var deadline = Stopwatch.StartNew();
+        do
+        {
+            canvas.Clear(SKColors.Black);
+            controller.Draw(canvas, SKRect.Create(0, 0, 1920, 1080));
+            canvas.Flush();
+            if (controller.DisplayWidth > 0 && bitmap.GetPixel(960, 540) != SKColors.Black) { break; }
+            Thread.Sleep(50);
+        } while (deadline.Elapsed < TimeSpan.FromSeconds(20));
+
+        //Assert - the matte leaves the picture's corners fully transparent and its middle opaque.
+        opened.Should().BeTrue(controller.LastError);
+        controller.HasAlpha.Should().Be(alpha);
+        controller.DisplayWidth.Should().Be(1920);
+        var corner = bitmap.GetPixel(4, 4);
+        if (alpha)
+        {
+            //The alpha plane is lossy AV1, so "fully transparent" may decode a level or two above zero.
+            Near(corner, TransparencyBackdrop.LightColor).Should().BeTrue(corner.ToString());
+            var next = bitmap.GetPixel(4 + (int)TransparencyBackdrop.CellSize, 4);
+            Near(next, TransparencyBackdrop.DarkColor).Should().BeTrue(next.ToString());
+        }
+        else
+        {
+            corner.Should().NotBe(TransparencyBackdrop.LightColor);
+        }
+
+        bitmap.GetPixel(960, 540).Should().NotBe(SKColors.Black);
+    }
+
+    private static bool Near(SKColor actual, SKColor expected) =>
+        Math.Abs(actual.Red - expected.Red) <= 6
+        && Math.Abs(actual.Green - expected.Green) <= 6
+        && Math.Abs(actual.Blue - expected.Blue) <= 6;
 }

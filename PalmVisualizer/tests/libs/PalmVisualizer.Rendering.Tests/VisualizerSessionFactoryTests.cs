@@ -18,6 +18,7 @@ public class VisualizerSessionFactoryTests
     [InlineData(VisualizerKind.RippleWebGpu)]
     [InlineData(VisualizerKind.HolyInannaWebGpu)]
     [InlineData(VisualizerKind.CrystalsWebGpu)]
+    [InlineData(VisualizerKind.FlowersWebGpu)]
     public void CreateSession_throws_when_no_host_is_given(VisualizerKind kind)
     {
         //Arrange
@@ -33,6 +34,7 @@ public class VisualizerSessionFactoryTests
     [InlineData(VisualizerKind.RippleWebGpu)]
     [InlineData(VisualizerKind.HolyInannaWebGpu)]
     [InlineData(VisualizerKind.CrystalsWebGpu)]
+    [InlineData(VisualizerKind.FlowersWebGpu)]
     public void CreateSession_throws_when_the_host_has_no_panel(VisualizerKind kind)
     {
         //Arrange - a page whose panel has not been created yet
@@ -56,7 +58,7 @@ public class VisualizerSessionFactoryTests
     public void The_options_list_every_visualizer_with_ethereal_webgpu_first()
     {
         //Assert - the first option is the default the view model starts with
-        Assert.Equal(5, VisualizerOption.All.Count);
+        Assert.Equal(6, VisualizerOption.All.Count);
         Assert.Equal(VisualizerKind.EtherealWebGpu, VisualizerOption.All[0].Kind);
         Assert.Equal("Ethereal - WebGPU", VisualizerOption.All[0].ToString());
         Assert.Equal(VisualizerKind.EtherealOpenGL, VisualizerOption.All[1].Kind);
@@ -67,6 +69,8 @@ public class VisualizerSessionFactoryTests
         Assert.Equal("Holy Inanna - WebGPU", VisualizerOption.All[3].ToString());
         Assert.Equal(VisualizerKind.CrystalsWebGpu, VisualizerOption.All[4].Kind);
         Assert.Equal("Crystals - WebGPU", VisualizerOption.All[4].ToString());
+        Assert.Equal(VisualizerKind.FlowersWebGpu, VisualizerOption.All[5].Kind);
+        Assert.Equal("Flowers - WebGPU", VisualizerOption.All[5].ToString());
     }
 
     [Theory]
@@ -75,6 +79,7 @@ public class VisualizerSessionFactoryTests
     [InlineData(VisualizerKind.RippleWebGpu)]
     [InlineData(VisualizerKind.HolyInannaWebGpu)]
     [InlineData(VisualizerKind.CrystalsWebGpu)]
+    [InlineData(VisualizerKind.FlowersWebGpu)]
     public void Every_visualizer_has_an_option(VisualizerKind kind)
     {
         Assert.Equal(kind, VisualizerOption.For(kind).Kind);

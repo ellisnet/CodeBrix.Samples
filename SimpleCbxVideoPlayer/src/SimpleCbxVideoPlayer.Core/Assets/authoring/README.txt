@@ -3,7 +3,7 @@ README: Assets/authoring
 The sample-video corpus - real recordings, in the containers this program reads
 ================================================================================
 
-This is REAL VIDEO: twenty-four files derived from two phone recordings. They
+This is REAL VIDEO: thirty-two files derived from two phone recordings. They
 exist so that a player, a sample, a demonstration or a performance measurement has
 something to open that looks and sounds like the video people actually have - 4K,
 portrait and landscape, sound included - rather than four seconds of a test
@@ -23,8 +23,10 @@ These two files were created by Jeremy Ellis on his phone, and placed by him in
 the PUBLIC DOMAIN on 2026-08-29.
 
 That declaration covers everything derived from them, so every file in MKV/,
-WebM/, CodeBrix-Mode1/ and CodeBrix-Mode2/ is Public Domain as well. Nothing in
-this folder is third-party media and nothing here carries a licence obligation.
+WebM/, CodeBrix-Mode1/, CodeBrix-Mode2/ and CodeBrix-Mode3/ is Public Domain as
+well. (The alpha matte two of the Mode3 files carry is generated from a formula;
+it is not media of anybody's either.) Nothing in this folder is third-party media
+and nothing here carries a licence obligation.
 
 The two originals themselves are NOT carried here. Nothing in this family reads an
 ISOBMFF file, so an MP4 sitting in the corpus would only ever offer a failure.
@@ -126,6 +128,59 @@ chapters - which is what this corpus needs. The authoring library's own tests
 exercise captions and multilingual chapters, on clips generated on the spot.
 
 
+CodeBrix-Mode3/  -  CODEBRIX VIDEO MODE3, THE MASTER FORM
+=========================================================
+    the same six files again, same resolutions, same picture, extension .cbvmaster
+    plus landscape_hd_alpha and portrait_hd_alpha: the HD picture with an alpha
+    channel
+
+"CodeBrix Video Mode3" is the bespoke container's MASTER form: the same CBVF
+format as Mode2, at format version 1. A reader tells the two apart by the
+version number straight after the "CBVF" magic, not by the extension - the
+.cbvmaster extension is a convention and a hint. What version 1 adds: an
+optional ALPHA-PLANE track beside the picture - the picture's alpha channel as
+a monochrome, full-range AV1 stream of the same size, in lock step with it - and
+LOSSLESS FLAC sound, which is the only sound a master carries. It is the format
+to keep a finished piece of video in, rather than the one to ship inside an
+application.
+
+The six plain files are the same rungs as every other folder, with the alpha
+left out: they play exactly like the Mode2 files, with sound that has lost
+nothing. The two _alpha files are where the transparency is. Their picture is
+the HD rung behind a soft elliptical matte - opaque inside three-quarters of
+the ellipse that touches the picture's edges, fading to fully transparent at
+that ellipse, and fully transparent in the four corners beyond it - so a player
+shows what is behind the video there. This application draws a checkerboard
+behind a transparent picture so that the transparency can be seen.
+
+THE AUDIO IS FLAC: 16-bit, 48 kHz stereo, decoded from the recording's AAC
+and then kept exactly. FLAC is built into the core playback package's audio
+library, so like Mode2 these files need no audio package registered. The alpha
+plane decodes through the same AV1 decoder as the picture.
+
+These eight files are written by the CodeBrix authoring library's MASTER
+flavour, which encodes IN PROCESS: the source is decoded by FFmpeg, but the AV1
+picture and alpha plane are encoded by the library's own AV1 encoder package -
+the libaom reference encoder, not libsvtav1 - and the sound by its own FLAC
+encoder, and the library's own muxer writes the container. The rate factors and
+key-frame interval are the corpus's own, rung for rung (see MANIFEST.txt); the
+alpha plane gets a rate factor six points better than its picture's, because an
+error at an edge shows more in the alpha than in the colour. The two _alpha
+sources are made first with one FFmpeg command that scales the recording to HD
+and merges the matte in as its alpha channel, losslessly (FFV1 in Matroska).
+
+    cbvinfo Assets/authoring/CodeBrix-Mode3/landscape_hd_alpha.cbvmaster
+
+passes the profile, with FLAC accepted as a master file's sound and nowhere
+else. Like the others, this folder carries plain audio and video only - no
+captions, no chapters.
+
+UNLIKE THE OTHER FOUR FOLDERS, Mode3 is not produced by the corpus generator
+described below; it was authored separately, through the same authoring
+library, from the same two originals. MANIFEST.txt records it in a section of
+its own, with every command line, which is the record to reproduce it from.
+
+
 MANIFEST.txt
 ============
 Written by the generator every time it runs. For each of the twenty-four files it
@@ -156,7 +211,7 @@ with `ffmpeg -encoders | grep -E 'libsvtav1|libopus|libvorbis'`. NOTHING ELSE:
 the profile check runs in-process, and the Mode2 container is written by managed
 code. The generator downloads nothing and installs nothing.
 
-NOTHING IN THIS APPLICATION REGENERATES THE CORPUS. These twenty-four files are
+NOTHING IN THIS APPLICATION REGENERATES THE CORPUS. These thirty-two files are
 shipped as data, copied to the output folder beside each head's executable, and
 read from there.
 
@@ -171,8 +226,9 @@ with a hash.
 
 WHAT READS THIS FOLDER
 ======================
-The application scans every sub-folder of it and offers every .mkv, .webm and .cbv
-file it finds, which is all twenty-four. Three of the four folders are read with a
+The application scans every sub-folder of it and offers every .mkv, .webm, .cbv
+and .cbvmaster file it finds, which is all thirty-two. Three of the five folders
+are read with a
 Matroska reader and CodeBrix-Mode2 with the bespoke one, because a CBVF file is not
 Matroska at all. The Mode2 files are the ones that prove a Vorbis soundtrack needs
 no Opus decoder registered.

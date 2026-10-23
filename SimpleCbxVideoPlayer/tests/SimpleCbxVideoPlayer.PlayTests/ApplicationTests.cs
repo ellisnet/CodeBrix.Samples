@@ -277,6 +277,7 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
     [Theory]
     [InlineData("CodeBrix-Mode1/landscape_720p.cbv")]
     [InlineData("CodeBrix-Mode2/landscape_720p.cbv")]
+    [InlineData("CodeBrix-Mode3/landscape_720p.cbvmaster")]
     [InlineData("MKV/landscape_720p.mkv")]
     [InlineData("WebM/landscape_720p.webm")]
     public async Task Every_container_plays_its_720p_clip(string clip)
@@ -288,6 +289,36 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
         await Expect(Message).ToBeHiddenAsync();
         await Button("Stop").ClickAsync();
         await Expect(Clock).ToHaveTextAsync("00:00 / 00:04");
+    }
+
+    [Theory]
+    [InlineData("CodeBrix-Mode3/landscape_hd_alpha.cbvmaster", 1920, 1080)]
+    [InlineData("CodeBrix-Mode3/portrait_hd_alpha.cbvmaster", 1080, 1920)]
+    public async Task A_transparent_master_is_drawn_over_a_checkerboard(string clip, int width, int height)
+    {
+        await PlayUntilAsync(clip, 0.5);
+        await PauseAsync();
+        (await Page.EvaluateAsync(() => Fixture.Player.HasAlpha)).Should().BeTrue();
+        var box = await Page.GetByTestId("VideoHost").BoundingBoxAsync();
+        var picture = CodeBrix.VideoPlayback.Skia.SkiaVideoPresenter.ComputeDestinationRect(
+            SKRect.Create(box.X, box.Y, box.Width, box.Height), width, height, CodeBrix.VideoPlayback.Rendering.VideoStretch.Uniform);
+        using var bitmap = SKBitmap.Decode(await Page.ScreenshotAsync());
+        // The matte leaves the picture's corners fully transparent, so the checkerboard shows there - both of
+        // its greys, and nothing near black - while the middle of the picture is the opaque recording.
+        var corner = SKRect.Create(picture.Left + 2, picture.Top + 2, picture.Width * 0.06f, picture.Height * 0.06f);
+        CheckerShare(bitmap, corner).Should().BeGreaterThan(0.9);
+        NonBlackShare(bitmap, picture.MidX - picture.Width * 0.1f, picture.MidY - picture.Height * 0.1f,
+            picture.Width * 0.2f, picture.Height * 0.2f).Should().BeGreaterThan(0.5);
+        CheckerShare(bitmap, SKRect.Create(picture.MidX - 20, picture.MidY - 20, 40, 40)).Should().BeLessThan(0.5);
+        await SnapshotAsync("SimpleCbxVideoPlayer-transparent-" + (width > height ? "landscape" : "portrait"));
+    }
+
+    [Fact]
+    public async Task An_opaque_clip_has_no_checkerboard()
+    {
+        await PlayUntilAsync("CodeBrix-Mode3/landscape_720p.cbvmaster", 0.5);
+        await PauseAsync();
+        (await Page.EvaluateAsync(() => Fixture.Player.HasAlpha)).Should().BeFalse();
     }
 
     [Fact]
@@ -343,6 +374,27 @@ public sealed partial class ApplicationTests(AppFixture fixture) : SampleTest<Ap
         using (var stream = File.Create(path)) area.Encode(stream, SKEncodedImageFormat.Png, 100);
         return path;
     }
+
+    // The share of sampled pixels that are one of the transparency checkerboard's two greys, give or take
+    // the few levels a lossy alpha plane and the screen capture can move them.
+    private static double CheckerShare(SKBitmap bitmap, SKRect area)
+    {
+        int counted = 0, checker = 0;
+        for (var py = (int)area.Top; py < (int)area.Bottom; py += 2)
+        {
+            for (var px = (int)area.Left; px < (int)area.Right; px += 2)
+            {
+                var pixel = bitmap.GetPixel(px, py);
+                counted++;
+                if (IsNear(pixel, TransparencyBackdrop.LightColor) || IsNear(pixel, TransparencyBackdrop.DarkColor)) checker++;
+            }
+        }
+        return counted == 0 ? 0 : (double)checker / counted;
+    }
+
+    private static bool IsNear(SKColor actual, SKColor expected) =>
+        Math.Abs(actual.Red - expected.Red) <= 8 && Math.Abs(actual.Green - expected.Green) <= 8
+        && Math.Abs(actual.Blue - expected.Blue) <= 8;
 
     private static double NonBlackShare(SKBitmap bitmap, float x, float y, float width, float height)
     {

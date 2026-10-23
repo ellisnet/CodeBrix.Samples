@@ -34,6 +34,12 @@ public enum VisualizerKind
     /// the palms excite the crystals near them.
     /// </summary>
     CrystalsWebGpu,
+
+    /// <summary>
+    /// Eight-petalled flowers growing out of dark pool-table green, drawn with WebGPU; the
+    /// palms light the felt and make the meadow grow lush.
+    /// </summary>
+    FlowersWebGpu,
 }
 
 /// <summary>
@@ -53,6 +59,7 @@ public sealed class VisualizerOption
         new VisualizerOption(VisualizerKind.RippleWebGpu, "Ripple - WebGPU"),
         new VisualizerOption(VisualizerKind.HolyInannaWebGpu, "Holy Inanna - WebGPU"),
         new VisualizerOption(VisualizerKind.CrystalsWebGpu, "Crystals - WebGPU"),
+        new VisualizerOption(VisualizerKind.FlowersWebGpu, "Flowers - WebGPU"),
     };
 
     /// <summary>The option for a visualizer.</summary>

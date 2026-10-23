@@ -11,15 +11,19 @@ namespace SimpleCbxVideoPlayer.SkiaVideo.Assets;
 /// <remarks>
 /// The rule is deliberately a rule rather than a list of folders: EVERY sub-folder of the corpus is read,
 /// except the ones named in <see cref="ExcludedFolderNames" />, and every file whose extension is in
-/// <see cref="PlayableExtensions" /> is offered. So MKV/, WebM/, CodeBrix-Mode1/ and CodeBrix-Mode2/ are all
-/// listed today - twenty-four files - MP4/ is not, because nothing in this family reads an MP4, and a folder
-/// added tomorrow appears in the drop-down without a line of code changing. That is not a hypothetical:
-/// CodeBrix-Mode2/ landed after this class was written and needed no change at all.
+/// <see cref="PlayableExtensions" /> is offered. So MKV/, WebM/, CodeBrix-Mode1/, CodeBrix-Mode2/ and
+/// CodeBrix-Mode3/ are all listed today - thirty-two files - MP4/ is not, because nothing in this family reads
+/// an MP4, and a folder added tomorrow appears in the drop-down without a line of code changing. That is not
+/// a hypothetical: CodeBrix-Mode2/ landed after this class was written and needed no change at all, and
+/// CodeBrix-Mode3/ needed only its extension added, because it is a new KIND of file.
 /// </remarks>
 public static class VideoCorpus
 {
-    /// <summary>The extensions this application can open: Matroska, WebM and the bespoke container.</summary>
-    public static readonly IReadOnlyList<string> PlayableExtensions = [".mkv", ".webm", ".cbv"];
+    /// <summary>
+    /// The extensions this application can open: Matroska, WebM, the bespoke container, and the bespoke
+    /// container's master form - CodeBrix Video Mode3 - whose extension is <c>.cbvmaster</c>.
+    /// </summary>
+    public static readonly IReadOnlyList<string> PlayableExtensions = [".mkv", ".webm", ".cbv", ".cbvmaster"];
 
     /// <summary>Corpus folders that are skipped whatever they hold.</summary>
     /// <remarks>

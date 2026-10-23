@@ -21,6 +21,7 @@
 *.pdf   binary
 *.zip   binary
 *.cbv   binary
+*.cbvmaster binary
 *.cbvf  binary
 *.mkv   binary
 *.webm  binary

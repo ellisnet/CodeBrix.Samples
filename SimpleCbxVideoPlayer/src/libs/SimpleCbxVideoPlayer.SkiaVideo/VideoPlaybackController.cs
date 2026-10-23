@@ -118,6 +118,13 @@ public sealed class VideoPlaybackController : IDisposable
     /// <summary>The height the picture is meant to be displayed at.</summary>
     public int DisplayHeight => isDisposed ? 0 : presenter.DisplayHeight;
 
+    /// <summary>
+    /// Whether the open file's picture has real transparency: a CodeBrix Video Mode3 master
+    /// (<c>.cbvmaster</c>) carrying an alpha-plane track. Its frames are drawn over a checkerboard - see
+    /// <see cref="Draw" />.
+    /// </summary>
+    public bool HasAlpha => !isDisposed && session.IsOpen && session.HasAlpha;
+
     /// <summary>The frame number that is showing.</summary>
     public long CurrentFrameNumber => isDisposed ? 0 : presenter.CurrentFrameNumber;
 
@@ -435,8 +442,19 @@ public sealed class VideoPlaybackController : IDisposable
     /// <param name="canvas">The canvas the host's view handed over.</param>
     /// <param name="destination">The rectangle the video should occupy.</param>
     /// <remarks>
+    /// <para>
     /// The picture keeps its DISPLAY aspect ratio, so a portrait recording is drawn portrait inside a
     /// landscape window with black bars either side of it.
+    /// </para>
+    /// <para>
+    /// A transparent picture (<see cref="HasAlpha" />) is blended by the presenter over whatever the canvas
+    /// already holds, which here is the black the host cleared it to - and transparency over black looks like
+    /// black. So the picture's own rectangle gets a <see cref="TransparencyBackdrop" /> checkerboard first,
+    /// computed with the presenter's own letterbox arithmetic so it lies exactly under the picture. Its size
+    /// comes from the open track rather than from the presenter, because the presenter learns the picture's
+    /// size only by composing a frame - inside the very <c>Draw</c> that has to have the checkerboard under
+    /// it already, so the first frame would otherwise go out over black.
+    /// </para>
     /// </remarks>
     public void Draw(SKCanvas canvas, SKRect destination)
     {
@@ -444,6 +462,12 @@ public sealed class VideoPlaybackController : IDisposable
 
         try
         {
+            if (HasAlpha && TryGetPictureSize(out var width, out var height))
+            {
+                TransparencyBackdrop.Draw(canvas, SkiaVideoPresenter.ComputeDestinationRect(
+                    destination, width, height, VideoStretch.Uniform));
+            }
+
             presenter.Draw(canvas, destination, VideoStretch.Uniform);
             ClearError();
         }
@@ -496,6 +520,23 @@ public sealed class VideoPlaybackController : IDisposable
     #endregion
 
     #region | Implementation |
+
+    //The size the picture is DISPLAYED at, known from the open track before a single frame is decoded; the
+    //coded size when the container states no display size; the presenter's once it has composed a frame.
+    private bool TryGetPictureSize(out int width, out int height)
+    {
+        var track = session.VideoTrack;
+        width = track is { DisplayWidth: > 0 } ? track.DisplayWidth : track?.Width ?? 0;
+        height = track is { DisplayHeight: > 0 } ? track.DisplayHeight : track?.Height ?? 0;
+
+        if (width <= 0 || height <= 0)
+        {
+            width = presenter.DisplayWidth;
+            height = presenter.DisplayHeight;
+        }
+
+        return width > 0 && height > 0;
+    }
 
     private static VideoRenderPath ToPresenterPath(VideoRenderPathOption option) => option switch
     {

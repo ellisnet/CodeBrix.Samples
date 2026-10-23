@@ -54,6 +54,7 @@ conventions the code blocks follow.
 - [Run a WebGPU compute pass over ping-ponged storage buffers before the render pass](#run-a-webgpu-compute-pass-over-ping-ponged-storage-buffers-before-the-render-pass)
 - [Ray-march an SDF solid in a full-screen WGSL fragment shader](#ray-march-an-sdf-solid-in-a-full-screen-wgsl-fragment-shader)
 - [Draw many instanced quads over a full-screen backdrop in one WebGPU render pass](#draw-many-instanced-quads-over-a-full-screen-backdrop-in-one-webgpu-render-pass)
+- [Share one formula between a C# simulation and a WGSL shader and pin it with a test](#share-one-formula-between-a-c-simulation-and-a-wgsl-shader-and-pin-it-with-a-test)
 - [Compute a frame once and let two graphics APIs draw it](#compute-a-frame-once-and-let-two-graphics-apis-draw-it)
 - [Let a rendering session put its own view into the page's panel](#let-a-rendering-session-put-its-own-view-into-the-pages-panel)
 - [Smooth worker rate data into frame rate animation](#smooth-worker-rate-data-into-frame-rate-animation)
@@ -896,8 +897,8 @@ public RenderEngineKind SelectedRenderEngine
 **Also shown by.**
 `PalmVisualizer/src/PalmVisualizer.Core/ViewModels/MainViewModel.cs` and
 `PalmVisualizer/src/libs/PalmVisualizer.Rendering/VisualizerOption.cs` (a
-header dropdown of five visualizers: one visual, Ethereal, through WebGPU - listed
-first, and the default - or through GPU Skia, and three more drawn only with WebGPU;
+header dropdown of six visualizers: one visual, Ethereal, through WebGPU - listed
+first, and the default - or through GPU Skia, and four more drawn only with WebGPU;
 the options carry their own display names, and the `SelectedVisualizer` setter stops
 the current session and, while the visual is showing, starts one for the new choice
 at once - see
@@ -3243,7 +3244,11 @@ public static RenderPipeline CreateRenderPipeline(Device device, ShaderModule mo
 `PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealWebGpuRenderer.cs` (the
 same shape with two `WgslPass` draws: a full-screen plasma, then every star as an
 instanced, antialiased quad blended over it - see
-[Draw a scene with WebGpuRenderView and raw WGSL](#draw-a-scene-with-webgpurenderview-and-raw-wgsl))
+[Draw a scene with WebGpuRenderView and raw WGSL](#draw-a-scene-with-webgpurenderview-and-raw-wgsl)),
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/FlowersWebGpuRenderer.cs` (a felt
+backdrop and up to 80 flowers at six `vec4`s each, written back to front by
+`FlowerMeadow.WriteInstances` so a flower lower in the view stands in front - see
+[Share one formula between a C# simulation and a WGSL shader and pin it with a test](#share-one-formula-between-a-c-simulation-and-a-wgsl-shader-and-pin-it-with-a-test))
 
 **Sharp edges.**
 - Make the per-object stride a whole number of `vec4`s (three here), because a WGSL
@@ -3264,6 +3269,127 @@ instanced, antialiased quad blended over it - see
   release them, the buffer, the pipelines and the modules when it goes away.
 - Pass the flat `index` to the fragment shader with `@interpolate(flat)`, so each
   fragment reads its own object's data rather than an interpolated index.
+
+### Share one formula between a C# simulation and a WGSL shader and pin it with a test
+
+**When you want this.** The CPU decides something from a field the GPU also draws - which
+objects stand in a light the shader paints, which cells a brush the shader shows will
+touch - and the two must never disagree, or the user sees an object behave as if it were in
+the dark while it sits in the light.
+
+**The MVVM shape.** Not a view-model concern. The C# model owns the formula as public static
+methods. The shader repeats the formula, written out the same way. Whatever the formula's
+parameters are this frame - here, how far the light reaches - the C# side computes once and
+hands to the shader in the uniform block, so there is one source for them. A unit test reads
+the shader source and checks that it declares those uniform fields and uses them in the same
+expression, because the shader itself can only be compiled on a device.
+
+**Code.**
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/FlowerMeadow.cs
+public static (float Across, float Down) LightReach(ReadOnlySpan<float> palms)
+{
+    float inView = 0f;
+    for (int k = 0; k < PalmAttractorField.MaxAttractors; k++)
+    {
+        inView += Math.Min(palms[(k * PalmMotion.Stride) + 2], 1f);
+    }
+    float pair = Math.Clamp(inView - 1f, 0f, 1f);
+    return (SingleReachAcross + ((PairReachAcross - SingleReachAcross) * pair),
+            SingleReachDown + ((PairReachDown - SingleReachDown) * pair));
+}
+// ...
+public static float LightAt(float x, float y, ReadOnlySpan<float> palms, float aspect)
+{
+    var (across, down) = LightReach(palms);
+    float light = 0f;
+    for (int k = 0; k < PalmAttractorField.MaxAttractors; k++)
+    {
+        int at = k * PalmMotion.Stride;
+        float strength = palms[at + 2];
+        if (strength <= 0.001f) { continue; }
+
+        float dx = (x - palms[at]) * aspect / across;
+        float dy = (y - palms[at + 1]) / down;
+        light += strength * (float)Math.Exp(-((dx * dx) + (dy * dy)));
+    }
+    return Math.Min(light, 1f);
+}
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/FlowersWebGpuRenderer.cs
+struct Meadow {
+    resolution: vec2<f32>,
+    time: f32,
+    activity: f32,
+    count: f32,
+    reachAcross: f32,
+    reachDown: f32,
+    pad0: f32,
+    // ...
+};
+// ...
+// The palm light: a soft oval round each open palm, reaching as far as FlowerMeadow.LightReach says
+var light = 0.0;
+for (var k = 0; k < 4; k = k + 1) {
+    let palm = m.palms[k];
+    if (palm.z > 0.001) {
+        let d = vec2<f32>((uv.x - palm.x) * aspect / m.reachAcross, (uv.y - palm.y) / m.reachDown);
+        light = light + palm.z * exp(-dot(d, d));
+    }
+}
+light = min(light, 1.0);
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/src/libs/PalmVisualizer.Rendering/FlowersWebGpuRenderer.cs
+var (reachAcross, reachDown) = FlowerMeadow.LightReach(_palms.Palms);
+_meadowUniforms[4] = count;
+_meadowUniforms[5] = reachAcross;
+_meadowUniforms[6] = reachDown;
+```
+
+```csharp
+// From CodeBrix.Samples/PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/FlowersTests.cs
+[Fact]
+public void The_felt_is_lit_with_the_meadows_own_palm_light()
+{
+    //The same oval as FlowerMeadow.LightAt, its reach handed over in the uniform block
+    FlowersWebGpuRenderer.FeltWgsl.Should().Contain("reachAcross: f32,");
+    FlowersWebGpuRenderer.FeltWgsl.Should().Contain("reachDown: f32,");
+    FlowersWebGpuRenderer.FeltWgsl.Should().Contain(
+        "let d = vec2<f32>((uv.x - palm.x) * aspect / m.reachAcross, (uv.y - palm.y) / m.reachDown);");
+    FlowersWebGpuRenderer.FeltWgsl.Should().Contain("light = light + palm.z * exp(-dot(d, d));");
+}
+```
+
+**Where to look.**
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/FlowerMeadow.cs`
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/FlowersWebGpuRenderer.cs`
+`PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/FlowersTests.cs`
+
+**Sharp edges.**
+- Feed both sides the same inputs. Here both read the palms in the same layout - four
+  floats each, already smoothed by the same `PalmMotion` - and both work in view
+  coordinates corrected by the same aspect ratio, so the oval is the same shape on screen.
+- Compute a parameter that changes per frame in one place and pass it down. The light's
+  reach grows smoothly from one palm's oval to two palms' as the second palm's strength
+  rises; the renderer asks `LightReach` for it each frame and writes it into the uniform
+  block, so the shader never carries a copy of the numbers that could drift.
+- Put the new fields where padding was, so the uniform block's layout - and every offset
+  after it - stays the same.
+- Pin the expression, not just the inputs: the test checks the shader's distance and
+  accumulation lines verbatim, and the model's own tests pin what the formula must do (one
+  palm alone lights about a quarter of the view, the light reaches further as a second
+  palm comes into view, two palms in the two halves light all of it).
+- Let the C# side use the formula for decisions and nothing else - whether a flower
+  sprouts, grows faster, or withers - and let the shader use it for the picture; the test
+  then guarantees that what the user sees lit is what the model treats as lit.
+- The same test style pins the other shader contracts: array lengths against the C#
+  capacities, and the shader constants a model relies on (`const PETALS = 8.0;` for the
+  flowers' petal count).
 
 ### Compute a frame once and let two graphics APIs draw it
 
@@ -3442,8 +3568,8 @@ private void SwitchVisualizer()
 **Sharp edges.**
 - The panel is a plain `Grid` in the XAML. The page names no renderer type, so a new
   visual needs a kind, a dropdown option, a session class and a factory case, nothing
-  else - PalmVisualizer's Ripple, Holy Inanna and Crystals visualizers were added
-  exactly that way.
+  else - PalmVisualizer's Ripple, Holy Inanna, Crystals and Flowers visualizers were
+  added exactly that way.
 - Put the lifecycle in one abstract base (`VisualizerSession`) and the per-API view in a
   second (`WebGpuVisualizerSession`), so a WebGPU visual's own session is a constructor
   and a one-line `CreateRenderer`. The base takes its status-line name from the option

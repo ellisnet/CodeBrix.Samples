@@ -15,13 +15,15 @@ Skia binaries the drawing surfaces are built on.
 ------------------------------------------------------------------------
 Video corpus (bundled: src/SimpleCbxVideoPlayer.Core/Assets/authoring/**)
 ------------------------------------------------------------------------
-The clips under Assets/authoring/ - the MKV/, WebM/, CodeBrix-Mode1/ and
-CodeBrix-Mode2/ folders - are AV1 video with Opus or Vorbis sound, derived by
-re-encoding two phone recordings.
+The clips under Assets/authoring/ - the MKV/, WebM/, CodeBrix-Mode1/,
+CodeBrix-Mode2/ and CodeBrix-Mode3/ folders - are AV1 video with Opus, Vorbis or
+FLAC sound, derived by re-encoding two phone recordings. Two of the Mode3 clips
+also carry an alpha plane: a soft elliptical matte, generated from a formula,
+applied to the same recordings.
 
 Those two recordings were created by Jeremy Ellis and placed by him in the
 PUBLIC DOMAIN on 2026-08-29. That dedication covers everything derived from
-them, so every file in all four folders is Public Domain as well. No rights are
+them, so every file in all five folders is Public Domain as well. No rights are
 reserved, no attribution is required, and no license obligation attaches to any
 of them.
 

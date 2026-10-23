@@ -26,6 +26,12 @@ chooses the visual, and choosing another while the visual is showing switches it
   gently pulsing, and fading after a while to make room for new ones. Open palms cast a soft
   light, excite the crystals near them - which then grow faster, turn more vibrant, pulse
   harder and glint more - and make new crystals sprout where they are, faster when they move.
+- "Flowers - WebGPU" is a meadow of vivid eight-petalled flowers on dark pool-table-green
+  felt. Left alone it keeps four: one sprouts, grows and slowly blooms, then the next, and
+  each new one sets the oldest withering. An open palm lights a soft oval of the felt bright
+  green - about a quarter of the view for one palm, almost all of it for two; flowers sprout rapidly in the light and grow faster there, nothing in the
+  light withers, flowers left in the dark do, and when the palms go the meadow withers back to
+  its calm four.
 
 Closing the hand, or moving it out of view, releases the pull and the visual settles back to
 its undisturbed motion. Up to four open palms can act on the visual at once, and each hand
@@ -49,7 +55,7 @@ WebcamPainter, uses a related vision pipeline for a different purpose.
   visualizers releases the outgoing GPU context or device and leaving a mode costs only a
   pause:
   [Let a rendering session put its own view into the page's panel](../BLUEPRINTS-GraphicsAndRendering.md#let-a-rendering-session-put-its-own-view-into-the-pages-panel).
-- Offer five visualizers - one of them through two graphics APIs - from a dropdown bound to a
+- Offer six visualizers - one of them through two graphics APIs - from a dropdown bound to a
   list of options, and replace the running session at once when the choice changes:
   [Swap the 3D graphics backend at run time from a dropdown](../BLUEPRINTS-GraphicsAndRendering.md#swap-the-3d-graphics-backend-at-run-time-from-a-dropdown).
 - Draw a full-screen WGSL shader and instanced star quads into a `WebGpuRenderView`, with
@@ -64,6 +70,9 @@ WebcamPainter, uses a related vision pipeline for a different purpose.
 - Draw up to 96 crystals as instanced quads read from one uniform array, blended in
   premultiplied colour over a full-screen backdrop in the same render pass:
   [Draw many instanced quads over a full-screen backdrop in one WebGPU render pass](../BLUEPRINTS-GraphicsAndRendering.md#draw-many-instanced-quads-over-a-full-screen-backdrop-in-one-webgpu-render-pass).
+- Light the felt in the shader with the very formula the flower model uses to decide what is
+  lit, and pin the two together with a unit test:
+  [Share one formula between a C# simulation and a WGSL shader and pin it with a test](../BLUEPRINTS-GraphicsAndRendering.md#share-one-formula-between-a-c-simulation-and-a-wgsl-shader-and-pin-it-with-a-test).
 - Rasterize SkiaSharp frames on the GPU through the platform's `SkiaGpuContext`, read each one
   back once and present it on an ordinary `SKXamlCanvas`:
   [Rasterize Skia frames on the GPU with SkiaGpuContext and present them on an SKXamlCanvas](../BLUEPRINTS-GraphicsAndRendering.md#rasterize-skia-frames-on-the-gpu-with-skiagpucontext-and-present-them-on-an-skxamlcanvas).
@@ -213,7 +222,7 @@ Prerequisites:
 - The .NET 10 SDK. Nothing is installed by hand: the native OpenCV library, the Skia
   runtime and the native WebGPU engine all arrive as NuGet packages (see each project's
   csproj and the packages they bring in).
-- A GPU is used when there is one but is not required: without a WebGPU device the four
+- A GPU is used when there is one but is not required: without a WebGPU device the five
   WebGPU visualizers report why in the status line, and "Ethereal - OpenGL" falls back to
   drawing on the CPU.
 - A webcam. Without one the application still starts and reports "No cameras were found on
@@ -230,8 +239,8 @@ dotnet run --project src/PalmVisualizer.LinuxX11/PalmVisualizer.LinuxX11.csproj
 ```
 
 Visualize Mode starts with "Ethereal - WebGPU". It, "Ripple - WebGPU", "Holy Inanna -
-WebGPU" and "Crystals - WebGPU" draw through whatever device the WebGPU engine chooses:
-Direct3D 12 or Vulkan on Windows, Vulkan on Linux, Metal on macOS.
+WebGPU", "Crystals - WebGPU" and "Flowers - WebGPU" draw through whatever device the WebGPU
+engine chooses: Direct3D 12 or Vulkan on Windows, Vulkan on Linux, Metal on macOS.
 "Ethereal - OpenGL" draws the same scene with GPU-accelerated Skia through the platform's
 `SkiaGpuContext`, which is OpenGL or OpenGL ES on every head except macOS, where it is Metal.
 Set `PALMVISUALIZER_USE_CPU=1` before launching to make "Ethereal - OpenGL" draw the identical
@@ -274,9 +283,9 @@ What each test project needs:
 | Test project | Covers | Needs |
 | --- | --- | --- |
 | `PalmVisualizer/tests/libs/PalmVisualizer.Camera.Tests` | The capture service lifecycle: enumeration returns a possibly empty list with usable display names, a fresh service reports no session and no frame, `Start()` rejects a null camera, `Stop()` without `Start()` is harmless | OS device enumeration only; passes on a machine with no camera |
-| `PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests` | Attractor easing semantics; palm motion (no palms means no activity, an open palm raises it and a moving one raises it further, it falls slowly after the palms close, the first frame has no delta and a stall is clamped); the Ethereal scene (stars inside the surface, an undisturbed frame that is a pure function of time, star sizes that follow the display scale, palms delivered in shader space, stars pulled toward and brightened by a palm); the SkSL shader (it compiles, accepts every uniform the renderer sets, paints colors on a raster surface, and a whole frame leaves no pixel black); Ripple's rain (light when calm, more and deeper drops with lively palms, every drop inside the pool, no saved-up downpour after a stall); the Holy Inanna star's motion (its own path without palms, never drawn far from it, drawn gently toward a palm, closer with activity and spinning on) and its view-to-star rotation; the crystal garden (young crystals from the start, sprouting and growing without ever overfilling, old crystals fading to make room, a palm exciting nearby crystals so they grow faster, crystals sprouting where the palms are, the instance layout the shader reads, every crystal growing upward within forty degrees of vertical, calm crystals staying close to their palette colours); the WGSL sources of all four WebGPU renderers pinned to the uniform layouts, bindings and entry points the C# side uses; and the session factory and the dropdown's options, Ethereal - WebGPU first | Native Skia, pulled in by referencing the Linux, macOS and Windows Skia native-asset packages. No GPU and no WebGPU device: the WGSL is checked as text, because it compiles only on a device |
+| `PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests` | Attractor easing semantics; palm motion (no palms means no activity, an open palm raises it and a moving one raises it further, it falls slowly after the palms close, the first frame has no delta and a stall is clamped); the Ethereal scene (stars inside the surface, an undisturbed frame that is a pure function of time, star sizes that follow the display scale, palms delivered in shader space, stars pulled toward and brightened by a palm); the SkSL shader (it compiles, accepts every uniform the renderer sets, paints colors on a raster surface, and a whole frame leaves no pixel black); Ripple's rain (light when calm, more and deeper drops with lively palms, every drop inside the pool, no saved-up downpour after a stall); the Holy Inanna star's motion (its own path without palms, never drawn far from it, drawn gently toward a palm, closer with activity and spinning on) and its view-to-star rotation; the crystal garden (young crystals from the start, sprouting and growing without ever overfilling, old crystals fading to make room, a palm exciting nearby crystals so they grow faster, crystals sprouting where the palms are, the instance layout the shader reads, every crystal growing upward within forty degrees of vertical, calm crystals staying close to their palette colours); the flower meadow (calm flowers sprouting one at a time, each new one withering the oldest once four have bloomed, calm flowers spread evenly over the view, every flower a vivid rainbow colour but never green, two palms in the two halves lighting the whole view, one palm alone lighting about a quarter of it, the light reaching further as a second palm comes into view, one palm leaving the far side dark, a lush meadow under two palms where nothing withers, the far side withering under one palm, the meadow returning to four when the palms go, the instances written back to front, petals ranging from narrow to broad); the WGSL sources of all five WebGPU renderers pinned to the uniform layouts, bindings and entry points the C# side uses, including exactly eight even petals and the felt's palm light matching the meadow's; and the session factory and the dropdown's options, Ethereal - WebGPU first | Native Skia, pulled in by referencing the Linux, macOS and Windows Skia native-asset packages. No GPU and no WebGPU device: the WGSL is checked as text, because it compiles only on a device |
 | `PalmVisualizer/tests/libs/PalmVisualizer.Vision.Tests` | The detector's pure math, the geometric open-palm classifier, embedded-model loading, tracker start/stop idempotence, and end-to-end inference against a bundled photograph | Native OpenCV, referenced with per-OS `Condition` attributes, plus the bundled test photo copied to the output directory |
-| `PalmVisualizer/tests/PalmVisualizer.PlayTests` | The real page and view model: camera discovery and its failures, auto-selection and switching, the first-frame gate on Visualize, mode switching, tracker and session lifecycle, the visualizer dropdown (all five options, Ethereal - WebGPU by default, a choice made while visualizing replacing the session at once, each new visualizer getting a session of its own kind that receives the mirrored palms, a choice made in Camera Mode used by the next Visualize, problems reported only by the current session), mirrored palms, the mirrored preview pixels, theme and orientation | Nothing native beyond the PlayTest head; fakes replace the camera, the tracker and the visualizer session factory, so no camera is opened and no visualizer view, GPU context or WebGPU device is ever created |
+| `PalmVisualizer/tests/PalmVisualizer.PlayTests` | The real page and view model: camera discovery and its failures, auto-selection and switching, the first-frame gate on Visualize, mode switching, tracker and session lifecycle, the visualizer dropdown (all six options, Ethereal - WebGPU by default, a choice made while visualizing replacing the session at once, each new visualizer getting a session of its own kind that receives the mirrored palms, a choice made in Camera Mode used by the next Visualize, problems reported only by the current session), mirrored palms, the mirrored preview pixels, theme and orientation | Nothing native beyond the PlayTest head; fakes replace the camera, the tracker and the visualizer session factory, so no camera is opened and no visualizer view, GPU context or WebGPU device is ever created |
 
 The Vision tests run real inference on the CPU. No GPU and no network are needed.
 
@@ -305,10 +314,10 @@ PalmVisualizer/
       PalmVisualizer.Vision/           Palm-tracking pipeline: worker thread, embedded models, OpenCV DNN inference
         Internal/                      PalmDetector, HandLandmarker, OpenPalmClassifier - not part of the public surface
       PalmVisualizer.Rendering/        Visualize Mode: the dropdown's options and the session factory; VisualizerSession and
-                                       WebGpuVisualizerSession and the five sessions; the Ethereal scene and its WGSL and
-                                       SkSL renderers, SkiaGpuCanvas; the Ripple, Holy Inanna and Crystals renderers
-                                       with RippleRain, HolyInannaMotion and CrystalGarden; PalmMotion, the WgslGpu
-                                       and WgslPass helpers, palm attractor smoothing
+                                       WebGpuVisualizerSession and the six sessions; the Ethereal scene and its WGSL and
+                                       SkSL renderers, SkiaGpuCanvas; the Ripple, Holy Inanna, Crystals and Flowers
+                                       renderers with RippleRain, HolyInannaMotion, CrystalGarden and FlowerMeadow;
+                                       PalmMotion, the WgslGpu and WgslPass helpers, palm attractor smoothing
   tests/
     libs/
       PalmVisualizer.Camera.Tests/     Mirrors src/libs/PalmVisualizer.Camera
@@ -338,7 +347,7 @@ the shared UI.
 | CodeBrix.Platform runtime for each head | Exactly one runtime package per head supplies that head's windowing and Skia surface; `CodeBrixPlatformHostBuilder` selects it in `Program.Main` | The six head csproj files and their `Program.cs` |
 | CodeBrix.Platform.Fonts.Roboto | Supplies the Roboto family the whole application uses as its default text font | `PalmVisualizer/src/PalmVisualizer.Core/PalmVisualizer.Core.csproj`, `PalmVisualizer/src/PalmVisualizer.UI/App.xaml`, `PalmVisualizer/src/PalmVisualizer.UI/App.xaml.cs` |
 | CodeBrix.Platform.SkiaSharp.Views | Supplies `SKXamlCanvas`, which `CameraCanvas` subclasses so the live preview can be named in XAML, and which `SkiaGpuCanvas` subclasses to present the frames of "Ethereal - OpenGL" | `PalmVisualizer/src/libs/PalmVisualizer.Camera/CameraCanvas.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Camera/PalmVisualizer.Camera.csproj`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/SkiaGpuCanvas.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/PalmVisualizer.Rendering.csproj` |
-| CodeBrix.Platform.WebGpu | `WebGpuRenderView`, the element the four WebGPU visualizers draw in (it owns the device, its frame driver and its presentation), the `IWebGpuRenderer` contract with `WebGpuFrame` and `IWebGpuDeviceSource`, and, through its dependencies, the raw `CodeBrix.WebGpu.Native` binding - render and compute pipelines, storage and uniform buffers, bind groups - and the native WebGPU engine | `PalmVisualizer/src/libs/PalmVisualizer.Rendering/WebGpuVisualizerSession.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealWebGpuRenderer.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/RippleWebGpuRenderer.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/HolyInannaWebGpuRenderer.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/CrystalsWebGpuRenderer.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/WgslPass.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/WgslGpu.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/PalmVisualizer.Rendering.csproj` |
+| CodeBrix.Platform.WebGpu | `WebGpuRenderView`, the element the five WebGPU visualizers draw in (it owns the device, its frame driver and its presentation), the `IWebGpuRenderer` contract with `WebGpuFrame` and `IWebGpuDeviceSource`, and, through its dependencies, the raw `CodeBrix.WebGpu.Native` binding - render and compute pipelines, storage and uniform buffers, bind groups - and the native WebGPU engine | `PalmVisualizer/src/libs/PalmVisualizer.Rendering/WebGpuVisualizerSession.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/EtherealWebGpuRenderer.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/RippleWebGpuRenderer.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/HolyInannaWebGpuRenderer.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/CrystalsWebGpuRenderer.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/FlowersWebGpuRenderer.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/WgslPass.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/WgslGpu.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/PalmVisualizer.Rendering.csproj` |
 | CodeBrix.Platform.Graphics3DGL | `SkiaGpuContext`, the backend-neutral GPU context (OpenGL or OpenGL ES, Metal on macOS) whose `GrContext` backs the off-screen surface "Ethereal - OpenGL" draws into, inside a `BeginFrame()` scope | `PalmVisualizer/src/libs/PalmVisualizer.Rendering/SkiaGpuCanvas.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Rendering/PalmVisualizer.Rendering.csproj` |
 | CodeBrix.Platform (the `CodeBrix.Platform.UI.Toolkit` converters namespace) | `BoolToVisibilityConverter`, declared twice (the second time with `Invert="True"`) to swap the two mode views and the two button groups from one bool | `PalmVisualizer/src/PalmVisualizer.UI/Views/MainPage.xaml` |
 | CodeBrix.Webcam | Camera enumeration and the live capture session that delivers BGRA frames and caches the latest one | `PalmVisualizer/src/libs/PalmVisualizer.Camera/WebcamCaptureService.cs`, `PalmVisualizer/src/libs/PalmVisualizer.Camera/CameraDevice.cs` |
@@ -575,7 +584,7 @@ visualizer, and it brings its own view. The page hands itself to the view model 
 panel - a plain `Grid` in the XAML. When the user presses "Visualize!", the view model asks the
 registered `IVisualizerSessionFactory` for a session of the kind the dropdown names, subscribes
 to its `Problem` event and starts it; `Start()` creates the view - a `WebGpuRenderView` for
-the four WebGPU visualizers, a `SkiaGpuCanvas` for "Ethereal - OpenGL" - and adds it to the
+the five WebGPU visualizers, a `SkiaGpuCanvas` for "Ethereal - OpenGL" - and adds it to the
 panel.
 `Stop()` takes it out again, and leaving the visual tree is what releases the view's WebGPU
 device or GPU context, so the page names no renderer type and never has to tear anything down
@@ -619,10 +628,11 @@ stop rather than a problem. A subclass supplies only `CreateView()`, `SetViewPau
 second, abstract layer for everything drawn with WebGPU: it creates the `WebGpuRenderView`,
 pauses it, reports `DeviceLost` under the visualizer's display name and disposes the renderer
 on stop, so each of `EtherealWebGpuSession`, `RippleWebGpuSession`,
-`HolyInannaWebGpuSession` and `CrystalsWebGpuSession` is a constructor and a one-line
-`CreateRenderer` override that hands back its renderer. Adding a visualizer is a kind, an option, a session and a factory case. Read
+`HolyInannaWebGpuSession`, `CrystalsWebGpuSession` and `FlowersWebGpuSession` is a
+constructor and a one-line `CreateRenderer` override that hands back its renderer. Adding a
+visualizer is a kind, an option, a session and a factory case. Read
 `PalmVisualizer/src/libs/PalmVisualizer.Rendering/VisualizerSession.cs`, then
-`PalmVisualizer/src/libs/PalmVisualizer.Rendering/WebGpuVisualizerSession.cs`, then the five
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/WebGpuVisualizerSession.cs`, then the six
 short sessions beside them.
 
 ### Ethereal - WebGPU: a WebGpuRenderView and a WGSL port of the shader
@@ -710,9 +720,9 @@ renamed uniform fails the test run rather than rendering black. Read
 and
 [Draw an animated SkSL shader onto a GPU or raster Skia canvas](../BLUEPRINTS-GraphicsAndRendering.md#draw-an-animated-sksl-shader-onto-a-gpu-or-raster-skia-canvas).
 
-### PalmMotion: what Ripple, Holy Inanna and Crystals read from the palms
+### PalmMotion: what Ripple, Holy Inanna, Crystals and Flowers read from the palms
 
-Ethereal reads the palms through its scene; the three newer visualizers read them through
+Ethereal reads the palms through its scene; the four newer visualizers read them through
 `PalmMotion`, which each WebGPU renderer advances once per frame with the visual's clock. It
 steps the same `PalmAttractorField` by the frame's real delta (zero on the first frame, clamped
 at a tenth of a second so a stall cannot make anything lurch) and exposes each slot as four
@@ -826,6 +836,60 @@ and the sparkle only add light. Read
 `PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/CrystalsTests.cs`. See
 [Draw many instanced quads over a full-screen backdrop in one WebGPU render pass](../BLUEPRINTS-GraphicsAndRendering.md#draw-many-instanced-quads-over-a-full-screen-backdrop-in-one-webgpu-render-pass).
 
+### Flowers - WebGPU: a meadow the palms light
+
+`FlowerMeadow` decides how the flowers live, on the CPU and seeded, so a run is repeatable.
+With no palm in view it keeps `CalmFlowers`, four: one flower sprouts, grows and blooms over
+`CalmBloomSeconds`, twenty seconds, and the next sprouts only once nothing is still growing.
+When a fifth sprouts the oldest starts withering over `WitherSeconds`, also twenty seconds, so
+it is gone just as the new one finishes blooming. A calm flower goes where there is most room:
+the meadow tries thirty random spots and keeps the one farthest from every flower still alive
+and well, which looks random and still spreads the flowers evenly over the view. An open palm
+lights the felt in a soft oval whose reach `LightReach` decides: one palm alone lights about a
+quarter of the view, and as a second palm comes into view every oval grows smoothly until two
+a little apart light almost all of it. The light changes everything: flowers sprout rapidly in
+it, each placed at the roomiest of a dozen spots scattered round the palm and skipped when the
+spot is too crowded, so flowers may overlap a little but never pile up; they grow up to seven
+times faster; nothing in the light withers, while a flower whose light falls below
+`DarkThreshold` starts withering as long as palms are in view, and a withering flower lit again
+recovers unless it is more than 85 percent withered. When the palms go, the light fades, every
+flower but the four youngest withers slowly, and the calm cycle resumes. Each flower takes one
+of six vivid colours - red, orange, yellow, blue, indigo or violet - leaning a little only
+toward a neighbour in its own warm or cool half, so no flower can ever turn green, and then
+rescaled to full brightness. Shapes vary too: petals run from narrow to broad, widest near the
+base like a lance or near the tip like a spoon, and from 72 percent to the full head radius
+long; flowers grown under the palms are smaller than calm ones. The meadow holds at most 80.
+
+`FlowersWebGpuRenderer` has the shape of the Crystals renderer: one render pass, a full-screen
+felt pipeline and then every flower as an instanced quad blended in premultiplied colour, both
+reading one uniform block in which `WriteInstances` lays each flower out as six `vec4`s. The
+felt is dark pool-table green with a fine grain, lit bright green under the palms - and it is
+lit with the same oval `FlowerMeadow.LightAt` uses to decide which flowers stand in the light,
+written out again in the WGSL. The reach is not copied into the shader: the renderer asks
+`FlowerMeadow.LightReach` for it every frame and writes it into the uniform block's
+`reachAcross` and `reachDown` fields, and a unit test checks that the shader declares those
+fields and lights the felt with the same expression; what the user sees lit is what the meadow
+treats as lit. `WriteInstances` writes the
+flowers sorted by the height of their heads, highest first, so a flower lower in the view is
+drawn later and stands in front. Each flower's fragment shader draws a tapered stem that grows
+up first, with two leaves, then a green bud that swells and unfolds into the bloom: cupped
+petals shaded in 3D with a vein and a base-to-tip gradient, a soft shadow on the felt, and a
+domed centre dotted with round stamens. Light makes the colours more vivid, and withering
+browns, shrinks and curls the flower until it fades away.
+
+Every flower has exactly eight identical petals, whatever its size and shape, and the shader
+is written so that cannot drift: the count is one constant, `const PETALS = 8.0;`, every petal
+axis is a multiple of `sector = 2.0 * PI / PETALS` from the flower's rotation, and for each
+pixel only the nearest petal and its two neighbours are evaluated. Where neighbours overlap,
+the even-numbered four are always in front of the odd four, so a quarter turn maps the flower onto itself and its four-way symmetry holds even in the
+overlaps. A unit test pins the constant and the sector line. Read
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/FlowerMeadow.cs`, then
+`PalmVisualizer/src/libs/PalmVisualizer.Rendering/FlowersWebGpuRenderer.cs`, then
+`PalmVisualizer/tests/libs/PalmVisualizer.Rendering.Tests/FlowersTests.cs`. See
+[Share one formula between a C# simulation and a WGSL shader and pin it with a test](../BLUEPRINTS-GraphicsAndRendering.md#share-one-formula-between-a-c-simulation-and-a-wgsl-shader-and-pin-it-with-a-test)
+and
+[Draw many instanced quads over a full-screen backdrop in one WebGPU render pass](../BLUEPRINTS-GraphicsAndRendering.md#draw-many-instanced-quads-over-a-full-screen-backdrop-in-one-webgpu-render-pass).
+
 ### The attractor field, and the seam between vision and rendering
 
 The Vision library knows nothing about rendering and the Rendering library knows nothing about
@@ -896,7 +960,7 @@ explicit `RootNamespace` distinct from the application's, with a comment explain
 library which also sees CodeBrix.Platform would otherwise generate a duplicate of the same
 generated resources type as the Core project, and the head that references both would fail to
 compile. The same project file owns every GPU reference - Graphics3DGL for "Ethereal - OpenGL",
-WebGpu for the four WebGPU visualizers and SkiaSharp.Views for the canvas the OpenGL frames are
+WebGpu for the five WebGPU visualizers and SkiaSharp.Views for the canvas the OpenGL frames are
 presented on - with a comment saying the Core project depends on the library rather than on
 those packages, and it sets `AllowUnsafeBlocks` because the WebGPU renderers record their
 commands through descriptor-struct pointers. See
@@ -911,10 +975,10 @@ and
 Every library test project tests a library, never the UI, and each references exactly its own
 library; the PlayTests suite drives the UI with fakes for all three collaborators. That is what makes the suite runnable on a machine with no camera and no GPU: camera
 enumeration legitimately returns an empty list, the shader tests evaluate real SkSL on a Skia
-raster surface with no GPU and no window, the WGSL of all four WebGPU renderers is pinned as
+raster surface with no GPU and no window, the WGSL of all five WebGPU renderers is pinned as
 text against the uniform layouts and bindings the renderers write, because it only compiles on
-a WebGPU device, the motion and garden classes that drive Ripple, Holy Inanna and Crystals are stepped frame by
-frame with no GPU at all, and the vision tests run real inference on the CPU. The PlayTests'
+a WebGPU device, the motion, garden and meadow classes that drive Ripple, Holy Inanna,
+Crystals and Flowers are stepped frame by frame with no GPU at all, and the vision tests run real inference on the CPU. The PlayTests'
 fake visualizer sessions record their lifecycle, their kind and their palms and never create a
 view, so no GPU context and no WebGPU device is needed to drive the dropdown - including a
 theory that picks each newer visualizer and checks it gets a session of its own kind that

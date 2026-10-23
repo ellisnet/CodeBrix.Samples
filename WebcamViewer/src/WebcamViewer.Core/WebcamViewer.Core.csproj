@@ -19,6 +19,6 @@
     <PackageReference Include="CodeBrix.Webcam.LgplLicenseForever" Version="3.0.278.1171" />
 
     <!-- PNG encoding for the frame-photo feature -->
-    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.285.619" />
+    <PackageReference Include="CodeBrix.Imaging.ApacheLicenseForever" Version="1.0.290.858" />
   </ItemGroup>
 </Project>

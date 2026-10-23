@@ -678,3 +678,290 @@ TOTALS
   run wall time    34.7 s
 
 ================================================================================
+
+
+================================================================================
+CODEBRIX-MODE3 - AUTHORED SEPARATELY
+================================================================================
+
+CodeBrix-Mode3/ is NOT written by the corpus generator that wrote everything above,
+and the totals above do not count it. It was authored on 2026-10-22, from the same
+two Public-Domain originals, by a one-off program driving
+CodeBrix.VideoPlayback.Authoring 1.0.290.1224's MASTER flavour (CbvAuthor.Write
+with Flavour = VideoAuthoringFlavour.Master). Every command it ran is recorded below,
+file by file; that is the record to reproduce the folder from.
+
+WHAT A MASTER IS. The bespoke CBVF container at format version 1: AV1 picture, an
+optional alpha-plane track (the picture's alpha channel as monochrome, full-range
+AV1, in lock step with the picture), and lossless FLAC sound.
+
+ENCODER SETTINGS. The corpus's own rungs, applied to the master flavour's IN-PROCESS
+encoders rather than to libsvtav1:
+
+  rung   landscape     portrait      cpu-used  cq-level  keyframes  audio
+  -----  ------------  ------------  --------  --------  ---------  ------------------
+  4k     3840x2160     2160x3840     6         28        60 frames  FLAC 16-bit lossless
+  hd     1920x1080     1080x1920     5         26        60 frames  FLAC 16-bit lossless
+  720p   1280x720      720x1280      4         24        60 frames  FLAC 16-bit lossless
+
+  Video   the authoring library's in-process AV1 encoder (the libaom reference
+          encoder), good-quality usage, 8-bit 4:2:0, 30 frames per second. The
+          preset column above becomes cpu-used and the crf column cq-level - the
+          same 0-63 scale, though libaom and libsvtav1 do not give identical
+          quality at the same number. The six plain files are scaled by the
+          library's own FFmpeg prepare pass (lanczos, accurate rounding, full chroma
+          interpolation) into a lossless FFV1 intermediate first.
+  Alpha   the two _alpha files only: the same encoder, monochrome and full range,
+          at cq-level 20 (six better than the picture), with a key frame forced on
+          every key frame of the picture. Fully transparent pixels take the colour of
+          the nearest visible one before the picture is encoded (the library's
+          transparent-pixel fill), so no dark fringe bleeds into a soft edge.
+  Audio   the recording's AAC decoded at 48000 Hz stereo and encoded as FLAC,
+          16-bit, compression level 5: from there on, nothing is lost.
+
+THE MATTE. The two _alpha sources are made first, by FFmpeg, as a lossless FFV1
+(yuva420p) Matroska file with PCM sound: the recording scaled to HD at 30 frames per
+second, with a one-frame grey image merged in as its alpha channel. The image is
+
+    alpha = 255 * clip((1 - r) / 0.25, 0, 1),
+    r     = hypot((x - W/2) / (W/2), (y - H/2) / (H/2))
+
+- fully opaque inside three-quarters of the ellipse that touches the picture's four
+edges, fading to fully transparent at that ellipse, and fully transparent in the
+corners beyond it. The merge stops with the last whole picture frame, so the two
+_alpha files are one frame (33 ms) shorter than the plain ones.
+
+
+CodeBrix-Mode3/
+===============
+
+  CodeBrix Video Mode3: the bespoke CBVF container at format version 1, AV1 + FLAC,
+  two of the files with an alpha plane
+
+  landscape_4k.cbvmaster
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       3840x2160 (planned 3840x2160)
+      frame rate       30 per second
+      duration         4.033 s
+      size             1.53 MB (1,602,488 bytes)
+      container        CBVF format version 1 (the master form)
+      video            av01, 8-bit, 3840x2160
+      alpha plane      none (Video.Alpha = Exclude)
+      audio            flac, 2 channels at 48000 Hz, 16-bit lossless
+      encoder          in-process AV1 (libaom) cpu-used 6, cq-level 28, keyframes every 60 frames
+      encode time      79.1 s
+      read-back check  OK
+      profile check    streamable profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is FLAC (master file) - 'flac'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+                       result      passes the profile
+      command          ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map_metadata -1 -c:v ffv1 -vf "scale=w=3840:h=2160:flags=lanczos+accurate_rnd+full_chroma_int, fps=30, format=yuv420p" -pix_fmt yuv420p -an -sn -dn -f matroska "/tmp/landscape_4k.prepared.mkv" -y
+      command          in process: av1 i420 8-bit size 3840x2160 good-quality cq-level 28 cpu-used 6 keyint 60 <- /tmp/landscape_4k.prepared.mkv -> /tmp/landscape_4k.video.ivf
+      command          in process: flac 16-bit 48000 Hz 2 channel(s) compression-level 5 <- tests/assets/authoring/MP4/landscape_video_test_4k.mp4 -> packets
+
+  landscape_hd.cbvmaster
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       1920x1080 (planned 1920x1080)
+      frame rate       30 per second
+      duration         4.033 s
+      size             0.66 MB (694,376 bytes)
+      container        CBVF format version 1 (the master form)
+      video            av01, 8-bit, 1920x1080
+      alpha plane      none (Video.Alpha = Exclude)
+      audio            flac, 2 channels at 48000 Hz, 16-bit lossless
+      encoder          in-process AV1 (libaom) cpu-used 5, cq-level 26, keyframes every 60 frames
+      encode time      17.3 s
+      read-back check  OK
+      profile check    streamable profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is FLAC (master file) - 'flac'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+                       result      passes the profile
+      command          ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map_metadata -1 -c:v ffv1 -vf "scale=w=1920:h=1080:flags=lanczos+accurate_rnd+full_chroma_int, fps=30, format=yuv420p" -pix_fmt yuv420p -an -sn -dn -f matroska "/tmp/landscape_hd.prepared.mkv" -y
+      command          in process: av1 i420 8-bit size 1920x1080 good-quality cq-level 26 cpu-used 5 keyint 60 <- /tmp/landscape_hd.prepared.mkv -> /tmp/landscape_hd.video.ivf
+      command          in process: flac 16-bit 48000 Hz 2 channel(s) compression-level 5 <- tests/assets/authoring/MP4/landscape_video_test_4k.mp4 -> packets
+
+  landscape_720p.cbvmaster
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       1280x720 (planned 1280x720)
+      frame rate       30 per second
+      duration         4.033 s
+      size             0.56 MB (591,894 bytes)
+      container        CBVF format version 1 (the master form)
+      video            av01, 8-bit, 1280x720
+      alpha plane      none (Video.Alpha = Exclude)
+      audio            flac, 2 channels at 48000 Hz, 16-bit lossless
+      encoder          in-process AV1 (libaom) cpu-used 4, cq-level 24, keyframes every 60 frames
+      encode time      23.4 s
+      read-back check  OK
+      profile check    streamable profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is FLAC (master file) - 'flac'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+                       result      passes the profile
+      command          ffmpeg -autorotate -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -map 0:v:0 -map_metadata -1 -c:v ffv1 -vf "scale=w=1280:h=720:flags=lanczos+accurate_rnd+full_chroma_int, fps=30, format=yuv420p" -pix_fmt yuv420p -an -sn -dn -f matroska "/tmp/landscape_720p.prepared.mkv" -y
+      command          in process: av1 i420 8-bit size 1280x720 good-quality cq-level 24 cpu-used 4 keyint 60 <- /tmp/landscape_720p.prepared.mkv -> /tmp/landscape_720p.video.ivf
+      command          in process: flac 16-bit 48000 Hz 2 channel(s) compression-level 5 <- tests/assets/authoring/MP4/landscape_video_test_4k.mp4 -> packets
+
+  landscape_hd_alpha.cbvmaster
+      source           MP4/landscape_video_test_4k.mp4
+      resolution       1920x1080 (planned 1920x1080)
+      frame rate       30 per second
+      duration         4.006 s
+      size             0.89 MB (929,114 bytes)
+      container        CBVF format version 1 (the master form)
+      video            av01, 8-bit, 1920x1080
+      alpha plane      av01, monochrome 8-bit, 1920x1080, straight (not premultiplied)
+      audio            flac, 2 channels at 48000 Hz, 16-bit lossless
+      encoder          in-process AV1 (libaom) cpu-used 5, cq-level 26, alpha cq-level 20, keyframes every 60 frames
+      encode time      24.4 s
+      read-back check  OK
+      profile check    streamable profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is FLAC (master file) - 'flac'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+                       result      passes the profile
+      command          [matte] ffmpeg -v error -f lavfi -i "color=c=black:size=1920x1080,format=gray,geq=lum='255*clip((1-hypot((X-W/2)/(W/2)\,(Y-H/2)/(H/2)))/0.25\,0\,1)'" -frames:v 1 -y "/tmp/landscape_hd_alpha.matte.png"
+      command          [alpha source] ffmpeg -v error -i "tests/assets/authoring/MP4/landscape_video_test_4k.mp4" -loop 1 -i "/tmp/landscape_hd_alpha.matte.png" -filter_complex "[0:v]scale=w=1920:h=1080:flags=lanczos,fps=30,format=yuva420p[v];[1:v]format=gray[m];[v][m]alphamerge,format=yuva420p[out]" -map "[out]" -map 0:a:0 -map_metadata -1 -c:v ffv1 -c:a pcm_s16le -ar 48000 -ac 2 -shortest -f matroska -y "/tmp/landscape_hd_alpha.source.mkv"
+      command          in process: av1 i420 8-bit size 1920x1080 good-quality cq-level 26 cpu-used 5 keyint 60 fill-transparent-pixels <- /tmp/landscape_hd_alpha.source.mkv -> /tmp/landscape_hd_alpha.video.ivf
+      command          in process: av1 gray 8-bit size 1920x1080 full-range realtime cq-level 20 cpu-used 5 key-frames-of-video-pass <- /tmp/landscape_hd_alpha.source.mkv -> /tmp/landscape_hd_alpha.alpha.ivf
+      command          in process: flac 16-bit 48000 Hz 2 channel(s) compression-level 5 <- /tmp/landscape_hd_alpha.source.mkv -> packets
+
+  portrait_4k.cbvmaster
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       2160x3840 (planned 2160x3840)
+      frame rate       30 per second
+      duration         5.467 s
+      size             2.21 MB (2,315,852 bytes)
+      container        CBVF format version 1 (the master form)
+      video            av01, 8-bit, 2160x3840
+      alpha plane      none (Video.Alpha = Exclude)
+      audio            flac, 2 channels at 48000 Hz, 16-bit lossless
+      encoder          in-process AV1 (libaom) cpu-used 6, cq-level 28, keyframes every 60 frames
+      encode time      117.4 s
+      read-back check  OK
+      profile check    streamable profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is FLAC (master file) - 'flac'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+                       result      passes the profile
+      command          ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map_metadata -1 -c:v ffv1 -vf "scale=w=2160:h=3840:flags=lanczos+accurate_rnd+full_chroma_int, fps=30, format=yuv420p" -pix_fmt yuv420p -an -sn -dn -f matroska "/tmp/portrait_4k.prepared.mkv" -y
+      command          in process: av1 i420 8-bit size 2160x3840 good-quality cq-level 28 cpu-used 6 keyint 60 <- /tmp/portrait_4k.prepared.mkv -> /tmp/portrait_4k.video.ivf
+      command          in process: flac 16-bit 48000 Hz 2 channel(s) compression-level 5 <- tests/assets/authoring/MP4/portrait_video_test_4k.mp4 -> packets
+
+  portrait_hd.cbvmaster
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       1080x1920 (planned 1080x1920)
+      frame rate       30 per second
+      duration         5.467 s
+      size             0.98 MB (1,029,659 bytes)
+      container        CBVF format version 1 (the master form)
+      video            av01, 8-bit, 1080x1920
+      alpha plane      none (Video.Alpha = Exclude)
+      audio            flac, 2 channels at 48000 Hz, 16-bit lossless
+      encoder          in-process AV1 (libaom) cpu-used 5, cq-level 26, keyframes every 60 frames
+      encode time      28.1 s
+      read-back check  OK
+      profile check    streamable profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is FLAC (master file) - 'flac'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+                       result      passes the profile
+      command          ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map_metadata -1 -c:v ffv1 -vf "scale=w=1080:h=1920:flags=lanczos+accurate_rnd+full_chroma_int, fps=30, format=yuv420p" -pix_fmt yuv420p -an -sn -dn -f matroska "/tmp/portrait_hd.prepared.mkv" -y
+      command          in process: av1 i420 8-bit size 1080x1920 good-quality cq-level 26 cpu-used 5 keyint 60 <- /tmp/portrait_hd.prepared.mkv -> /tmp/portrait_hd.video.ivf
+      command          in process: flac 16-bit 48000 Hz 2 channel(s) compression-level 5 <- tests/assets/authoring/MP4/portrait_video_test_4k.mp4 -> packets
+
+  portrait_720p.cbvmaster
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       720x1280 (planned 720x1280)
+      frame rate       30 per second
+      duration         5.467 s
+      size             0.78 MB (817,354 bytes)
+      container        CBVF format version 1 (the master form)
+      video            av01, 8-bit, 720x1280
+      alpha plane      none (Video.Alpha = Exclude)
+      audio            flac, 2 channels at 48000 Hz, 16-bit lossless
+      encoder          in-process AV1 (libaom) cpu-used 4, cq-level 24, keyframes every 60 frames
+      encode time      41.0 s
+      read-back check  OK
+      profile check    streamable profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is FLAC (master file) - 'flac'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+                       result      passes the profile
+      command          ffmpeg -autorotate -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -map 0:v:0 -map_metadata -1 -c:v ffv1 -vf "scale=w=720:h=1280:flags=lanczos+accurate_rnd+full_chroma_int, fps=30, format=yuv420p" -pix_fmt yuv420p -an -sn -dn -f matroska "/tmp/portrait_720p.prepared.mkv" -y
+      command          in process: av1 i420 8-bit size 720x1280 good-quality cq-level 24 cpu-used 4 keyint 60 <- /tmp/portrait_720p.prepared.mkv -> /tmp/portrait_720p.video.ivf
+      command          in process: flac 16-bit 48000 Hz 2 channel(s) compression-level 5 <- tests/assets/authoring/MP4/portrait_video_test_4k.mp4 -> packets
+
+  portrait_hd_alpha.cbvmaster
+      source           MP4/portrait_video_test_4k.mp4
+      resolution       1080x1920 (planned 1080x1920)
+      frame rate       30 per second
+      duration         5.437 s
+      size             1.17 MB (1,223,508 bytes)
+      container        CBVF format version 1 (the master form)
+      video            av01, 8-bit, 1080x1920
+      alpha plane      av01, monochrome 8-bit, 1080x1920, straight (not premultiplied)
+      audio            flac, 2 channels at 48000 Hz, 16-bit lossless
+      encoder          in-process AV1 (libaom) cpu-used 5, cq-level 26, alpha cq-level 20, keyframes every 60 frames
+      encode time      52.6 s
+      read-back check  OK
+      profile check    streamable profile
+                       [pass] video codec is AV1 - 'av01'
+                       [pass] audio codec is FLAC (master file) - 'flac'
+                       [pass] caption tracks are WebVTT - 0 caption track(s)
+                       [pass] the file carries an index
+                       [pass] the index sits before the chunks
+                       [pass] the header states a duration
+                       [pass] timestamps ascend within every track
+                       [pass] video is 8-bit 4:2:0 (recommended)
+                       result      passes the profile
+      command          [matte] ffmpeg -v error -f lavfi -i "color=c=black:size=1080x1920,format=gray,geq=lum='255*clip((1-hypot((X-W/2)/(W/2)\,(Y-H/2)/(H/2)))/0.25\,0\,1)'" -frames:v 1 -y "/tmp/portrait_hd_alpha.matte.png"
+      command          [alpha source] ffmpeg -v error -i "tests/assets/authoring/MP4/portrait_video_test_4k.mp4" -loop 1 -i "/tmp/portrait_hd_alpha.matte.png" -filter_complex "[0:v]scale=w=1080:h=1920:flags=lanczos,fps=30,format=yuva420p[v];[1:v]format=gray[m];[v][m]alphamerge,format=yuva420p[out]" -map "[out]" -map 0:a:0 -map_metadata -1 -c:v ffv1 -c:a pcm_s16le -ar 48000 -ac 2 -shortest -f matroska -y "/tmp/portrait_hd_alpha.source.mkv"
+      command          in process: av1 i420 8-bit size 1080x1920 good-quality cq-level 26 cpu-used 5 keyint 60 fill-transparent-pixels <- /tmp/portrait_hd_alpha.source.mkv -> /tmp/portrait_hd_alpha.video.ivf
+      command          in process: av1 gray 8-bit size 1080x1920 full-range realtime cq-level 20 cpu-used 5 key-frames-of-video-pass <- /tmp/portrait_hd_alpha.source.mkv -> /tmp/portrait_hd_alpha.alpha.ivf
+      command          in process: flac 16-bit 48000 Hz 2 channel(s) compression-level 5 <- /tmp/portrait_hd_alpha.source.mkv -> packets
+
+
+  files            8 of 8 present
+  total size       8.78 MB (9,204,245 bytes)
+  read-back checks 8 of 8 passed
+  profile checks   8 of 8 passed
+
+================================================================================

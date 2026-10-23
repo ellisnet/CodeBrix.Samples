@@ -24,6 +24,7 @@ public sealed class VisualizerSessionFactory : IVisualizerSessionFactory
             VisualizerKind.RippleWebGpu => new RippleWebGpuSession(host),
             VisualizerKind.HolyInannaWebGpu => new HolyInannaWebGpuSession(host),
             VisualizerKind.CrystalsWebGpu => new CrystalsWebGpuSession(host),
+            VisualizerKind.FlowersWebGpu => new FlowersWebGpuSession(host),
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown visualizer."),
         };
     }
